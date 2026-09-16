@@ -12,7 +12,7 @@ published dependency contract.
 ## Universal Workload Chart
 
 Use the public `workload` chart at
-`oci://ghcr.io/f2calv/charts/workload` for containerised workloads that do not
+`oci://<registry>/<owner>/charts/workload` for containerised workloads that do not
 need application-specific Kubernetes templates. It is framework-neutral and
 uses sensible defaults while allowing consumers to override Kubernetes-native
 settings.
