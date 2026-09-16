@@ -3,6 +3,22 @@
 Default community health files, GitHub configuration, and repository management
 tools for repositories owned by `f2calv`.
 
+## Copilot customizations
+
+`instructions/` is the single source of truth for the shared Copilot instruction
+files used by every `f2calv` repository. Link it into the VS Code user profile
+once and the instructions apply in every workspace:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
+New-Item -ItemType Junction `
+  -Path "$HOME\.copilot\instructions" `
+  -Target "$HOME\source\github\.github\instructions"
+```
+
+Setup details, authoring rules, and what each repository keeps locally are in
+[`copilot-instructions.md`](.github/copilot-instructions.md).
+
 ## Repository baseline
 
 The baseline enforces these settings where the GitHub plan supports them:
