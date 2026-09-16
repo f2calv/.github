@@ -1,2 +1,61 @@
 # .github
-Default community health files and GitHub configuration for f2calv repositories.
+
+Default community health files, GitHub configuration, and repository management
+tools for repositories owned by `f2calv`.
+
+## Repository baseline
+
+The baseline enforces these settings where the GitHub plan supports them:
+
+* Delete merged branches automatically
+* Give GitHub Actions read-only default token permissions
+* Prevent GitHub Actions from approving pull requests
+* Enable Dependabot vulnerability alerts and security updates
+* Enable secret scanning and push protection
+* Protect the default branch from deletion and force pushes
+* Require changes through pull requests with resolved review threads
+
+Audit one repository without changing it:
+
+```powershell
+./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Audit
+```
+
+Apply the baseline to one repository:
+
+```powershell
+./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
+```
+
+Audit or repair every active, owned, non-fork repository:
+
+```powershell
+./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
+./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
+./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply
+```
+
+The full baseline is defined in
+[`repository-baseline.json`](.scripts/repository-baseline.json).
+
+## Create a repository
+
+Create, configure, and clone a public repository:
+
+```powershell
+./.scripts/New-GitHubRepository.ps1 `
+  -Name example `
+  -Description 'Example repository'
+```
+
+Create from a template and add the clone to the active VS Code workspace:
+
+```powershell
+./.scripts/New-GitHubRepository.ps1 `
+  -Name example `
+  -TemplateRepository f2calv/template-dotnet `
+  -AddToWorkspace
+```
+
+Use `-Visibility Private` for private repositories. Secret protection and
+default-branch rulesets are reported as plan-gated when they are unavailable.
