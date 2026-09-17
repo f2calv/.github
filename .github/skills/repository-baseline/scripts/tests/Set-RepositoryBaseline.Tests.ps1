@@ -80,6 +80,93 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
     }
+
+    It 'Adds the approved status checks for <Repository>' -TestCases @(
+        @{
+            Repository = 'f2calv/.github'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'test'
+        }
+        @{
+            Repository = 'f2calv/CasCap.Api.Example'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'build'
+        }
+        @{
+            Repository = 'f2calv/yamlizr'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'build'
+        }
+        @{
+            Repository = 'f2calv/gha-workflows'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/gha-check-release-exists'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/gha-dotnet-nuget'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/gha-gitops-manifest-update'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/gha-sonarqube-dotnet'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/gha-release-versioning'
+            Versioning = 'versioning'
+            Validation = 'validate'
+        }
+        @{
+            Repository = 'f2calv/multi-arch-container-dotnet'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'app / app-build-dotnet'
+        }
+        @{
+            Repository = 'f2calv/multi-arch-container-go'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'app / app-build-go'
+        }
+        @{
+            Repository = 'f2calv/multi-arch-container-python'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'app / app-build-python'
+        }
+        @{
+            Repository = 'f2calv/multi-arch-container-rust'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'app / app-build-rust'
+        }
+        @{
+            Repository = 'f2calv/helm-charts'
+            Versioning = 'release (workload) / versioning / gha-release-versioning'
+            Validation = 'release (workload) / chart'
+        }
+    ) {
+        param($Repository, $Versioning, $Validation)
+
+        $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName $Repository
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be 1
+        @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
+            'lint / lint',
+            $Versioning,
+            $Validation
+        )
+        $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
+        $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
+    }
 }
 
 Describe 'Test-RulesetMatchesPolicy' -Tag 'Unit' {
