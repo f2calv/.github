@@ -6,52 +6,49 @@ Individual repositories no longer carry a `.github/instructions/` folder. They k
 
 ## Setup
 
-The canonical instruction files live in `instructions/`, reusable skills in `skills/`, and shared
-slash-command prompts in `prompts/`.
-Link both folders into the VS Code user profile so they apply in **every** workspace, whether or not
-this repository is open:
+The shared files live under `.github/instructions/`, `.github/skills/` and `.github/prompts/`, the
+locations VS Code reads for any folder open in a workspace. There are two ways to consume them, set
+out for end users in the [README](../README.md):
+
+- **Add this repository to the workspace** alongside the repository being worked on. No setup, but it
+  applies only inside that workspace.
+- **Link the folders into the user profile** so they apply in every workspace:
 
 ```powershell
+$repo = "$HOME\source\github\.github"
 New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\instructions" `
-  -Target "$HOME\source\github\.github\instructions"
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\skills" `
-  -Target "$HOME\source\github\.github\skills"
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\prompts" `
-  -Target "$HOME\source\github\.github\prompts"
+foreach ($name in 'instructions', 'skills', 'prompts') {
+  New-Item -ItemType Junction -Path "$HOME\.copilot\$name" -Target "$repo\.github\$name"
+}
 ```
 
-Confirm the link resolves and VS Code can see the files:
+Confirm VS Code can see them:
 
 ```powershell
-Get-Item "$HOME\.copilot\instructions" | Select-Object LinkType, Target
-Get-Item "$HOME\.copilot\skills" | Select-Object LinkType, Target
 Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
 Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
+Get-ChildItem "$HOME\.copilot\prompts" -Filter *.prompt.md | Measure-Object
 ```
 
-In VS Code, open the Chat view, select **Diagnostics** from the context menu, and check the files are listed as user-level instructions.
+In VS Code, open the Chat view, select **Diagnostics** from the context menu, and check the files are listed.
 
 Notes:
 
-- User-profile instructions apply across all workspaces and take **priority over** repository instructions. A repository that needs to override a central rule must say so explicitly in its own `copilot-instructions.md`.
-- A junction points at the working tree, so a `git pull` here updates every workspace immediately. There is nothing to sync and no pull requests to raise.
+- User-profile customizations apply across all workspaces and take **priority over** repository instructions. A repository that needs to override a central rule must say so explicitly in its own `copilot-instructions.md`.
+- A link points at the working tree, so a `git pull` here updates every workspace immediately. There is nothing to sync and no pull requests to raise.
 - Because the files are not copied into other repositories, an instructions change never triggers their continuous integration or bumps their version.
-- Skills live in `skills/`, linked to `~/.copilot/skills`, and prompts in `prompts/`, linked to `~/.copilot/prompts`. Both are kept at the repository root for the same reason as `instructions/` — a folder under `.github/` would also be discovered as a workspace customisation whenever this repository is open, loading everything twice. Agents will follow the same pattern.
-- Enable Settings Sync to carry user-level customizations to another device, or create the junction there too.
+- Using both options at once discovers every file twice, once per route. It is harmless but duplicates rules in context; remove this repository from the workspace if that matters.
+- Enable Settings Sync to carry user-level customizations to another device, or create the links there too.
 
 ## Layout
 
 | Path | Purpose |
 | --- | --- |
-| `instructions/` | Canonical `*.instructions.md` files, linked into `~/.copilot/instructions` |
-| `skills/` | Reusable agent skills, linked into `~/.copilot/skills` |
-| `prompts/` | Shared slash-command prompts, linked into `~/.copilot/prompts` |
+| `.github/instructions/` | Canonical `*.instructions.md` files |
+| `.github/skills/` | Reusable agent skills |
+| `.github/prompts/` | Shared slash-command prompts |
 | `.scripts/` | Repository management, baseline and privacy tooling |
-| `.github/` | This repository's own Copilot and GitHub configuration |
+| `.github/copilot-instructions.md` | This repository's own instructions, not part of the shared set |
 
 ## Authoring Rules
 

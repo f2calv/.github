@@ -5,54 +5,88 @@ tools for repositories owned by `f2calv`.
 
 ## Copilot customizations
 
-`instructions/`, `skills/` and `prompts/` are the single source of truth for shared Copilot
-instructions, reusable skills and slash-command prompts. Link them into the VS Code user
-profile once and they apply in every workspace:
+`.github/instructions/`, `.github/skills/` and `.github/prompts/` hold shared Copilot instructions,
+reusable skills and slash-command prompts. They are the single source of truth: no repository keeps
+its own copy, so a change here takes effect everywhere with no pull requests and no version bumps.
+
+VS Code discovers customizations from two places, which gives you two ways to use this repository.
+Pick whichever suits you — they are interchangeable, and you can switch later.
+
+### Option 1 — Add this repository to your workspace (no setup)
+
+VS Code reads customizations from `<folder>/.github/…` for **every folder open in the workspace**.
+So cloning this repository next to your own and opening both together is enough:
+
+1. Clone this repository alongside the repository you are working in.
+2. In VS Code, open your own repository, then **File → Add Folder to Workspace…** and add this one.
+3. **File → Save Workspace As…** so the pairing persists.
+
+The instructions, skills and prompts apply immediately. Nothing to install, no shell, no admin
+rights. The trade-off is that they apply only inside that workspace.
+
+### Option 2 — Link into your user profile (applies everywhere)
+
+VS Code also reads customizations from `~/.copilot/…`, which applies to **every** workspace whether
+or not this repository is open. Create one link per folder.
+
+Windows (PowerShell):
 
 ```powershell
+$repo = "$HOME\source\github\.github"      # adjust to wherever you cloned it
 New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\instructions" `
-  -Target "$HOME\source\github\.github\instructions"
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\skills" `
-  -Target "$HOME\source\github\.github\skills"
-New-Item -ItemType Junction `
-  -Path "$HOME\.copilot\prompts" `
-  -Target "$HOME\source\github\.github\prompts"
+foreach ($name in 'instructions', 'skills', 'prompts') {
+  New-Item -ItemType Junction -Path "$HOME\.copilot\$name" -Target "$repo\.github\$name"
+}
 ```
 
-Verify the links resolve and the files are visible through them:
+macOS and Linux:
+
+```bash
+repo="$HOME/source/github/.github"          # adjust to wherever you cloned it
+mkdir -p "$HOME/.copilot"
+for name in instructions skills prompts; do
+  ln -s "$repo/.github/$name" "$HOME/.copilot/$name"
+done
+```
+
+Windows without PowerShell (Command Prompt, run as Administrator or with Developer Mode enabled):
+
+```bat
+mklink /D "%USERPROFILE%\.copilot\instructions" "%USERPROFILE%\source\github\.github\.github\instructions"
+mklink /D "%USERPROFILE%\.copilot\skills"       "%USERPROFILE%\source\github\.github\.github\skills"
+mklink /D "%USERPROFILE%\.copilot\prompts"      "%USERPROFILE%\source\github\.github\.github\prompts"
+```
+
+A link points at the working tree, so `git pull` here updates every workspace immediately.
+
+### Verify it worked
+
+In VS Code, open the Chat view, choose **Diagnostics** from the context menu, and confirm the
+instruction files are listed. Or check from a shell:
 
 ```powershell
-Get-Item "$HOME\.copilot\instructions", "$HOME\.copilot\skills", "$HOME\.copilot\prompts" |
-  Select-Object Name, LinkType, Target
 Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
 Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
 Get-ChildItem "$HOME\.copilot\prompts" -Filter *.prompt.md | Measure-Object
 ```
 
-A junction points at the working tree, so a `git pull` here updates every workspace
-immediately. Nothing is copied into other repositories, so an instructions change never
-triggers their continuous integration or bumps their version.
+### If you use both options at once
 
-### Why these folders sit at the repository root
+Using Option 2 *and* keeping this repository in your workspace means the same files are discovered
+twice — once as a user-level customization and once as a workspace one. It is harmless, but it
+duplicates the rules in context and clutters the diagnostics view. If that bothers you, remove this
+repository from the workspace and open it in a separate window when you want to edit it.
 
-`instructions/`, `skills/` and `prompts/` are deliberately **not** under `.github/`.
+### What these files are
 
-VS Code discovers customizations from two independent places: the user profile
-(`~/.copilot/…`, where the junctions point) and every folder open in the workspace
-(`<folder>/.github/instructions/`, `<folder>/.github/skills/` and `<folder>/.github/prompts/`). Putting the canonical
-files under this repository's own `.github/` would satisfy both rules at once — so
-whenever this repository is open in a workspace, every instruction file and skill would be
-discovered twice, once as a user-level customization and once as a workspace one.
+| Folder | Contents | Applies |
+| --- | --- | --- |
+| `.github/instructions/` | `*.instructions.md` | Automatically, per the `applyTo` glob in each file |
+| `.github/skills/` | `<name>/SKILL.md` | When the task matches the skill's description |
+| `.github/prompts/` | `*.prompt.md` | When invoked as a slash command |
 
-That wastes context on duplicated rules and makes the diagnostics view hard to read. Keeping
-the canonical copies at the repository root means the junctions are the only discovery path,
-and the files load exactly once no matter which repositories are open.
-
-This repository's own `.github/copilot-instructions.md` is a separate file that applies only
-here, and is unaffected.
+This repository's own `.github/copilot-instructions.md` applies only here and is not part of the
+shared set.
 
 Setup details, authoring rules, and what each repository keeps locally are in
 [`copilot-instructions.md`](.github/copilot-instructions.md).

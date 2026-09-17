@@ -65,5 +65,7 @@ Repositories follow a consistent layout, regardless of language:
 ## Maintaining Conventions
 
 - When detecting a new convention or pattern, add it to the appropriate scoped `*.instructions.md` file — or to this file when the rule is cross-cutting — and apply it retroactively where applicable.
+- **Default to the central instruction files.** When asked to add or change a convention, assume it belongs in the shared set rather than in the current repository's `copilot-instructions.md`. Only keep a rule local when it genuinely cannot apply elsewhere — it names a specific file, service, domain term or deliberate deviation from a central rule. If it is not clear-cut, say which file you intend to change and why before editing.
+- **Stop if the shared instructions are not loaded.** A repository's `copilot-instructions.md` points at a central repository for the shared rules. If those files are not visible — no `*.instructions.md` beyond the repository's own, nothing under `~/.copilot/instructions`, and the central repository not open in the workspace — do not guess the conventions and do not proceed with a change that depends on them. Tell the user the shared instructions are missing and how to load them: clone the central repository and either add it to the workspace, or link its folders into the user profile.
 - Keep a rule in exactly one place. Prefer amending an existing rule over adding a near-duplicate.
 - Keep language-, tool- and framework-specific rules out of this file; they belong in their own scoped instruction file.
