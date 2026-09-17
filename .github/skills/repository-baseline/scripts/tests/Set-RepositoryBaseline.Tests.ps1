@@ -98,6 +98,11 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
             Validation = 'build'
         }
         @{
+            Repository = 'f2calv/dotnet-nuget-test'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'build'
+        }
+        @{
             Repository = 'f2calv/gha-workflows'
             Versioning = 'versioning / gha-release-versioning'
             Validation = 'validate'
