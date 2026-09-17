@@ -1,5 +1,5 @@
 ---
-description: 'README consistency, structure, Mermaid diagram and Markdown linting conventions for documentation.'
+description: 'README consistency, structure and Markdown linting conventions for documentation.'
 applyTo: '**/*.md'
 ---
 
@@ -31,6 +31,33 @@ Apply to every file named `README.md`, wherever it lives — repository root, pr
 - **Unique headings within a file** so generated anchors resolve predictably.
 - **No YAML front matter**: front matter belongs only to Copilot customisation files (`*.instructions.md`, `*.prompt.md`, `*.agent.md`) and to GitHub issue and pull request templates, which require it. Never add a `title:`, `description:` or `author:` block to a `README.md` or to any other documentation Markdown; GitHub renders it as a table above the content rather than as a heading, leaving the page with no `<h1>`. The `# H1` and the summary sentence beneath it already carry the title and the description.
 
+### Root README Content
+
+Organize a repository's primary `README.md` around the reader journey rather than forcing every
+repository type into one identical outline:
+
+1. Name the project and summarize what it does, why it is useful and who it serves.
+2. Put installation or a quick start before architecture and implementation detail.
+3. Document normal usage, then configuration and public interfaces where they exist.
+4. Explain how to build, test and validate changes when contributors can work on the project.
+5. Point readers to support, contribution, security and license information. Link to dedicated or
+  inherited community-health files instead of duplicating them in the README.
+
+Use headings appropriate to the delivery type:
+
+| Delivery type | Expected primary sections |
+| --- | --- |
+| Application or CLI | Quick Start, Installation, Usage, Configuration, Development |
+| Library or package collection | Installation or Quick Start, Packages or API, Configuration, Build and Test |
+| GitHub Action | Usage, Inputs, Outputs when present, Testing or Development |
+| Reusable workflows | Usage, Workflows, Deployment Flow, Development |
+| Terraform module | Dependency Graph, Usage, generated Requirements/Providers/Resources/Inputs/Outputs, Development |
+| Helm chart repository | Overview, Chart Catalogue, Usage, Versioning, Development |
+| Container example | Quick Start or Run, Platform Support, Configuration, Build and Test |
+
+Treat these as content requirements, not mandatory spelling. Omit irrelevant sections, combine
+closely related material, and keep detailed tutorials or operational documentation under `docs/`.
+
 ## Generated Reference Documentation
 
 Where a tool generates interface documentation (inputs, outputs, providers, resources, API surface) into a `README.md`:
@@ -41,52 +68,6 @@ Where a tool generates interface documentation (inputs, outputs, providers, reso
 - Regenerate after any change to the public interface or to version constraints, and commit the regenerated output in the same change.
 - Keep the generator version pinned identically in the development container and in the pre-commit configuration.
 - Enforce drift in both pre-commit and CI: uncommitted generated output is a failed check, not a cosmetic difference.
-
-## Mermaid Diagrams
-
-Use Mermaid diagrams in `README.md` files to visualise complex relationships and flows. Choose the diagram type that matches the relationship, not the technology.
-
-### Diagram Type Selection
-
-- **`flowchart`**: sequential processes — data flow, event flow, orchestration, build and deployment pipelines.
-  - Direction: `TD` for vertical flows, `LR` for wide pipelines.
-- **`graph`**: non-sequential relationships — dependencies, references, hierarchies.
-  - Direction: `TD` for dependency trees, `LR` for peer relationships.
-- **`classDiagram`**: type hierarchies — inheritance (`<|--`), composition (`*--`), aggregation (`o--`), association (`-->`), dependency (`..>`).
-- **`sequenceDiagram`**: time-ordered interactions between components — calls, asynchronous operations, timing.
-
-### Standard Headings
-
-Use these heading patterns before a diagram:
-
-| Heading | Use For |
-| --- | --- |
-| `## Data Flow` | How data moves through the system |
-| `## Event Flow` | Event-driven processing: publish/subscribe, channels, streams |
-| `## Service Architecture` | How runtime components interact |
-| `## Dependency Graph` | Package, module and project dependencies and references |
-| `## Application Hierarchy` | Nested application or component structures |
-| `## Class Hierarchy` | Type structures and inheritance trees |
-| `## Deployment Flow` | Build, release and deployment pipelines, and their call chains |
-| `## Configuration Hierarchy` | Nested configuration objects |
-
-### Styling Guidelines
-
-- **Subgraphs**: group related components, stages or layers.
-- **Custom styling**: define `classDef` to distinguish categories that matter to the reader, such as components this repository owns versus external ones it only consumes.
-- **Node shapes**:
-  - `[ ]` rectangle (default) — components, jobs, steps
-  - `([ ])` stadium — entry and exit points, reusable or top-level units
-  - `[( )]` cylinder — databases, storage, state backends
-  - `{ }` diamond — decision points
-  - `(( ))` circle — events
-
-### Synchronisation
-
-- Diagrams must stay in sync with the code, configuration or pipeline they describe.
-- When renaming a component, input or output, update the corresponding diagram nodes in the same change.
-- When adding or removing a dependency, update the dependency graph in the same change.
-- Review every `README.md` diagram before opening a pull request.
 
 ## Markdown Linting
 
