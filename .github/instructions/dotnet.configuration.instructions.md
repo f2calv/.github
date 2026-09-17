@@ -1,6 +1,6 @@
 ---
-description: 'Application configuration layering, options synchronisation and secret-safety conventions.'
-applyTo: '**/appsettings*.json'
+description: 'Application configuration layering, options synchronisation, command-line precedence and secret-safety conventions.'
+applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 ---
 
 # Configuration

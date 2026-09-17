@@ -1,11 +1,12 @@
 ---
 description: 'Helm chart authoring conventions for metadata, schemas, dependencies, dashboards, and validation.'
-applyTo: 'charts/**'
+applyTo: 'charts/**,**/*-helm/**'
 ---
 
 # Helm Chart Authoring
 
-Apply these conventions to custom charts and umbrella charts under `charts/`.
+Apply these conventions to custom charts and umbrella charts under `charts/` or a clearly named
+`*-helm/` directory.
 Keep chart behaviour explicit, reusable where appropriate, and aligned with the
 published dependency contract.
 

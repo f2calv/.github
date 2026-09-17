@@ -1,5 +1,5 @@
 ---
-description: 'README consistency, structure and Markdown linting conventions for documentation.'
+description: 'README structure and consistency, generated reference documentation and Markdown linting conventions.'
 applyTo: '**/*.md'
 ---
 

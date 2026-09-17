@@ -1,6 +1,6 @@
 ---
-description: 'Go coding conventions - style, package layout, error handling, logging, configuration and concurrency.'
-applyTo: '**/*.go'
+description: 'Go coding conventions for style, package layout, errors, logging, configuration, concurrency, testing, documentation, performance and dependencies.'
+applyTo: '**/*.go,**/go.mod,**/go.sum'
 ---
 
 # Go

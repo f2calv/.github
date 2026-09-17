@@ -1,6 +1,6 @@
 ---
-description: 'Rust coding conventions - style, module layout, error handling, logging, configuration and performance.'
-applyTo: '**/*.rs'
+description: 'Rust coding conventions for style, module layout, errors, logging, configuration, async, testing, documentation, performance and dependencies.'
+applyTo: '**/*.rs,**/Cargo.toml,**/Cargo.lock'
 ---
 
 # Rust

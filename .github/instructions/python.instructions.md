@@ -1,6 +1,6 @@
 ---
-description: 'Python coding conventions - style, module layout, typing, error handling, logging, configuration and packaging.'
-applyTo: '**/*.py'
+description: 'Python coding conventions for style, typing, errors, logging, configuration, concurrency, testing, documentation, performance, dependencies and packaging.'
+applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version'
 ---
 
 # Python

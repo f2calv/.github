@@ -1,5 +1,5 @@
 ---
-description: 'Cross-cutting Copilot workflow conventions: test execution, commit messages, git history, confidentiality, repository layout.'
+description: 'Cross-cutting Copilot execution, commit, credential, confidentiality, repository structure and forward-only maintenance conventions.'
 applyTo: '**'
 ---
 

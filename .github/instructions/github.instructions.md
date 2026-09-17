@@ -1,5 +1,5 @@
 ---
-description: 'Repository-wide forward-only maintenance, branch, pull request and continuous integration conventions.'
+description: 'Repository-wide GitHub conventions for branches, issues, pull requests, continuous integration, dependency automation and releases.'
 applyTo: '**'
 ---
 

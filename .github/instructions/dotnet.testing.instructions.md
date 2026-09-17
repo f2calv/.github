@@ -1,6 +1,6 @@
 ---
-description: 'xUnit test project structure, credentials, naming, theories, duplication and assertion conventions.'
-applyTo: '**/*Tests/**/*.cs'
+description: 'xUnit test structure, integration credentials, naming, theories, assertions, regression coverage and test-project documentation.'
+applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md'
 ---
 
 # C# Testing
