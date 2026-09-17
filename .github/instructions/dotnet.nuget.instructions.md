@@ -43,6 +43,10 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 ## Dependency Updates
 
 - Update package versions through the structured MSBuild XML, not broad text replacement.
+- Assess every active centrally managed package during a full dependency update, including
+  development and test dependencies. Ignore commented-out package declarations.
+- Prefer the newest stable compatible version. Do not adopt a prerelease unless the repository
+  already uses that prerelease line or the user explicitly approves it.
 - Update every consumed package from the same producer to the verified release version in one change.
 - Commit generated lock-file changes when the repository uses locked restore. Never hand-edit a lock
   file.
@@ -51,6 +55,21 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
   changed.
 - Treat security advisories as release inputs. Record unresolved transitive advisories through the
   warning policy described in the general .NET instructions rather than suppressing them.
+
+## Package Holds
+
+- Document a deliberate exact hold or major-version ceiling in the consuming repository's
+  `.github/copilot-instructions.md`. Name the package or family, exact version or permitted major
+  line, compatibility reason, and condition that permits reassessment.
+- Preserve an exact hold during automated dependency updates. A major-version ceiling may advance to
+  the newest stable compatible version within that major line. Report the newest observed version
+  and constraint reason rather than silently skipping the package.
+- Keep target-framework-specific versions as separate conditioned `PackageVersion` items. Never
+  remove or broaden a condition merely to align version numbers.
+- Reassess holds during each full dependency update, but change one only through a dedicated,
+  explicitly approved compatibility migration with the affected target frameworks validated.
+- An undocumented incompatibility blocks the release train until its cause is understood and either
+  fixed or recorded as a repository-specific hold.
 
 ## Publication
 

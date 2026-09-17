@@ -1,7 +1,7 @@
 ---
 name: dotnet-release-train
-description: 'Plan, prepare, execute, pause, resume, and verify releases across dependent .NET and public NuGet repositories. Use when coordinating package dependency updates, Patch Tuesday upgrades, chained pull requests, GitHub releases, NuGet publication, or downstream application updates.'
-argument-hint: '[mode={plan|prepare|run|resume|status|stop}] [roots=...]'
+description: 'Plan, prepare, execute, pause, resume, and verify releases and dependency upgrades across dependent .NET and public NuGet repositories. Use when coordinating Patch Tuesday updates, package holds, chained pull requests, GitHub releases, NuGet publication, or downstream application updates.'
+argument-hint: '[mode={plan|prepare|run|resume|status|stop}] [roots=...] [packages={all|internal}]'
 user-invocable: true
 ---
 
@@ -11,6 +11,10 @@ Coordinate a dependency-ordered release train across .NET repositories in the cu
 workspace. The workflow discovers package relationships, validates local source and published-package
 builds, manages pull requests, waits for GitHub and NuGet publication, and persists enough state to
 resume after hours or days.
+
+By default, each selected repository also assesses every active centrally managed NuGet dependency
+for a stable update. Exact holds remain unchanged; major-line constraints may advance to the newest
+compatible version within the permitted line. Both appear in the plan with their reason.
 
 This skill orchestrates existing repository workflows. It does not replace CI, calculate versions,
 publish packages directly, or deploy applications outside their established workflows.
@@ -48,6 +52,7 @@ or rerun CI from an earlier train.
 | --- | --- |
 | `mode` | `plan`, `prepare`, `run`, `resume`, `status`, or `stop` |
 | `roots` | Optional workspace repository names or absolute paths to use as graph roots |
+| `packages` | `all` (default) assesses every package; `internal` limits changes to train-produced packages |
 
 The dependency graph determines downstream scope. Ask before adding a repository that is not already
 open in the workspace or explicitly supplied through `roots`.
@@ -91,9 +96,10 @@ Store each run below the local workspace tracking folder:
 Validate state against
 [release-train-state.schema.json](./assets/release-train-state.schema.json). Update it atomically after
 every state transition. Record timestamps in UTC and append events rather than rewriting history.
-Canonicalize the repository keys, immutable HEADs, dependency edges, planned package edits, validation
-commands, and remote operations as JSON and store its SHA-256 as `planFingerprint`. Recompute it before
-each remote mutation. A mismatch expires run authorization and requires a revised plan.
+Canonicalize the repository keys, immutable HEADs, dependency edges, package assessments (including
+holds), planned package edits, validation commands, and remote operations as JSON and store its
+SHA-256 as `planFingerprint`. Recompute it before each remote mutation. A mismatch expires run
+authorization and requires a revised plan.
 
 Repository stages progress through:
 
@@ -123,6 +129,46 @@ upstream package version has recorded NuGet availability evidence.
    scope.
 7. Topologically sort the graph into dependency layers. Fail on a cycle and show the exact edges.
 8. Present unrecognized package producers and consumers for review. Never silently omit an edge.
+
+## Package Assessment
+
+For `packages=all`, assess every active `PackageVersion` in `Directory.Packages.props`, including
+development and test dependencies. Ignore commented-out items. Preserve MSBuild conditions and treat
+the same package under different target-framework conditions as separate assessments.
+
+1. Read repository-specific Copilot instructions before querying updates. A documented hold is the
+   authority for that repository.
+2. Use `dotnet package list --outdated --format json` when the installed SDK supports it; otherwise
+   use the equivalent `dotnet list package --outdated --format json`. Use structured JSON output.
+3. Consider stable versions only unless the current version is already a prerelease or the
+   repository explicitly authorizes prerelease updates.
+4. Enumerate every project in the selected Debug and Release solutions, every evaluated target
+   framework, and both configurations. Run the structured outdated query per project, framework, and
+   configuration, then reconcile the results with every active central `PackageVersion`. Fail the
+   plan if any active declaration has no assessment evidence.
+5. Record every active package as `update`, `current`, or `held`, with policy `unrestricted`,
+   `major-ceiling`, or `exact-hold`. A constrained package records its current version, newest
+   observed version, reason, source instruction, target-framework condition, permitted major or
+   exact version, and the project/framework/configuration evidence that consumed it.
+6. For a `major-ceiling`, query the package's full public NuGet version index and select the highest
+   stable version whose parsed semantic major equals `permittedMajor`. Use a NuGet-compatible
+   semantic version parser; never sort version strings lexically. Record both the global newest
+   stable version and the newest permitted version.
+7. A `major-ceiling` may advance within its permitted major line. An `exact-hold` never changes in a
+   routine sweep. Never cross a ceiling, remove a target-framework condition, or replace an exact
+   hold merely because restore succeeds.
+8. Group related package families for review, including `Microsoft.Extensions.*`, EF Core,
+   OpenTelemetry, Serilog integration packages, gRPC, and packages produced together by one internal
+   repository. Preserve existing alignment where the packages share a release line, but do not force
+   independently versioned packages to one number. Present newly introduced family divergence for
+   review.
+9. Include all proposed external and internal package updates and their complete assessment evidence
+   in the plan fingerprint and pull
+   request classification.
+
+An undocumented package that cannot upgrade is a planning failure. Diagnose the incompatibility,
+then add a concise repository-specific hold before continuing. Holds belong in the repository's
+`.github/copilot-instructions.md`, not in this public reusable skill.
 
 The checkpoint owns the discovered graph for that train. On resume, rediscover and compare it; require
 a new plan approval when repositories, package IDs, or edges changed.
@@ -154,9 +200,11 @@ head SHA before asking whether to merge a mixed pull request.
    unexplained dirty worktree. When no feature branch exists, propose a compliant branch name and
    require it in the authorized plan before creating it from a freshly fetched default branch.
 4. Discover the dependency graph and show the ordered layers.
-5. For each repository, show the exact package edits and Debug/Release build and test commands.
-6. Classify every existing branch or pull request as dependency-only or mixed.
-7. Calculate and persist the canonical plan fingerprint.
+5. Assess all active centrally managed packages according to `packages`, including explicit holds.
+6. For each repository, show exact internal and external package edits, held packages, and
+   Debug/Release build and test commands.
+7. Classify every existing branch or pull request as dependency-only or mixed.
+8. Calculate and persist the canonical plan fingerprint.
 
 ### 2. Authorize
 
@@ -178,18 +226,22 @@ disabled choices for auto-commit and auto-push. Do not write authorization to th
 
 1. Recheck HEAD, upstream, worktree, pull request, and issue state against the checkpoint.
 2. Review the entire branch diff, including changes unrelated to dependencies.
-3. Run the authorized repository validation. Prefer the Debug solution for source-level integration.
-4. Run repository lint and every authorized test command before pushing.
-5. For a public repository, run the central PII scanner before every commit and inspect the proposed
+3. Apply the authorized stable external-package updates and currently resolvable internal-package
+   updates through structured MSBuild XML. Preserve exact holds, major ceilings, and conditions;
+   constrained packages may advance only within their permitted line.
+4. Restore and validate the Release solution against the selected package versions, then validate
+   the Debug solution for source-level integration when available.
+5. Run repository lint and every authorized test command before pushing.
+6. For a public repository, run the central PII scanner before every commit and inspect the proposed
    commit message, issue, pull request, branch, and comments for private repository identities.
-6. Commit only uncommitted changes that belong to the approved train. Commit automatically only when
+7. Commit only uncommitted changes that belong to the approved train. Commit automatically only when
    auto-commit is enabled for the active session; otherwise pause for explicit commit approval. Keep
    existing commits intact.
-7. Push only when auto-push is enabled for the active session. Otherwise pause for explicit push
+8. Push only when auto-push is enabled for the active session. Otherwise pause for explicit push
    approval.
-8. Search open and closed issues before creating one. Select and verify the native issue type or
+9. Search open and closed issues before creating one. Select and verify the native issue type or
    canonical type label, apply accurate labels, and verify the created issue.
-9. Read the repository pull request template, create or update the pull request, link the issue,
+10. Read the repository pull request template, create or update the pull request, link the issue,
    apply accurate labels, assign the authenticated user, and verify base, head, labels, and assignee.
 
 In `prepare` mode, stop after local validation. Do not invent a downstream target version. Prepare a

@@ -150,8 +150,9 @@ npm run test:ps
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates
 dependency-ordered package releases across the .NET repositories open in the current workspace. It
-discovers local project and published package relationships, manages pull requests and CI, verifies
-NuGet availability, and stores resumable state below the local `.copilot-tracking/` workspace folder.
+discovers local project and published package relationships, assesses all centrally managed NuGet
+packages while preserving documented holds, manages pull requests and CI, verifies NuGet
+availability, and stores resumable state below the local `.copilot-tracking/` workspace folder.
 
 Start with a read-only plan, then run or resume the approved train:
 

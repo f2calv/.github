@@ -10,6 +10,7 @@
         "createdAtUtc",
         "updatedAtUtc",
         "planFingerprint",
+        "packageScope",
         "status",
         "layers",
         "repositories",
@@ -34,6 +35,12 @@
         "planFingerprint": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+        },
+        "packageScope": {
+            "enum": [
+                "all",
+                "internal"
+            ]
         },
         "status": {
             "enum": [
@@ -89,6 +96,7 @@
                 "classification",
                 "producedPackageIds",
                 "dependencies",
+                "packageAssessments",
                 "plannedChanges",
                 "validationCommands",
                 "packageAvailability"
@@ -172,6 +180,13 @@
                     "uniqueItems": true,
                     "items": {
                         "$ref": "#/$defs/dependency"
+                    }
+                },
+                "packageAssessments": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "$ref": "#/$defs/packageAssessment"
                     }
                 },
                 "plannedChanges": {
@@ -543,6 +558,244 @@
                         "string",
                         "null"
                     ]
+                }
+            }
+        },
+        "packageAssessment": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "packageId",
+                "currentVersion",
+                "newestObservedVersion",
+                "decision",
+                "policy",
+                "condition",
+                "assessmentEvidence"
+            ],
+            "properties": {
+                "packageId": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "currentVersion": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "newestObservedVersion": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "selectedVersion": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "decision": {
+                    "enum": [
+                        "update",
+                        "current",
+                        "held"
+                    ]
+                },
+                "policy": {
+                    "enum": [
+                        "unrestricted",
+                        "major-ceiling",
+                        "exact-hold"
+                    ]
+                },
+                "permittedMajor": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "minimum": 0
+                },
+                "permittedVersion": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "newestPermittedVersion": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "condition": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "holdReason": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "holdSource": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "assessmentEvidence": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                        "$ref": "#/$defs/packageAssessmentEvidence"
+                    }
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "decision": {
+                                "const": "update"
+                            }
+                        },
+                        "required": [
+                            "decision"
+                        ]
+                    },
+                    "then": {
+                        "required": [
+                            "selectedVersion"
+                        ],
+                        "properties": {
+                            "selectedVersion": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "policy": {
+                                "enum": [
+                                    "major-ceiling",
+                                    "exact-hold"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "policy"
+                        ]
+                    },
+                    "then": {
+                        "required": [
+                            "holdReason",
+                            "holdSource"
+                        ],
+                        "properties": {
+                            "holdReason": {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            "holdSource": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "policy": {
+                                "const": "major-ceiling"
+                            }
+                        },
+                        "required": [
+                            "policy"
+                        ]
+                    },
+                    "then": {
+                        "required": [
+                            "permittedMajor",
+                            "newestPermittedVersion"
+                        ],
+                        "properties": {
+                            "permittedMajor": {
+                                "type": "integer"
+                            },
+                            "newestPermittedVersion": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "policy": {
+                                "const": "exact-hold"
+                            }
+                        },
+                        "required": [
+                            "policy"
+                        ]
+                    },
+                    "then": {
+                        "required": [
+                            "permittedVersion"
+                        ],
+                        "properties": {
+                            "permittedVersion": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "packageAssessmentEvidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "projectPath",
+                "targetFramework",
+                "configuration",
+                "currentVersion",
+                "queryCommand",
+                "observedAtUtc"
+            ],
+            "properties": {
+                "projectPath": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "targetFramework": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "configuration": {
+                    "enum": [
+                        "Debug",
+                        "Release"
+                    ]
+                },
+                "currentVersion": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "queryCommand": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "observedAtUtc": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },

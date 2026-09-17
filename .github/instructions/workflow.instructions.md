@@ -31,6 +31,7 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
 - Never embed a token, an `Authorization` header, or a Base64 basic-auth string derived from one, in generated artefacts, a run summary, progress output or a log line.
 - Never write a real account, organisation, project, tenant or subscription name into a tracked example, a test fixture or generated output. Use documentation placeholders.
 - Where a tool wraps a third-party API, never log identifiers or content belonging to that service's users — account identifiers, phone numbers, message bodies, file names or media metadata. The same applies to test and CI output.
+- **Operator diagnostics are the one exception, and only in an application — never in a published library.** An operator running their own deployment sometimes must see the content their system acted on, such as a transcript, a parsed command or an extracted field, because a misinterpretation cannot be diagnosed from a hash or a character count. This is permitted only when it is off by default, enabled by explicit configuration, and delivered to a destination the operator controls. It must never reach a metric label, a trace attribute, an exported log sink, or any store that outlives the debugging session, and identifiers stay masked regardless. Where the content may belong to someone other than the operator, say so in the option's documentation.
 
 ## Public Repository Confidentiality
 
