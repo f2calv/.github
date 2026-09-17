@@ -6,7 +6,8 @@ Individual repositories no longer carry a `.github/instructions/` folder. They k
 
 ## Setup
 
-The canonical instruction files live in `instructions/`, and reusable skills live in `skills/`.
+The canonical instruction files live in `instructions/`, reusable skills in `skills/`, and shared
+slash-command prompts in `prompts/`.
 Link both folders into the VS Code user profile so they apply in **every** workspace, whether or not
 this repository is open:
 
@@ -18,6 +19,9 @@ New-Item -ItemType Junction `
 New-Item -ItemType Junction `
   -Path "$HOME\.copilot\skills" `
   -Target "$HOME\source\github\.github\skills"
+New-Item -ItemType Junction `
+  -Path "$HOME\.copilot\prompts" `
+  -Target "$HOME\source\github\.github\prompts"
 ```
 
 Confirm the link resolves and VS Code can see the files:
@@ -36,7 +40,7 @@ Notes:
 - User-profile instructions apply across all workspaces and take **priority over** repository instructions. A repository that needs to override a central rule must say so explicitly in its own `copilot-instructions.md`.
 - A junction points at the working tree, so a `git pull` here updates every workspace immediately. There is nothing to sync and no pull requests to raise.
 - Because the files are not copied into other repositories, an instructions change never triggers their continuous integration or bumps their version.
-- Skills live in `skills/`, linked to `~/.copilot/skills`, and are kept at the repository root for the same reason as `instructions/` — a folder under `.github/` would also be discovered as a workspace customisation whenever this repository is open, loading everything twice. Agents will follow the same pattern.
+- Skills live in `skills/`, linked to `~/.copilot/skills`, and prompts in `prompts/`, linked to `~/.copilot/prompts`. Both are kept at the repository root for the same reason as `instructions/` — a folder under `.github/` would also be discovered as a workspace customisation whenever this repository is open, loading everything twice. Agents will follow the same pattern.
 - Enable Settings Sync to carry user-level customizations to another device, or create the junction there too.
 
 ## Layout
@@ -45,6 +49,7 @@ Notes:
 | --- | --- |
 | `instructions/` | Canonical `*.instructions.md` files, linked into `~/.copilot/instructions` |
 | `skills/` | Reusable agent skills, linked into `~/.copilot/skills` |
+| `prompts/` | Shared slash-command prompts, linked into `~/.copilot/prompts` |
 | `.scripts/` | Repository management, baseline and privacy tooling |
 | `.github/` | This repository's own Copilot and GitHub configuration |
 

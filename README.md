@@ -5,9 +5,9 @@ tools for repositories owned by `f2calv`.
 
 ## Copilot customizations
 
-`instructions/` and `skills/` are the single source of truth for shared Copilot
-instructions and reusable skills. Link them into the VS Code user profile once and
-they apply in every workspace:
+`instructions/`, `skills/` and `prompts/` are the single source of truth for shared Copilot
+instructions, reusable skills and slash-command prompts. Link them into the VS Code user
+profile once and they apply in every workspace:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
@@ -17,15 +17,19 @@ New-Item -ItemType Junction `
 New-Item -ItemType Junction `
   -Path "$HOME\.copilot\skills" `
   -Target "$HOME\source\github\.github\skills"
+New-Item -ItemType Junction `
+  -Path "$HOME\.copilot\prompts" `
+  -Target "$HOME\source\github\.github\prompts"
 ```
 
-Verify both links resolve and the files are visible through them:
+Verify the links resolve and the files are visible through them:
 
 ```powershell
-Get-Item "$HOME\.copilot\instructions", "$HOME\.copilot\skills" |
+Get-Item "$HOME\.copilot\instructions", "$HOME\.copilot\skills", "$HOME\.copilot\prompts" |
   Select-Object Name, LinkType, Target
 Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
 Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
+Get-ChildItem "$HOME\.copilot\prompts" -Filter *.prompt.md | Measure-Object
 ```
 
 A junction points at the working tree, so a `git pull` here updates every workspace
@@ -34,11 +38,11 @@ triggers their continuous integration or bumps their version.
 
 ### Why these folders sit at the repository root
 
-`instructions/` and `skills/` are deliberately **not** under `.github/`.
+`instructions/`, `skills/` and `prompts/` are deliberately **not** under `.github/`.
 
 VS Code discovers customizations from two independent places: the user profile
 (`~/.copilot/…`, where the junctions point) and every folder open in the workspace
-(`<folder>/.github/instructions/` and `<folder>/.github/skills/`). Putting the canonical
+(`<folder>/.github/instructions/`, `<folder>/.github/skills/` and `<folder>/.github/prompts/`). Putting the canonical
 files under this repository's own `.github/` would satisfy both rules at once — so
 whenever this repository is open in a workspace, every instruction file and skill would be
 discovered twice, once as a user-level customization and once as a workspace one.
