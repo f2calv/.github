@@ -20,11 +20,11 @@
 .PARAMETER OutputPath
     Optional path for the complete JSON result.
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
 .NOTES
     Requires GitHub CLI authentication with repository administration access.
 #>

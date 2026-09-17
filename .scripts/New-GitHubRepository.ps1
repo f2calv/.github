@@ -145,7 +145,9 @@ if ($MyInvocation.InvocationName -ne '.') {
             throw 'VS Code CLI (code) is required for -AddToWorkspace.'
         }
 
-        $BaselineScript = Join-Path $PSScriptRoot 'Set-RepositoryBaseline.ps1'
+        $BaselineScript = Join-Path `
+            $PSScriptRoot `
+            '../skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1'
         if (-not (Test-Path -LiteralPath $BaselineScript -PathType Leaf)) {
             throw "Repository baseline script was not found: $BaselineScript"
         }

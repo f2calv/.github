@@ -5,16 +5,50 @@ tools for repositories owned by `f2calv`.
 
 ## Copilot customizations
 
-`instructions/` is the single source of truth for the shared Copilot instruction
-files used by every `f2calv` repository. Link it into the VS Code user profile
-once and the instructions apply in every workspace:
+`instructions/` and `skills/` are the single source of truth for shared Copilot
+instructions and reusable skills. Link them into the VS Code user profile once and
+they apply in every workspace:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
 New-Item -ItemType Junction `
   -Path "$HOME\.copilot\instructions" `
   -Target "$HOME\source\github\.github\instructions"
+New-Item -ItemType Junction `
+  -Path "$HOME\.copilot\skills" `
+  -Target "$HOME\source\github\.github\skills"
 ```
+
+Verify both links resolve and the files are visible through them:
+
+```powershell
+Get-Item "$HOME\.copilot\instructions", "$HOME\.copilot\skills" |
+  Select-Object Name, LinkType, Target
+Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
+Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
+```
+
+A junction points at the working tree, so a `git pull` here updates every workspace
+immediately. Nothing is copied into other repositories, so an instructions change never
+triggers their continuous integration or bumps their version.
+
+### Why these folders sit at the repository root
+
+`instructions/` and `skills/` are deliberately **not** under `.github/`.
+
+VS Code discovers customizations from two independent places: the user profile
+(`~/.copilot/…`, where the junctions point) and every folder open in the workspace
+(`<folder>/.github/instructions/` and `<folder>/.github/skills/`). Putting the canonical
+files under this repository's own `.github/` would satisfy both rules at once — so
+whenever this repository is open in a workspace, every instruction file and skill would be
+discovered twice, once as a user-level customization and once as a workspace one.
+
+That wastes context on duplicated rules and makes the diagnostics view hard to read. Keeping
+the canonical copies at the repository root means the junctions are the only discovery path,
+and the files load exactly once no matter which repositories are open.
+
+This repository's own `.github/copilot-instructions.md` is a separate file that applies only
+here, and is unaffected.
 
 Setup details, authoring rules, and what each repository keeps locally are in
 [`copilot-instructions.md`](.github/copilot-instructions.md).
@@ -40,25 +74,32 @@ validation checks; stale status checks on other repositories are removed.
 Audit one repository without changing it:
 
 ```powershell
-./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Audit
+./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+  -Repository f2calv/example `
+  -Mode Audit
 ```
 
 Apply the baseline to one repository:
 
 ```powershell
-./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
+./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+  -Repository f2calv/example `
+  -Mode Apply
 ```
 
 Audit or repair every active, owned, non-fork repository:
 
 ```powershell
-./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
-./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
-./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply
+./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
+./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
+./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply
 ```
 
 The full baseline is defined in
-[`repository-baseline.json`](.scripts/repository-baseline.json).
+[`repository-baseline.json`](skills/repository-baseline/scripts/repository-baseline.json).
+
+The complete audit, pilot, apply, verification, and recovery workflow is packaged
+as the [`repository-baseline` skill](skills/repository-baseline/SKILL.md).
 
 Run the PowerShell regression suite through npm:
 

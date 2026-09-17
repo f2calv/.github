@@ -6,20 +6,27 @@ Individual repositories no longer carry a `.github/instructions/` folder. They k
 
 ## Setup
 
-The canonical instruction files live in `instructions/`. Link that folder into the VS Code user profile so they apply in **every** workspace, whether or not this repository is open:
+The canonical instruction files live in `instructions/`, and reusable skills live in `skills/`.
+Link both folders into the VS Code user profile so they apply in **every** workspace, whether or not
+this repository is open:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
 New-Item -ItemType Junction `
   -Path "$HOME\.copilot\instructions" `
   -Target "$HOME\source\github\.github\instructions"
+New-Item -ItemType Junction `
+  -Path "$HOME\.copilot\skills" `
+  -Target "$HOME\source\github\.github\skills"
 ```
 
 Confirm the link resolves and VS Code can see the files:
 
 ```powershell
 Get-Item "$HOME\.copilot\instructions" | Select-Object LinkType, Target
+Get-Item "$HOME\.copilot\skills" | Select-Object LinkType, Target
 Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
+Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
 ```
 
 In VS Code, open the Chat view, select **Diagnostics** from the context menu, and check the files are listed as user-level instructions.
@@ -29,7 +36,7 @@ Notes:
 - User-profile instructions apply across all workspaces and take **priority over** repository instructions. A repository that needs to override a central rule must say so explicitly in its own `copilot-instructions.md`.
 - A junction points at the working tree, so a `git pull` here updates every workspace immediately. There is nothing to sync and no pull requests to raise.
 - Because the files are not copied into other repositories, an instructions change never triggers their continuous integration or bumps their version.
-- Skills and agents follow the same pattern once added: `skills/` to `~/.copilot/skills`, `agents/` to `~/.copilot/agents`.
+- Skills live in `skills/`, linked to `~/.copilot/skills`, and are kept at the repository root for the same reason as `instructions/` — a folder under `.github/` would also be discovered as a workspace customisation whenever this repository is open, loading everything twice. Agents will follow the same pattern.
 - Enable Settings Sync to carry user-level customizations to another device, or create the junction there too.
 
 ## Layout
@@ -37,7 +44,8 @@ Notes:
 | Path | Purpose |
 | --- | --- |
 | `instructions/` | Canonical `*.instructions.md` files, linked into `~/.copilot/instructions` |
-| `.scripts/` | Repository management and baseline tooling |
+| `skills/` | Reusable agent skills, linked into `~/.copilot/skills` |
+| `.scripts/` | Repository management, baseline and privacy tooling |
 | `.github/` | This repository's own Copilot and GitHub configuration |
 
 ## Authoring Rules

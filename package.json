@@ -2,6 +2,6 @@
   "name": "f2calv-github-profile",
   "private": true,
   "scripts": {
-    "test:ps": "pwsh -NoProfile -File ./.scripts/Invoke-Tests.ps1"
+    "test:ps": "pwsh -NoProfile -File ./skills/repository-baseline/scripts/Invoke-Tests.ps1"
   }
 }
