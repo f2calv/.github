@@ -104,4 +104,5 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Always set `fetch-depth: 0` on checkout when GitVersion is in use.
 - The default configuration file is `GitVersion.yml` in the repository root.
 - Prefer `semVer` for tags and releases; use `fullSemVer`, via the `version` output, for build versioning and pre-release identifiers.
+- Action and reusable-workflow repositories must validate before release that their README consumer examples reference the exact floating major tag computed by GitVersion, such as `owner/action@v2` or `owner/workflows/.github/workflows/build.yml@v1`; `@v2.1` must not satisfy an `@v2` check. Include that validation job in the release job's `needs`, and pass its validated `major.minor.patch` values to the release step rather than a `FullSemVer` value that may contain build metadata.
 - Action repositories are the one place the `v` prefix and the floating major alias apply. Consumers reference `owner/action@v1`, so the alias must move to each new release, and only after the immutable tag succeeds. See `github.instructions.md` for the rule and for what every other repository does instead.
