@@ -1,5 +1,5 @@
 ---
-description: '.NET solution and build structure — Directory.Build.props, central package management, solution format, SDK selection, target frameworks and analyzers.'
+description: '.NET solution and build structure — Directory.Build.props, solution format, SDK selection, target frameworks and analyzers.'
 applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.Build.targets,**/Directory.Packages.props,**/global.json'
 ---
 
@@ -7,7 +7,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 ## Central Build Configuration
 
-- Keep shared MSBuild properties in the root `Directory.Build.props` — root namespace, language version, `ImplicitUsings`, `Nullable`, `GenerateDocumentationFile`, warning policy, NuGet package metadata (authors, project URL, licence file, readme file, symbol packaging) and `ContinuousIntegrationBuild` for deterministic CI builds.
+- Keep shared MSBuild properties in the root `Directory.Build.props` — root namespace, language version, `ImplicitUsings`, `Nullable`, `GenerateDocumentationFile`, warning policy and `ContinuousIntegrationBuild` for deterministic CI builds.
 - Keep individual project files minimal — only project-specific properties and references belong there.
 - Centralise warning suppressions (`NoWarn`) in `Directory.Build.props`, with a comment naming each suppressed diagnostic and why it is suppressed. Never suppress a diagnostic inline in a project file without a comment.
 - Use conditional property groups for cross-cutting project categories rather than repeating settings per project — for example disabling `GenerateDocumentationFile` for test projects, and gating `IsPackable` so packaging is opt-in.
@@ -23,17 +23,6 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 - Configure analyzer severities in `.editorconfig`, which is the single source of truth for style and analyzer rules; enable `EnforceCodeStyleInBuild` so style rules are enforced by the compiler and not only by the IDE.
 - Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members.
 - Analyzer packages are declared once centrally and flow to every project; do not add them ad hoc per project.
-
-## Central Package Management
-
-- Define every NuGet package version in the root `Directory.Packages.props` and keep `ManagePackageVersionsCentrally` enabled.
-- Reference packages with versionless `<PackageReference Include="..." />` items in project files; the version resolves centrally.
-- Add a new package version to `Directory.Packages.props` in the same change that first references it.
-
-## Project and Package References
-
-- Reference a project inside the same repository with `ProjectReference`; reference anything published outside it with `PackageReference`.
-- Where a repository consumes libraries it also develops locally, use a conditional reference — `ProjectReference` in Debug for local iteration, `PackageReference` in Release for the published version — so Release always builds against the shipped package.
 
 ## Solution Format
 
