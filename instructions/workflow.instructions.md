@@ -31,6 +31,7 @@ applyTo: '**'
 - Describe required relationships generically (for example "private GitOps repository" or "internal service") and supply private coordinates only through secrets, repository variables or caller-provided values.
 - Never commit a real subscription, tenant, object or resource identifier, hostname, IP address, account name, phone number or credential. Use documentation placeholders such as `00000000-0000-0000-0000-000000000000` and `example.com`.
 - Before creating or updating public content, review the proposed text and metadata for private identifiers and implementation details.
+- Before committing to a public repository, scan it for leaked values with the central `Find-Pii.ps1`. A value seeded from gitignored local configuration is a real leak and blocks the commit; a pattern-only match is usually a mandated placeholder and needs judgement. The `repository-privacy` skill covers the full check.
 
 ## Repository Structure
 
