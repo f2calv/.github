@@ -159,15 +159,6 @@ Before considering a chart change complete:
    migrating templates, dashboards, or values, and account for every intended
    difference.
 
-## Consuming Charts in GitOps
-
-* Store a values file alongside the manifest that consumes it, suffixed `-values.yaml` and carrying
-  the chart version it targets, for example `<name>-values-1.2.3.yaml`. The version in the filename
-  must match the chart version being deployed.
-* When adding a deployment backed by an external chart that supports ingress, include the full
-  ingress configuration but leave it commented out in the initial commit. That gives a
-  ready-to-enable template without exposing the service before it has been verified.
-
 ## Custom Rules
 
 Add future workspace-wide Helm conventions here after they are implemented and
