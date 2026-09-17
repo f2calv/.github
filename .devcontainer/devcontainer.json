@@ -1,0 +1,30 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/base
+{
+    "name": "Copilot Customizations",
+    "image": "mcr.microsoft.com/devcontainers/base:trixie",
+    "features": {
+        "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
+        "ghcr.io/devcontainers/features/powershell:2": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/node:2": {
+            "version": "lts"
+        },
+        "ghcr.io/eitsupi/devcontainer-features/jq-likes:2": {
+            "jqVersion": "latest",
+            "yqVersion": "latest"
+        }
+    },
+    "postCreateCommand": "pwsh -NoProfile -File ./.devcontainer/Initialize-DevContainer.ps1",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.powershell",
+                "davidanson.vscode-markdownlint",
+                "redhat.vscode-yaml",
+                "github.vscode-github-actions",
+                "usernamehw.errorlens"
+            ]
+        }
+    }
+}
