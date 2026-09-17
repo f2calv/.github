@@ -12,6 +12,16 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Set `fetch-depth: 0` on `actions/checkout` whenever GitVersion is used, so it can read the full commit history. Use `fetch-depth: 1` only for lint-only workflows where history is unnecessary.
 - Declare an explicit `permissions` block on every job and grant the minimum required, such as `contents: read`.
 
+## Continuous Integration
+
+- Every repository has `.github/workflows/ci.yml` with, at minimum, a `lint` job and a release-tagging job.
+- Run `lint` on pull requests and default-branch pushes. Do not use a branch or event condition that skips lint on either path.
+- Start `lint`, version calculation and independent build or validation jobs in parallel. Add `needs` only where a job consumes another job's outputs or must wait for it.
+- Make the release-tagging job the final fan-in. Its `needs` must include `lint` and every build, test, validation, packaging or publication job required for a releasable commit.
+- Restrict release tagging to the default branch. Pull requests may calculate a version but never create a tag or release.
+- Do not ignore workflow, dependency automation or lint-configuration paths on `push`; those changes must pass lint before release tagging.
+- Keep repository-specific jobs when they validate or publish that repository's deliverables. The shared minimum supplements those jobs rather than replacing them.
+
 ## Step Naming
 
 - One-liners: when a step's `run` block is a single command, use that command, or a slightly abbreviated form of it, as the step `name` rather than a prose label — `name: npm install --global json5`, not `name: setup json5`.
