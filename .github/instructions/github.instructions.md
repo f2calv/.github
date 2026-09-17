@@ -18,7 +18,8 @@ belongs in `workflow.instructions.md`.
 
 - Search existing open and closed issues before creating a new one.
 - Inspect the repository's supported issue types and assign the closest native type when types are enabled: `Bug` for unexpected behavior, `Feature` for a request or new capability, and `Task` for bounded investigation or implementation work.
-- Inspect available labels and apply every label that accurately describes the issue. Issue types and labels are separate metadata; setting one does not replace the other.
+- When native issue types are unavailable, apply the closest canonical type label: `bug`, `enhancement` for a feature, or `task`. Create a missing canonical label only when repository label administration is in scope.
+- Inspect available labels and apply every other label that accurately describes the issue. Native issue types and labels are separate metadata; setting one does not replace the other.
 - Verify the issue title, body, type and labels after creation.
 
 ## Pull Requests
