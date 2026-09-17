@@ -1,0 +1,45 @@
+name: Support request
+description: Ask for help using the project
+title: "[Support]: "
+body:
+  - type: markdown
+    attributes:
+      value: Search the documentation and existing issues before asking for help.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Describe the goal, current behavior and where you are blocked.
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What have you tried?
+      description: Include relevant commands, configuration and troubleshooting already completed.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Provide the release, package, image, chart or commit version when relevant.
+      placeholder: 1.2.3
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include relevant operating system, runtime, architecture and tool versions.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched the documentation and existing issues first.
+          required: true
+        - label: I removed credentials, personal data and private-system details.
+          required: true

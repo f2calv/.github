@@ -16,6 +16,10 @@ belongs in `workflow.instructions.md`.
 
 ## Pull Requests
 
+- Keep generic issue forms and the pull request template in the public account-level `.github` repository so repositories inherit one contribution workflow.
+- Prefer YAML issue forms for structured bug, feature and support reports. Pull request templates remain Markdown because GitHub does not support YAML pull request forms.
+- A repository-local `ISSUE_TEMPLATE` configuration suppresses inherited issue templates. Keep local templates only when repository-specific fields are necessary; do not copy generic central templates into repositories.
+- Every manually opened pull request must link its corresponding issue. Do not create a pull request before an issue exists and the intended scope has been discussed.
 - Inspect the repository's available labels when creating a pull request and apply every label that accurately describes the change.
 - Assign a new pull request to the currently authenticated GitHub user. Resolve the login dynamically from the GitHub client or API; never hardcode a username in instructions or automation.
 - Verify the pull request's base branch, head branch, labels and assignee after creation.
