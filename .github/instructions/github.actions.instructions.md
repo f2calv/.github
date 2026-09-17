@@ -56,7 +56,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Do not quote strings unless YAML requires it — values containing special characters, reserved words such as `true`, `false` or `null`, or strings that could be misinterpreted as another type.
 - For `workflow_dispatch` string inputs that represent booleans, use quoted defaults such as `default: 'true'`.
 - Use `|` for multi-line `run` scripts and `>` for flowing multi-line description text.
-- One blank line between major YAML sections (`on:`, `env:`, `jobs:`). No blank lines within input or output lists.
+- Separate every top-level workflow section with exactly one blank line, including `on:`, `concurrency:`, `permissions:`, `env:` and `jobs:`. This leaves one blank line above and below a top-level `permissions:` block. Do not add blank lines within input or output lists.
 
 ## Reusability
 
