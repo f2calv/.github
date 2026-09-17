@@ -15,6 +15,8 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 ## Continuous Integration
 
 - Every repository has `.github/workflows/ci.yml` with, at minimum, a `lint` job and a release-tagging job.
+- Trigger automatic CI for pushes to the default branch and pull requests targeting the default branch. Do not run the same CI workflow on feature-branch pushes as well as pull requests, because that creates duplicate runs for one commit.
+- Keep CI trigger filters sparse. Do not use `paths` or `paths-ignore`; lint, workflow, dependency, documentation and packaging changes must all exercise CI. Omit the default `pull_request` activity types (`opened`, `synchronize`, `reopened`).
 - Run `lint` on pull requests and default-branch pushes. Do not use a branch or event condition that skips lint on either path.
 - Start `lint`, version calculation and independent build or validation jobs in parallel. Add `needs` only where a job consumes another job's outputs or must wait for it.
 - Make the release-tagging job the final fan-in. Its `needs` must include `lint` and every build, test, validation, packaging or publication job required for a releasable commit.
