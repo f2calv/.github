@@ -31,6 +31,12 @@ The baseline enforces these settings where the GitHub plan supports them:
 * Protect the default branch from deletion and force pushes
 * Require changes through pull requests with resolved review threads
 
+The default branch is managed by one canonical `f2calv repository baseline`
+ruleset. Apply mode migrates equivalent historical rulesets and classic branch
+protection only after the canonical ruleset has been verified. Terraform module
+repositories additionally require the standard lint, versioning, and Terraform
+validation checks; stale status checks on other repositories are removed.
+
 Audit one repository without changing it:
 
 ```powershell
@@ -53,6 +59,13 @@ Audit or repair every active, owned, non-fork repository:
 
 The full baseline is defined in
 [`repository-baseline.json`](.scripts/repository-baseline.json).
+
+Run the PowerShell regression suite through npm:
+
+```powershell
+Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1
+npm run test:ps
+```
 
 ## Create a repository
 
