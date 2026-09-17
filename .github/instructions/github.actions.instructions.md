@@ -21,6 +21,15 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Restrict release tagging to the default branch. Pull requests may calculate a version but never create a tag or release.
 - Do not ignore workflow, dependency automation or lint-configuration paths on `push`; those changes must pass lint before release tagging.
 - Keep repository-specific jobs when they validate or publish that repository's deliverables. The shared minimum supplements those jobs rather than replacing them.
+- Cancel superseded `ci.yml` runs for the same pull request or ref. Include `github.workflow` so one workflow cannot cancel another:
+
+  ```yaml
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+  ```
+
+- Do not apply cancellation blindly to deployments, migrations, maintenance operations or workflows with non-idempotent side effects. Use a separate queue or environment concurrency policy where interrupting an in-progress run is unsafe.
 
 ## Step Naming
 
