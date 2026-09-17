@@ -5,6 +5,11 @@ applyTo: '**'
 
 # Workflow
 
+How the agent works in any repository — execution, commits, git history, credential handling,
+confidentiality, repository layout and code lifecycle. Conventions for running a repository *on
+GitHub* — branches, pull requests, status checks, dependency automation and releases — belong in
+`github.instructions.md`.
+
 ## Copilot Workflow
 
 - **Test execution**: Never run tests automatically. They may be integration tests requiring credentials, external services or other setup. Always prompt (ideally with a visual yes/no button) before running any tests.
@@ -50,6 +55,12 @@ Repositories follow a consistent layout, regardless of language:
   *.{cmd,[cC][mM][dD]} text eol=crlf
   *.{bat,[bB][aA][tT]} text eol=crlf
   ```
+
+## Forward-Only Maintenance
+
+- Maintain only current supported behaviour. Remove deprecated, retired, legacy and no-op code instead of preserving compatibility aliases or shims.
+- Prefer a clean versioned release over compatibility code. Consumers remain on an older immutable tag until they are ready to migrate.
+- Remove commented-out implementations and speculative placeholders. Git retains history.
 
 ## Maintaining Conventions
 

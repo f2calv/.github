@@ -141,7 +141,7 @@ Applies when the repository publishes a module for other root modules to consume
 - Before adding a `+semver:` directive, inspect every commit between the merge base with `origin/main` and `HEAD`. A branch must contain at most one directive, placed in the commit that introduces the versioned behaviour.
 - Use `+semver:feature` for breaking changes, including removed or renamed inputs, outputs and resource addresses. A compatible change needs no directive.
 - After the branch is complete, run GitVersion with the repository's `GitVersion.yml` and verify the final numeric major, minor and patch result.
-- Publish releases only as immutable plain `X.Y.Z` tags where the repository's tag convention omits the `v` prefix, and set the release-versioning workflow inputs accordingly. Do not use moving aliases or pre-release suffixes for main-branch releases.
+- Publish releases as plain `X.Y.Z` tags with no prefix and no moving aliases, per `github.instructions.md`, and set the release-versioning workflow inputs accordingly.
 - Pin the module source example in `README.md` to the expected final immutable tag, excluding feature-branch pre-release labels, and update it in the same change. Treat a mismatch between the README source ref and the expected release tag as a CI failure.
 
 ### Breaking Changes
