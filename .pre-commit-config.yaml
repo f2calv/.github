@@ -10,6 +10,12 @@
 # `pre-commit install` therefore installs a cheaper once-per-push hook instead.
 default_install_hook_types: [pre-push]
 
+exclude: |
+  (?x)^(
+    \.editorconfig|
+    \.devcontainer/devcontainer\.json
+  )$
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
