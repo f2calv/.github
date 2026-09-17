@@ -9,6 +9,36 @@ These rules apply to Kubernetes manifests in a repository whose cluster state is
 by a GitOps controller such as Argo CD or Flux. Ignore them in a repository that does not deploy
 through GitOps.
 
+## Repository Layout
+
+Lay the manifests out so that every namespace is reached the same way — an Application file that
+owns the namespace, beside a folder holding that namespace's components:
+
+```text
+src/
+├── project.yaml                          # Project definition
+├── bootstrap/                            # Platform and infrastructure, reconciled first
+│   ├── app-of-apps.yaml                  # Root Application for this layer
+│   ├── <namespace>.yaml                  # Application owning the folder below
+│   ├── <namespace>/
+│   │   ├── <component>.yaml              # One Application per component
+│   │   ├── <component>-values-<x.y.z>.yml  # Chart values, version in the filename
+│   │   └── _secrets.yaml                 # Shared resources, underscore-prefixed
+│   └── archive/                          # Retired manifests, kept for reference
+└── workloads/                            # Applications that depend on the platform
+    ├── app-of-apps.yaml                  # Root Application for this layer
+    ├── <workload>.yaml
+    ├── _configmap.yaml
+    ├── configmaps/                       # Per-environment configuration
+    └── secrets/
+```
+
+- The `<namespace>.yaml` and `<namespace>/` pair is the important part. The file is an Application
+  whose source path is the folder, so adding a component means dropping one file into the folder
+  rather than editing a parent manifest.
+- Keep a retired manifest in an `archive/` folder rather than deleting it, so the reasoning behind a
+  past decision stays available. Ensure the controller does not scan it.
+
 ## Core Principles
 
 - Git is the single source of truth. The cluster must reflect the state in Git at all times.
