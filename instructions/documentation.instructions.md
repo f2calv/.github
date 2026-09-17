@@ -5,6 +5,8 @@ applyTo: '**/*.md'
 
 # Documentation
 
+Where these rules refer to a *project*, read it as the repository's primary unit of delivery — a project, library, module, chart, reusable workflow, action or deployment layer, whichever that repository publishes.
+
 ## README Consistency
 
 - **Every project has a `README.md`**: when adding a new project, module, package, chart or sample, create its `README.md` in the same commit. Follow the established pattern: Purpose → Public surface → Configuration → Dependencies.

@@ -15,6 +15,14 @@ applyTo: '**'
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
 - **Read before writing**: Consult existing repository notes and conventions for a subsystem before changing it, not after.
+- **Never auto-install git hooks**: Do not wire `pre-commit install` into a dev container's post-create step, a setup script or setup documentation. The per-commit cost is fixed interpreter startup per hook, not proportional to the number of files changed. Suggest `pre-commit install --hook-type pre-push` as an opt-in where gating is wanted, never as a default.
+
+## Credential Handling
+
+- A credential supplied by the caller — a token, key, password or connection string — is borrowed, never owned. Never persist one to a file the tool controls, and never write one into generated output.
+- Never embed a token, an `Authorization` header, or a Base64 basic-auth string derived from one, in generated artefacts, a run summary, progress output or a log line.
+- Never write a real account, organisation, project, tenant or subscription name into a tracked example, a test fixture or generated output. Use documentation placeholders.
+- Where a tool wraps a third-party API, never log identifiers or content belonging to that service's users — account identifiers, phone numbers, message bodies, file names or media metadata. The same applies to test and CI output.
 
 ## Public Repository Confidentiality
 

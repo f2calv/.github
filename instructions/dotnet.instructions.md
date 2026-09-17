@@ -16,6 +16,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 - Enable nullable reference types and implicit usings repository-wide; do not disable either per project without a recorded reason.
 - Treat warnings as errors. Where a specific diagnostic must be allowed through, list it in `WarningsNotAsErrors` (so it still surfaces) rather than in `NoWarn`.
+- A security advisory raised by a transitive dependency that has no direct reference to remove and no fixed upstream release belongs in `WarningsNotAsErrors`, never in `NoWarn` — suppressing it hides a real vulnerability. Record the advisory identifier and why it cannot yet be resolved, and re-check on every dependency bump.
 
 ## Analyzers
 
