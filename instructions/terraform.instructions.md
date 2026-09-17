@@ -12,6 +12,12 @@ Two role-specific sections follow the universal rules. Apply exactly one of them
 - **Reusable child module repository** — publishes a module consumed by someone else's root module. It declares no backend, no provider configuration and no state of its own.
 - **Root module repository** — the configuration actually applied against a cloud subscription. It owns the backend, the provider configuration and the state.
 
+## Running Terraform
+
+- `terraform fmt`, `terraform validate` and a backend-free `terraform init` are safe to run unprompted; none of them authenticate or touch state.
+- Always ask before any command that authenticates to the cloud provider, reads remote state or mutates infrastructure — `plan`, `apply`, `destroy`, `import` and `state` subcommands included.
+- Where the host has no linters installed, run `tflint` and `trivy` from their official containers, and `markdownlint` through `npx`, rather than installing them.
+
 ## Formatting
 
 - Run `terraform fmt -recursive` before every commit. All `.tf`, `.tfvars` and `.hcl` files must pass with no changes.
