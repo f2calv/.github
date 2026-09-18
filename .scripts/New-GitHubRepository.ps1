@@ -201,15 +201,15 @@ function Invoke-NewGitHubRepository {
         [switch]$Resume
     )
 
-        if (-not (Test-NativeCommandAvailable -Name 'gh')) {
+    if (-not (Test-NativeCommandAvailable -Name 'gh')) {
         throw 'GitHub CLI (gh) is required.'
     }
 
-        if (-not (Test-NativeCommandAvailable -Name 'pwsh')) {
+    if (-not (Test-NativeCommandAvailable -Name 'pwsh')) {
         throw 'PowerShell 7 (pwsh) is required.'
     }
 
-        if (-not $NoClone -and -not (Test-NativeCommandAvailable -Name 'git')) {
+    if (-not $NoClone -and -not (Test-NativeCommandAvailable -Name 'git')) {
         throw 'Git is required unless -NoClone is specified.'
     }
 
@@ -217,7 +217,7 @@ function Invoke-NewGitHubRepository {
         throw '-AddToWorkspace requires a local clone. Remove -NoClone.'
     }
 
-        if ($AddToWorkspace -and -not (Test-NativeCommandAvailable -Name 'code')) {
+    if ($AddToWorkspace -and -not (Test-NativeCommandAvailable -Name 'code')) {
         throw 'VS Code CLI (code) is required for -AddToWorkspace.'
     }
 
