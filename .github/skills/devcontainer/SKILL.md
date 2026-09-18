@@ -172,6 +172,22 @@ customizations install them in the remote environment.
 * When adding a shared extension, update both files in the same change.
 * Compare extension IDs case-insensitively as sets. Preserve the repository's established grouping
   and comments; order alone is not drift.
+* Validate every recommended extension ID against the current VS Code Marketplace. Confirm that it
+  still exists, supports the required extension host and is not formally deprecated or replaced.
+* Inspect `extensionPack` and `extensionDependencies` metadata before listing related extensions.
+  Recommend the owning extension once; do not explicitly list extensions it installs automatically.
+* Treat a compatibility pack, an abandoned overlapping extension or a broad product pack as a
+  migration candidate even when the Marketplace has not formally deprecated it. Verify the
+  publisher's current replacement guidance before changing IDs.
+* Prefer the current direct extension over a compatibility extension pack. Use
+  `ms-azuretools.vscode-containers` rather than the legacy `ms-azuretools.vscode-docker` pack.
+* For modern .NET repositories, recommend `ms-dotnettools.csdevkit`; it installs
+  `ms-dotnettools.csharp` automatically, so do not list both.
+* For Terraform repositories, use `hashicorp.terraform` as the language, formatter and MCP provider.
+  Do not also recommend overlapping syntax-only Terraform or HCL extensions unless the repository
+  has a demonstrated file type or capability that the HashiCorp extension does not support.
+* Avoid broad cloud extension packs when only one service integration is required. Recommend the
+  specific extension so unrelated services, including unused database providers, are not installed.
 * If `.vscode/extensions.json` is absent, create it when the container declares extensions that are
   also useful outside the container.
 * Verify an extension ID exists and supports the required local or remote extension host before
@@ -264,17 +280,19 @@ Run cheap checks first:
 2. Check diagnostics and `git diff --check`.
 3. Run `shellcheck` on changed lifecycle scripts when available.
 4. Verify referenced scripts, Dockerfiles, Compose files, mounts, and extensions.
-5. Search for stale versions in CI, docs, bootstrap files, and sibling repositories.
-6. Compare `.vscode/extensions.json` recommendations with Dev Container extensions
+5. Query the VS Code Marketplace for every recommended extension. Fail validation for missing or
+  deprecated IDs, and review replacement guidance plus extension-pack/dependency metadata.
+6. Search for stale versions in CI, docs, bootstrap files, and sibling repositories.
+7. Compare `.vscode/extensions.json` recommendations with Dev Container extensions
   case-insensitively and account for every intentional exception.
-7. Verify every inferred local command is available from the image, one Feature, or one lifecycle
+8. Verify every inferred local command is available from the image, one Feature, or one lifecycle
   installer, without duplicate installation paths.
-8. Confirm Dependabot covers the devcontainer directory.
-9. If a lockfile is tracked, verify every configured Feature and its transitive dependency closure
+9. Confirm Dependabot covers the devcontainer directory.
+10. If a lockfile is tracked, verify every configured Feature and its transitive dependency closure
   is present, with no missing, stale, or unreachable records.
-10. Ask before building or rebuilding.
-11. After approval, rebuild from a clean cache for image or Feature upgrades.
-12. Inside the rebuilt container, print required tool versions, verify recommended extensions are
+11. Ask before building or rebuilding.
+12. After approval, rebuild from a clean cache for image or Feature upgrades.
+13. Inside the rebuilt container, print required tool versions, verify recommended extensions are
    installed in the expected extension host, and run only approved checks.
 
 A parse alone is insufficient for an implementation. When build approval or tooling is unavailable,
@@ -302,7 +320,9 @@ When repositories intentionally mirror each other:
 7. Run parse, lint, reference, extension-set, and diff checks.
 8. Ask before rebuilding.
 9. Rebuild and verify tool versions and extensions after approval.
-10. Report versions, capability decisions, intentional exceptions, validation, and manual host setup.
+10. Review lessons from the completed work and flow durable corrections, replacement guidance and
+  validation improvements back into this skill before reporting completion.
+11. Report versions, capability decisions, intentional exceptions, validation, and manual host setup.
 
 ## Troubleshooting
 
