@@ -1,4 +1,5 @@
-#requires -Version 7.0
+#!/usr/bin/env pwsh
+#Requires -Version 7.4
 <#
 .SYNOPSIS
     Scans a repository for personally identifiable information (PII) and other
@@ -39,7 +40,7 @@
     Optional path to write the full result set as CSV.
 
 .PARAMETER FailOnFind
-    Exit with code 1 if any non-allowlisted match is found (useful for pre-commit / CI).
+    Exit with code 1 if any high-confidence seeded match is found (useful for pre-commit / CI).
 
 .EXAMPLE
     pwsh .scripts/Find-Pii.ps1
@@ -105,14 +106,50 @@ param(
     [switch]$FailOnFind
 )
 
-Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
+Set-StrictMode -Version 3.0
 
-if (-not (Test-Path (Join-Path $RepoRoot '.git'))) {
-    throw "RepoRoot '$RepoRoot' does not look like a git repository (no .git found)."
-}
-Push-Location $RepoRoot
-try {
+#region Functions
+
+function Invoke-PiiScan {
+    <#
+    .SYNOPSIS
+        Scans a repository and returns its PII findings.
+    .PARAMETER RepoRoot
+        Repository root to scan.
+    .PARAMETER SeedFile
+        Repository-relative files from which exact seed values are extracted.
+    .PARAMETER IncludeHistory
+        Scans all reachable commits in addition to the working tree.
+    .PARAMETER OutFile
+        Optional CSV output path.
+    .OUTPUTS
+        PSCustomObject containing seeds, findings, and the high-confidence hit count.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepoRoot,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyCollection()]
+        [string[]]$SeedFile,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeHistory,
+
+        [Parameter(Mandatory = $false)]
+        [string]$OutFile
+    )
+
+    if (-not (Test-Path (Join-Path $RepoRoot '.git'))) {
+        throw "RepoRoot '$RepoRoot' does not look like a git repository (no .git found)."
+    }
+    Push-Location $RepoRoot
+    try {
     # ----------------------------------------------------------------------------------
     # Allowlist - values that are intentionally generic placeholders and are NOT PII.
     # A candidate match is dropped if its matched value equals (case-insensitive) any of
@@ -261,7 +298,11 @@ try {
         $argsA += $TreeIsh
         $argsA += '--'
         $argsA += $excludePaths
-        $outA = & git @argsA 2>$null
+        $outA = @(& git @argsA 2>&1)
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -notin @(0, 1)) {
+            throw "git grep failed with exit code ${exitCode}: $($outA -join [Environment]::NewLine)"
+        }
         if ($outA) { $outA | ForEach-Object { $lines.Add($_) } }
 
         # Pass B: fixed-string literal seeds.
@@ -271,7 +312,11 @@ try {
             $argsB += $TreeIsh
             $argsB += '--'
             $argsB += $excludePaths
-            $outB = & git @argsB 2>$null
+            $outB = @(& git @argsB 2>&1)
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -notin @(0, 1)) {
+                throw "git grep failed with exit code ${exitCode}: $($outB -join [Environment]::NewLine)"
+            }
             if ($outB) { $outB | ForEach-Object { $lines.Add($_) } }
         }
 
@@ -323,7 +368,10 @@ try {
     # ---- History ---------------------------------------------------------------------
     if ($IncludeHistory) {
         Write-Host "Scanning full git history (this can take a while)..." -ForegroundColor Yellow
-        $commits = @(& git rev-list --all)
+        $commits = @(& git rev-list --all 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "git rev-list failed with exit code ${LASTEXITCODE}: $($commits -join [Environment]::NewLine)"
+        }
         Write-Host "  commits to scan: $($commits.Count)" -ForegroundColor DarkGray
         $rxHist = [regex]'^([0-9a-f]{7,40}):(.*?):(\d+):(.*)$'
         $batchSize = 150
@@ -422,10 +470,37 @@ try {
     Write-Host "`nTotal: $($findings.Count) match(es)  |  high-confidence (seed): $seedHits" -ForegroundColor Green
     Write-Host "=================================================" -ForegroundColor Green
 
-    if ($FailOnFind -and $seedHits -gt 0) {
+        return [pscustomobject]@{
+            Seeds    = @($seeds)
+            Findings = @($findings)
+            SeedHits = $seedHits
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+#endregion Functions
+
+#region Main Execution
+
+if ($MyInvocation.InvocationName -ne '.') {
+    try {
+        $Result = Invoke-PiiScan `
+            -RepoRoot $RepoRoot `
+            -SeedFile $SeedFile `
+            -IncludeHistory:$IncludeHistory `
+            -OutFile $OutFile
+        if ($FailOnFind -and $Result.SeedHits -gt 0) {
+            exit 1
+        }
+        exit 0
+    }
+    catch {
+        Write-Error -ErrorAction Continue "PII scan failed: $($_.Exception.Message)"
         exit 1
     }
 }
-finally {
-    Pop-Location
-}
+
+#endregion Main Execution

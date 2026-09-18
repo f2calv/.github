@@ -2,7 +2,7 @@
   "name": "f2calv-github-profile",
   "private": true,
   "scripts": {
-    "test:ps": "pwsh -NoProfile -File ./.github/skills/repository-baseline/scripts/Invoke-Tests.ps1",
+    "test:ps": "pwsh -NoProfile -File ./.scripts/Invoke-Tests.ps1",
     "test:release-train": "pwsh -NoProfile -File ./.github/skills/dotnet-release-train/scripts/Invoke-Tests.ps1"
   }
 }
