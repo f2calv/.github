@@ -39,8 +39,9 @@ Dockerfile is expected to be readable as documentation, not merely executable as
 
 - Within a stage, use `-- Section ---` sub-banners for the dependency layer, the compile layer and
   the provenance block, so the same landmark appears in every language.
-- Order inside `final` is fixed: `FROM` → `WORKDIR` → `COPY --from=build` → runtime `ENV` →
-  provenance `ARG`/`ENV` → `LABEL` → `USER` → `ENTRYPOINT`.
+- Order inside `final` is fixed: `FROM` → `WORKDIR` → runtime dependency `RUN` → `COPY --from=build`
+  → runtime `ENV` → provenance `ARG`/`ENV` → `LABEL` → `USER` → `ENTRYPOINT`. The dependency install
+  comes **before** the application copy so that editing source does not reinstall packages.
 
 ## Multi-Architecture Builds
 
@@ -100,6 +101,9 @@ Dockerfile is expected to be readable as documentation, not merely executable as
 - Copy **only** the files that influence dependency resolution first (project and lock manifests),
   resolve dependencies, then `COPY` the sources. Editing a source file must not invalidate the
   dependency layer.
+- The same rule governs the `final` stage: install runtime packages **before** copying build output.
+  Layers are invalidated in sequence, so an install placed after the application copy is reinstalled
+  on every source edit, and it cannot run in parallel with the build stage.
 - Use `COPY --parents` to preserve directory structure when globbing manifests, rather than a
   flattening copy plus a fix-up `RUN`.
 - Keep dependency resolution **before** `ARG TARGETARCH` whenever it is platform-agnostic, so one
