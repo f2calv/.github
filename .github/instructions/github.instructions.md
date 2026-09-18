@@ -11,8 +11,17 @@ belongs in `workflow.instructions.md`.
 
 ## Branch Naming
 
-- Name feature branches `<github_username>/yyyy-MM-concise-name`, for example `<github_username>/2026-09-update-docs`.
-- Use the branch creation year and month, followed by concise lowercase kebab-case wording.
+- Before creating a branch, refresh remote branch references when a remote is available, then inspect
+  the 10 most recently updated local and remote branch names. Exclude the default branch, symbolic
+  remote references and every `dependabot/*` branch. Infer the repository's current naming
+  convention from that evidence rather than imposing a fleet-wide suffix.
+- Resolve the authenticated GitHub username dynamically; never hardcode it. Branch names use the
+  form `<github_username>/yyyy-MM-<suffix>`.
+- Preserve a clear recent repository pattern. This includes numbered monthly working branches such
+  as `<github_username>/yyyy-MM-updates1`, `<github_username>/yyyy-MM-updates2` and
+  `<github_username>/yyyy-MM-updates3`; when that sequence is current, create the next unused number.
+- When the recent branches do not establish another clear convention, use concise lowercase
+  kebab-case wording, for example `<github_username>/2026-09-update-docs`.
 
 ## Issues
 
