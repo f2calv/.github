@@ -15,7 +15,13 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Language and Compiler Settings
 
 - Enable nullable reference types and implicit usings repository-wide; do not disable either per project without a recorded reason.
-- Treat warnings as errors. Where a specific diagnostic must be allowed through, list it in `WarningsNotAsErrors` (so it still surfaces) rather than in `NoWarn`.
+- Every .NET repository root `Directory.Build.props` must declare
+  `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` in an unconditional property group so the
+  policy applies by default to every project and build configuration. Do not repeat or override the
+  property in individual project files.
+- Where a specific diagnostic must remain non-fatal, append it to a centrally documented
+  `WarningsNotAsErrors` entry so it still surfaces. Use `NoWarn` only when the diagnostic is
+  genuinely inapplicable repository-wide and document why it is suppressed.
 - A security advisory raised by a transitive dependency that has no direct reference to remove and no fixed upstream release belongs in `WarningsNotAsErrors`, never in `NoWarn` — suppressing it hides a real vulnerability. Record the advisory identifier and why it cannot yet be resolved, and re-check on every dependency bump.
 
 ## Analyzers
