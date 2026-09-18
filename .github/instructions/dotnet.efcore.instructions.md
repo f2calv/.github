@@ -1,9 +1,38 @@
 ---
-description: 'EF Core migrations — expand/contract (parallel change) convention for zero-downtime rolling deployments.'
-applyTo: '**/Migrations/**/*.cs'
+description: 'EF Core and PostgreSQL conventions for model mapping, migration generation and zero-downtime rolling deployments.'
+applyTo: '**/*DbContext*.cs,**/*EntityTypeConfiguration*.cs,**/Entities/**/*.cs,**/Migrations/**/*.cs'
 ---
 
-# EF Core Migrations — Expand/Contract (Parallel Change)
+# EF Core And PostgreSQL
+
+## PostgreSQL Naming
+
+- Use `snake_case` for every PostgreSQL table, column, index, constraint and sequence identifier.
+- Follow the repository's established mapping strategy consistently: configure a snake-case naming
+  convention globally, or map identifiers explicitly with APIs such as `ToTable`, `HasColumnName`
+  and `HasDatabaseName`. Never rely on CLR type or property names to produce PostgreSQL identifiers.
+- In a repository that uses explicit mappings, add the mapping before generating a migration.
+  Review the migration and model snapshot for accidental PascalCase identifiers before committing.
+
+## Migration Generation
+
+- Scaffold from the current model build. Let `dotnet ef migrations add` build by default. Use
+  `--no-build` only after explicitly verifying that the compiled assembly reflects the current
+  model. Treat an unexpectedly empty `Up` or `Down` method as a stale-build warning and regenerate
+  rather than committing it.
+- Remove an unapplied migration offline with `dotnet ef migrations remove --force` so EF reverts
+  both the migration files and model snapshot even when it cannot query the database. Use a clearly
+  non-routable placeholder connection string only when the design-time factory requires one. Never
+  use `--force` when the migration may already be applied; verify deployment state first.
+- Review generated data operations. When an entity uses `HasData`, inspect migrations for bulk
+  `UpdateData`, `InsertData` or `DeleteData` churn after model changes. Verify each generated
+  operation is intentional. Remove demonstrable no-op seed updates before committing, then inspect
+  the generated SQL and confirm the model snapshot still matches the intended model.
+- Gate deployment on model consistency. Before building or deploying an EF-backed application, run
+  `dotnet ef migrations has-pending-model-changes` against the current model. Stop before publishing
+  artifacts or mutating deployment manifests when model changes have no migration.
+
+## Expand/Contract (Parallel Change)
 
 When an application runs rolling `Deployment` updates against a shared database, the old and new ReplicaSets hit the **same** schema simultaneously. Every migration MUST be backward-compatible with the currently-running release — follow the expand/contract (parallel change) pattern.
 
