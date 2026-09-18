@@ -5,7 +5,9 @@
     "image": "mcr.microsoft.com/devcontainers/base:trixie",
     "features": {
         "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
-        "ghcr.io/devcontainers/features/powershell:2": {},
+        "ghcr.io/devcontainers/features/powershell:2": {
+            "modules": "Pester==5.7.1"
+        },
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers/features/node:2": {
             "version": "lts"

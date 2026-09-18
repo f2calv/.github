@@ -3,10 +3,10 @@
 
 <#
 .SYNOPSIS
-    Installs the PowerShell test dependency required by the repository.
+    Reports the primary tool versions supplied by the development container.
 .DESCRIPTION
-    Installs the pinned Pester module and reports the primary tool versions supplied by the
-    development container.
+    Reports the primary tool versions supplied by the development container. Pester is installed
+    by the PowerShell Dev Container Feature.
 .EXAMPLE
     pwsh -NoProfile -File ./.devcontainer/Initialize-DevContainer.ps1
 #>
@@ -18,8 +18,6 @@ $PSNativeCommandUseErrorActionPreference = $false
 Set-StrictMode -Version 3.0
 
 try {
-    Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1 -Force
-
     Write-Output "PowerShell $($PSVersionTable.PSVersion)"
     Write-Output "Pester $((Get-Module Pester -ListAvailable | Where-Object Version -EQ '5.7.1' | Select-Object -First 1).Version)"
     pre-commit --version
