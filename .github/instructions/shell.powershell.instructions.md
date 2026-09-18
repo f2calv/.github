@@ -37,12 +37,50 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - Type a parameter that must be a collection as `[array]` or `[object[]]`.
 - Do not assume a REST response shape. Handle both a bare array and a `count`/`value` envelope.
 
+## Testing With Pester
+
+- Use Pester 5.7.1 for PowerShell unit and regression tests. Name test files
+  `<ScriptName>.Tests.ps1` and place them in an adjacent `tests/` directory.
+- Before creating a non-trivial script, use a graphical question to ask whether the user wants Pester
+  tests included. Do the same when changing an existing script that has no Pester coverage. State
+  what the proposed tests would exercise so the choice is informed.
+- When an existing script already has Pester tests, update or extend them as part of every behaviour
+  change without asking whether coverage should be maintained. Still obtain the normal explicit
+  approval before running tests.
+- Keep executable entry points behind an invocation guard so tests can dot-source functions without
+  running the script's main operation.
+- Test success, validation failure, external-command failure, `-WhatIf`, and idempotent/no-change
+  paths where they exist. For scripts that mutate files or remote state, verify the exact changed
+  surface and rollback or no-partial-write behaviour.
+- Use `$TestDrive` for files and temporary Git repositories. Use synthetic values only; never load
+  real local configuration, credentials, repository coordinates, or deployment identifiers into a
+  test fixture or test output.
+- Mock PowerShell commands with Pester. Wrap native executables behind functions or place synthetic
+  executables earlier on `PATH` so tests do not contact external services or mutate real state.
+- Provide an `Invoke-Tests.ps1` entry point for a script package or skill with multiple tests. Pin its
+  Pester import to 5.7.1 and return a nonzero exit code when tests fail.
+
 ## Secrets
 
 - Accept credentials as `[securestring]`, or read them from an environment variable or git-ignored `.env`. Never accept a plain-text credential as a defaulted parameter.
 - Never write a credential, an `Authorization` header, or a value derived from either to any stream, including verbose and debug output.
 - Strip the query string before including a Uri in an error message.
 - Never commit a populated `.env`. Ship a `.env.example` documenting each variable instead.
+
+## Local PowerShell Data
+
+- Use a gitignored `.psd1` file for private, machine-specific non-credential configuration such as
+  local repository paths, private repository names, manifest paths, environment names, and feature
+  switches. PowerShell data files are plaintext; credentials still belong in a secret store,
+  environment variable, or another approved credential provider.
+- Load local data with `Import-PowerShellDataFile`, never by dot-sourcing it. Data files must contain
+  declarations only and must not execute code.
+- Treat explicit command-line parameters as higher precedence than `.psd1` values. Apply local data
+  only when the caller did not bind the corresponding parameter.
+- Validate every recognized key and reject or ignore unknown keys deliberately. Never print the full
+  imported hashtable because it can disclose private topology.
+- Commit a matching `.psd1.example` with synthetic placeholders and the complete supported key set,
+  and add the populated filename to `.gitignore` in the same change.
 
 ## Output
 
