@@ -64,7 +64,23 @@ someone arriving cold months later.
 ## Continuous Integration
 
 - Pull requests must run the repository's formatting, initialization and validation checks, and every one of them must pass without cloud credentials.
-- Require `lint / lint` and `versioning / gha-release-versioning`, together with the repository's own validation check, as status checks in the `main` branch ruleset.
+- Require `lint / lint`, `versioning / gha-release-versioning`, the repository's own validation check
+  and the SonarQube Quality Gate as status checks in the default-branch ruleset. Every pull request
+  must pass all four before merge.
+
+### SonarQube
+
+- Configure every public repository in SonarQube Cloud on the Free plan through its GitHub
+  integration. Grant the SonarQube GitHub App access to all repositories, enable automatic import
+  for new repositories and bulk-import existing repositories when establishing the integration.
+- Use SonarQube Cloud automatic analysis where the repository is eligible. Use CI-based analysis
+  where the language, project structure or required build context is not supported, and never run
+  automatic and CI-based analysis together for the same SonarQube project.
+- Configure every private repository against a self-hosted SonarQube Community Build instance and
+  run its scanner in continuous integration.
+- Add the corresponding SonarQube Quality Gate check to the default branch's required status checks
+  for every public and private repository. A pull request must not merge while that check is absent,
+  pending or failing.
 
 ## Dependency Automation
 
