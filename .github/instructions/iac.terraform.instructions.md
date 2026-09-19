@@ -198,7 +198,9 @@ Applies when the repository holds the configuration applied against a cloud subs
 ### Module References
 
 - Reference a sibling module by relative path; reference an external module by a pinned Git source ref.
-- `*_override.tf` files are local development aids for pointing a module source at a local checkout. They are never part of a deployment and are `.gitignore`d. Re-run `terraform init` after adding or removing one.
+- Terraform module `source` values must be literals during `terraform init`; do not attempt to parameterize a repository root, branch or local path through an input variable.
+- Keep tracked external-module sources pinned to immutable release tags. Do not commit a feature-branch ref to make local integration testing work.
+- For local integration against an adjacent module checkout, add a gitignored `source_override.tf` in the root module and override only the affected module block with a relative local path. Re-run `terraform init -upgrade` after adding, changing or removing the override, and inspect `.terraform/modules/modules.json` when source provenance matters.
 
 ### Kubernetes and Helm Providers
 
