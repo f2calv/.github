@@ -16,6 +16,8 @@ Two role-specific sections follow the universal rules. Apply exactly one of them
 
 - `terraform fmt`, `terraform validate` and a backend-free `terraform init` are safe to run unprompted; none of them authenticate or touch state.
 - Always ask before any command that authenticates to the cloud provider, reads remote state or mutates infrastructure — `plan`, `apply`, `destroy`, `import` and `state` subcommands included.
+- For an approved apply, save the plan to a file, inspect its exact create/update/replace/destroy actions, and apply that same plan artifact. Do not review one plan and then apply a newly calculated plan.
+- After an address migration, provider transition or other state-sensitive refactor, run a second plan and require a no-change result before removing migration scaffolding.
 - Where the host has no linters installed, run `tflint` and `trivy` from their official containers, and `markdownlint` through `npx`, rather than installing them.
 
 ## Formatting
@@ -51,6 +53,9 @@ Two role-specific sections follow the universal rules. Apply exactly one of them
 - Names are `snake_case` and descriptive, prefixed by domain when ambiguous.
 - Give a `default` only where a sensible one exists. A value the caller must own — a name, a parent resource id — stays required.
 - Prefer a `map(string)` or `map(object({...}))` over parallel lists so `for_each` keys stay stable and readable.
+- Keep deployment policy and frequently tuned values in the root's variable source: account names, regions, SKUs, capacities, budgets, alert thresholds and runtime limits. `main.tf` should wire resources and modules, not bury environment-specific policy in literals.
+- For complex object inputs, use `optional(type, default)` for knobs with a safe, broadly useful default. Keep only values with no defensible default required, such as globally unique names, parent ids and model versions.
+- Model repeated regional or service variants as a `map(object({...}))` and flatten nested maps into stable composite `for_each` keys. Do not grow a reusable module by adding one resource block and one input family per named variant.
 - Group related variables under a section-separator comment:
 
   ```hcl
@@ -131,6 +136,7 @@ Applies when the repository publishes a module for other root modules to consume
 ### Interface
 
 - Keep the module focused on a single resource type or a tightly coupled group, and expose all customisation through variables.
+- Prefer a generic map input and map outputs when a module owns several instances of the same resource type. Callers should add an instance as data, without requiring another resource block or output pair in the module.
 - **Accept ids rather than creating shared dependencies.** A resource that could reasonably be shared by several callers — a workspace, a resource group, a virtual network — is passed in by id, not created here. Creating it inside the module hands its lifecycle to whichever caller instantiated the module first.
 - **No `lifecycle { prevent_destroy = true }`.** It is the caller's decision and, once published, it blocks a `terraform destroy` the caller may legitimately want.
 - Keep the sensitive surface minimal — expose an id or an endpoint rather than a raw key wherever the caller can look the secret up itself.
@@ -177,6 +183,13 @@ Applies when the repository holds the configuration applied against a cloud subs
 - A state key binds a configuration to its existing state — treat it as immutable once applied.
 - Re-run `terraform init` after switching target environment when the backend coordinates differ.
 - Cross-configuration references go through `data` sources, never through hardcoded ids.
+
+### State Refactors
+
+- Use `moved` blocks when renaming resources, adding `for_each`, changing module labels or otherwise changing Terraform addresses. Do not accept destroy-and-recreate actions that exist only because configuration structure changed.
+- Before removing or renaming a provider alias, check whether state objects still reference its provider address. Keep the old alias temporarily, targeting the same immutable subscription or project, until those objects have been moved or destroyed and a subsequent plan succeeds without it.
+- A root module may remove one-time `moved` blocks after every state it owns has applied the migration and a no-change plan passes. A published reusable module retains `moved` blocks for supported upgrade paths because consumers migrate on different schedules.
+- Verify platform availability for region-bound services, SKUs and models against the live provider or cloud API before applying. Documentation can describe general availability while the target account, subscription or region still rejects a deployment.
 
 ### Stateful Resources
 
