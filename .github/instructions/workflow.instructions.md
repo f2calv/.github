@@ -76,6 +76,24 @@ Repositories follow a consistent layout, regardless of language:
 - Prefer a clean versioned release over compatibility code. Consumers remain on an older immutable tag until they are ready to migrate.
 - Remove commented-out implementations and speculative placeholders. Git retains history.
 
+## Recording Future Work
+
+Work that is identified but deliberately not done now must be written down somewhere durable, in the
+place a future reader will actually look.
+
+- A `TODO` comment is the right home when the work belongs to a specific type, member or file. Put it
+  on that declaration, not in a separate document that will drift away from the code.
+- Say what was decided and why it was deferred, not merely that something is missing. Record the
+  constraint that blocked it, the options considered, and any measurement that would change the
+  decision.
+- Deep-link from the `TODO` to a GitHub issue when the work is larger than the comment can carry, or
+  when it spans repositories. The link is optional; a self-contained `TODO` needs no issue.
+- Never link a private repository, or an issue in one, from a comment in a public repository.
+- Prefer amending an existing `TODO` over adding a second one nearby. When the work is done, delete
+  the comment in the same change.
+- Where a `TODO` and an issue both exist, the issue is the fuller record and the comment points at
+  it. Do not maintain the same detail in both.
+
 ## Maintaining Conventions
 
 - When detecting a new convention or pattern, add it to the appropriate scoped `*.instructions.md` file — or to this file when the rule is cross-cutting — and apply it retroactively where applicable.

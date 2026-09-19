@@ -31,6 +31,26 @@ belongs in `workflow.instructions.md`.
 - Inspect available labels and apply every other label that accurately describes the issue. Native issue types and labels are separate metadata; setting one does not replace the other.
 - Verify the issue title, body, type and labels after creation.
 
+### Issue Quality
+
+An issue is a durable record that outlives the conversation that produced it, so write it for
+someone arriving cold months later.
+
+- State the decision and the evidence behind it, not only the intent. Record measured figures with
+  the conditions they were measured under, and mark any figure that is approximate or unverified as
+  such rather than letting it read as fact.
+- Record options that were rejected and why. The reasoning is the part that cannot be recovered from
+  the code.
+- Deep-link generously. Link every file the work created or changed, the upstream projects and
+  vendor documentation it depends on, and any related issues. Prefer a table of links over prose.
+- Link repository files on the default branch so the links stay valid after the branch merges; note
+  in the issue when they do not resolve yet. Use a commit permalink when the exact revision matters.
+- Never deep-link a private repository from a public issue, and never expose private coordinates
+  through a link target. Describe the dependency generically instead.
+- Keep the issue current as the work progresses. Tick the checklist, correct figures that later
+  proved wrong, and say explicitly when remaining items are parked rather than leaving them
+  ambiguous.
+
 ## Pull Requests
 
 - Keep generic issue forms and the pull request template in the public account-level `.github` repository so repositories inherit one contribution workflow.
