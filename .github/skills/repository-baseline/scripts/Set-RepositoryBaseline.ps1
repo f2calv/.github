@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-#Requires -Version 7.0
+#Requires -Version 7.4
 
 <#
 .SYNOPSIS
@@ -20,11 +20,11 @@
 .PARAMETER OutputPath
     Optional path for the complete JSON result.
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
 .EXAMPLE
-    ./.scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Apply -WhatIf
 .NOTES
     Requires GitHub CLI authentication with repository administration access.
 #>
@@ -50,6 +50,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
+Set-StrictMode -Version 3.0
 
 #region Functions
 
@@ -147,6 +149,30 @@ function Get-FailureStatus {
     return 'Failed'
 }
 
+function Test-AutomatedSecurityFixesEnabled {
+    <#
+    .SYNOPSIS
+        Tests whether GitHub reports automated security fixes as enabled.
+    .PARAMETER Response
+        Response from the automated-security-fixes endpoint.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Response
+    )
+
+    if ($Response.ExitCode -ne 0) {
+        return $false
+    }
+
+    $Payload = ConvertFrom-GhResponse -Response $Response
+    return $null -ne $Payload -and
+    $Payload.PSObject.Properties.Name -contains 'enabled' -and
+    $Payload.enabled
+}
+
 function Add-BaselineResult {
     <#
     .SYNOPSIS
@@ -228,7 +254,7 @@ function Invoke-GhMutation {
     Invoke-GhCommand -Arguments $Arguments
 }
 
-function Get-RepositoryTargets {
+function Get-RepositoryTarget {
     <#
     .SYNOPSIS
         Resolves requested repository names into owner/name references.
@@ -240,7 +266,7 @@ function Get-RepositoryTargets {
         Authenticated GitHub login used for unqualified names.
     #>
     [CmdletBinding()]
-    [OutputType([string[]])]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $false)]
         [string[]]$RepositoryNames,
@@ -263,7 +289,7 @@ function Get-RepositoryTargets {
         }
 
         $Pages = @(ConvertFrom-GhResponse -Response $Response)
-        return @($Pages |
+        $Pages |
             ForEach-Object { $_ } |
             Where-Object {
                 -not $_.fork -and
@@ -272,17 +298,436 @@ function Get-RepositoryTargets {
                 $_.owner.login -eq $AuthenticatedOwner
             } |
             ForEach-Object { $_.full_name } |
-            Sort-Object -Unique)
+            Sort-Object -Unique
+        return
     }
 
-    @($RepositoryNames | ForEach-Object {
+    $RepositoryNames | ForEach-Object {
             if ($_ -match '/') {
                 $_
             }
             else {
                 "$AuthenticatedOwner/$_"
             }
-        } | Sort-Object -Unique)
+        } | Sort-Object -Unique
+}
+
+function Copy-JsonObject {
+    <#
+    .SYNOPSIS
+        Creates an independent copy of a JSON-compatible object.
+    .PARAMETER InputObject
+        Object to copy.
+    #>
+    [CmdletBinding()]
+    [OutputType([object])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$InputObject
+    )
+
+    $InputObject | ConvertTo-Json -Depth 100 | ConvertFrom-Json -Depth 100
+}
+
+function Get-DesiredRuleset {
+    <#
+    .SYNOPSIS
+        Builds the complete managed ruleset for a repository.
+    .PARAMETER Policy
+        Baseline policy document.
+    .PARAMETER RepositoryName
+        Repository in owner/name format.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Policy,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryName
+    )
+
+    $DesiredRuleset = Copy-JsonObject -InputObject $Policy.ruleset
+    $Rules = [Collections.Generic.List[object]]::new()
+    foreach ($Rule in @($DesiredRuleset.rules)) {
+        $Rules.Add($Rule)
+    }
+
+    if ($Policy.PSObject.Properties.Name -contains 'rulesetOverrides') {
+        foreach ($Override in @($Policy.rulesetOverrides)) {
+            if ($RepositoryName -notlike $Override.repositoryPattern) {
+                continue
+            }
+
+            foreach ($Rule in @($Override.rules)) {
+                $Rules.Add((Copy-JsonObject -InputObject $Rule))
+            }
+        }
+    }
+
+    $DesiredRuleset.rules = @($Rules)
+    return $DesiredRuleset
+}
+
+function Test-PolicyValue {
+    <#
+    .SYNOPSIS
+        Tests whether an API value contains the expected policy value.
+    .PARAMETER Actual
+        Value returned by GitHub.
+    .PARAMETER Expected
+        Value declared by policy.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [object]$Actual,
+
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [object]$Expected
+    )
+
+    if ($null -eq $Expected) {
+        return $null -eq $Actual
+    }
+
+    if ($Expected -is [array]) {
+        if ($Actual -isnot [array] -or $Actual.Count -ne $Expected.Count) {
+            return $false
+        }
+
+        for ($Index = 0; $Index -lt $Expected.Count; $Index++) {
+            if (-not (Test-PolicyValue -Actual $Actual[$Index] -Expected $Expected[$Index])) {
+                return $false
+            }
+        }
+
+        return $true
+    }
+
+    if ($Expected -is [pscustomobject]) {
+        if ($Actual -isnot [pscustomobject]) {
+            return $false
+        }
+
+        foreach ($Property in $Expected.PSObject.Properties) {
+            if ($Actual.PSObject.Properties.Name -notcontains $Property.Name -or
+                -not (Test-PolicyValue -Actual $Actual.$($Property.Name) -Expected $Property.Value)) {
+                return $false
+            }
+        }
+
+        return $true
+    }
+
+    return $Actual -ceq $Expected
+}
+
+function Test-RulesetMatchesPolicy {
+    <#
+    .SYNOPSIS
+        Tests whether a repository ruleset matches the managed policy.
+    .PARAMETER Actual
+        Detailed ruleset returned by GitHub.
+    .PARAMETER Expected
+        Desired ruleset built from policy.
+    .PARAMETER RepositoryName
+        Repository in owner/name format.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Actual,
+
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Expected,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryName
+    )
+
+    if ($Actual.source_type -ne 'Repository' -or $Actual.source -ne $RepositoryName) {
+        return $false
+    }
+
+    Test-PolicyValue -Actual $Actual -Expected $Expected
+}
+
+function Test-RulesetContainsBaseline {
+    <#
+    .SYNOPSIS
+        Tests whether a historical ruleset contains the managed baseline rules.
+    .PARAMETER Actual
+        Detailed ruleset returned by GitHub.
+    .PARAMETER Policy
+        Baseline policy document.
+    .PARAMETER RepositoryName
+        Repository in owner/name format.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Actual,
+
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Policy,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryName
+    )
+
+    $HistoricalNames = if ($Policy.PSObject.Properties.Name -contains 'historicalRulesetNames') {
+        @($Policy.historicalRulesetNames)
+    }
+    else {
+        @()
+    }
+    $ManagedNames = @($Policy.ruleset.name) + $HistoricalNames
+    if ($Actual.name -notin $ManagedNames) {
+        return $false
+    }
+
+    $AllowedRuleTypes = @($Policy.ruleset.rules.type) + 'required_status_checks'
+    if (@($Actual.rules | Where-Object type -notin $AllowedRuleTypes).Count -gt 0) {
+        return $false
+    }
+
+    $Expected = Copy-JsonObject -InputObject $Policy.ruleset
+    $Expected.name = $Actual.name
+    $ManagedRuleTypes = @($Expected.rules.type)
+    $Candidate = Copy-JsonObject -InputObject $Actual
+    $Candidate.rules = @($Candidate.rules | Where-Object type -in $ManagedRuleTypes)
+
+    Test-RulesetMatchesPolicy `
+        -Actual $Candidate `
+        -Expected $Expected `
+        -RepositoryName $RepositoryName
+}
+
+function Resolve-DefaultBranchRuleset {
+    <#
+    .SYNOPSIS
+        Audits or reconciles the canonical default-branch ruleset.
+    .PARAMETER RepositoryName
+        Repository in owner/name format.
+    .PARAMETER RepositoryPath
+        GitHub REST API repository path.
+    .PARAMETER DefaultBranch
+        Repository default branch.
+    .PARAMETER Policy
+        Baseline policy document.
+    .PARAMETER Apply
+        Reconciles drift when specified.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$DefaultBranch,
+
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Policy,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Apply
+    )
+
+    $RulesetsPath = "$RepositoryPath/rulesets?includes_parents=false&per_page=100"
+    $RulesetsResponse = Invoke-GhCommand -Arguments @('api', $RulesetsPath)
+    if ($RulesetsResponse.ExitCode -ne 0) {
+        return [pscustomobject]@{
+            Status = Get-FailureStatus $RulesetsResponse.Error
+            Detail = $RulesetsResponse.Error
+        }
+    }
+
+    $Rulesets = [Collections.Generic.List[object]]::new()
+    foreach ($RulesetSummary in @(ConvertFrom-GhResponse -Response $RulesetsResponse)) {
+        $RulesetResponse = Invoke-GhCommand -Arguments @(
+            'api',
+            "$RepositoryPath/rulesets/$($RulesetSummary.id)")
+        if ($RulesetResponse.ExitCode -ne 0) {
+            return [pscustomobject]@{
+                Status = 'Failed'
+                Detail = $RulesetResponse.Error
+            }
+        }
+
+        $Rulesets.Add((ConvertFrom-GhResponse -Response $RulesetResponse))
+    }
+
+    $EncodedBranch = [Uri]::EscapeDataString($DefaultBranch)
+    $ProtectionPath = "$RepositoryPath/branches/$EncodedBranch/protection"
+    $ProtectionResponse = Invoke-GhCommand -Arguments @('api', $ProtectionPath)
+    $HasLegacyProtection = $ProtectionResponse.ExitCode -eq 0
+    if (-not $HasLegacyProtection -and $ProtectionResponse.Error -notmatch '\bHTTP 404\b') {
+        return [pscustomobject]@{
+            Status = Get-FailureStatus $ProtectionResponse.Error
+            Detail = $ProtectionResponse.Error
+        }
+    }
+
+    $DesiredRuleset = Get-DesiredRuleset -Policy $Policy -RepositoryName $RepositoryName
+    $CanonicalRuleset = $Rulesets |
+    Where-Object {
+        $_.name -eq $DesiredRuleset.name -and
+        $_.source_type -eq 'Repository' -and
+        $_.source -eq $RepositoryName
+    } |
+    Select-Object -First 1
+    $CanonicalRulesetId = if ($null -ne $CanonicalRuleset) { $CanonicalRuleset.id } else { $null }
+    $HistoricalRulesets = @($Rulesets |
+        Where-Object {
+            $_.id -ne $CanonicalRulesetId -and
+            (Test-RulesetContainsBaseline `
+                    -Actual $_ `
+                    -Policy $Policy `
+                    -RepositoryName $RepositoryName)
+        })
+    $CanonicalCompliant = $null -ne $CanonicalRuleset -and
+    (Test-RulesetMatchesPolicy `
+            -Actual $CanonicalRuleset `
+            -Expected $DesiredRuleset `
+            -RepositoryName $RepositoryName)
+    $Compliant = $CanonicalCompliant -and
+    -not $HasLegacyProtection -and
+    $HistoricalRulesets.Count -eq 0
+
+    if ($Compliant) {
+        return [pscustomobject]@{ Status = 'Compliant'; Detail = '' }
+    }
+
+    $Drift = [Collections.Generic.List[string]]::new()
+    if (-not $CanonicalCompliant) {
+        $Drift.Add('Canonical ruleset is missing or differs from policy.')
+    }
+    if ($HistoricalRulesets.Count -gt 0) {
+        $Drift.Add("$($HistoricalRulesets.Count) historical baseline ruleset(s) remain.")
+    }
+    if ($HasLegacyProtection) {
+        $Drift.Add('Classic branch protection remains.')
+    }
+    $DriftDetail = $Drift -join ' '
+
+    if (-not $Apply) {
+        return [pscustomobject]@{ Status = 'Drift'; Detail = $DriftDetail }
+    }
+
+    if (-not $PSCmdlet.ShouldProcess(
+            $RepositoryName,
+            'Reconcile the canonical ruleset and remove superseded branch protection')) {
+        return [pscustomobject]@{ Status = 'WhatIf'; Detail = $DriftDetail }
+    }
+
+    $RulesetId = $CanonicalRulesetId
+    if (-not $CanonicalCompliant) {
+        $RulesetToUpdate = if ($null -ne $CanonicalRuleset) {
+            $CanonicalRuleset
+        }
+        else {
+            $HistoricalRulesets | Select-Object -First 1
+        }
+
+        if ($null -eq $RulesetToUpdate) {
+            $MutationResponse = Invoke-GhMutation `
+                -Method POST `
+                -Path "$RepositoryPath/rulesets" `
+                -Body $DesiredRuleset
+        }
+        else {
+            $MutationResponse = Invoke-GhMutation `
+                -Method PUT `
+                -Path "$RepositoryPath/rulesets/$($RulesetToUpdate.id)" `
+                -Body $DesiredRuleset
+        }
+
+        if ($MutationResponse.ExitCode -ne 0) {
+            return [pscustomobject]@{
+                Status = Get-FailureStatus $MutationResponse.Error
+                Detail = $MutationResponse.Error
+            }
+        }
+
+        $MutatedRuleset = ConvertFrom-GhResponse -Response $MutationResponse
+        $RulesetId = if ($null -ne $MutatedRuleset -and
+            $MutatedRuleset.PSObject.Properties.Name -contains 'id') {
+            $MutatedRuleset.id
+        }
+        elseif ($null -ne $RulesetToUpdate) {
+            $RulesetToUpdate.id
+        }
+        else {
+            $null
+        }
+        if ($null -eq $RulesetId) {
+            return [pscustomobject]@{
+                Status = 'Failed'
+                Detail = 'GitHub did not return the reconciled ruleset identifier.'
+            }
+        }
+
+        $VerificationResponse = Invoke-GhCommand -Arguments @(
+            'api',
+            "$RepositoryPath/rulesets/$RulesetId")
+        $VerifiedRuleset = ConvertFrom-GhResponse -Response $VerificationResponse
+        if ($VerificationResponse.ExitCode -ne 0 -or
+            $null -eq $VerifiedRuleset -or
+            -not (Test-RulesetMatchesPolicy `
+                    -Actual $VerifiedRuleset `
+                    -Expected $DesiredRuleset `
+                    -RepositoryName $RepositoryName)) {
+            return [pscustomobject]@{
+                Status = 'Failed'
+                Detail = 'Canonical ruleset verification failed; superseded protection was retained.'
+            }
+        }
+    }
+
+    foreach ($HistoricalRuleset in $HistoricalRulesets) {
+        if ($HistoricalRuleset.id -eq $RulesetId) {
+            continue
+        }
+
+        $DeleteResponse = Invoke-GhMutation `
+            -Method DELETE `
+            -Path "$RepositoryPath/rulesets/$($HistoricalRuleset.id)"
+        if ($DeleteResponse.ExitCode -ne 0) {
+            return [pscustomobject]@{
+                Status = 'Failed'
+                Detail = "Canonical ruleset was verified, but a historical ruleset could not be removed: $($DeleteResponse.Error)"
+            }
+        }
+    }
+
+    if ($HasLegacyProtection) {
+        $DeleteResponse = Invoke-GhMutation -Method DELETE -Path $ProtectionPath
+        if ($DeleteResponse.ExitCode -ne 0) {
+            return [pscustomobject]@{
+                Status = 'Failed'
+                Detail = "Canonical ruleset was verified, but classic branch protection could not be removed: $($DeleteResponse.Error)"
+            }
+        }
+    }
+
+    [pscustomobject]@{ Status = 'Changed'; Detail = $DriftDetail }
 }
 
 #endregion Functions
@@ -306,7 +751,7 @@ if ($MyInvocation.InvocationName -ne '.') {
 
         $Owner = (ConvertFrom-GhResponse -Response $Authentication).login
         $Policy = Get-Content -Raw -LiteralPath $PolicyPath | ConvertFrom-Json -Depth 100
-        $Targets = Get-RepositoryTargets `
+        $Targets = Get-RepositoryTarget `
             -RepositoryNames $Repository `
             -IncludeAllOwned $AllOwned.IsPresent `
             -AuthenticatedOwner $Owner
@@ -416,8 +861,8 @@ if ($MyInvocation.InvocationName -ne '.') {
                     -Setting 'dependabot_security_updates' -Status 'Failed' -Detail $SecurityUpdatesResponse.Error
                 continue
             }
-            $SecurityUpdates = ConvertFrom-GhResponse -Response $SecurityUpdatesResponse
-            $SecurityUpdatesEnabled = $SecurityUpdatesResponse.ExitCode -eq 0 -and $SecurityUpdates.enabled
+            $SecurityUpdatesEnabled = Test-AutomatedSecurityFixesEnabled `
+                -Response $SecurityUpdatesResponse
             if ($SecurityUpdatesEnabled -eq $Policy.security.dependabotSecurityUpdates) {
                 Add-BaselineResult -Results $Results -RepositoryName $FullName `
                     -Setting 'dependabot_security_updates' -Status 'Compliant'
@@ -439,8 +884,28 @@ if ($MyInvocation.InvocationName -ne '.') {
                     -Setting 'dependabot_security_updates' -Status 'WhatIf'
             }
 
-            $SecretScanningEnabled = $Detail.security_and_analysis.secret_scanning.status -eq 'enabled'
-            $PushProtectionEnabled = $Detail.security_and_analysis.secret_scanning_push_protection.status -eq 'enabled'
+            $SecurityAnalysis = if ($Detail.PSObject.Properties.Name -contains 'security_and_analysis') {
+                $Detail.security_and_analysis
+            }
+            else {
+                $null
+            }
+            $SecretScanning = if ($null -ne $SecurityAnalysis -and
+                $SecurityAnalysis.PSObject.Properties.Name -contains 'secret_scanning') {
+                $SecurityAnalysis.secret_scanning
+            }
+            else {
+                $null
+            }
+            $PushProtection = if ($null -ne $SecurityAnalysis -and
+                $SecurityAnalysis.PSObject.Properties.Name -contains 'secret_scanning_push_protection') {
+                $SecurityAnalysis.secret_scanning_push_protection
+            }
+            else {
+                $null
+            }
+            $SecretScanningEnabled = $null -ne $SecretScanning -and $SecretScanning.status -eq 'enabled'
+            $PushProtectionEnabled = $null -ne $PushProtection -and $PushProtection.status -eq 'enabled'
             $SecretScanningCompliant =
             $SecretScanningEnabled -eq $Policy.security.secretScanning -and
             $PushProtectionEnabled -eq $Policy.security.secretScanningPushProtection
@@ -450,7 +915,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             }
             elseif ($Policy.security.secretScanning -and
                 $Detail.visibility -eq 'private' -and
-                $null -eq $Detail.security_and_analysis.secret_scanning) {
+                $null -eq $SecretScanning) {
                 Add-BaselineResult -Results $Results -RepositoryName $FullName `
                     -Setting 'secret_protection' -Status 'PlanGated' `
                     -Detail 'Secret protection is unavailable for this private repository on the current plan.'
@@ -478,74 +943,17 @@ if ($MyInvocation.InvocationName -ne '.') {
                     -Setting 'secret_protection' -Status 'WhatIf'
             }
 
-            $EncodedBranch = [Uri]::EscapeDataString($Detail.default_branch)
-            $RulesPath = "$RepositoryPath/rules/branches/$EncodedBranch`?per_page=100"
-            $RulesResponse = Invoke-GhCommand -Arguments @('api', '--paginate', '--slurp', $RulesPath)
-            if ($RulesResponse.ExitCode -ne 0) {
-                Add-BaselineResult -Results $Results -RepositoryName $FullName `
-                    -Setting 'default_branch_ruleset' `
-                    -Status $(Get-FailureStatus $RulesResponse.Error) `
-                    -Detail $RulesResponse.Error
-                continue
-            }
-
-            $RulePages = @(ConvertFrom-GhResponse -Response $RulesResponse)
-            $Rules = @($RulePages | ForEach-Object { $_ } | Where-Object { $null -ne $_ })
-            $PullRequestRule = $Rules | Where-Object type -eq 'pull_request' | Select-Object -First 1
-            $RulesCompliant =
-            @($Rules | Where-Object type -eq 'deletion').Count -gt 0 -and
-            @($Rules | Where-Object type -eq 'non_fast_forward').Count -gt 0 -and
-            $null -ne $PullRequestRule -and
-            $PullRequestRule.parameters.required_review_thread_resolution
-
-            if ($RulesCompliant) {
-                Add-BaselineResult -Results $Results -RepositoryName $FullName `
-                    -Setting 'default_branch_ruleset' -Status 'Compliant'
-                continue
-            }
-
-            if ($Mode -eq 'Audit') {
-                Add-BaselineResult -Results $Results -RepositoryName $FullName `
-                    -Setting 'default_branch_ruleset' -Status 'Drift'
-                continue
-            }
-
-            if (-not $PSCmdlet.ShouldProcess($FullName, 'Apply the default branch pull request ruleset')) {
-                Add-BaselineResult -Results $Results -RepositoryName $FullName `
-                    -Setting 'default_branch_ruleset' -Status 'WhatIf'
-                continue
-            }
-
-            $RulesetsPath = "$RepositoryPath/rulesets?includes_parents=false&per_page=100"
-            $RulesetsResponse = Invoke-GhCommand -Arguments @('api', $RulesetsPath)
-            if ($RulesetsResponse.ExitCode -ne 0) {
-                Add-BaselineResult -Results $Results -RepositoryName $FullName `
-                    -Setting 'default_branch_ruleset' `
-                    -Status $(Get-FailureStatus $RulesetsResponse.Error) `
-                    -Detail $RulesetsResponse.Error
-                continue
-            }
-
-            $ExistingRuleset = @(ConvertFrom-GhResponse -Response $RulesetsResponse) |
-            Where-Object {
-                $_.name -eq $Policy.ruleset.name -and
-                $_.source_type -eq 'Repository' -and
-                $_.source -eq $FullName
-            } |
-            Select-Object -First 1
-            if ($null -eq $ExistingRuleset) {
-                $Response = Invoke-GhMutation -Method POST -Path "$RepositoryPath/rulesets" -Body $Policy.ruleset
-            }
-            else {
-                $Response = Invoke-GhMutation -Method PUT `
-                    -Path "$RepositoryPath/rulesets/$($ExistingRuleset.id)" `
-                    -Body $Policy.ruleset
-            }
-
+            $RulesetResult = Resolve-DefaultBranchRuleset `
+                -RepositoryName $FullName `
+                -RepositoryPath $RepositoryPath `
+                -DefaultBranch $Detail.default_branch `
+                -Policy $Policy `
+                -Apply:($Mode -eq 'Apply') `
+                -WhatIf:$WhatIfPreference
             Add-BaselineResult -Results $Results -RepositoryName $FullName `
                 -Setting 'default_branch_ruleset' `
-                -Status $(if ($Response.ExitCode -eq 0) { 'Changed' } else { Get-FailureStatus $Response.Error }) `
-                -Detail $Response.Error
+                -Status $RulesetResult.Status `
+                -Detail $RulesetResult.Detail
         }
 
         if ($OutputPath -and $PSCmdlet.ShouldProcess($OutputPath, 'Write baseline result JSON')) {
