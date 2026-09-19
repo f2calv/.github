@@ -8,6 +8,8 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Central Build Configuration
 
 - Keep shared MSBuild properties in the root `Directory.Build.props` — root namespace, language version, `ImplicitUsings`, `Nullable`, `GenerateDocumentationFile`, warning policy and `ContinuousIntegrationBuild` for deterministic CI builds.
+- Declare one `UserSecretsId` for the whole repository in the root `Directory.Build.props`, as a GUID. Never declare a second one in an individual project file: each distinct identifier creates a separate secrets store, so per-project identifiers scatter the same credentials across several places and make them easy to set in one project and miss in another.
+- Changing an existing `UserSecretsId` orphans whatever is already stored under the old one. Check for an existing store before changing it, and migrate the contents rather than silently stranding them.
 - Keep individual project files minimal — only project-specific properties and references belong there.
 - Centralise warning suppressions (`NoWarn`) in `Directory.Build.props`, with a comment naming each suppressed diagnostic and why it is suppressed. Never suppress a diagnostic inline in a project file without a comment.
 - Use conditional property groups for cross-cutting project categories rather than repeating settings per project — for example disabling `GenerateDocumentationFile` for test projects, and gating `IsPackable` so packaging is opt-in.
