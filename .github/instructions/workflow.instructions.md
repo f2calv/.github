@@ -94,6 +94,14 @@ place a future reader will actually look.
 - Where a `TODO` and an issue both exist, the issue is the fuller record and the comment points at
   it. Do not maintain the same detail in both.
 
+Recording is only half the loop; the other half is reading it back.
+
+- At the start of a new session, before beginning anything new, remind the user to check whether the
+  repository has open issues they would rather address first. Recorded work is worthless if nobody
+  looks at it, and an issue opened last month is easy to forget once a fresh task is in mind.
+- Keep the reminder to one line, and skip it when the user has already named the task or is plainly
+  resuming work in progress.
+
 ## Maintaining Conventions
 
 - When detecting a new convention or pattern, add it to the appropriate scoped `*.instructions.md` file — or to this file when the rule is cross-cutting — and apply it retroactively where applicable.
