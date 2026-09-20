@@ -111,6 +111,7 @@ Describe 'Invoke-PiiScan' -Tag 'Unit' {
     }
 }
 
+
 Describe 'Find-Pii script exit behavior' -Tag 'Unit' {
     It 'Returns exit code 1 for FailOnFind when a seeded value is tracked' {
         $RepositoryPath = Join-Path $TestDrive 'fail-on-find'
