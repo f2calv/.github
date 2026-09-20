@@ -29,6 +29,10 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
   phase-labelled commit per repository as needed.
 - **Batch a bulk commit by originating change**: When asked to commit everything and the working tree holds unrelated edits — typically accumulated from several separate requests or sessions — group the files into one commit per originating change rather than a single sweeping commit. Infer the grouping from the files themselves: a shared directory, feature area or file type usually marks the boundary. Each message then describes one coherent change accurately, and stays short. Ask which grouping is intended when the boundary is genuinely ambiguous, and never mix an unrelated file into a group to avoid leaving it uncommitted.
 - **Preserve git history during renames and moves**: Perform the rename or move first (prefer `git mv`), then edit the content at its new path. Never delete and recreate a file when a rename or move is the intent.
+- **Merge pull requests with a merge commit**: Always use the regular `merge` method so the pull
+  request's individual commits and their messages remain in history. Never squash-merge or
+  rebase-merge a pull request. If regular merge commits are disabled or blocked, stop and ask the
+  user rather than choosing another merge method.
 - **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable and preferred where the changes are disconnected, or where one repository should not know about the other. A single shared message is fine when the change is genuinely coupled.
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
