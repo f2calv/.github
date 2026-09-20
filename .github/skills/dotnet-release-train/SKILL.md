@@ -1,385 +1,128 @@
 ---
 name: dotnet-release-train
-description: 'Plan, prepare, execute, pause, resume, and verify releases and dependency upgrades across dependent .NET and public NuGet repositories. Use when coordinating Patch Tuesday updates, package holds, chained pull requests, GitHub releases, NuGet publication, or downstream application updates.'
-argument-hint: '[mode={plan|prepare|run|resume|status|stop}] [roots=...] [packages={all|internal}]'
+description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases beginning with CasCap.Common.'
+argument-hint: '[start=CasCap.Common] [packages={all|internal}]'
 user-invocable: true
 ---
 
 # .NET Release Train
 
-Coordinate a dependency-ordered release train across .NET repositories in the current VS Code
-workspace. The workflow discovers package relationships, validates local source and published-package
-builds, manages pull requests, waits for GitHub and NuGet publication, and persists enough state to
-resume after hours or days.
-
-By default, each selected repository also assesses every active centrally managed NuGet dependency
-for a stable update. Exact holds remain unchanged; major-line constraints may advance to the newest
-compatible version within the permitted line. Both appear in the plan with their reason.
-
-This skill orchestrates existing repository workflows. It does not replace CI, calculate versions,
-publish packages directly, or deploy applications outside their established workflows.
-
-## Prerequisites
-
-- PowerShell 7.4 or Bash 4.0 or later.
-- GitHub CLI authenticated for every repository in scope.
-- Git and the required .NET SDKs available in each repository's supported environment.
-- A `Directory.Packages.props` file for centrally managed package versions.
-- Public package publication through `https://api.nuget.org/v3/index.json`. Authenticated and private
-   feeds are outside version 1 scope.
-- Existing CI that builds the Release solution and publishes packages from the default branch.
-- Required pull request checks configured in repository rulesets.
-- An existing local `.copilot-tracking/` workspace folder, or approval to create one outside all
-  tracked repositories.
-
-## Modes
-
-| Mode | Behaviour |
-| --- | --- |
-| `plan` | Discover repositories and package edges, write a checkpoint, and make no changes |
-| `prepare` | Prepare the root producer and consumers whose target versions already exist, but perform no remote operations |
-| `run` | Present the complete plan, obtain one scoped authorization, then execute it |
-| `resume` | Reload a checkpoint, revalidate remote and local state, and request fresh authorization |
-| `status` | Report checkpoint and remote state without mutation |
-| `stop` | Mark the train stopped without reverting completed releases |
-
-Default to `plan` when no mode is supplied. Never infer permission to push, create pull requests, merge,
-or rerun CI from an earlier train.
-
-## Parameters
-
-| Parameter | Meaning |
-| --- | --- |
-| `mode` | `plan`, `prepare`, `run`, `resume`, `status`, or `stop` |
-| `roots` | Optional workspace repository names or absolute paths to use as graph roots |
-| `packages` | `all` (default) assesses every package; `internal` limits changes to train-produced packages |
-
-The dependency graph determines downstream scope. Ask before adding a repository that is not already
-open in the workspace or explicitly supplied through `roots`.
-
-## Safety Model
-
-- Treat the dependency graph, repository list, branches, immutable HEADs, commands, and remote
-   operations as the unit of authorization. Show all of them before asking for approval.
-- Collect run approval and the independent auto-commit and auto-push switches as separate graphical
-   questions in one dialog. Run approval never implies either switch. Respect switch changes
-   immediately and surface enabled automation at dependency-layer boundaries.
-- Authorization exists only in the active conversation. Never persist it. It expires when scope
-   changes, the train pauses, the conversation ends, or the checkpoint is resumed.
-- Never persist credentials, tokens, authorization headers, or environment values in checkpoint
-  state.
-- Never publish private repository identities or topology from a checkpoint into a public commit,
-  issue, pull request, comment, or log.
-- Never alter, stage, or commit unrelated working-tree changes. Preserve each repository's current
-  feature branch and existing commits.
-- Search for an existing pull request and linked issue before creating either. Follow the central
-  GitHub issue and pull request conventions.
-- Use a merge commit for an automatically mergeable pull request. Do not squash or rebase it.
-- Auto-merge only a dependency-only pull request whose authorized checks pass and whose current base
-   ref, base SHA, and head SHA exactly match the values used for classification and check verification.
-   Re-fetch both refs and the diff immediately before merge. Any changed base, head, file set, or
-   unexpected package edit expires classification and authorization for that merge.
-- Never bypass required checks, administrator protections, deployment environments, or failed tests.
-- Never treat a successful package push as publication. Continue only after every expected package
-  version is available from NuGet's restore endpoint.
-- Do not keep a process sleeping for a deliberate multi-hour or multi-day pause. Persist the
-  checkpoint, expire authorization, exit cleanly, and resume later.
-
-## Checkpoint
-
-Store each run below the local workspace tracking folder:
-
-```text
-.copilot-tracking/release-trains/<yyyy-MM-dd>-<train-name>/state.json
-```
-
-Validate state against
-[release-train-state.schema.json](./assets/release-train-state.schema.json). Update it atomically after
-every state transition. Record timestamps in UTC and append events rather than rewriting history.
-Canonicalize the repository keys, immutable HEADs, dependency edges, package assessments (including
-holds), planned package edits, validation commands, and remote operations as JSON and store its
-SHA-256 as `planFingerprint`. Recompute it before each remote mutation. A mismatch expires run
-authorization and requires a revised plan.
-
-Repository stages progress through:
-
-```text
-discovered -> prepared -> pushed -> pr-open -> checks-passed -> merged
-           -> release-complete -> packages-available -> completed
-```
-
-Store `stage` separately from `disposition`. Pausing, failing, skipping, or stopping must not erase
-the last durable stage. A downstream repository cannot move past `discovered` until every required
-upstream package version has recorded NuGet availability evidence.
-
-## Dependency Discovery
-
-1. Consider only Git repositories explicitly open in the current workspace or supplied through
-   `roots`.
-2. Evaluate projects with MSBuild (`dotnet msbuild -getProperty` and `-getItem`) so imports,
-   properties, conditions, `PackageId`, and `IsPackable` are resolved. Parse
-   `Directory.Packages.props` as XML for declared package versions. Do not use string replacement.
-3. Discover produced package IDs from evaluated projects with `IsPackable=true`. Resolve `PackageId`,
-   falling back to the evaluated project name when it is absent.
-4. Discover consumed package IDs and exact versions from `Directory.Packages.props` and
-   `PackageReference` items.
-5. Read Debug and Release solutions plus conditional `ProjectReference` and `PackageReference` items
-   to confirm local-source and published-package paths.
-6. Build repository edges only when a consumed package ID is produced by another repository in
-   scope.
-7. Topologically sort the graph into dependency layers. Fail on a cycle and show the exact edges.
-8. Present unrecognized package producers and consumers for review. Never silently omit an edge.
-
-## Package Assessment
-
-For `packages=all`, assess every active `PackageVersion` in `Directory.Packages.props`, including
-development and test dependencies. Ignore commented-out items. Preserve MSBuild conditions and treat
-the same package under different target-framework conditions as separate assessments.
-
-1. Read repository-specific Copilot instructions before querying updates. A documented hold is the
-   authority for that repository.
-2. Use `dotnet package list --outdated --format json` when the installed SDK supports it; otherwise
-   use the equivalent `dotnet list package --outdated --format json`. Use structured JSON output.
-3. Consider stable versions only unless the current version is already a prerelease or the
-   repository explicitly authorizes prerelease updates.
-4. Enumerate every project in the selected Debug and Release solutions, every evaluated target
-   framework, and both configurations. Run the structured outdated query per project, framework, and
-   configuration, then reconcile the results with every active central `PackageVersion`. Fail the
-   plan if any active declaration has no assessment evidence.
-5. Record every active package as `update`, `current`, or `held`, with policy `unrestricted`,
-   `major-ceiling`, or `exact-hold`. A constrained package records its current version, newest
-   observed version, reason, source instruction, target-framework condition, permitted major or
-   exact version, and the project/framework/configuration evidence that consumed it.
-6. For a `major-ceiling`, query the package's full public NuGet version index and select the highest
-   stable version whose parsed semantic major equals `permittedMajor`. Use a NuGet-compatible
-   semantic version parser; never sort version strings lexically. Record both the global newest
-   stable version and the newest permitted version.
-7. A `major-ceiling` may advance within its permitted major line. An `exact-hold` never changes in a
-   routine sweep. Never cross a ceiling, remove a target-framework condition, or replace an exact
-   hold merely because restore succeeds.
-8. Group related package families for review, including `Microsoft.Extensions.*`, EF Core,
-   OpenTelemetry, Serilog integration packages, gRPC, and packages produced together by one internal
-   repository. Preserve existing alignment where the packages share a release line, but do not force
-   independently versioned packages to one number. Present newly introduced family divergence for
-   review.
-9. Include all proposed external and internal package updates and their complete assessment evidence
-   in the plan fingerprint and pull
-   request classification.
-
-An undocumented package that cannot upgrade is a planning failure. Diagnose the incompatibility,
-then add a concise repository-specific hold before continuing. Holds belong in the repository's
-`.github/copilot-instructions.md`, not in this public reusable skill.
-
-The checkpoint owns the discovered graph for that train. On resume, rediscover and compare it; require
-a new plan approval when repositories, package IDs, or edges changed.
-
-## Pull Request Classification
-
-A dependency-only pull request may contain only the exact package update files and values shown in
-the authorized plan:
-
-- `Directory.Packages.props`;
-- committed NuGet lock files;
-- generated dependency metadata required by the repository's documented update process;
-- release-train checkpoint data only when that data is in an untracked local workspace folder.
-
-An allowed path containing any unplanned package ID, version, metadata, or generated change is mixed.
-Treat changes to source, tests, project files, build configuration, workflows, documentation, or any
-other path as mixed. Display the full changed-file list, package-value diff, commit summary, and PR
-head SHA before asking whether to merge a mixed pull request.
-
-## Required Protocol
-
-### 1. Plan
-
-1. Create or load the checkpoint.
-2. Capture each repository's path, visibility, default branch, current branch, HEAD, upstream,
-   worktree status, open pull request, linked issue, produced packages, and consumed internal
-   packages.
-3. Refuse to proceed from detached HEAD, the default branch, an unresolved merge/rebase state, or an
-   unexplained dirty worktree. When no feature branch exists, propose a compliant branch name and
-   require it in the authorized plan before creating it from a freshly fetched default branch.
-4. Discover the dependency graph and show the ordered layers.
-5. Assess all active centrally managed packages according to `packages`, including explicit holds.
-6. For each repository, show exact internal and external package edits, held packages, and
-   Debug/Release build and test commands.
-7. Classify every existing branch or pull request as dependency-only or mixed.
-8. Calculate and persist the canonical plan fingerprint.
-
-### 2. Authorize
-
-Use one graphical dialog showing the plan plus separate choices for run approval, auto-commit, and
-auto-push:
-
-- repositories and branches in order;
-- builds and tests that will run;
-- commits and pushes that may occur;
-- pull requests that may be created or reused;
-- dependency-only pull requests eligible for automatic merge;
-- mixed pull requests that will pause for approval;
-- expected packages and downstream updates.
-
-Offer `Approve run`, `Prepare locally only`, `Revise plan`, and `Stop`. Offer independent enabled or
-disabled choices for auto-commit and auto-push. Do not write authorization to the checkpoint.
-
-### 3. Prepare a Producer
-
-1. Recheck HEAD, upstream, worktree, pull request, and issue state against the checkpoint.
-2. Review the entire branch diff, including changes unrelated to dependencies.
-3. Apply the authorized stable external-package updates and currently resolvable internal-package
-   updates through structured MSBuild XML. Preserve exact holds, major ceilings, and conditions;
-   constrained packages may advance only within their permitted line.
-4. Restore and validate the Release solution against the selected package versions, then validate
-   the Debug solution for source-level integration when available.
-5. Run repository lint and every authorized test command before pushing.
-6. For a public repository, run the central PII scanner before every commit and inspect the proposed
-   commit message, issue, pull request, branch, and comments for private repository identities.
-7. Commit only uncommitted changes that belong to the approved train. Commit automatically only when
-   auto-commit is enabled for the active session; otherwise pause for explicit commit approval. Keep
-   existing commits intact.
-8. Push only when auto-push is enabled for the active session. Otherwise pause for explicit push
-   approval.
-9. Search open and closed issues before creating one. Select and verify the native issue type or
-   canonical type label, apply accurate labels, and verify the created issue.
-10. Read the repository pull request template, create or update the pull request, link the issue,
-   apply accurate labels, assign the authenticated user, and verify base, head, labels, and assignee.
-
-In `prepare` mode, stop after local validation. Do not invent a downstream target version. Prepare a
-consumer only when its upstream target version is already verified on public NuGet.
-
-### 4. Merge and Publish
-
-1. Record the PR base ref, base SHA, and head SHA, then wait for all required checks on that exact head
-   SHA. Record check-suite and workflow-run identifiers. A cancelled, skipped unexpectedly,
-   timed-out, stale, or failed check is a failure, not permission to continue.
-2. Immediately before merge, re-fetch the PR base ref, base SHA, head SHA, commits, changed files, and
-   package-value diff. If they exactly match the classified evidence and authorized plan, merge a
-   dependency-only pull request with a merge commit under the active run authorization.
-3. If it is mixed, show its changed files, commits, approvals, and checks in a graphical question.
-   Offer `Merge`, `Inspect`, `Pause`, and `Stop`.
-4. Record the merge commit and wait for the default-branch CI run associated with that commit.
-5. Verify the immutable tag and GitHub release point at the intended release commit. Record the tag,
-   release identifier, workflow run, and commit SHA.
-6. Derive the release version from the verified tag, not from a local prediction.
-7. Enumerate every package expected from the repository and run the bundled NuGet availability
-   helper against the public NuGet flat-container endpoint. Record package ID, version, source URI,
-   and check time. All packages must report the release version before downstream work starts.
-8. For a repository that produces no packages, advance directly from `release-complete` to
-   `completed`. Never invent a `packages-available` transition for an application.
-
-### 5. Prepare Consumers
-
-For each direct consumer in the next dependency layer:
-
-1. Update every consumed package from the completed producer to the verified release version.
-2. Keep package sets produced by one repository aligned to the same release unless the repository
-   explicitly documents an exception.
-3. Restore and validate the Release solution against NuGet packages.
-4. Validate the Debug solution against local sibling projects when the repository supports it.
-5. Follow the same push, pull request, merge, and release protocol as the producer. Run package
-   availability only when the consumer itself produces packages.
-
-Process sibling repositories sequentially in version 1. Do not begin the next dependency layer until
-all selected repositories in the current layer are complete or explicitly skipped with downstream
-impact shown.
-
-### 6. Layer Checkpoint
-
-After each healthy dependency layer, use a graphical question with `Continue`, `Pause`, and `Stop`.
-
-- `Continue` retains run authorization only when the remaining scope and immutable repository HEADs
-   are unchanged. It does not change auto-commit or auto-push status.
-- `Pause` writes state, expires authorization, and exits.
-- `Stop` records the stop reason and exits without reverting published packages or merged commits.
-
-### 7. Resume
-
-1. Load and validate the checkpoint.
-2. Re-fetch every repository and compare local/remote commits, PR head SHAs, check suites, workflow
-   runs, merge commits, releases, tags, package source URIs, and NuGet availability with recorded
-   evidence.
-3. Advance state when remote evidence proves a step completed while the skill was inactive.
-4. Stop on contradictory evidence, such as a moved tag, changed pull request head, rewritten branch,
-   or package version not associated with the recorded release.
-5. Present the remaining plan and obtain fresh run, auto-commit, and auto-push decisions.
-
-## Failure Handling
-
-For a recoverable failure, record the command or API operation, exit code, concise output, repository
-state, and next safe action. Offer `Retry`, `Inspect`, `Pause`, and `Stop` graphically.
-
-Never retry automatically after:
-
-- a failed or missing required check;
-- a merge conflict;
-- a changed dependency graph;
-- an unexpected package ID or version;
-- a mixed pull request awaiting approval;
-- a release tag or package integrity mismatch;
-- authentication or authorization failure.
-
-A repository may be skipped only after showing every downstream repository that depends on it. A
-downstream node remains blocked unless each required package ID and target version already has
-availability evidence, independently of the skipped producer's disposition.
-
-## Assets
-
-| Asset | Purpose |
-| --- | --- |
-| [Test-NuGetPackageAvailability.ps1](./scripts/Test-NuGetPackageAvailability.ps1) | Poll NuGet's restore endpoint from PowerShell |
-| [test-nuget-package-availability.sh](./scripts/test-nuget-package-availability.sh) | Poll NuGet's restore endpoint from Bash |
-| [Invoke-Tests.ps1](./scripts/Invoke-Tests.ps1) | Run the Pester regression suite for PowerShell helpers |
-| [release-train-state.schema.json](./assets/release-train-state.schema.json) | Validate resumable checkpoint state |
-
-## Script Reference
-
-PowerShell:
-
-```powershell
-./scripts/Test-NuGetPackageAvailability.ps1 `
-   -PackageId Example.Core,Example.Json `
-   -Version 1.2.3 `
-   -TimeoutSeconds 600
-```
-
-Bash:
-
-```bash
-./scripts/test-nuget-package-availability.sh 1.2.3 Example.Core Example.Json
-```
-
-Both helpers return exit code `0` when every package is available, `1` for invalid input or an
-unexpected request failure, and `2` when the deadline expires with packages still unavailable.
-
-## Quick Start
-
-Start read-only discovery:
-
-```text
-/dotnet-release-train mode=plan
-```
-
-Prepare package updates without remote operations:
-
-```text
-/dotnet-release-train mode=prepare
-```
-
-Execute an approved plan or resume after a pause:
-
-```text
-/dotnet-release-train mode=run
-/dotnet-release-train mode=resume
-```
-
-## Troubleshooting
-
-| Symptom | Response |
-| --- | --- |
-| Package push succeeded but restore fails | Poll the restore endpoint until all expected IDs expose the verified version |
-| Existing pull request contains source changes | Classify it as mixed and require graphical merge approval |
-| Train pauses for days | Resume from state, reconcile remote evidence, and request fresh authorization |
-| CI run cannot be tied to the merge commit | Stop; do not infer publication from the latest successful run |
-| One package from a multi-package repository is absent | Keep the producer incomplete and block its consumers |
-| Dependency graph changed on resume | Re-plan and obtain new authorization |
-| Private repository appears in public output | Stop and rewrite the output without the private identifier |
+Move through dependent .NET repositories in package order. Finish and publish each producer before
+updating its consumers. Use the repositories' existing branches, workflows, package holds, and
+release conventions rather than maintaining a separate release state machine.
+
+## Repository Order
+
+- **CasCap.Common** — always start here when its packages need updating.
+  - Update external packages and the shared source.
+  - Validate every packable `CasCap.Common.*` project.
+  - Merge and release it.
+  - Wait until every package from the release is restorable from NuGet.
+- **Direct CasCap.Common consumers** — continue only after the Common packages are available.
+  - `CasCap.Api.Azure`
+    - Update every consumed `CasCap.Common.*` package together.
+    - Release its `CasCap.Api.Azure.*` packages and wait for all of them on NuGet.
+  - `CasCap.Api.SignalCli`
+    - Update every consumed `CasCap.Common.*` package together.
+    - Release `CasCap.Api.SignalCli` and wait for it on NuGet.
+  - `CasCap.Api.GooglePhotos`
+    - Update its Common packages.
+    - Release `CasCap.Api.GooglePhotos` and wait for it on NuGet.
+  - `yamlizr`
+    - Update its Common packages and other dependencies.
+    - Release through its existing global-tool workflow.
+- **CasCap.GooglePhotosCli** — continue after `CasCap.Api.GooglePhotos` is available.
+  - Update `CasCap.Api.GooglePhotos`.
+  - Validate and release the CLI through its existing global-tool workflow.
+- **Application repositories** — do these last, after every package they consume is available.
+  - Update all newly released internal packages together.
+  - Validate the complete application rather than publishing another NuGet package unless that
+    repository explicitly produces one.
+  - Process public applications such as SmartHaus and any private application consumers discovered
+    in the current workspace. Never publish private repository names or topology from this public
+    skill.
+
+Repositories at the same indentation level do not depend on one another. Process them sequentially
+unless the user explicitly asks for parallel sessions.
+
+## Repeat For Each Repository
+
+- **Inspect**
+  - Read the repository instructions and documented package holds first.
+  - Fetch the default branch and inspect the current branch, worktree, existing pull request, and
+    open Dependabot pull requests.
+  - Preserve unrelated work. Do not create another branch or pull request when the current one is
+    already the correct release branch.
+  - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
+    pull request. Keep major migrations and documented holds separate.
+- **Update packages**
+  - Update all active stable versions in `Directory.Packages.props`, not only internal packages,
+    unless the user requests `packages=internal`.
+  - Preserve conditions, exact holds, and major ceilings from repository instructions.
+  - Keep package families aligned where they share a release line.
+  - Update an internal package only to a version already verified on NuGet. Never predict the next
+    version and use that prediction downstream.
+- **Validate locally**
+  - Ask once for authorization to run the train's builds and tests; do not ask again for every
+    repository while that scope remains unchanged.
+  - Restore and build the repository's Debug solution when it uses local `ProjectReference` paths.
+  - Restore and build its Release solution to prove the published `PackageReference` path.
+  - Run the repository's lint command and all relevant unit tests.
+  - Run integration tests when authorized and their dependencies are available.
+    - Classify failures caused by unavailable external services, credentials, market hours, or local
+      infrastructure separately from code regressions.
+    - Do not expand the release into speculative repairs for retired or offline providers. Record a
+      durable skip/TODO when the test can no longer run.
+  - Fix build, analyzer, packaging, and deterministic test failures before continuing.
+- **Commit and open the pull request**
+  - Follow the normal auto-commit and auto-push switches; the skill grants no extra Git permission.
+  - For public repositories, run the privacy scan before committing.
+  - Use conventional commits and keep unrelated changes separate.
+  - Push the branch and create or update one pull request covering the full branch diff.
+  - Link an existing issue when relevant. Never create an issue solely because a pull-request
+    template asks for one.
+  - Apply accurate labels and assign the authenticated user.
+- **Review and merge**
+  - Wait for every required check on the current head SHA.
+  - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
+    required check or quality gate.
+  - Treat missing expected build, test, or Sonar checks as a CI coverage gap, not a passing result.
+  - Use a merge commit unless the repository explicitly requires another strategy. Do not squash a
+    multi-commit release branch by default.
+  - Merge only after the user authorizes it or an active auto-merge instruction covers it.
+- **Verify the release**
+  - Switch the local checkout to the default branch, fast-forward from origin, and delete the merged
+    local branch when no other worktree owns it.
+  - Wait for default-branch CI and the immutable GitHub release tag.
+  - Derive the released version from the tag; do not infer it from GitVersion output or a pull-request
+    prerelease version.
+  - If the repository publishes NuGet packages, verify every expected package ID at that exact
+    version before continuing downstream.
+    - PowerShell: `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`
+    - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
+  - If the repository publishes no packages, continue once its merge and release checks are complete.
+
+## Interruptions And Resume
+
+- Do not maintain a checkpoint schema, stage names, plan fingerprints, or a parallel source of truth.
+- When interrupted, report only:
+  - the last repository merged and released;
+  - the package IDs and versions confirmed on NuGet;
+  - the repository currently being updated;
+  - the next direct consumer.
+- On resume, inspect Git, GitHub, releases, and NuGet again. Trust current remote evidence rather than
+  stale notes from the earlier session.
+- Stop the chain when an upstream package is not published, a required check fails, a merge conflict
+  needs judgment, or the user changes scope. Continue from that repository after the blocker is
+  resolved.
+
+## Practical Rules
+
+- Package publication, not merge completion, unlocks the next consumer.
+- Release builds matter even when Debug builds pass, because Debug commonly uses local project
+  references while Release consumes NuGet packages.
+- A successful package push is not proof that NuGet clients can restore it.
+- Keep each repository's package holds in its own instructions; do not duplicate them here.
+- Do not mix deployment or live-cluster debugging into the release train unless the user asks for it.
+- Keep status updates short: current repository, latest verified package version, blocker, next
+  repository.

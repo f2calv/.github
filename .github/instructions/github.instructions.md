@@ -61,6 +61,12 @@ someone arriving cold months later.
 - Inspect the repository's available labels when creating a pull request and apply every label that accurately describes the change.
 - Assign a new pull request to the currently authenticated GitHub user. Resolve the login dynamically from the GitHub client or API; never hardcode a username in instructions or automation.
 - Verify the pull request's base branch, head branch, labels and assignee after creation.
+- After creating a pull request, and again when asked to merge it, inspect the current-head GitHub
+  Advanced Security/code-scanning alerts and SonarQube pull-request analysis. Resolve every open
+  critical or high finding (SonarQube `BLOCKER`/`HIGH`, or the equivalent GitHub severity), plus any
+  lower-severity finding that fails a required check or Quality Gate. Re-run the affected analysis
+  on the unchanged head and do not treat a passing or failing result from a superseded commit as
+  evidence for the current pull request.
 
 ## Continuous Integration
 
@@ -87,6 +93,12 @@ someone arriving cold months later.
 
 - Configure Dependabot for every package ecosystem the repository uses, with one entry per manifest directory or a `directories` pattern covering them all.
 - Validate automated dependency updates through the same pull request checks as manually authored changes.
+- Before creating or merging a pull request, inspect the repository's open Dependabot pull requests.
+  Fold a pending patch or minor update into the current branch when its change is small, compatible
+  with the current work and safe to validate in the same pull request; then document and close the
+  superseded Dependabot pull request. Keep major migrations, documented holds, incompatible updates
+  and changes needing independent risk review separate. This consolidation avoids unnecessary pull
+  request and semantic-version release churn without weakening dependency validation.
 
 ## Releases
 

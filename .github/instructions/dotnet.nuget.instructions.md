@@ -74,13 +74,13 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 ## Publication
 
 - Publish packages only through the repository's established CI workflow and trusted package-source
-  authentication. Never put a NuGet API key in source, configuration, logs or checkpoint state.
+  authentication. Never put a NuGet API key in source, configuration or logs.
 - Derive the package version from the immutable release tag produced by CI. Do not predict a release
   version locally and use it as publication evidence.
 - A successful push is not proof that consumers can restore a package. Verify every expected package
   ID and exact version through the configured package source's restore endpoint before updating
-  downstream repositories. Version 1 of the `dotnet-release-train` skill supports public nuget.org
-  only; authenticated feeds require a separate credential-safe implementation.
+  downstream repositories. The `dotnet-release-train` helpers support public nuget.org only;
+  authenticated feeds require a separate credential-safe implementation.
 - Do not continue a dependent release train when one package from a multi-package producer is absent.
 - Use `--skip-duplicate` only to make an idempotent retry safe. It does not permit rebuilding or
   replacing an immutable published version.
@@ -88,8 +88,8 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 ## Release Trains
 
 - Use the `dotnet-release-train` skill for dependency-ordered releases across repositories.
-- Persist repository coordinates, dependency topology and private project details only in the local
-  release-train checkpoint. Do not add them to reusable public instructions or examples.
+- Never add private repository coordinates, dependency topology or project details to reusable
+  public instructions or examples.
 - Pause downstream work until the upstream GitHub release and every consumed NuGet package version
   are verified.
 - Rebuild each consumer in Release after changing internal package versions, even when its Debug build
