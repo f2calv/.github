@@ -94,7 +94,36 @@ Describe 'Invoke-PiiScan' -Tag 'Unit' {
         $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @()
 
         $Result.SeedHits | Should -Be 0
+        $Result.HighConfidenceHits | Should -Be 0
         @($Result.Findings).Count | Should -Be 1
+    }
+
+    It 'Classifies Windows and Unix user-profile paths as high confidence' {
+        $RepositoryPath = Join-Path $TestDrive 'user-profile-paths'
+        Initialize-TestRepository -Path $RepositoryPath
+        $WindowsPath = 'C:' + '\Users\' + 'sample-user\source\repository'
+        $MacPath = '/' + 'Users/sample-user/source/repository'
+        $LinuxPath = '/' + 'home/sample-user/source/repository'
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content "$WindowsPath $MacPath $LinuxPath"
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @()
+
+        $Result.HighConfidenceHits | Should -Be 3
+        @($Result.Findings.Confidence | Select-Object -Unique) | Should -Be @('user-path')
+    }
+
+    It 'Allows generic container profiles and hidden home directories' {
+        $RepositoryPath = Join-Path $TestDrive 'generic-profile-paths'
+        Initialize-TestRepository -Path $RepositoryPath
+        $ContainerPath = '/' + 'home/vscode/workspace'
+        $RunnerPath = '/' + 'home/runner/work/repository'
+        $HiddenPath = '/' + 'home/.local/share'
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content "$ContainerPath $RunnerPath $HiddenPath"
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @()
+
+        $Result.HighConfidenceHits | Should -Be 0
+        @($Result.Findings).Count | Should -Be 0
     }
 
     It 'Throws when git grep fails' {
@@ -136,5 +165,18 @@ Describe 'Find-Pii script exit behavior' -Tag 'Unit' {
             -FailOnFind *> $null
 
         $LASTEXITCODE | Should -Be 0
+    }
+
+    It 'Returns exit code 1 for FailOnFind when a user-profile path is tracked' {
+        $RepositoryPath = Join-Path $TestDrive 'fail-on-user-profile-path'
+        Initialize-TestRepository -Path $RepositoryPath
+        $UserPath = 'C:' + '\Users\' + 'sample-user\source\repository'
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content $UserPath
+
+        & pwsh -NoProfile -File $script:ScriptPath `
+            -RepoRoot $RepositoryPath `
+            -FailOnFind *> $null
+
+        $LASTEXITCODE | Should -Be 1
     }
 }

@@ -16,9 +16,11 @@
          then searched for across the repo. Because the seeds are read at runtime, no real
          PII is ever hardcoded into this (committed) script.
 
-      2. Generic heuristics - always-on regular expressions catch PII shapes even when a
-         value is not present in the Local files (emails, E.164 phone numbers, private
-         IPv4 ranges, *.{blob,table,queue,file}.core.windows.net accounts, user paths).
+        2. Generic matchers - always-on regular expressions catch PII shapes even when a
+            value is not present in the Local files (emails, E.164 phone numbers, private
+            IPv4 ranges, *.{blob,table,queue,file}.core.windows.net accounts, user-profile
+            paths). User-profile paths are intrinsically high confidence; the other generic
+            matches require review.
 
     Both the current working tree (tracked files only) and, optionally, the entire git
     history are searched. Known-safe placeholder values (example.com, 192.168.1.100,
@@ -40,7 +42,8 @@
     Optional path to write the full result set as CSV.
 
 .PARAMETER FailOnFind
-    Exit with code 1 if any high-confidence seeded match is found (useful for pre-commit / CI).
+    Exit with code 1 if any high-confidence seeded match or user-profile path is found
+    (useful for pre-commit / CI).
 
 .EXAMPLE
     pwsh .scripts/Find-Pii.ps1
@@ -59,8 +62,8 @@
 
 .EXAMPLE
     pwsh .scripts/Find-Pii.ps1 -FailOnFind
-    Scan and exit 1 if any high-confidence (seed) PII is found. Use in pre-commit hooks
-    and CI to block leaks before they are committed.
+    Scan and exit 1 if any high-confidence PII is found. Use in pre-commit hooks and CI
+    to block leaks before they are committed.
 
 .NOTES
     ============================ HOW TO USE ============================
@@ -167,7 +170,8 @@ function Invoke-PiiScan {
             'Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=='
         )
         $allowRegex = @(
-            [regex]'(?i)\.(blob|table|queue|file)\.core\.windows\.net$' # the bare suffix with no account
+            [regex]'(?i)\.(blob|table|queue|file)\.core\.windows\.net$', # the bare suffix with no account
+            [regex]'(?i)^(?:[a-z]:\\Users\\|/(?:Users|home)/)(?:runner|vscode)$' # generic CI/devcontainer users
         )
 
         # Public apex domains that must NOT be treated as private when extracting domain seeds.
@@ -253,7 +257,7 @@ function Invoke-PiiScan {
             'Phone'        = $rxPhone
             'PrivateIPv4'  = $rxRfc1918
             'AzureStorage' = $rxStorage
-            'UserPath'     = [regex]'(?i)[a-z]:\\Users\\[^\\/"<>:|?*\s]+'
+            'UserPath'     = [regex]'(?i)(?:[a-z]:\\Users\\[a-z0-9][a-z0-9._-]*|/(?:Users|home)/[a-z0-9][a-z0-9._-]*)'
         }
         foreach ($s in $seeds) {
             $escapedSeed = [regex]::Escape($s)
@@ -274,7 +278,8 @@ function Invoke-PiiScan {
             '\+[1-9][0-9]{7,14}',
             '\b(10(\.[0-9]{1,3}){3}|192\.168(\.[0-9]{1,3}){2}|172\.(1[6-9]|2[0-9]|3[01])(\.[0-9]{1,3}){2})\b',
             '[A-Za-z0-9]{3,24}\.(blob|table|queue|file)\.core\.windows\.net',
-            '[/\\]Users[/\\]'
+            '[A-Za-z]:\\Users\\[A-Za-z0-9._-]+',
+            '/(Users|home)/[A-Za-z0-9][A-Za-z0-9._-]*'
         )
 
         # Pathspecs to exclude the seed files themselves and obvious binaries.
@@ -333,7 +338,15 @@ function Invoke-PiiScan {
                 foreach ($m in $matchers[$name].Matches($Content)) {
                     $val = $m.Value
                     if (Test-Allowlisted $val) { continue }
-                    $confidence = if ($name -like 'Seed:*') { 'seed' } else { 'heuristic' }
+                    $confidence = if ($name -like 'Seed:*') {
+                        'seed'
+                    }
+                    elseif ($name -eq 'UserPath') {
+                        'user-path'
+                    }
+                    else {
+                        'heuristic'
+                    }
                     $results += [pscustomobject]@{ Pattern = $name; Value = $val; Confidence = $confidence }
                 }
             }
@@ -425,18 +438,18 @@ function Invoke-PiiScan {
 
         $workFindings = @($findings | Where-Object Source -eq 'working-tree')
         Write-Host "`n----- WORKING TREE -----" -ForegroundColor Green
-        Write-Group -Items @($workFindings | Where-Object Confidence -eq 'seed') `
-            -Heading 'HIGH CONFIDENCE (real values from Local config)' -Color Red
+        Write-Group -Items @($workFindings | Where-Object Confidence -ne 'heuristic') `
+            -Heading 'HIGH CONFIDENCE (seeded values and user-profile paths)' -Color Red
         Write-Group -Items @($workFindings | Where-Object Confidence -eq 'heuristic') `
             -Heading 'HEURISTIC (generic patterns - review)' -Color Yellow
 
         if ($IncludeHistory) {
             $histFindings = @($findings | Where-Object Source -eq 'history')
             Write-Host "`n----- GIT HISTORY -----" -ForegroundColor Green
-            $histSeed = @($histFindings | Where-Object Confidence -eq 'seed')
-            Write-Host "`nHIGH CONFIDENCE (real values from Local config) ($($histSeed.Count) match(es))" -ForegroundColor Red
-            if ($histSeed.Count -gt 0) {
-                $histSeed |
+            $histHighConfidence = @($histFindings | Where-Object Confidence -ne 'heuristic')
+            Write-Host "`nHIGH CONFIDENCE (seeded values and user-profile paths) ($($histHighConfidence.Count) match(es))" -ForegroundColor Red
+            if ($histHighConfidence.Count -gt 0) {
+                $histHighConfidence |
                 Group-Object Value |
                 Sort-Object Count -Descending |
                 ForEach-Object {
@@ -467,13 +480,15 @@ function Invoke-PiiScan {
         }
 
         $seedHits = @($findings | Where-Object Confidence -eq 'seed').Count
-        Write-Host "`nTotal: $($findings.Count) match(es)  |  high-confidence (seed): $seedHits" -ForegroundColor Green
+        $highConfidenceHits = @($findings | Where-Object Confidence -ne 'heuristic').Count
+        Write-Host "`nTotal: $($findings.Count) match(es)  |  high-confidence: $highConfidenceHits" -ForegroundColor Green
         Write-Host "=================================================" -ForegroundColor Green
 
         return [pscustomobject]@{
-            Seeds    = @($seeds)
-            Findings = @($findings)
-            SeedHits = $seedHits
+            Seeds              = @($seeds)
+            Findings           = @($findings)
+            SeedHits           = $seedHits
+            HighConfidenceHits = $highConfidenceHits
         }
     }
     finally {
@@ -492,7 +507,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             -SeedFile $SeedFile `
             -IncludeHistory:$IncludeHistory `
             -OutFile $OutFile
-        if ($FailOnFind -and $Result.SeedHits -gt 0) {
+        if ($FailOnFind -and $Result.HighConfidenceHits -gt 0) {
             exit 1
         }
         exit 0

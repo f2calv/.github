@@ -44,7 +44,8 @@ It works two ways: it reads the repository's gitignored local configuration to l
 values and searches for those exact strings, and it applies always-on patterns for PII shapes. The
 first kind of hit is decisive; the second needs judgement.
 
-- **High-confidence hits are blocking.** A value seeded from a local configuration file is real.
+- **High-confidence hits are blocking.** This includes values seeded from local configuration and
+  machine-specific user-profile paths detected without a seed.
 - **Heuristic hits need review.** A mandated placeholder such as a documentation IP address or an
   example phone number will match the shape while being entirely correct. Confirm it is a placeholder
   rather than silencing the rule.
@@ -87,6 +88,12 @@ inputs — never through committed text.
 Re-read the exact text that will become public, not the change that prompted it: the title, the body,
 the labels, the branch name and the commit messages being pushed. Branch names travel with a pull
 request and are easy to overlook.
+
+The repository scanner only sees Git content. Separately inspect every proposed issue, pull-request,
+review, release and workflow-dispatch title or body before sending it. Replace local absolute paths
+rooted in an operating-system user profile with repository-relative paths or portable placeholders.
+After creating or updating public metadata, retrieve it from the remote service and verify the
+published text again; do not rely on the request payload or a cached local draft.
 
 ## Notes
 
