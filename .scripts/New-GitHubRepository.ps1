@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-#Requires -Version 7.0
+#Requires -Version 7.4
 
 <#
 .SYNOPSIS
@@ -35,8 +35,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
+    [Parameter(Mandatory = $false)]
     [ValidatePattern('^[A-Za-z0-9._-]+$')]
     [string]$Name,
 
@@ -71,6 +70,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
+Set-StrictMode -Version 3.0
 
 #region Functions
 
@@ -119,133 +120,240 @@ function Invoke-NativeCommand {
     }
 }
 
+function Test-NativeCommandAvailable {
+    <#
+    .SYNOPSIS
+        Tests whether a native command is available to the current process.
+    .PARAMETER Name
+        Native command name.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+    )
+
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+function Invoke-NewGitHubRepository {
+    <#
+    .SYNOPSIS
+        Creates or resumes a GitHub repository setup.
+    .PARAMETER Name
+        Name of the repository to create.
+    .PARAMETER Owner
+        GitHub owner. When omitted, resolves the authenticated GitHub account.
+    .PARAMETER Description
+        Optional repository description.
+    .PARAMETER Visibility
+        Public or private repository visibility.
+    .PARAMETER TemplateRepository
+        Optional template repository in owner/name format.
+    .PARAMETER CloneRoot
+        Parent directory for the local clone.
+    .PARAMETER NoClone
+        Creates and configures the repository without cloning it.
+    .PARAMETER AddToWorkspace
+        Adds the local clone to the active VS Code workspace.
+    .PARAMETER Resume
+        Continues setup when the remote repository or expected local clone exists.
+    .OUTPUTS
+        PSCustomObject describing the planned or completed setup.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('^[A-Za-z0-9._-]+$')]
+        [string]$Name,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Owner,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string]$Description = '',
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Public', 'Private')]
+        [string]$Visibility = 'Public',
+
+        [Parameter(Mandatory = $false)]
+        [ValidatePattern('^[^/]+/[^/]+$')]
+        [string]$TemplateRepository,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
+        [string]$CloneRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
+
+        [Parameter(Mandatory = $false)]
+        [switch]$NoClone,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$AddToWorkspace,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Resume
+    )
+
+    if (-not (Test-NativeCommandAvailable -Name 'gh')) {
+        throw 'GitHub CLI (gh) is required.'
+    }
+
+    if (-not (Test-NativeCommandAvailable -Name 'pwsh')) {
+        throw 'PowerShell 7 (pwsh) is required.'
+    }
+
+    if (-not $NoClone -and -not (Test-NativeCommandAvailable -Name 'git')) {
+        throw 'Git is required unless -NoClone is specified.'
+    }
+
+    if ($AddToWorkspace -and $NoClone) {
+        throw '-AddToWorkspace requires a local clone. Remove -NoClone.'
+    }
+
+    if ($AddToWorkspace -and -not (Test-NativeCommandAvailable -Name 'code')) {
+        throw 'VS Code CLI (code) is required for -AddToWorkspace.'
+    }
+
+    $BaselineScript = Join-Path `
+        $PSScriptRoot `
+        '../.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1'
+    if (-not (Test-Path -LiteralPath $BaselineScript -PathType Leaf)) {
+        throw "Repository baseline script was not found: $BaselineScript"
+    }
+
+    if (-not $Owner) {
+        $Authentication = Invoke-NativeCommand -FileName 'gh' -Arguments @('api', 'user', '--jq', '.login')
+        if ($Authentication.ExitCode -ne 0) {
+            throw "GitHub authentication failed: $($Authentication.Error)"
+        }
+        $Owner = $Authentication.Output
+    }
+
+    $FullName = "$Owner/$Name"
+    $ClonePath = Join-Path $CloneRoot $Name
+    $RepositoryResponse = Invoke-NativeCommand -FileName 'gh' -Arguments @(
+        'repo', 'view', $FullName, '--json', 'nameWithOwner')
+    if ($RepositoryResponse.ExitCode -eq 0) {
+        $RepositoryExists = $true
+    }
+    elseif ($RepositoryResponse.Error -match '(?i)(Could not resolve to a Repository|HTTP 404: Not Found)') {
+        $RepositoryExists = $false
+    }
+    else {
+        throw "GitHub repository lookup failed: $($RepositoryResponse.Error)"
+    }
+    $CloneExists = Test-Path -LiteralPath $ClonePath -PathType Container
+
+    if ($RepositoryExists -and -not $Resume) {
+        throw "Repository already exists: $FullName. Use -Resume to continue setup."
+    }
+    if ($CloneExists -and -not $Resume -and -not $NoClone) {
+        throw "Clone path already exists: $ClonePath. Use -Resume to continue setup."
+    }
+    if ($Resume -and $CloneExists -and -not $NoClone -and -not $RepositoryExists) {
+        throw "Cannot resume from $ClonePath because the remote repository does not exist: $FullName"
+    }
+    if ($Resume -and $CloneExists -and -not $NoClone) {
+        $OriginResponse = Invoke-NativeCommand -FileName 'git' -Arguments @(
+            '-C', $ClonePath, 'remote', 'get-url', 'origin')
+        $EscapedOwner = [regex]::Escape($Owner)
+        $EscapedName = [regex]::Escape($Name)
+        $ExpectedOriginPattern = "^(?:https://github\.com/|git@github\.com:)$EscapedOwner/$EscapedName(?:\.git)?$"
+        if ($OriginResponse.ExitCode -ne 0 -or $OriginResponse.Output -notmatch $ExpectedOriginPattern) {
+            throw "Existing clone does not use $FullName as its GitHub origin: $ClonePath"
+        }
+    }
+
+    if (-not $PSCmdlet.ShouldProcess($FullName, 'Create or resume GitHub repository setup')) {
+        if (-not $RepositoryExists) {
+            Write-Host "What if: create $Visibility repository $FullName"
+        }
+        Write-Host "What if: apply repository baseline to $FullName"
+        if (-not $NoClone -and -not $CloneExists) {
+            Write-Host "What if: clone $FullName to $ClonePath"
+        }
+        if ($AddToWorkspace) {
+            Write-Host "What if: add $ClonePath to the active VS Code workspace"
+        }
+        return [pscustomobject]@{
+            FullName  = $FullName
+            ClonePath = $ClonePath
+            Status    = 'Planned'
+        }
+    }
+
+    if (-not $RepositoryExists) {
+        $CreateArguments = @('repo', 'create', $FullName)
+        $CreateArguments += if ($Visibility -eq 'Public') { '--public' } else { '--private' }
+        if ($Description) {
+            $CreateArguments += @('--description', $Description)
+        }
+        if ($TemplateRepository) {
+            $CreateArguments += @('--template', $TemplateRepository)
+        }
+        else {
+            $CreateArguments += '--add-readme'
+        }
+
+        $CreateResponse = Invoke-NativeCommand -FileName 'gh' -Arguments $CreateArguments
+        if ($CreateResponse.ExitCode -ne 0) {
+            throw "Repository creation failed: $($CreateResponse.Error)"
+        }
+    }
+
+    $BaselineResponse = Invoke-NativeCommand -FileName 'pwsh' -Arguments @(
+        '-NoProfile',
+        '-File', $BaselineScript,
+        '-Repository', $FullName,
+        '-Mode', 'Apply')
+    if ($BaselineResponse.ExitCode -ne 0) {
+        throw "Repository was created, but baseline reconciliation failed for $FullName`: $($BaselineResponse.Error)"
+    }
+
+    if (-not $NoClone -and -not $CloneExists) {
+        $CloneResponse = Invoke-NativeCommand -FileName 'gh' -Arguments @(
+            'repo', 'clone', $FullName, $ClonePath)
+        if ($CloneResponse.ExitCode -ne 0) {
+            throw "Repository was created and configured, but cloning failed: $($CloneResponse.Error)"
+        }
+    }
+
+    if ($AddToWorkspace) {
+        $WorkspaceResponse = Invoke-NativeCommand -FileName 'code' -Arguments @('--add', $ClonePath)
+        if ($WorkspaceResponse.ExitCode -ne 0) {
+            throw "Repository was created, configured, and cloned, but workspace attachment failed: $($WorkspaceResponse.Error)"
+        }
+    }
+
+    Write-Host "Created and configured https://github.com/$FullName" -ForegroundColor Green
+    if (-not $NoClone) {
+        Write-Host "Clone: $ClonePath"
+    }
+
+    return [pscustomobject]@{
+        FullName  = $FullName
+        ClonePath = if ($NoClone) { $null } else { $ClonePath }
+        Status    = 'Complete'
+    }
+}
+
 #endregion Functions
 
 #region Main Execution
 
 if ($MyInvocation.InvocationName -ne '.') {
     try {
-        if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-            throw 'GitHub CLI (gh) is required.'
+        if (-not $Name) {
+            throw '-Name is required.'
         }
-
-        if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-            throw 'PowerShell 7 (pwsh) is required.'
-        }
-
-        if (-not $NoClone -and -not (Get-Command git -ErrorAction SilentlyContinue)) {
-            throw 'Git is required unless -NoClone is specified.'
-        }
-
-        if ($AddToWorkspace -and $NoClone) {
-            throw '-AddToWorkspace requires a local clone. Remove -NoClone.'
-        }
-
-        if ($AddToWorkspace -and -not (Get-Command code -ErrorAction SilentlyContinue)) {
-            throw 'VS Code CLI (code) is required for -AddToWorkspace.'
-        }
-
-        $BaselineScript = Join-Path $PSScriptRoot 'Set-RepositoryBaseline.ps1'
-        if (-not (Test-Path -LiteralPath $BaselineScript -PathType Leaf)) {
-            throw "Repository baseline script was not found: $BaselineScript"
-        }
-
-        if (-not $Owner) {
-            $Authentication = Invoke-NativeCommand -FileName 'gh' -Arguments @('api', 'user', '--jq', '.login')
-            if ($Authentication.ExitCode -ne 0) {
-                throw "GitHub authentication failed: $($Authentication.Error)"
-            }
-            $Owner = $Authentication.Output
-        }
-
-        $FullName = "$Owner/$Name"
-        $ClonePath = Join-Path $CloneRoot $Name
-        $RepositoryResponse = Invoke-NativeCommand -FileName 'gh' -Arguments @(
-            'repo', 'view', $FullName, '--json', 'nameWithOwner')
-        $RepositoryExists = $RepositoryResponse.ExitCode -eq 0
-        $CloneExists = Test-Path -LiteralPath $ClonePath -PathType Container
-
-        if ($RepositoryExists -and -not $Resume) {
-            throw "Repository already exists: $FullName. Use -Resume to continue setup."
-        }
-        if ($CloneExists -and -not $Resume -and -not $NoClone) {
-            throw "Clone path already exists: $ClonePath. Use -Resume to continue setup."
-        }
-        if ($Resume -and $CloneExists -and -not $NoClone -and -not $RepositoryExists) {
-            throw "Cannot resume from $ClonePath because the remote repository does not exist: $FullName"
-        }
-        if ($Resume -and $CloneExists -and -not $NoClone) {
-            $OriginResponse = Invoke-NativeCommand -FileName 'git' -Arguments @(
-                '-C', $ClonePath, 'remote', 'get-url', 'origin')
-            $EscapedOwner = [regex]::Escape($Owner)
-            $EscapedName = [regex]::Escape($Name)
-            $ExpectedOriginPattern = "^(?:https://github\.com/|git@github\.com:)$EscapedOwner/$EscapedName(?:\.git)?$"
-            if ($OriginResponse.ExitCode -ne 0 -or $OriginResponse.Output -notmatch $ExpectedOriginPattern) {
-                throw "Existing clone does not use $FullName as its GitHub origin: $ClonePath"
-            }
-        }
-
-        if (-not $PSCmdlet.ShouldProcess($FullName, 'Create or resume GitHub repository setup')) {
-            if (-not $RepositoryExists) {
-                Write-Host "What if: create $Visibility repository $FullName"
-            }
-            Write-Host "What if: apply repository baseline to $FullName"
-            if (-not $NoClone -and -not $CloneExists) {
-                Write-Host "What if: clone $FullName to $ClonePath"
-            }
-            if ($AddToWorkspace) {
-                Write-Host "What if: add $ClonePath to the active VS Code workspace"
-            }
-            exit 0
-        }
-
-        if (-not $RepositoryExists) {
-            $CreateArguments = @('repo', 'create', $FullName)
-            $CreateArguments += if ($Visibility -eq 'Public') { '--public' } else { '--private' }
-            if ($Description) {
-                $CreateArguments += @('--description', $Description)
-            }
-            if ($TemplateRepository) {
-                $CreateArguments += @('--template', $TemplateRepository)
-            }
-            else {
-                $CreateArguments += '--add-readme'
-            }
-
-            $CreateResponse = Invoke-NativeCommand -FileName 'gh' -Arguments $CreateArguments
-            if ($CreateResponse.ExitCode -ne 0) {
-                throw "Repository creation failed: $($CreateResponse.Error)"
-            }
-        }
-
-        $BaselineResponse = Invoke-NativeCommand -FileName 'pwsh' -Arguments @(
-            '-NoProfile',
-            '-File', $BaselineScript,
-            '-Repository', $FullName,
-            '-Mode', 'Apply')
-        if ($BaselineResponse.ExitCode -ne 0) {
-            throw "Repository was created, but baseline reconciliation failed for $FullName`: $($BaselineResponse.Error)"
-        }
-
-        if (-not $NoClone -and -not $CloneExists) {
-            $CloneResponse = Invoke-NativeCommand -FileName 'gh' -Arguments @(
-                'repo', 'clone', $FullName, $ClonePath)
-            if ($CloneResponse.ExitCode -ne 0) {
-                throw "Repository was created and configured, but cloning failed: $($CloneResponse.Error)"
-            }
-        }
-
-        if ($AddToWorkspace) {
-            $WorkspaceResponse = Invoke-NativeCommand -FileName 'code' -Arguments @('--add', $ClonePath)
-            if ($WorkspaceResponse.ExitCode -ne 0) {
-                throw "Repository was created, configured, and cloned, but workspace attachment failed: $($WorkspaceResponse.Error)"
-            }
-        }
-
-        Write-Host "Created and configured https://github.com/$FullName" -ForegroundColor Green
-        if (-not $NoClone) {
-            Write-Host "Clone: $ClonePath"
-        }
+        [void](Invoke-NewGitHubRepository @PSBoundParameters)
         exit 0
     }
     catch {

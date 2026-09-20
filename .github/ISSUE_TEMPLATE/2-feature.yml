@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose an improvement or new capability
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: Search open and closed issues before submitting a new proposal.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+      description: Describe the user need, limitation or opportunity.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What outcome do you want?
+      description: Describe the desired behavior without prescribing unnecessary implementation detail.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What alternatives have you considered?
+      description: Include current workarounds or other approaches when relevant.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add examples, constraints or links that help explain the proposal.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I have not opened a pull request before discussing this proposal.
+          required: true

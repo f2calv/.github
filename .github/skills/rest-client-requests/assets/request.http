@@ -1,0 +1,12 @@
+### Example API
+### Public documentation: https://api.example.com/docs
+
+@baseUrl = {{$dotenv EXAMPLE_BASE_URL}}
+@token = {{$dotenv EXAMPLE_TOKEN}}
+@resourceId = 00000000-0000-0000-0000-000000000000
+
+### Get resource
+# @name getResource
+GET {{baseUrl}}/api/resources/{{resourceId}} HTTP/1.1
+Authorization: Bearer {{token}}
+Accept: application/json
