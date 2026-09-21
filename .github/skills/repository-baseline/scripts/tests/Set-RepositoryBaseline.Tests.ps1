@@ -83,6 +83,16 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
 
     It 'Adds the approved status checks for <Repository>' -TestCases @(
         @{
+            Repository = 'f2calv/SmartHaus'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'build / app-build-dotnet'
+        }
+        @{
+            Repository = 'f2calv/redis-dotnet'
+            Versioning = 'versioning / gha-release-versioning'
+            Validation = 'build / app-build-dotnet'
+        }
+        @{
             Repository = 'f2calv/.github'
             Versioning = 'versioning / gha-release-versioning'
             Validation = 'test'
