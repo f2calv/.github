@@ -60,22 +60,89 @@ BeforeAll {
 }
 
 Describe 'Get-DesiredRuleset' -Tag 'Unit' {
-    It 'Builds the shared ruleset without status checks for a normal repository' {
+    It 'Builds the shared ruleset without status checks for a private repository' {
         $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName 'f2calv/example'
 
         @($Ruleset.rules.type) | Should -Be @('deletion', 'non_fast_forward', 'pull_request')
     }
 
+    It 'Requires SonarCloud analysis for a public repository without another override' {
+        $Ruleset = Get-DesiredRuleset `
+            -Policy $script:Policy `
+            -RepositoryName 'f2calv/example' `
+            -Visibility public
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be 1
+        @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
+            'SonarCloud Code Analysis'
+        )
+    }
+
+    It 'Preserves non-Sonar checks for excluded public repository <Repository>' -TestCases @(
+        @{
+            Repository = 'f2calv/.github'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'test')
+        }
+        @{
+            Repository = 'f2calv/doorbird-rs'
+            Expected   = @()
+        }
+        @{
+            Repository = 'f2calv/gha-check-release-exists'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate')
+        }
+        @{
+            Repository = 'f2calv/gha-workflows'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate')
+        }
+        @{
+            Repository = 'f2calv/helm-charts'
+            Expected   = @('lint / lint', 'release (workload) / versioning / gha-release-versioning', 'release (workload) / chart')
+        }
+        @{
+            Repository = 'f2calv/playground-gitversion'
+            Expected   = @()
+        }
+        @{
+            Repository = 'f2calv/signalizr'
+            Expected   = @()
+        }
+        @{
+            Repository = 'f2calv/tf_module_azurerm_application_insights'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate / terraform validate')
+        }
+    ) {
+        param($Repository, $Expected)
+
+        $Ruleset = Get-DesiredRuleset `
+            -Policy $script:Policy `
+            -RepositoryName $Repository `
+            -Visibility public
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be $(if ($Expected.Count -eq 0) { 0 } else { 1 })
+        $Actual = if ($StatusChecks.Count -eq 0) {
+            @()
+        }
+        else {
+            @($StatusChecks[0].parameters.required_status_checks.context)
+        }
+        $Actual | Should -Be $Expected
+    }
+
     It 'Adds the approved status checks for a Terraform module repository' {
         $Ruleset = Get-DesiredRuleset `
             -Policy $script:Policy `
-            -RepositoryName 'f2calv/tf_module_azurerm_example'
+            -RepositoryName 'f2calv/tf_module_azurerm_example' `
+            -Visibility public
         $StatusChecks = $Ruleset.rules | Where-Object type -eq 'required_status_checks'
 
         @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
             'lint / lint',
             'versioning / gha-release-versioning',
-            'validate / terraform validate'
+            'validate / terraform validate',
+            'SonarCloud Code Analysis'
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
@@ -93,11 +160,6 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
             Validation = 'build / app-build-dotnet'
         }
         @{
-            Repository = 'f2calv/.github'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'test'
-        }
-        @{
             Repository = 'f2calv/CasCap.Api.Example'
             Versioning = 'versioning / gha-release-versioning'
             Validation = 'build'
@@ -111,16 +173,6 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
             Repository = 'f2calv/dotnet-nuget-test'
             Versioning = 'versioning / gha-release-versioning'
             Validation = 'build'
-        }
-        @{
-            Repository = 'f2calv/gha-workflows'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'validate'
-        }
-        @{
-            Repository = 'f2calv/gha-check-release-exists'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'validate'
         }
         @{
             Repository = 'f2calv/gha-dotnet-nuget'
@@ -162,22 +214,21 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
             Versioning = 'versioning / gha-release-versioning'
             Validation = 'app / app-build-rust'
         }
-        @{
-            Repository = 'f2calv/helm-charts'
-            Versioning = 'release (workload) / versioning / gha-release-versioning'
-            Validation = 'release (workload) / chart'
-        }
     ) {
         param($Repository, $Versioning, $Validation)
 
-        $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName $Repository
+        $Ruleset = Get-DesiredRuleset `
+            -Policy $script:Policy `
+            -RepositoryName $Repository `
+            -Visibility public
         $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
 
         $StatusChecks.Count | Should -Be 1
         @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
             'lint / lint',
             $Versioning,
-            $Validation
+            $Validation,
+            'SonarCloud Code Analysis'
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
