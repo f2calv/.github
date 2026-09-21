@@ -84,6 +84,8 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Same repository: `uses: ./.github/workflows/_filename.yml`.
 - Cross-repository: `uses: owner/repo/.github/workflows/filename.yml@v1`, supplying the coordinate through configuration rather than hardcoding a private one.
 - Prefer `secrets: inherit` unless there is a specific reason to restrict the secrets passed to the called workflow.
+- Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
+- Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
 
 ## Composite Actions
 
