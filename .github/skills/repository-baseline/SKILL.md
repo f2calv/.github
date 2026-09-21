@@ -30,6 +30,8 @@ skill. Use the scripts as the implementation authority and this document as the 
 - Never delete classic branch protection until the replacement ruleset has been fetched and verified.
 - Treat `PlanGated` as an expected capability result, not as permission to bypass the unavailable
   protection.
+- Public repositories require the `SonarCloud Code Analysis` check before their default branch can
+  be updated through a pull request. Private repositories do not inherit this cloud check.
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
 
@@ -135,6 +137,7 @@ If a batch reports a repository-level failure:
    - the canonical name;
    - expected rule types and parameters;
    - repository-specific policy overrides;
+  - `SonarCloud Code Analysis` on public repositories only;
    - absence of stale status checks;
    - absence of classic protection after migration.
 3. Run a second audit to prove idempotency.
@@ -169,7 +172,8 @@ Do not publish private repository identities or infrastructure details in a publ
 1. Update [repository-baseline.json](./scripts/repository-baseline.json) as the source of truth.
 2. Add Pester coverage in the bundled `scripts/tests/` directory alongside every behavior change.
 3. Cover compliant, drifted, plan-gated, failed, `WhatIf`, idempotent, and missing-property cases.
-4. Preserve unrelated stronger/custom controls unless policy explicitly owns them.
+4. Preserve repository-specific required checks and merge visibility-wide checks into the same
+  `required_status_checks` rule; GitHub rulesets must not receive duplicate rules of that type.
 5. Ask before running the Pester suite when local workflow instructions require confirmation.
 6. Run static analysis, Markdown validation, a live read-only audit, and a fleet `WhatIf` before apply.
 

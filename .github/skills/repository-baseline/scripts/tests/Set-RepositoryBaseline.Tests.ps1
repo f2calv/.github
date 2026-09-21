@@ -60,22 +60,37 @@ BeforeAll {
 }
 
 Describe 'Get-DesiredRuleset' -Tag 'Unit' {
-    It 'Builds the shared ruleset without status checks for a normal repository' {
+    It 'Builds the shared ruleset without status checks for a private repository' {
         $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName 'f2calv/example'
 
         @($Ruleset.rules.type) | Should -Be @('deletion', 'non_fast_forward', 'pull_request')
     }
 
+    It 'Requires SonarCloud analysis for a public repository without another override' {
+        $Ruleset = Get-DesiredRuleset `
+            -Policy $script:Policy `
+            -RepositoryName 'f2calv/example' `
+            -Visibility public
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be 1
+        @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
+            'SonarCloud Code Analysis'
+        )
+    }
+
     It 'Adds the approved status checks for a Terraform module repository' {
         $Ruleset = Get-DesiredRuleset `
             -Policy $script:Policy `
-            -RepositoryName 'f2calv/tf_module_azurerm_example'
+            -RepositoryName 'f2calv/tf_module_azurerm_example' `
+            -Visibility public
         $StatusChecks = $Ruleset.rules | Where-Object type -eq 'required_status_checks'
 
         @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
             'lint / lint',
             'versioning / gha-release-versioning',
-            'validate / terraform validate'
+            'validate / terraform validate',
+            'SonarCloud Code Analysis'
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
@@ -170,14 +185,18 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
     ) {
         param($Repository, $Versioning, $Validation)
 
-        $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName $Repository
+        $Ruleset = Get-DesiredRuleset `
+            -Policy $script:Policy `
+            -RepositoryName $Repository `
+            -Visibility public
         $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
 
         $StatusChecks.Count | Should -Be 1
         @($StatusChecks.parameters.required_status_checks.context) | Should -Be @(
             'lint / lint',
             $Versioning,
-            $Validation
+            $Validation,
+            'SonarCloud Code Analysis'
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse

@@ -12,6 +12,11 @@
         "secretScanning": true,
         "secretScanningPushProtection": true
     },
+    "publicRepository": {
+        "requiredStatusChecks": [
+            "SonarCloud Code Analysis"
+        ]
+    },
     "ruleset": {
         "name": "f2calv repository baseline",
         "target": "branch",

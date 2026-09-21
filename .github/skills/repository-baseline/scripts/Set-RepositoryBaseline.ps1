@@ -181,6 +181,8 @@ function Add-BaselineResult {
         Mutable result collection.
     .PARAMETER RepositoryName
         Repository in owner/name format.
+    .PARAMETER Visibility
+        Repository visibility used to apply public-repository policy.
     .PARAMETER Setting
         Baseline setting identifier.
     .PARAMETER Status
@@ -290,26 +292,26 @@ function Get-RepositoryTarget {
 
         $Pages = @(ConvertFrom-GhResponse -Response $Response)
         $Pages |
-            ForEach-Object { $_ } |
-            Where-Object {
-                -not $_.fork -and
-                -not $_.archived -and
-                -not $_.disabled -and
-                $_.owner.login -eq $AuthenticatedOwner
-            } |
-            ForEach-Object { $_.full_name } |
-            Sort-Object -Unique
+        ForEach-Object { $_ } |
+        Where-Object {
+            -not $_.fork -and
+            -not $_.archived -and
+            -not $_.disabled -and
+            $_.owner.login -eq $AuthenticatedOwner
+        } |
+        ForEach-Object { $_.full_name } |
+        Sort-Object -Unique
         return
     }
 
     $RepositoryNames | ForEach-Object {
-            if ($_ -match '/') {
-                $_
-            }
-            else {
-                "$AuthenticatedOwner/$_"
-            }
-        } | Sort-Object -Unique
+        if ($_ -match '/') {
+            $_
+        }
+        else {
+            "$AuthenticatedOwner/$_"
+        }
+    } | Sort-Object -Unique
 }
 
 function Copy-JsonObject {
@@ -346,7 +348,11 @@ function Get-DesiredRuleset {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$RepositoryName
+        [string]$RepositoryName,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('public', 'private', 'internal')]
+        [string]$Visibility = 'private'
     )
 
     $DesiredRuleset = Copy-JsonObject -InputObject $Policy.ruleset
@@ -365,6 +371,49 @@ function Get-DesiredRuleset {
                 $Rules.Add((Copy-JsonObject -InputObject $Rule))
             }
         }
+    }
+
+    $RequiredStatusRules = @($Rules | Where-Object type -eq 'required_status_checks')
+    if ($Visibility -eq 'public' -or $RequiredStatusRules.Count -gt 1) {
+        $RequiredStatusChecks = [Collections.Generic.List[object]]::new()
+        foreach ($Rule in $RequiredStatusRules) {
+            foreach ($Check in @($Rule.parameters.required_status_checks)) {
+                $ExistingContexts = @($RequiredStatusChecks | ForEach-Object { $_.context })
+                if ($Check.context -notin $ExistingContexts) {
+                    $RequiredStatusChecks.Add((Copy-JsonObject -InputObject $Check))
+                }
+            }
+        }
+
+        if ($Visibility -eq 'public') {
+            foreach ($Context in @($Policy.publicRepository.requiredStatusChecks)) {
+                $ExistingContexts = @($RequiredStatusChecks | ForEach-Object { $_.context })
+                if ($Context -notin $ExistingContexts) {
+                    $RequiredStatusChecks.Add([pscustomobject]@{ context = $Context })
+                }
+            }
+        }
+
+        $RulesWithoutStatusChecks = @($Rules | Where-Object type -ne 'required_status_checks')
+        $StatusCheckRule = if ($RequiredStatusRules.Count -gt 0) {
+            Copy-JsonObject -InputObject $RequiredStatusRules[0]
+        }
+        else {
+            [pscustomobject]@{
+                type       = 'required_status_checks'
+                parameters = [pscustomobject]@{
+                    strict_required_status_checks_policy = $true
+                    do_not_enforce_on_create             = $false
+                    required_status_checks               = @()
+                }
+            }
+        }
+        $StatusCheckRule.parameters.required_status_checks = @($RequiredStatusChecks)
+        $Rules = [Collections.Generic.List[object]]::new()
+        foreach ($Rule in $RulesWithoutStatusChecks) {
+            $Rules.Add($Rule)
+        }
+        $Rules.Add($StatusCheckRule)
     }
 
     $DesiredRuleset.rules = @($Rules)
@@ -525,6 +574,8 @@ function Resolve-DefaultBranchRuleset {
         Repository default branch.
     .PARAMETER Policy
         Baseline policy document.
+    .PARAMETER Visibility
+        Repository visibility used to apply public-repository policy.
     .PARAMETER Apply
         Reconciles drift when specified.
     #>
@@ -545,6 +596,10 @@ function Resolve-DefaultBranchRuleset {
 
         [Parameter(Mandatory = $true)]
         [pscustomobject]$Policy,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('public', 'private', 'internal')]
+        [string]$Visibility = 'private',
 
         [Parameter(Mandatory = $false)]
         [switch]$Apply
@@ -585,7 +640,10 @@ function Resolve-DefaultBranchRuleset {
         }
     }
 
-    $DesiredRuleset = Get-DesiredRuleset -Policy $Policy -RepositoryName $RepositoryName
+    $DesiredRuleset = Get-DesiredRuleset `
+        -Policy $Policy `
+        -RepositoryName $RepositoryName `
+        -Visibility $Visibility
     $CanonicalRuleset = $Rulesets |
     Where-Object {
         $_.name -eq $DesiredRuleset.name -and
@@ -598,15 +656,15 @@ function Resolve-DefaultBranchRuleset {
         Where-Object {
             $_.id -ne $CanonicalRulesetId -and
             (Test-RulesetContainsBaseline `
-                    -Actual $_ `
-                    -Policy $Policy `
-                    -RepositoryName $RepositoryName)
+                -Actual $_ `
+                -Policy $Policy `
+                -RepositoryName $RepositoryName)
         })
     $CanonicalCompliant = $null -ne $CanonicalRuleset -and
     (Test-RulesetMatchesPolicy `
-            -Actual $CanonicalRuleset `
-            -Expected $DesiredRuleset `
-            -RepositoryName $RepositoryName)
+        -Actual $CanonicalRuleset `
+        -Expected $DesiredRuleset `
+        -RepositoryName $RepositoryName)
     $Compliant = $CanonicalCompliant -and
     -not $HasLegacyProtection -and
     $HistoricalRulesets.Count -eq 0
@@ -948,6 +1006,7 @@ if ($MyInvocation.InvocationName -ne '.') {
                 -RepositoryPath $RepositoryPath `
                 -DefaultBranch $Detail.default_branch `
                 -Policy $Policy `
+                -Visibility $Detail.visibility `
                 -Apply:($Mode -eq 'Apply') `
                 -WhatIf:$WhatIfPreference
             Add-BaselineResult -Results $Results -RepositoryName $FullName `
