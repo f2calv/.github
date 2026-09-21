@@ -53,6 +53,10 @@ someone arriving cold months later.
 
 ## Pull Requests
 
+- Default to reviewing pull requests locally in the current editor session or with a local subagent.
+  Never request GitHub Copilot code review, invoke a cloud coding agent or start another remote
+  review workflow unless the user explicitly requests that remote operation. A general request to
+  review, publish or merge a pull request is not authorization to consume remote runner minutes.
 - Keep generic issue forms and the pull request template in the public account-level `.github` repository so repositories inherit one contribution workflow.
 - Prefer YAML issue forms for structured bug, feature and support reports. Pull request templates remain Markdown because GitHub does not support YAML pull request forms.
 - A repository-local `ISSUE_TEMPLATE` configuration suppresses inherited issue templates. Keep local templates only when repository-specific fields are necessary; do not copy generic central templates into repositories.
