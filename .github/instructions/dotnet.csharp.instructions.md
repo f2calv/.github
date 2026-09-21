@@ -24,6 +24,7 @@ applyTo: '**/*.cs'
 - **Explicit interface implementations**: Every explicit interface property must have an accessor block (`{ get => …; }` or `{ get => …; set => …; }`), never an expression body (`=>`). This ensures a consistent shape for all property members and satisfies IDE analysers. Each implementation must also carry `/// <inheritdoc/>` XML documentation.
 - **Async pass-through**: When a method is a thin wrapper that only returns another async call (no `using`, `try`/`catch`, or additional `await`s), drop `async`/`await` and return the `Task`/`ValueTask` directly to avoid unnecessary state-machine overhead.
 - **Async/await**: Always await async method calls.
+- **No fake async callbacks**: Do not mark a callback `async` merely to await `Task.Delay(0)`, `Task.CompletedTask`, or another no-op. Keep synchronous callbacks synchronous; fake awaits can turn delegate conversions into unobservable `async void` execution.
 - **Pattern matching**: Preferred (`is`, `not`, switch expressions).
 - **Primary constructors**: Preferred (`csharp_style_prefer_primary_constructors = true`). Use parameters directly in the class body — do **not** copy them to private/protected fields (avoid `private ILogger _logger = logger;`). **Exception**: abstract base classes may expose a `protected` field for inheritors (`protected ILogger _logger = logger;` with `: base(logger)`).
 - **`IOptions<T>` access**: Read `IOptions<T>` / `IOptionsMonitor<T>` values via `.Value` / `.CurrentValue` inline at the point of use — do **not** copy them into a private/protected field or a cached local.
@@ -61,6 +62,7 @@ applyTo: '**/*.cs'
 - **Keep context non-sensitive**: Include the failed operation and safe identifiers, but never credentials, tokens, connection strings, full local paths or personally identifying values.
 - **Exceptions are not normal control flow**: Use result types, `Try*` methods or nullable returns for expected absence and validation outcomes where those forms make the contract clearer.
 - **Let cancellation propagate**: Do not convert `OperationCanceledException` into an error when the supplied `CancellationToken` requested cancellation.
+- **Pass cancellation at every boundary**: When a method has a `CancellationToken`, pass it through every cancellable database, HTTP, file, queue, delay, lock, stream and nested service call. When an operation deliberately must outlive caller or host cancellation, pass `CancellationToken.None` explicitly and keep that decision local to the call; never omit the argument and leave intent ambiguous.
 
 ## Background Work and Shutdown
 
@@ -68,6 +70,7 @@ applyTo: '**/*.cs'
 - **Use cancellable waits**: Call `Task.Delay(delay, timeProvider, stoppingToken)` or another cancellation-aware primitive; never poll a shutdown flag around an uncancellable sleep.
 - **Own background tasks**: Avoid fire-and-forget `Task` calls. Retain and await tasks whose failures or completion belong to the service lifecycle.
 - **Dispose during shutdown**: Release owned timers, streams, registrations and service scopes deterministically before the host exits.
+- **Own linked cancellation sources**: The method or type that creates a linked `CancellationTokenSource` must cancel it with `CancelAsync`, await owned workers, dispose it in `finally` or shutdown, and clear retained references. Never leave linked sources undisposed after an interactive session or background pipeline ends.
 
 ## Time and Scheduling
 
@@ -99,6 +102,7 @@ applyTo: '**/*.cs'
 - **`{ClassName}` first**: Every structured log message must include `{ClassName}` as the first template parameter, using `nameof(EnclosingClass)` as the argument (e.g. `_logger.LogInformation("{ClassName} something happened", nameof(MyService));`).
 - **Message templates are constant**: Never use string interpolation or concatenation to construct a log message. Put every varying value in a named template parameter so events group consistently.
 - **Template parameters**: Use PascalCase for all template parameters and never enclose them in quotes (e.g. `{DesiredValue}`, `{RecordCount}`, `{ValueBefore}` — not `'{DesiredValue}'`). The logger handles value formatting automatically.
+- **Template names are unique per message**: Do not repeat the same structured placeholder name in one template, even when the values are equal. Use one field once, distinct semantic names such as `{RequestedDate}` and `{ReturnedDate}`, or plain text for label-only repetition so positional arguments cannot bind ambiguously.
 - **No `.Value` suffix bleed**: When logging a value accessed via `options.Value.PropertyName` (primary-constructor `IOptions<T>` pattern), the template parameter name must **not** inherit the `.Value` segment and must **not** use a `Val` suffix. Properties are already well-named — use the property name directly as the template parameter (e.g. `{ServiceFamily}` for `config.Value.ServiceFamily`).
 - **No magic strings in log messages**: When a log message references an enum value, class name, or other identifiable symbol, pass it via `nameof()` as a template argument rather than embedding it as a literal string in the message template.
 - **Avoid `nameof()` as label-only template parameters**: Do not inject property/type names as separate structured-log fields just to avoid a literal label — it clutters structured output in log backends. Use the property name as plain text in the template and reserve `{Braces}` for actual values. E.g. `"{ClassName} ServiceFamily={ServiceFamily}"` with args `nameof(MyService), config.Value.ServiceFamily` — not `"{ClassName} {ServiceFamily}={ServiceFamilyValue}"` with an extra `nameof(MyConfig.ServiceFamily)` argument.
@@ -114,6 +118,7 @@ applyTo: '**/*.cs'
 - **Never block on async code**: No `.Result`, `.Wait()`, `GetAwaiter().GetResult()`, or other sync-over-async wrappers.
 - **Stream large payloads**: Do not buffer an entire file or response body into memory unless the public method explicitly returns a byte array.
 - **Dispose owned resources deterministically**: `HttpRequestMessage`, `HttpResponseMessage`, streams, and cancellation registrations via `using` / `await using`.
+- **Secure temporary files**: Build temporary paths with `Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())`, create/write the file through the owning API, and delete it in `finally`. Do not use `Path.GetTempFileName()`, and never leave generated temporary files behind after reading their content.
 - **Validate before deserialising**: Check the response status and content before reading the body into a model.
 - **Preserve response context in exceptions**: Include the response status and body in a domain exception, with credentials and user data redacted.
 - **Bounded queues and explicit backpressure**: Prefer them over unbounded in-memory work collections.
@@ -186,6 +191,12 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
 ```
 
 - **`<example>` tags on DTOs**: All public properties on Web API request/response DTOs should have `/// <example>value</example>` XML doc tags. OpenAPI generators use these to populate example values in the generated documentation, improving API discoverability.
+- **Reject under-posted value types**: Non-nullable value-type properties on request DTOs must be explicitly required during JSON deserialization with `[JsonRequired]`, `required`, or an equivalent validated nullable-input pattern. Never let an omitted JSON member silently bind to `0`, `false`, or a default enum value when the caller must choose it.
+
+## Numeric Correctness
+
+- **Floating-point comparisons**: Do not compare `float` or `double` values for exact equality when they come from calculations, conversion, deserialization or independently constructed objects. Compare the absolute difference against a domain-appropriate tolerance; retain exact equality only for values whose representation and construction make exact identity part of the contract.
+- **Invariant expressions are defects**: Remove or correct identical operands and always-true predicates such as `value - value` and `where 1 == 1`. Do not preserve dead arithmetic or query clauses as placeholders.
 
 ## Disposable Resources
 
