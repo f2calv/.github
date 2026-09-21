@@ -35,6 +35,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Solution Format
 
 - Use the modern XML `.slnx` solution format. Convert legacy `.sln` files rather than maintaining the old format alongside.
+- Add every new test project to the repository's default `.slnx` or `.sln` file in the same change. Do not create a separate test-only solution instead of keeping the default solution complete.
 - Where Debug and Release variants exist, name them `<Name>.Debug.slnx` and `<Name>.Release.slnx`, matching the repository name.
 - The Debug solution wires local `ProjectReference` items to sibling libraries; the Release solution uses published `PackageReference` items.
 - Prefer the Debug solution for local builds; CI builds the Release solution.
