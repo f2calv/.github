@@ -133,14 +133,13 @@ If a batch reports a repository-level failure:
 ### 5. Verify the Pilot
 
 1. Rerun `Audit`; every supported setting must report `Compliant`.
-2. Fetch the detailed ruleset and verify:
-   - the canonical name;
-   - expected rule types and parameters;
-   - repository-specific policy overrides;
-  - `SonarCloud Code Analysis` on public repositories only;
-   - absence of stale status checks;
-   - absence of classic protection after migration.
-3. Run a second audit to prove idempotency.
+2. Fetch the detailed ruleset.
+3. Verify the canonical name and expected rule types and parameters.
+4. Verify repository-specific policy overrides are retained.
+5. Verify `SonarCloud Code Analysis` is required on public repositories only.
+6. Verify stale status checks are absent.
+7. Verify classic protection is absent after migration.
+8. Run a second audit to prove idempotency.
 
 ### 6. Apply the Fleet
 
