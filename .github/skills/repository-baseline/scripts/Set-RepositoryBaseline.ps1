@@ -374,7 +374,11 @@ function Get-DesiredRuleset {
     }
 
     $RequiredStatusRules = @($Rules | Where-Object type -eq 'required_status_checks')
-    if ($Visibility -eq 'public' -or $RequiredStatusRules.Count -gt 1) {
+    $SonarCloudGateExcluded = $Visibility -eq 'public' -and
+        $Policy.publicRepository.PSObject.Properties.Name -contains 'sonarCloudGateExclusions' -and
+        $RepositoryName -in @($Policy.publicRepository.sonarCloudGateExclusions)
+    $SonarCloudGateRequired = $Visibility -eq 'public' -and -not $SonarCloudGateExcluded
+    if ($SonarCloudGateRequired -or $RequiredStatusRules.Count -gt 1) {
         $RequiredStatusChecks = [Collections.Generic.List[object]]::new()
         foreach ($Rule in $RequiredStatusRules) {
             foreach ($Check in @($Rule.parameters.required_status_checks)) {
@@ -385,7 +389,7 @@ function Get-DesiredRuleset {
             }
         }
 
-        if ($Visibility -eq 'public') {
+        if ($SonarCloudGateRequired) {
             foreach ($Context in @($Policy.publicRepository.requiredStatusChecks)) {
                 $ExistingContexts = @($RequiredStatusChecks | ForEach-Object { $_.context })
                 if ($Context -notin $ExistingContexts) {

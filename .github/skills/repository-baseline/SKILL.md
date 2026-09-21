@@ -30,8 +30,10 @@ skill. Use the scripts as the implementation authority and this document as the 
 - Never delete classic branch protection until the replacement ruleset has been fetched and verified.
 - Treat `PlanGated` as an expected capability result, not as permission to bypass the unavailable
   protection.
-- Public repositories require the `SonarCloud Code Analysis` check before their default branch can
-  be updated through a pull request. Private repositories do not inherit this cloud check.
+- Public repositories with a completed SonarCloud analysis require the `SonarCloud Code Analysis`
+  check before their default branch can be updated through a pull request. Repositories whose
+  imported SonarCloud project has never produced an analysis remain explicit policy exclusions;
+  private repositories do not inherit this cloud check.
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
 
@@ -136,7 +138,8 @@ If a batch reports a repository-level failure:
 2. Fetch the detailed ruleset.
 3. Verify the canonical name and expected rule types and parameters.
 4. Verify repository-specific policy overrides are retained.
-5. Verify `SonarCloud Code Analysis` is required on public repositories only.
+5. Verify `SonarCloud Code Analysis` is required on analysis-ready public repositories only, and
+  every excluded public repository still has zero SonarCloud analyses.
 6. Verify stale status checks are absent.
 7. Verify classic protection is absent after migration.
 8. Run a second audit to prove idempotency.
@@ -173,8 +176,10 @@ Do not publish private repository identities or infrastructure details in a publ
 3. Cover compliant, drifted, plan-gated, failed, `WhatIf`, idempotent, and missing-property cases.
 4. Preserve repository-specific required checks and merge visibility-wide checks into the same
   `required_status_checks` rule; GitHub rulesets must not receive duplicate rules of that type.
-5. Ask before running the Pester suite when local workflow instructions require confirmation.
-6. Run static analysis, Markdown validation, a live read-only audit, and a fleet `WhatIf` before apply.
+5. Keep `sonarCloudGateExclusions` limited to imported public projects with zero analyses. Remove an
+  exclusion as soon as the project produces a check so the next apply enables the gate.
+6. Ask before running the Pester suite when local workflow instructions require confirmation.
+7. Run static analysis, Markdown validation, a live read-only audit, and a fleet `WhatIf` before apply.
 
 From this repository, the regression suite entry point is:
 
