@@ -57,7 +57,7 @@ someone arriving cold months later.
 - Prefer YAML issue forms for structured bug, feature and support reports. Pull request templates remain Markdown because GitHub does not support YAML pull request forms.
 - A repository-local `ISSUE_TEMPLATE` configuration suppresses inherited issue templates. Keep local templates only when repository-specific fields are necessary; do not copy generic central templates into repositories.
 - When a relevant issue already exists, link it from the pull request. Do not create an issue solely to satisfy a pull-request workflow requirement.
-- A public pull request must never link to or identify an issue in a private repository. Omit the issue reference and describe only the public-safe scope needed to review the change.
+- Link a pull request to an issue only when both repositories have the same visibility: public to public, or private to private. Never link or identify an issue across the public/private boundary in either direction; omit the reference and describe only the scope needed to review the change.
 - Generate the pull request description from all changes in the feature branch compared with `origin/main`, not only the latest commit or uncommitted working-tree changes.
 - Inspect the repository's available labels when creating a pull request and apply every label that accurately describes the change.
 - Assign a new pull request to the currently authenticated GitHub user. Resolve the login dynamically from the GitHub client or API; never hardcode a username in instructions or automation.
