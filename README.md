@@ -102,12 +102,15 @@ The baseline enforces these settings where the GitHub plan supports them:
 * Enable secret scanning and push protection
 * Protect the default branch from deletion and force pushes
 * Require changes through pull requests with resolved review threads
+* Require the SonarCloud Code Analysis check before merging to the default branch in analysis-ready public repositories
 
 The default branch is managed by one canonical `f2calv repository baseline`
 ruleset. Apply mode migrates equivalent historical rulesets and classic branch
-protection only after the canonical ruleset has been verified. Terraform module
-repositories additionally require the standard lint, versioning, and Terraform
-validation checks; stale status checks on other repositories are removed.
+protection only after the canonical ruleset has been verified. Public repositories
+require `SonarCloud Code Analysis` once their imported project has produced an analysis;
+repository-specific lint, versioning, build, test, and validation checks are merged into the same
+status-check rule. Explicit zero-analysis exclusions and private repositories do not inherit the
+SonarCloud gate.
 
 Audit one repository without changing it:
 

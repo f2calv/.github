@@ -198,6 +198,11 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
 - **Floating-point comparisons**: Do not compare `float` or `double` values for exact equality when they come from calculations, conversion, deserialization or independently constructed objects. Compare the absolute difference against a domain-appropriate tolerance; retain exact equality only for values whose representation and construction make exact identity part of the contract.
 - **Invariant expressions are defects**: Remove or correct identical operands and always-true predicates such as `value - value` and `where 1 == 1`. Do not preserve dead arithmetic or query clauses as placeholders.
 
+## Security-Sensitive Primitives
+
+- **Choose randomness by required guarantees**: Use `System.Security.Cryptography.RandomNumberGenerator` for tokens, secrets, identifiers and any code path analyzed as security-sensitive. Use `Random.Shared` only for clearly non-security behavior such as simulations, test-data variation and retry jitter when the enclosing code is not security-sensitive; never create a new `Random` per call.
+- **Protocol-mandated legacy cryptography**: When an immutable device or wire protocol requires a legacy hash or cipher, keep the exact compatible algorithm, document the protocol constraint beside the operation and classify the specific static-analysis finding as accepted with that rationale. Never replace it with an incompatible algorithm, hide it with `NOSONAR`, or add a repository-wide suppression that could conceal unrelated uses.
+
 ## Disposable Resources
 
 - `ServiceProvider` instances built in tests must be disposed via `using` / `await using`.
