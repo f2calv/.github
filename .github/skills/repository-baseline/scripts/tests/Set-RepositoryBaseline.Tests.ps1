@@ -106,7 +106,7 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         }
         @{
             Repository = 'f2calv/signalizr'
-            Expected   = @()
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'build / app-build-dotnet')
         }
         @{
             Repository = 'f2calv/tf_module_azurerm_application_insights'

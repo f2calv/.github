@@ -93,6 +93,29 @@
             ]
         },
         {
+            "repositoryPattern": "f2calv/signalizr",
+            "rules": [
+                {
+                    "type": "required_status_checks",
+                    "parameters": {
+                        "strict_required_status_checks_policy": true,
+                        "do_not_enforce_on_create": false,
+                        "required_status_checks": [
+                            {
+                                "context": "lint / lint"
+                            },
+                            {
+                                "context": "versioning / gha-release-versioning"
+                            },
+                            {
+                                "context": "build / app-build-dotnet"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
             "repositoryPattern": "f2calv/redis-dotnet",
             "rules": [
                 {
