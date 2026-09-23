@@ -1,0 +1,8 @@
+# Rust files
+# Formatting is owned by rustfmt; these settings also cover files rustfmt does not touch.
+[*.rs]
+indent_size = 4
+max_line_length = 100
+
+[*.toml]
+indent_size = 4

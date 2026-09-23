@@ -29,7 +29,13 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Analyzers
 
 - Configure analyzer severities in `.editorconfig`, which is the single source of truth for style and analyzer rules; enable `EnforceCodeStyleInBuild` so style rules are enforced by the compiler and not only by the IDE.
-- Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members.
+- Set `IDE0051`, `IDE0052`, `IDE0055`, and the shared naming rules to `warning`. With
+  `TreatWarningsAsErrors`, unused private members, unread fields, formatting drift, and naming
+  violations must fail builds rather than remain editor suggestions.
+- Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members. Do not add them to `WarningsNotAsErrors`.
+- Promote other style preferences from suggestion to warning only in small measured tranches whose
+  complete fleet fallout can be fixed together. Do not mix namespace, API, or architecture changes
+  into a mechanical formatting rollout.
 - Analyzer packages are declared once centrally and flow to every project; do not add them ad hoc per project.
 
 ## Solution Format

@@ -116,9 +116,10 @@ Describe 'Invoke-PiiScan' -Tag 'Unit' {
         $RepositoryPath = Join-Path $TestDrive 'generic-profile-paths'
         Initialize-TestRepository -Path $RepositoryPath
         $ContainerPath = '/' + 'home/vscode/workspace'
+        $ApplicationPath = '/' + 'home/app/data'
         $RunnerPath = '/' + 'home/runner/work/repository'
         $HiddenPath = '/' + 'home/.local/share'
-        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content "$ContainerPath $RunnerPath $HiddenPath"
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content "$ContainerPath $ApplicationPath $RunnerPath $HiddenPath"
 
         $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @()
 

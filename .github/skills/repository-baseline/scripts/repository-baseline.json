@@ -1,510 +1,499 @@
 {
-    "repository": {
-        "deleteBranchOnMerge": true
-    },
-    "actions": {
-        "defaultWorkflowPermissions": "read",
-        "canApprovePullRequestReviews": false
-    },
-    "security": {
-        "dependabotAlerts": true,
-        "dependabotSecurityUpdates": true,
-        "secretScanning": true,
-        "secretScanningPushProtection": true
-    },
-    "publicRepository": {
-        "requiredStatusChecks": [
-            "SonarCloud Code Analysis"
-        ],
-        "sonarCloudGateExclusions": [
-            "f2calv/.github",
-            "f2calv/doorbird-rs",
-            "f2calv/gha-check-release-exists",
-            "f2calv/gha-workflows",
-            "f2calv/helm-charts",
-            "f2calv/playground-gitversion",
-            "f2calv/signalizr",
-            "f2calv/tf_module_azurerm_application_insights"
-        ]
-    },
-    "ruleset": {
-        "name": "f2calv repository baseline",
-        "target": "branch",
-        "enforcement": "active",
-        "bypass_actors": [],
-        "conditions": {
-            "ref_name": {
-                "include": [
-                    "~DEFAULT_BRANCH"
-                ],
-                "exclude": []
-            }
-        },
-        "rules": [
-            {
-                "type": "deletion"
-            },
-            {
-                "type": "non_fast_forward"
-            },
-            {
-                "type": "pull_request",
-                "parameters": {
-                    "required_approving_review_count": 0,
-                    "dismiss_stale_reviews_on_push": false,
-                    "require_code_owner_review": false,
-                    "require_last_push_approval": false,
-                    "required_review_thread_resolution": true,
-                    "allowed_merge_methods": [
-                        "merge",
-                        "squash",
-                        "rebase"
-                    ]
-                }
-            }
-        ]
-    },
-    "historicalRulesetNames": [
-        "default",
-        "Protect default branch"
-    ],
-    "rulesetOverrides": [
-        {
-            "repositoryPattern": "f2calv/SmartHaus",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build / app-build-dotnet"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/signalizr",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build / app-build-dotnet"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/redis-dotnet",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build / app-build-dotnet"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/.github",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "test"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/CasCap.*",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/yamlizr",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/dotnet-nuget-test",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "build"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-workflows",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-check-release-exists",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-dotnet-nuget",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-gitops-manifest-update",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-sonarqube-dotnet",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/gha-release-versioning",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning"
-                            },
-                            {
-                                "context": "validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/multi-arch-container-dotnet",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "app / app-build-dotnet"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/multi-arch-container-go",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "app / app-build-go"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/multi-arch-container-python",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "app / app-build-python"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/multi-arch-container-rust",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "app / app-build-rust"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "f2calv/helm-charts",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "release (workload) / versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "release (workload) / chart"
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "repositoryPattern": "*/tf_module_azurerm_*",
-            "rules": [
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "strict_required_status_checks_policy": true,
-                        "do_not_enforce_on_create": false,
-                        "required_status_checks": [
-                            {
-                                "context": "lint / lint"
-                            },
-                            {
-                                "context": "versioning / gha-release-versioning"
-                            },
-                            {
-                                "context": "validate / terraform validate"
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
+  "repository": {
+    "deleteBranchOnMerge": true
+  },
+  "actions": {
+    "defaultWorkflowPermissions": "read",
+    "canApprovePullRequestReviews": false
+  },
+  "security": {
+    "dependabotAlerts": true,
+    "dependabotSecurityUpdates": true,
+    "secretScanning": true,
+    "secretScanningPushProtection": true
+  },
+  "publicRepository": {
+    "requiredStatusChecks": ["SonarCloud Code Analysis"],
+    "sonarCloudGateExclusions": [
+      "f2calv/.github",
+      "f2calv/doorbird-rs",
+      "f2calv/gha-check-release-exists",
+      "f2calv/gha-workflows",
+      "f2calv/helm-charts",
+      "f2calv/playground-gitversion",
+      "f2calv/signalizr",
+      "f2calv/tf_module_azurerm_application_insights"
     ]
+  },
+  "ruleset": {
+    "name": "f2calv repository baseline",
+    "target": "branch",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": {
+      "ref_name": {
+        "include": ["~DEFAULT_BRANCH"],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "required_approving_review_count": 0,
+          "dismiss_stale_reviews_on_push": false,
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_review_thread_resolution": true,
+          "allowed_merge_methods": ["merge", "squash", "rebase"]
+        }
+      }
+    ]
+  },
+  "historicalRulesetNames": ["default", "Protect default branch"],
+  "rulesetOverrides": [
+    {
+      "repositoryPattern": "f2calv/SmartHaus",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build / app-build-dotnet"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/signalizr",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build / app-build-dotnet"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/redis-dotnet",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build / app-build-dotnet"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/.github",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "test"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.*",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/yamlizr",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/dotnet-nuget-test",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-workflows",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-check-release-exists",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-dotnet-nuget",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-gitops-manifest-update",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-sonarqube-dotnet",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/gha-release-versioning",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning"
+              },
+              {
+                "context": "validate"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/multi-arch-container-dotnet",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "app / app-build-dotnet"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/multi-arch-container-go",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "app / app-build-go"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/multi-arch-container-python",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "app / app-build-python"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/multi-arch-container-rust",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "app / app-build-rust"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/helm-charts",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "release (workload) / versioning / gha-release-versioning"
+              },
+              {
+                "context": "release (workload) / package / helm-chart-package"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "*/tf_module_azurerm_*",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "validate / terraform validate"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }

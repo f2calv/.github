@@ -98,7 +98,7 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         }
         @{
             Repository = 'f2calv/helm-charts'
-            Expected   = @('lint / lint', 'release (workload) / versioning / gha-release-versioning', 'release (workload) / chart')
+            Expected   = @('lint / lint', 'release (workload) / versioning / gha-release-versioning', 'release (workload) / package / helm-chart-package')
         }
         @{
             Repository = 'f2calv/playground-gitversion'

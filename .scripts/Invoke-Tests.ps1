@@ -14,7 +14,8 @@ param(
     [Parameter(Mandatory = $false)]
     [string[]]$TestPath = @(
         (Join-Path $PSScriptRoot 'tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests')
+        (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests'),
+        (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests')
     )
 )
 
@@ -28,5 +29,17 @@ $Configuration = New-PesterConfiguration
 $Configuration.Run.Path = $TestPath
 $Configuration.Run.Exit = $true
 $Configuration.Output.Verbosity = 'Detailed'
+$Configuration.CodeCoverage.Enabled = $true
+$Configuration.CodeCoverage.Path = @(
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Build.ps1'),
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Deploy.ps1')
+)
+$coverageOutputPath = Join-Path ([IO.Path]::GetTempPath()) "container-workflows-coverage-$PID.xml"
+$Configuration.CodeCoverage.OutputPath = $coverageOutputPath
 
-Invoke-Pester -Configuration $Configuration
+try {
+    Invoke-Pester -Configuration $Configuration
+}
+finally {
+    Remove-Item -LiteralPath $coverageOutputPath -Force -ErrorAction SilentlyContinue
+}

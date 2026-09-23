@@ -65,6 +65,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 
 - Two-space indentation for all workflow and action YAML files.
 - Do not quote strings unless YAML requires it — values containing special characters, reserved words such as `true`, `false` or `null`, or strings that could be misinterpreted as another type.
+- Quote a `run` command that consists only of a YAML reserved scalar, such as `run: 'true'`; unquoted `run: true` is a boolean, not a command string. Prefer removing a redundant no-op step or job instead of retaining it solely as a fan-in.
 - For `workflow_dispatch` string inputs that represent booleans, use quoted defaults such as `default: 'true'`.
 - Use `|` for multi-line `run` scripts and `>` for flowing multi-line description text.
 - Separate every top-level workflow section with exactly one blank line, including `on:`, `concurrency:`, `permissions:`, `env:` and `jobs:`. This leaves one blank line above and below a top-level `permissions:` block. Do not add blank lines within input or output lists.

@@ -23,11 +23,14 @@ The chart supports these primary workload modes:
 * `Deployment`
 * `DaemonSet`
 * `StatefulSet`
+* `Job`
 * `ScaledObject`
 * `ScaledJob`
 * `CronJob`
 
-Use `job.enabled` when a release also needs an additional one-shot `Job`.
+Use `kind: Job` for a one-shot batch workload. Keep every primary workload mode mutually exclusive;
+an additional Job that must accompany another primary resource belongs in a separate chart release
+or workload alias.
 Preserve the sensible-default principle: common deployments should need few
 values, while runtime-specific configuration remains the consumer's
 responsibility. Do not add framework-specific probes, ports, commands, or
@@ -54,8 +57,14 @@ Every `Chart.yaml` must define:
 Treat each chart as an independently versioned package. Increment its
 `Chart.yaml` version whenever its packaged behaviour changes. Published chart
 versions and their Git tags are immutable: never move or reuse a released
-version. Git tags use `<chart>/<version>`, such as `workload/1.0.2`; the
+version. Git tags use `<chart>/<version>`, such as `workload/1.1.0`; the
 `Chart.yaml` version and OCI artifact tag remain the bare semantic version.
+
+Treat chart implementation, metadata, generated contracts, and documentation as one atomic change.
+When chart behavior or values change, update the chart version, `values.yaml`, generated schema,
+dependency lock, chart README examples and default-values reference, repository catalogue version,
+and affected consumer documentation together. Never merge a chart change with stale version pins,
+render examples, or documented defaults.
 
 ## Values Schemas
 
@@ -140,9 +149,65 @@ genuinely shared dependency with its own compatibility contract.
 
 ## Documentation
 
-Every chart must include a `README.md` that documents its purpose, OCI or local
-consumption model, supported values, dependencies, examples, and validation
-commands. Update the README with every contract or behaviour change.
+Every chart must include a consumer-focused `README.md`. Document how to install,
+configure, and operate the packaged chart. Keep chart construction, schema
+generation, pre-commit hooks, CI implementation, and release mechanics in
+maintainer documentation or instructions rather than the chart README.
+
+Store representative chart-testing values under `ci/` in each chart source directory. Run them
+through chart-testing lint on every pull request, including changes that do not introduce a new
+chart version. Add `ci/` to `.helmignore` so validation fixtures remain available from source but
+are never published in the chart package.
+
+When `Chart.yaml` declares dependencies, include a Mermaid dependency graph in the chart README.
+Show the parent chart, every dependency alias, and the dependency chart and version each alias
+resolves to. Update the diagram in the same change as any dependency addition, removal, alias, or
+version change.
+
+Use this reader journey where the sections apply:
+
+1. Introduce the chart, the application or workload it deploys, and its dependency model.
+2. Add `## Install` with `### Helm` and `### Argo CD Application` examples.
+3. Add `## Setup` only when the deployed application needs post-install activation or registration.
+4. Add `## Configuration` with a concise defaults table, validated options, and a complete
+   `### Default Values` reference.
+5. Add `## Persistence` when the chart owns or mounts durable state.
+6. End with `## Related Projects` containing authoritative project and platform links.
+
+Keep examples consistent and directly usable:
+
+* Pin the chart version in the initial `helm install` example.
+* Use `helm upgrade --install` without `--version` only when the example intentionally tracks the
+  latest stable chart; say so in the surrounding text.
+* Include `--namespace my-namespace --create-namespace` in Helm examples and use the same
+  `my-namespace` placeholder in Argo CD and namespace-sensitive `kubectl` commands.
+* Provide equivalent Helm CLI and Argo CD `valuesObject` examples for important overrides such as
+  environment variables, persistence, and ephemeral storage.
+* Use `--set-string` for scalar container environment values and `--set-json` when an empty array or
+  object type must be preserved.
+* Point Argo CD OCI sources at the chart being documented, not at a generic dependency or example
+  image left over from another chart.
+* Use synthetic, runnable images and values. Do not publish examples that resolve to nonexistent
+  image tags or render zero workload replicas unless that is the stated purpose.
+
+Keep configuration reference material concise and authoritative:
+
+* Link workload kinds, controllers, and external tools to their official Kubernetes, KEDA, or
+  upstream project documentation.
+* Explain chart-specific choices and coupled values, but omit general application protocol behavior
+  that belongs in the upstream application's documentation.
+* Copy the complete `values.yaml` data into `### Default Values`, remove `# @schema` annotations,
+  and replace verbose source comments with single-line comments for key areas.
+* Compare the parsed embedded YAML with `values.yaml`; formatting and comments may differ, but every
+  key, type, and default value must match.
+
+The repository README should catalogue each published chart with a deep link to its chart README,
+latest published version, OCI reference, and a short purpose sentence. Keep per-chart details in the
+chart README rather than duplicating introductory paragraphs in the repository overview.
+
+Validate every chart-specific README and the repository catalogue against the version in
+`Chart.yaml` during pull requests. Update the documentation with every public contract or behavior
+change.
 
 ## Validation
 

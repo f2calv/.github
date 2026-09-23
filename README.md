@@ -149,6 +149,19 @@ Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1
 npm run test:ps
 ```
 
+## Container workflows
+
+The [`container-workflows` skill](.github/skills/container-workflows/SKILL.md) centralizes local
+container builds and GitOps deployments. Repository-root `build.ps1`, `build.sh`, `deploy.ps1`, and
+`deploy.sh` files are thin compatibility entry points; build and deployment behavior and Pester
+coverage live in this repository.
+
+Run the focused regression suite:
+
+```powershell
+./.github/skills/container-workflows/scripts/Invoke-Tests.ps1
+```
+
 ## .NET release train
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates

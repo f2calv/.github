@@ -28,11 +28,19 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
   each commit small enough for contextual review. When a phase spans repositories, create one
   phase-labelled commit per repository as needed.
 - **Batch a bulk commit by originating change**: When asked to commit everything and the working tree holds unrelated edits — typically accumulated from several separate requests or sessions — group the files into one commit per originating change rather than a single sweeping commit. Infer the grouping from the files themselves: a shared directory, feature area or file type usually marks the boundary. Each message then describes one coherent change accurately, and stays short. Ask which grouping is intended when the boundary is genuinely ambiguous, and never mix an unrelated file into a group to avoid leaving it uncommitted.
+- **Remain on renamed branches**: When renaming the current branch, rename it in place so the
+  working tree remains checked out on the new branch name, then verify the active branch explicitly.
 - **Preserve git history during renames and moves**: Perform the rename or move first (prefer `git mv`), then edit the content at its new path. Never delete and recreate a file when a rename or move is the intent.
 - **Merge pull requests with a merge commit**: Always use the regular `merge` method so the pull
   request's individual commits and their messages remain in history. Never squash-merge or
   rebase-merge a pull request. If regular merge commits are disabled or blocked, stop and ask the
   user rather than choosing another merge method.
+- **Synchronize locally after a pull-request merge**: After GitHub merges a pull request, switch the
+  local checkout to the repository's default branch and fast-forward it from the remote. Delete the
+  former local feature branch only when the pull request used a regular merge commit and its
+  individual commits are therefore reachable from the updated default branch. Retain the local
+  branch after a squash or rebase merge so its original commits remain available for diagnosis or
+  recovery if the merged change must be reverted.
 - **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable and preferred where the changes are disconnected, or where one repository should not know about the other. A single shared message is fine when the change is genuinely coupled.
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
@@ -115,6 +123,10 @@ Recording is only half the loop; the other half is reading it back.
   missing checks or superseded guidance. Update the existing authority rather than recording a
   duplicate rule elsewhere; leave one-off incident details in memory or repository documentation.
 - **Default to the central instruction files.** When asked to add or change a convention, assume it belongs in the shared set rather than in the current repository's `copilot-instructions.md`. Only keep a rule local when it genuinely cannot apply elsewhere — it names a specific file, service, domain term or deliberate deviation from a central rule. If it is not clear-cut, say which file you intend to change and why before editing.
+- **Edit requested conventions for durability.** When a user asks to add wording to instructions,
+  preserve the complete intent but do not default to copying their sentence verbatim. Write the
+  clearest concise or paraphrased rule that fits the owning document. If multiple interpretations
+  would materially change the rule, present those alternatives in a UI picker before editing.
 - **Stop if the shared instructions are not loaded.** A repository's `copilot-instructions.md` points at a central repository for the shared rules. If those files are not visible — no `*.instructions.md` beyond the repository's own, nothing under `~/.copilot/instructions`, and the central repository not open in the workspace — do not guess the conventions and do not proceed with a change that depends on them. Tell the user the shared instructions are missing and how to load them: clone the central repository and either add it to the workspace, or link its folders into the user profile.
 - Keep a rule in exactly one place. Prefer amending an existing rule over adding a near-duplicate.
 - Keep language-, tool- and framework-specific rules out of this file; they belong in their own scoped instruction file.
