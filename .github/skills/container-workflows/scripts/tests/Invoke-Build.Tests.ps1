@@ -119,4 +119,52 @@ Describe 'Invoke-Build profiles' {
     It 'uses a requested yamlizr version without GitVersion' {
         Resolve-YamlizrVersion -RequestedVersion '2.3.4' -RepositoryRoot $repositoryRoot | Should -Be '2.3.4'
     }
+
+    It 'falls back to a local yamlizr version when GitVersion is unavailable' {
+        Mock Install-GitVersion { $false }
+        Resolve-YamlizrVersion -RepositoryRoot $repositoryRoot | Should -Be '0.0.1'
+    }
+
+    It 'rejects a Dockerfile without sibling dependencies' {
+        $dockerfile = Join-Path $repositoryRoot 'Dockerfile.Empty'
+        Set-Content $dockerfile 'FROM scratch'
+        { Get-DependencyRepositories $dockerfile } | Should -Throw '*No sibling dependencies*'
+    }
+
+    It 'authenticates Docker to GHCR through GitHub CLI' {
+        Mock Get-Command { [pscustomobject]@{ Name = 'gh' } }
+        Mock gh { $global:LASTEXITCODE = 0; if ($args -contains 'status') { 'write:packages' } elseif ($args -contains 'user') { 'example-user' } else { 'token' } }
+        Mock docker { $global:LASTEXITCODE = 0 }
+        Connect-Ghcr
+        Should -Invoke docker -ParameterFilter { $args -contains 'login' -and $args -contains 'example-user' }
+    }
+
+    It 'creates and selects a missing Buildx builder' {
+        $script:inspectComplete = $false
+        Mock docker {
+            if ($args -contains 'inspect' -and -not $script:inspectComplete) {
+                $script:inspectComplete = $true
+                $global:LASTEXITCODE = 1
+                return
+            }
+            $global:LASTEXITCODE = 0
+        }
+        Initialize-BuildxBuilder -BuilderName 'example1' -Bootstrap
+        Should -Invoke docker -ParameterFilter { $args -contains 'create' -and $args -contains '--bootstrap' }
+        Should -Invoke docker -ParameterFilter { $args -contains 'use' }
+    }
+
+    It 'accepts a successful yamlizr smoke test' {
+        Mock docker { $global:LASTEXITCODE = 0; if ($args -contains '--version') { '1.2.3+abc' } }
+        Invoke-YamlizrSmokeTest -Image 'example:latest' -ExpectedVersion '1.2.3'
+        Should -Invoke docker -Times 2
+    }
+
+    It 'mirrors a sibling dependency on Windows' -Skip:(-not $IsWindows) {
+        $dependency = Join-Path (Split-Path $repositoryRoot -Parent) 'Shared.Copy'
+        New-Item -ItemType Directory -Path $dependency -Force | Out-Null
+        Mock robocopy { $global:LASTEXITCODE = 1 }
+        Sync-Dependencies -RepositoryRoot $repositoryRoot -DependencyRepositories @('Shared.Copy')
+        Should -Invoke robocopy -Times 1
+    }
 }

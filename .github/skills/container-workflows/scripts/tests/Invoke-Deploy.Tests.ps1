@@ -37,6 +37,7 @@ Describe 'Invoke-Deploy manifest handling' {
 }
 
 
+
 Describe 'Invoke-Deploy validation and safety' {
     It 'rejects Release build forwarding' {
         { ConvertTo-DeployBuildArguments @('-Configuration', 'Release') } | Should -Throw '*Debug builds*'
@@ -111,12 +112,11 @@ Describe 'Invoke-Deploy validation and safety' {
     It 'loads local settings while preserving explicit values' {
         $configPath = Join-Path $repositoryRoot 'deploy.local.psd1'
         Set-Content $configPath "@{ ManifestRepo = '$repositoryRoot'; ManifestPath = 'app.yaml'; PodAnnotationName = 'example/deployed'; Tag = 'from-config' }"
-        $script:DeployConfigPath = $configPath
-        $script:Tag = 'explicit'
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -DeployConfigPath $configPath -Tag 'explicit'
         $deployment = Initialize-DeploymentSettings @{ Tag = 'explicit' }
         $deployment.RelativePath | Should -Be 'app.yaml'
-        $script:Tag | Should -Be 'explicit'
-        $script:PodAnnotationName | Should -Be 'example/deployed'
+        $Tag | Should -Be 'explicit'
+        $PodAnnotationName | Should -Be 'example/deployed'
     }
 
     It 'updates a clean manifest repository from its upstream' {
@@ -131,23 +131,17 @@ Describe 'Invoke-Deploy validation and safety' {
     }
 
     It 'skips image builds for charts-only deployment' {
-        $script:OnlyCharts = $true
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -OnlyCharts
         Invoke-DeploymentBuild $repositoryRoot
-        $script:OnlyCharts = $false
     }
 
     It 'patches and commits an Application manifest' {
         $manifest = Join-Path $repositoryRoot 'app.yaml'
         Set-Content $manifest 'kind: Application'
         $deployment = [pscustomobject]@{ Root = $repositoryRoot; Manifest = $manifest; RelativePath = 'app.yaml' }
-        $script:ManifestRepo = $repositoryRoot
-        $script:ImageRepository = 'ghcr.io/example/app'
-        $script:Tag = 'latest-dev'
-        $script:PodAnnotationName = 'example/deployed'
-        $script:DeploymentName = 'example'
-        $script:NoCommit = $false
-        $script:OnlyCharts = $false
-        $script:Chart = $false
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -ManifestRepo $repositoryRoot -ImageRepository 'ghcr.io/example/app' `
+            -Tag 'latest-dev' -PodAnnotationName 'example/deployed' -DeploymentName 'example'
         Mock yq { $global:LASTEXITCODE = 0; if ($args -contains '.kind') { 'Application' } }
         Mock Get-DeploymentGitVersion { '1.2.3' }
         Mock git { $global:LASTEXITCODE = if ($args -contains '--quiet') { 1 } else { 0 } }
@@ -158,6 +152,7 @@ Describe 'Invoke-Deploy validation and safety' {
     }
 
     It 'coordinates a full deployment and cleanup' {
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -ManifestRepo $repositoryRoot
         Mock Initialize-DeploymentSettings { [pscustomobject]@{ Root = $repositoryRoot; Manifest = 'manifest.yaml'; RelativePath = 'manifest.yaml' } }
         Mock Assert-DeploymentPrerequisites
         Mock Update-ManifestRepository
@@ -169,5 +164,63 @@ Describe 'Invoke-Deploy validation and safety' {
         Should -Invoke Update-ManifestRepository -Times 1
         Should -Invoke Invoke-DeploymentBuild -Times 1
         Should -Invoke Update-DeploymentManifest -Times 1
+    }
+
+    It 'validates an existing manifest when yq is available' {
+        $manifest = Join-Path $repositoryRoot 'valid.yaml'
+        Set-Content $manifest 'kind: Application'
+        Mock Get-Command { [pscustomobject]@{ Name = 'yq' } }
+        { Assert-DeploymentPrerequisites $manifest } | Should -Not -Throw
+    }
+
+    It 'runs the configured EF model-drift check and restores environment state' {
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -MigrationProject 'src/Data.csproj' -MigrationContext 'DataContext' `
+            -MigrationConnectionStringEnvironmentVariable 'TEST_DB' -MigrationConnectionString 'synthetic'
+        Mock Get-Command { [pscustomobject]@{ Name = 'dotnet' } }
+        Mock dotnet { $global:LASTEXITCODE = 0 }
+        Assert-NoModelDrift $repositoryRoot
+        Should -Invoke dotnet -ParameterFilter { $args -contains 'has-pending-model-changes' -and $args -contains 'DataContext' }
+        [Environment]::GetEnvironmentVariable('TEST_DB') | Should -BeNullOrEmpty
+    }
+
+    It 'invokes the repository build shim for an image deployment' {
+        $buildScript = Join-Path $repositoryRoot 'build.ps1'
+        Set-Content $buildScript "param([switch]`$Push, [string]`$Configuration, [string]`$Platforms, [string]`$Tag); exit 0"
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -Platforms 'linux/amd64' -Tag 'test'
+        Invoke-DeploymentBuild $repositoryRoot
+    }
+
+    It 'validates and publishes a dashboards chart' {
+        $chartRoot = Join-Path $repositoryRoot 'charts/dashboards'
+        New-Item -ItemType Directory -Path (Join-Path $chartRoot 'dashboards') -Force | Out-Null
+        Set-Content (Join-Path $chartRoot 'Chart.yaml') 'apiVersion: v2'
+        Set-Content (Join-Path $chartRoot 'dashboards/example.json') '{}'
+        Mock Get-Command { [pscustomobject]@{ Name = 'helm' } }
+        Mock gh { $global:LASTEXITCODE = 0; if ($args -contains 'user') { 'example-user' } else { 'token' } }
+        Mock helm { $global:LASTEXITCODE = 0; 'native output' }
+        $result = Publish-ConfiguredDeploymentChart -Root $repositoryRoot -Timestamp '20260923000000' `
+            -PublishOnlyCharts -DashboardsChartPath 'charts/dashboards' `
+            -DashboardsChartRepository 'example/charts/dashboards' -Registry 'ghcr.io' `
+            -Name 'example' -ImageTag 'latest-dev'
+        $result.Version | Should -Be '0.0.0-dev.20260923000000'
+        Should -Invoke helm -ParameterFilter { $args -contains 'lint' }
+        Should -Invoke helm -ParameterFilter { $args -contains 'template' }
+    }
+
+    It 'returns without committing when the manifest has no diff' {
+        $manifest = Join-Path $repositoryRoot 'unchanged.yaml'
+        Set-Content $manifest 'kind: ApplicationSet'
+        $deployment = [pscustomobject]@{ Root = $repositoryRoot; Manifest = $manifest; RelativePath = 'unchanged.yaml' }
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -ManifestRepo $repositoryRoot -ImageRepository 'ghcr.io/example/app' `
+            -Tag 'latest-dev' -PodAnnotationName 'example/deployed' -DeploymentName 'example'
+        Mock yq { $global:LASTEXITCODE = 0; if ($args -contains '.kind') { 'ApplicationSet' } }
+        Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock git { $global:LASTEXITCODE = 0 }
+        Mock Push-ManifestRepository
+        Update-DeploymentManifest $deployment $null '20260923000000'
+        Should -Invoke Push-ManifestRepository -Times 0
     }
 }
