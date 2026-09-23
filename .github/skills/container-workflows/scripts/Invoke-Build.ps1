@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7.4
-<#!
+<#
 .SYNOPSIS
 	Builds a repository container image through a shared build profile.
 .DESCRIPTION

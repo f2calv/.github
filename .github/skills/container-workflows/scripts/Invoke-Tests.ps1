@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7.4
-<#!
+<#
 .SYNOPSIS
     Runs the container workflow Pester suite.
 .EXAMPLE

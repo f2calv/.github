@@ -58,9 +58,9 @@ Describe 'Invoke-Deploy validation and safety' {
         New-Item -ItemType Directory -Path (Join-Path $repositoryRoot 'charts/example') -Force | Out-Null
         New-Item -ItemType File -Path (Join-Path $repositoryRoot 'charts/example/Chart.yaml') | Out-Null
         $result = @(Publish-ConfiguredDeploymentChart -Root $repositoryRoot -Timestamp '20260923000000' `
-            -PublishChart -ApplicationChartPath 'charts/example' `
-            -ApplicationChartRepository 'example/charts/example' -Registry 'ghcr.io' `
-            -Name 'example' -ImageTag 'latest-dev')
+                -PublishChart -ApplicationChartPath 'charts/example' `
+                -ApplicationChartRepository 'example/charts/example' -Registry 'ghcr.io' `
+                -Name 'example' -ImageTag 'latest-dev')
         $result.Count | Should -Be 1
         $result[0].Version | Should -Be '0.0.0-dev.20260923000000'
     }
@@ -90,9 +90,9 @@ Describe 'Invoke-Deploy validation and safety' {
     It 'rejects a missing chart before publication' {
         Mock Get-Command { [pscustomobject]@{ Name = 'helm' } }
         { Publish-ConfiguredDeploymentChart -Root $repositoryRoot -Timestamp '20260923000000' `
-            -PublishChart -ApplicationChartPath 'charts/missing' `
-            -ApplicationChartRepository 'example/charts/missing' -Registry 'ghcr.io' `
-            -Name 'example' -ImageTag 'latest-dev' } | Should -Throw '*Chart not found*'
+                -PublishChart -ApplicationChartPath 'charts/missing' `
+                -ApplicationChartRepository 'example/charts/missing' -Registry 'ghcr.io' `
+                -Name 'example' -ImageTag 'latest-dev' } | Should -Throw '*Chart not found*'
     }
 
     It 'performs no mutation under WhatIf' {
@@ -171,6 +171,12 @@ Describe 'Invoke-Deploy validation and safety' {
         Set-Content $manifest 'kind: Application'
         Mock Get-Command { [pscustomobject]@{ Name = 'yq' } }
         { Assert-DeploymentPrerequisites $manifest } | Should -Not -Throw
+    }
+
+    It 'resolves the deployment version with an installed GitVersion tool' {
+        Mock Get-Command { [pscustomobject]@{ Name = 'dotnet-gitversion' } }
+        Mock dotnet-gitversion { '1.2.3' }
+        Get-DeploymentGitVersion $repositoryRoot | Should -Be '1.2.3'
     }
 
     It 'runs the configured EF model-drift check and restores environment state' {

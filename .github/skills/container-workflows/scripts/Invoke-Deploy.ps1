@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7.4
-<#!
+<#
 .SYNOPSIS
     Builds and deploys an application through a caller-supplied GitOps repository.
 .DESCRIPTION
@@ -97,8 +97,8 @@ function Initialize-DeploymentSettings {
         }
     }
     $name = Split-Path $root -Leaf
-    if (-not $DeploymentName) { $script:DeploymentName = $name.ToLowerInvariant() }
-    if (-not $ImageRepository) { $script:ImageRepository = "ghcr.io/f2calv/$($name.ToLowerInvariant())" }
+    if (-not $DeploymentName) { Set-Variable DeploymentName $name.ToLowerInvariant() -Scope 1 -WhatIf:$false }
+    if (-not $ImageRepository) { Set-Variable ImageRepository "ghcr.io/f2calv/$($name.ToLowerInvariant())" -Scope 1 -WhatIf:$false }
     if (-not $OnlyCharts -and -not $PodAnnotationName) { throw "-PodAnnotationName is required. Supply it explicitly or in '$DeployConfigPath'." }
     if (-not $ManifestRepo) { throw "-ManifestRepo is required. Supply it explicitly or in '$DeployConfigPath'." }
     $script:Rest = @(ConvertTo-DeployBuildArguments $Rest)
@@ -248,6 +248,12 @@ function Publish-ConfiguredDeploymentChart {
 function Get-DeploymentGitVersion {
     [CmdletBinding()][OutputType([string])]
     param([Parameter(Mandatory)][string]$Root)
+    if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
+        dotnet tool install -g GitVersion.Tool | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to install GitVersion.Tool.' }
+        $toolsPath = Join-Path $HOME '.dotnet/tools'
+        if ($env:PATH -notlike "*$toolsPath*") { $env:PATH = "$toolsPath$([IO.Path]::PathSeparator)$env:PATH" }
+    }
     return "$(dotnet-gitversion $Root /showvariable FullSemVer)".Trim()
 }
 
