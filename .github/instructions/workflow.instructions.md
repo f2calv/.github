@@ -33,6 +33,12 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
   request's individual commits and their messages remain in history. Never squash-merge or
   rebase-merge a pull request. If regular merge commits are disabled or blocked, stop and ask the
   user rather than choosing another merge method.
+- **Synchronize locally after a pull-request merge**: After GitHub merges a pull request, switch the
+  local checkout to the repository's default branch and fast-forward it from the remote. Delete the
+  former local feature branch only when the pull request used a regular merge commit and its
+  individual commits are therefore reachable from the updated default branch. Retain the local
+  branch after a squash or rebase merge so its original commits remain available for diagnosis or
+  recovery if the merged change must be reverted.
 - **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable and preferred where the changes are disconnected, or where one repository should not know about the other. A single shared message is fine when the change is genuinely coupled.
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
