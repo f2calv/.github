@@ -150,12 +150,14 @@ For every affected repository:
 1. Run the generator with `-Check`.
 2. Confirm UTF-8 without BOM, LF endings, one final newline, and no forbidden trailing whitespace.
 3. Parse changed JSON, YAML, XML, TOML, and project files with repository-approved tooling.
-4. Run `git diff --check`.
-5. For .NET, build the complete solution across every target framework. Fix every warning promoted
-   to an error. A missing platform workload is an environment blocker, not evidence that policy
-   passes.
-6. Run the focused generator Pester suite after generator or fragment changes.
-7. Re-run the inventory and prove every repository is either drift-free or has a documented
+4. Run the repository's authoritative lint or pre-commit command; `git diff --check` alone does not
+   prove hooks such as `end-of-file-fixer` are satisfied.
+5. For .NET, build the complete solution across every target framework. Where Debug and Release
+   solutions use different project/package graphs, validate both. Fix every warning promoted to an
+   error. A missing platform workload is an environment blocker, not evidence that policy passes.
+6. Run `git diff --check`.
+7. Run the focused generator Pester suite after generator or fragment changes.
+8. Re-run the inventory and prove every repository is either drift-free or has a documented
    override.
 
 ### 7. Commit And Publish
