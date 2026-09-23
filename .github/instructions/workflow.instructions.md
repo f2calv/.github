@@ -28,6 +28,8 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
   each commit small enough for contextual review. When a phase spans repositories, create one
   phase-labelled commit per repository as needed.
 - **Batch a bulk commit by originating change**: When asked to commit everything and the working tree holds unrelated edits — typically accumulated from several separate requests or sessions — group the files into one commit per originating change rather than a single sweeping commit. Infer the grouping from the files themselves: a shared directory, feature area or file type usually marks the boundary. Each message then describes one coherent change accurately, and stays short. Ask which grouping is intended when the boundary is genuinely ambiguous, and never mix an unrelated file into a group to avoid leaving it uncommitted.
+- **Remain on renamed branches**: When renaming the current branch, rename it in place so the
+  working tree remains checked out on the new branch name, then verify the active branch explicitly.
 - **Preserve git history during renames and moves**: Perform the rename or move first (prefer `git mv`), then edit the content at its new path. Never delete and recreate a file when a rename or move is the intent.
 - **Merge pull requests with a merge commit**: Always use the regular `merge` method so the pull
   request's individual commits and their messages remain in history. Never squash-merge or
