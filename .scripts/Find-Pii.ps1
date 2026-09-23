@@ -171,7 +171,7 @@ function Invoke-PiiScan {
         )
         $allowRegex = @(
             [regex]'(?i)\.(blob|table|queue|file)\.core\.windows\.net$', # the bare suffix with no account
-            [regex]'(?i)^(?:[a-z]:\\Users\\|/(?:Users|home)/)(?:runner|vscode)$' # generic CI/devcontainer users
+            [regex]'(?i)^(?:[a-z]:\\Users\\|/(?:Users|home)/)(?:app|runner|vscode)$' # generic app/CI/devcontainer users
         )
 
         # Public apex domains that must NOT be treated as private when extracting domain seeds.
