@@ -154,6 +154,11 @@ configure, and operate the packaged chart. Keep chart construction, schema
 generation, pre-commit hooks, CI implementation, and release mechanics in
 maintainer documentation or instructions rather than the chart README.
 
+Store representative chart-testing values under `ci/` in each chart source directory. Run them
+through chart-testing lint on every pull request, including changes that do not introduce a new
+chart version. Add `ci/` to `.helmignore` so validation fixtures remain available from source but
+are never published in the chart package.
+
 Use this reader journey where the sections apply:
 
 1. Introduce the chart, the application or workload it deploys, and its dependency model.
