@@ -476,7 +476,7 @@
                                 "context": "release (workload) / versioning / gha-release-versioning"
                             },
                             {
-                                "context": "release (workload) / chart"
+                                "context": "release (workload) / package / helm-chart-package"
                             }
                         ]
                     }
