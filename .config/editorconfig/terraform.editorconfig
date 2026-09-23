@@ -1,0 +1,3 @@
+# Terraform and HCL files
+[*.{tf,tfvars,hcl}]
+indent_size = 2
