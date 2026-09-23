@@ -121,6 +121,10 @@ Recording is only half the loop; the other half is reading it back.
   missing checks or superseded guidance. Update the existing authority rather than recording a
   duplicate rule elsewhere; leave one-off incident details in memory or repository documentation.
 - **Default to the central instruction files.** When asked to add or change a convention, assume it belongs in the shared set rather than in the current repository's `copilot-instructions.md`. Only keep a rule local when it genuinely cannot apply elsewhere — it names a specific file, service, domain term or deliberate deviation from a central rule. If it is not clear-cut, say which file you intend to change and why before editing.
+- **Edit requested conventions for durability.** When a user asks to add wording to instructions,
+  preserve the complete intent but do not default to copying their sentence verbatim. Write the
+  clearest concise or paraphrased rule that fits the owning document. If multiple interpretations
+  would materially change the rule, present those alternatives in a UI picker before editing.
 - **Stop if the shared instructions are not loaded.** A repository's `copilot-instructions.md` points at a central repository for the shared rules. If those files are not visible — no `*.instructions.md` beyond the repository's own, nothing under `~/.copilot/instructions`, and the central repository not open in the workspace — do not guess the conventions and do not proceed with a change that depends on them. Tell the user the shared instructions are missing and how to load them: clone the central repository and either add it to the workspace, or link its folders into the user profile.
 - Keep a rule in exactly one place. Prefer amending an existing rule over adding a near-duplicate.
 - Keep language-, tool- and framework-specific rules out of this file; they belong in their own scoped instruction file.
