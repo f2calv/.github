@@ -159,6 +159,11 @@ through chart-testing lint on every pull request, including changes that do not 
 chart version. Add `ci/` to `.helmignore` so validation fixtures remain available from source but
 are never published in the chart package.
 
+When `Chart.yaml` declares dependencies, include a Mermaid dependency graph in the chart README.
+Show the parent chart, every dependency alias, and the dependency chart and version each alias
+resolves to. Update the diagram in the same change as any dependency addition, removal, alias, or
+version change.
+
 Use this reader journey where the sections apply:
 
 1. Introduce the chart, the application or workload it deploys, and its dependency model.
