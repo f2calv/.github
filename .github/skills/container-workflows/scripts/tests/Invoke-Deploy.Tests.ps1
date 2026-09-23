@@ -2,6 +2,8 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.7.1' }
 
 BeforeAll {
+    function dotnet-gitversion { }
+
     $repositoryRoot = Join-Path $TestDrive 'application'
     New-Item -ItemType Directory -Path $repositoryRoot | Out-Null
     . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot
