@@ -60,6 +60,15 @@ versions and their Git tags are immutable: never move or reuse a released
 version. Git tags use `<chart>/<version>`, such as `workload/1.1.0`; the
 `Chart.yaml` version and OCI artifact tag remain the bare semantic version.
 
+Public application charts publish in the account-level OCI namespace
+`ghcr.io/<owner>/charts/<chart-name>`. Pass that full final coordinate as the packaging workflow's
+`chart-repository`, for example `<owner>/charts/signalizr`. The reusable workflow derives the chart
+name from the `chart-path` directory basename and pushes to `dirname(chart-repository)`, so the
+directory basename, `Chart.yaml` `name`, and final OCI segment must match. Do not insert the source
+repository name into the OCI path. Names in this shared namespace must be globally unique: use the
+application name for its primary chart and `<application>-<purpose>` for ancillary charts, such as
+`signalizr-dashboards`, rather than a colliding generic name such as `dashboards`.
+
 Treat chart implementation, metadata, generated contracts, and documentation as one atomic change.
 When chart behavior or values change, update the chart version, `values.yaml`, generated schema,
 dependency lock, chart README examples and default-values reference, repository catalogue version,

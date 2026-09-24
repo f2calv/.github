@@ -87,6 +87,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Prefer `secrets: inherit` unless there is a specific reason to restrict the secrets passed to the called workflow.
 - Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
 - Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
+- For the shared Helm packaging workflow, pass the full final OCI coordinate as `chart-repository`, such as `${{ github.repository_owner }}/charts/signalizr`. The workflow pushes to `dirname(chart-repository)` and derives the package name from the `chart-path` directory basename, so that basename, `Chart.yaml` `name`, and the coordinate's final segment must match. Never insert the source repository name into the artifact path; that produces nested coordinates such as `<owner>/<source-repository>/<chart-name>`.
 
 ## Composite Actions
 
