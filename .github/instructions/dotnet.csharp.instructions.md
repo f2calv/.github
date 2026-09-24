@@ -14,6 +14,7 @@ applyTo: '**/*.cs'
   **Generic types** are not an exception to the one-type rule; they only change the filename — encode type parameters with curly braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`, `_FeatureConfig{T}.cs` (Microsoft .NET runtime convention).
 - **Indentation**: 4 spaces, LF line endings, insert final newline.
 - **Interfaces**: Must start with `I` (PascalCase) and live in an `Abstractions` folder and an `Abstractions` namespace.
+- **Custom exceptions**: Every standalone custom exception type must use the `Exception` suffix, live in its own same-named file under an `Exceptions` folder, and use the matching namespace ending in `.Exceptions` (for example, `src/MyProject/Exceptions/WidgetException.cs` with `namespace MyProject.Exceptions;`). Keep nested private test doubles with their owning test type; this placement rule applies to standalone custom exception types.
 - **Types/Methods/Properties**: PascalCase.
 - **No `this.` prefix**: Qualification disabled.
 - **Implicit usings**: Enabled.
