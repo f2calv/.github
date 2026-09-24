@@ -168,7 +168,8 @@ The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md)
 dependency-ordered package releases across the .NET repositories open in the current workspace. It
 follows a repeatable per-repository checklist: update compatible packages, validate Debug and
 Release paths, merge the pull request, verify every package on NuGet, and continue with its direct
-consumers.
+consumers. The order includes `CasCap.Api.Voice` after its Azure API dependency and before
+applications that consume the voice package.
 
 Start at the first producer that needs updating:
 
