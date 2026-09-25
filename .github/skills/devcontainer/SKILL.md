@@ -234,6 +234,9 @@ Lifecycle order is `initializeCommand`, `onCreateCommand`, `updateContentCommand
 * `postAttachCommand` runs on every editor attach and should contain only attach-specific work.
 * Never authenticate, mutate remote systems, apply infrastructure, or change clusters from hooks.
 * Avoid unconditional operating-system upgrades on every start; they are slow and nondeterministic.
+* Do not create a Python virtual environment in lifecycle scripts. Install requirements into the
+  image's interpreter or with `pip install --user`, and add `~/.local/bin` to `PATH` through
+  `remoteEnv`. Follow the Python instructions for the exceptions.
 * Do not auto-install per-commit hooks. Document manual linting and optionally offer
   `pre-commit install --hook-type pre-push --install-hooks`.
 * Follow the repository's shell instructions: strict error handling, quoted expansions, validated
