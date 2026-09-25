@@ -61,5 +61,7 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 | Debug dependency is missing | Clone it beside the caller or use a Release build |
 | Manifest kind is rejected | Use an Argo CD `Application` or `ApplicationSet` |
 | Registry authentication fails | Refresh GitHub CLI authentication with `write:packages` scope |
+| Workstation is sluggish after a reboot | Docker restarts every idle per-repository builder the scripts created (`<image>1`, or the repository name for multi-arch samples). Stop them with `docker stop` on the `buildx_buildkit_*` containers; the scripts start them again when needed |
+| Laptop runs out of memory during builds | Run one scripted build at a time; each multi-platform build emulates arm under QEMU in its own builder |
 
 > Brought to you by f2calv/.github
