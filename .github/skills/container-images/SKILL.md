@@ -1,6 +1,6 @@
 ---
 name: container-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files against the shared container image conventions. Use when writing a new image, choosing an image profile, build strategy, platform set, runtime base, pinning, cache sharing, provenance, entrypoint or debug variant, modernising a legacy Dockerfile, or checking the rules that docker buildx build --check does not enforce.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files against the shared container image conventions. Use when writing a new image, choosing an image profile, build strategy, platform set, runtime base, pinning, cache sharing, provenance, entrypoint, debug variant or optional test stage, modernising a legacy Dockerfile, or checking the rules that docker buildx build --check does not enforce.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
 user-invocable: true
 compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
@@ -57,6 +57,7 @@ not need:
 * Cache mounts and their `sharing` mode.
 * Provenance mode and labels.
 * Entrypoint form, writable paths and any debug variant.
+* An optional `test` stage, when the repository has credential-free tests.
 
 ### Step 3: Author
 
@@ -73,12 +74,14 @@ Run the audit, then BuildKit's checks:
 docker buildx build --check -f <Dockerfile> <context>
 ```
 
-Build every declared platform, then smoke-run the native image:
+Build every declared platform, then smoke-run the native image. Ask before building, and before
+running the optional `test` target, which executes the repository's tests:
 
 ```bash
 docker buildx build --pull --platform linux/amd64,linux/arm64,linux/arm/v7 -f Dockerfile .
 docker buildx build --pull --platform linux/amd64 --load -t example/app:local -f Dockerfile .
 docker run --rm example/app:local
+docker buildx build --target test --progress=plain -f Dockerfile .
 ```
 
 * `--pull` stops a stale local base image masking a broken build.

@@ -227,6 +227,57 @@ FROM runtime AS final
 A chiselled or distroless runtime has no package manager. Base `debug` on the full variant of the
 same image instead, and copy the published output into it.
 
+## Optional Test Target (.NET)
+
+Place the stage between `build` and `final`. The public `f2calv/yamlizr` repository carries this
+stage in its Release `Dockerfile`.
+
+```dockerfile
+# In the build stage, keep the tests out of the publish layer:
+COPY --exclude=src/*.Tests . .
+
+# ------------------------------------------------------------------------------
+# Optional stage: test
+#
+# Local development only; built with `docker buildx build --target test .`.
+# ------------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS test
+WORKDIR /src
+
+ARG TEST_PROJECT=src/Example.Tests/Example.Tests.csproj
+ARG CONFIGURATION=Release
+ARG TARGET_FRAMEWORK=net10.0
+
+# -- Dependency layer ----------------------------------------------------------
+COPY Directory.Build.props Directory.Packages.props global.json ./
+COPY --parents src/**/*.csproj ./
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
+    dotnet restore "$TEST_PROJECT" -p:Configuration="$CONFIGURATION"
+
+# -- Test layer ----------------------------------------------------------------
+COPY . .
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
+    dotnet test --project "$TEST_PROJECT" \
+        --configuration "$CONFIGURATION" \
+        --framework "$TARGET_FRAMEWORK" \
+        --no-restore \
+        --filter-not-trait "Category=Integration"
+```
+
+- `dotnet test --project` and `--filter-not-trait` are Microsoft.Testing.Platform syntax, selected by
+  `"test": { "runner": "Microsoft.Testing.Platform" }` in `global.json`, so copy `global.json` and
+  allow it in `.dockerignore`. Under VSTest, use `dotnet test <project> --filter
+  "Category!=Integration"` instead.
+- Remove any `**/*.Tests` exclusion from `.dockerignore`, and add `--exclude=src/*.Tests` to every
+  other `COPY` that would otherwise pick the tests up, including a `Dockerfile.Debug`.
+- Add `--progress=plain` to see the test output; a failing test fails the build.
+
+Verified in September 2026 on yamlizr with the .NET 10.0.401 SDK:
+
+- `--target test` ran all 28 credential-free cases with the network disabled.
+- A default three-platform build executed no `test` step.
+- Editing a test file left the publish layer cached.
+
 ## Writable Directory on a Chiselled Base
 
 ```dockerfile

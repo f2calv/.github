@@ -105,6 +105,26 @@ Dockerfile. When a registry takes a multi-architecture image's description from 
 `Dockerfile.Debug` is never published. The build scripts in the `container-workflows` skill select
 it for Debug builds and discover its sibling repositories from its `COPY deps/...` lines.
 
+## Test Stage
+
+An optional `test` stage runs a repository's tests in the SDK image, so a contributor can run them
+without installing the toolchain. `final` does not depend on it, so the default build and CI never
+execute it; it runs only with `docker buildx build --target test`.
+
+| Question | Default |
+| --- | --- |
+| Add one? | Only when the repository has tests that need no credentials, services or hardware. CI's own test job stays the gate |
+| Which tests? | Credential-free only: filter out the integration category, for example `--filter-not-trait "Category=Integration"` |
+| Network? | `RUN --network=none` after an up-front restore, so a hidden external dependency fails instead of passing by luck |
+| Platform? | `$BUILDPLATFORM`: test assemblies for interpreted or IL-compiled languages are architecture-neutral |
+| Frameworks? | Only those the SDK image ships a runtime for; a multi-targeted .NET test project passes `--framework` |
+| Context? | Keep tests in `.dockerignore`, and `COPY --exclude` them in the build stages so a test edit never busts the publish cache |
+| Results? | Read the `--progress=plain` log; a failing test fails the build. Export files only when a tool needs them |
+
+Integration tests that need a database, emulator or credential belong in Compose or on the host,
+never in a Dockerfile: a build step has no service dependencies and must never receive a real
+credential. Running `--target test` still runs tests, so ask before running it.
+
 ## Writable Paths
 
 | Base | Pattern |

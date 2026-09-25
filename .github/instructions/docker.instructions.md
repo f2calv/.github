@@ -40,8 +40,10 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
 
 - One Dockerfile per image, never one per architecture.
 - Name every stage. The core stages are `build` and `final`; add one only for a pinned tool image, a
-  shared runtime base for an optional `debug` target, or an input that must come from another image.
-- `final` is always the last stage, so a build without `--target` produces the published image.
+  shared runtime base for an optional `debug` target, an optional `test` target, or an input that
+  must come from another image.
+- `final` is always the last stage, so a build without `--target` produces the published image and
+  never runs an optional stage `final` does not depend on.
 - Introduce each stage with a banner comment explaining its base and pin, and mark the dependency,
   compile and provenance blocks with `-- Section --` sub-banners.
 - Inside the runtime stage keep this order: `FROM` → `WORKDIR` → runtime package install →
