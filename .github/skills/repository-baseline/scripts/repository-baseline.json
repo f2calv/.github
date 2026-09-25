@@ -16,6 +16,7 @@
     "requiredStatusChecks": ["SonarCloud Code Analysis"],
     "sonarCloudGateExclusions": [
       "f2calv/.github",
+      "f2calv/CasCap.Api.Voice",
       "f2calv/doorbird-rs",
       "f2calv/gha-check-release-exists",
       "f2calv/gha-workflows",

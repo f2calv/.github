@@ -51,7 +51,7 @@ GitHub* — branches, pull requests, status checks, dependency automation and re
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
 - **Read before writing**: Consult existing repository notes and conventions for a subsystem before changing it, not after.
-- **Never auto-install git hooks**: Do not wire `pre-commit install` into a dev container's post-create step, a setup script or setup documentation. The per-commit cost is fixed interpreter startup per hook, not proportional to the number of files changed. Suggest `pre-commit install --hook-type pre-push` as an opt-in where gating is wanted, never as a default.
+- **Never auto-install git hooks**: Do not wire `pre-commit install` into a dev container's post-create step, a setup script or setup documentation. The per-commit cost is fixed interpreter startup per hook, not proportional to the number of files changed. Use the `pre-commit-management` skill for execution and updates; offer its explicit pre-push install mode only when the user requests a local hook.
 
 ## Credential Handling
 

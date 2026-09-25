@@ -31,6 +31,10 @@ release conventions rather than maintaining a separate release state machine.
   - `yamlizr`
     - Update its Common packages and other dependencies.
     - Release through its existing global-tool workflow.
+- **Voice API** — continue only after the CasCap.Api.Azure packages are available.
+  - `CasCap.Api.Voice`
+    - Update every consumed `CasCap.Common.*` and `CasCap.Api.Azure.*` package together.
+    - Release `CasCap.Api.Voice` and wait for the exact version on NuGet.
 - **CasCap.GooglePhotosCli** — continue after `CasCap.Api.GooglePhotos` is available.
   - Update `CasCap.Api.GooglePhotos`.
   - Validate and release the CLI through its existing global-tool workflow.
