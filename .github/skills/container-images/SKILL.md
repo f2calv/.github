@@ -1,0 +1,161 @@
+---
+name: container-images
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files against the shared container image conventions. Use when writing a new image, choosing an image profile, build strategy, platform set, runtime base, pinning, cache sharing, provenance, entrypoint or debug variant, modernising a legacy Dockerfile, or checking the rules that docker buildx build --check does not enforce.'
+argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
+user-invocable: true
+compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
+---
+
+# Container Images
+
+## Overview
+
+Author Dockerfiles that follow `docker.instructions.md` without applying every feature to every
+image. Classify the image into a profile, choose only the options it needs, start from the patterns,
+then validate with BuildKit and with this skill's audit. BuildKit checks pass on Dockerfiles that
+run as root, skip `exec`, leak apt lists or fall through on an unknown platform; the audit catches
+those.
+
+## Prerequisites
+
+* Read the target repository's `copilot-instructions.md` and existing Dockerfiles before editing.
+* PowerShell 7.4 for `scripts/Test-Dockerfile.ps1`.
+* Docker Buildx for `--check` and platform builds. The containerd image store is needed to load a
+  multi-platform image with `--load`.
+
+## Quick Start
+
+```text
+/container-images create Dockerfile for a Go service
+/container-images migrate ./Dockerfile
+/container-images audit the workspace
+```
+
+| Mode | Contract |
+| --- | --- |
+| `create` | Classify, choose options, write the Dockerfile and `.dockerignore`, then validate |
+| `update` | Preserve the image's behaviour and profile; re-run validation for the changed surface |
+| `migrate` | Bring a legacy Dockerfile to its profile; report behaviour changes such as a new `USER` |
+| `audit` | Make no edits; report audit findings and `--check` warnings per file |
+
+## Workflow
+
+### Step 1: Classify the Image
+
+Choose the profile from the table in `docker.instructions.md`. Ask when the choice is not evident;
+`single-arch`, `vendor` and `sample` each relax rules and need a stated reason in the header.
+Archived and playground repositories are usually better archived than migrated.
+
+### Step 2: Choose Options
+
+Pick each option from [the options reference](references/options.md) and skip what the image does
+not need:
+
+* Build strategy and platform set.
+* Runtime base, confirmed to publish every declared platform.
+* Pinning mode, and a Dependabot `docker` entry when digests are used.
+* Cache mounts and their `sharing` mode.
+* Provenance mode and labels.
+* Entrypoint form, writable paths and any debug variant.
+
+### Step 3: Author
+
+Start from [the patterns reference](references/patterns.md) or the matching public
+`multi-arch-container-*` repository. Keep comments explaining every non-obvious choice, and update
+the `.dockerignore` allow-list for every file the build reads.
+
+### Step 4: Validate
+
+Run the audit, then BuildKit's checks:
+
+```powershell
+./scripts/Test-Dockerfile.ps1 -Path <repository>
+docker buildx build --check -f <Dockerfile> <context>
+```
+
+Build every declared platform, then smoke-run the native image:
+
+```bash
+docker buildx build --pull --platform linux/amd64,linux/arm64,linux/arm/v7 -f Dockerfile .
+docker buildx build --pull --platform linux/amd64 --load -t example/app:local -f Dockerfile .
+docker run --rm example/app:local
+```
+
+* `--pull` stops a stale local base image masking a broken build.
+* Without the containerd image store, `--load` accepts one platform; use
+  `--output type=oci,dest=image.tar` or a push to keep every platform.
+* Repository names must be lowercase. Tags may be mixed case but must match
+  `[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}`, so sanitise branch names, which contain `/`.
+* The build workflow attaches `--provenance=mode=max --sbom=true` when attestations are enabled.
+* Use the `container-workflows` skill for the repository's scripted local builds.
+
+## Parameters Reference
+
+`scripts/Test-Dockerfile.ps1`:
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `-Path` | `.` | Dockerfiles or directories. Directories skip `.git`, `.devcontainer`, `node_modules`, `bin`, `obj`, `target` and `deps` |
+| `-ImageProfile` | `auto` | `auto` reads `# Profile: <name>`, treats `*.Debug` as `debug`, else `published` |
+| `-ContextPath` | Nearest `.git` ancestor | Build context used to find `.dockerignore` |
+| `-Skip` | none | Rule identifiers to suppress |
+| `-FailOn` | `error` | `error`, `warning` or `never` |
+
+Exit codes: `0` no blocking findings, `2` blocking findings, `1` the audit failed.
+
+## Audit Rules
+
+| Rule | Severity | Finding | Relaxed for |
+| --- | --- | --- | --- |
+| DF001 | error | Missing or unexpected `# syntax` directive | sample |
+| DF002 | error | Untagged or `latest` image | |
+| DF003 | error | `--platform` on the final stage | single-arch, sample |
+| DF004 | warning | A build stage that runs commands is not pinned to `$BUILDPLATFORM` | single-arch, vendor, sample |
+| DF005 | error | No `USER`, or `USER root`, in the final stage | |
+| DF006 | error | Shell-form `ENTRYPOINT` or `CMD` | sample |
+| DF007 | error | `sh -c` entrypoint without `exec` | sample |
+| DF008 | error | apt install without `--no-install-recommends` | sample |
+| DF009 | error | apt lists not removed in the same `RUN` and not cache-mounted | sample |
+| DF010 | error | Distribution-wide package upgrade | sample |
+| DF011 | error | Shell heredoc that does not open with `set -e…` | sample |
+| DF012 | error | Platform `case` without `*)`, or `if` chain without `else` | sample |
+| DF013 | error | Provenance `ARG` without a default | debug, sample |
+| DF014 | error | Provenance `ARG` missing from the final stage | vendor, debug, sample |
+| DF015 | error | Required OCI label missing | debug, sample |
+| DF016 | error | `HEALTHCHECK` declared | sample |
+| DF017 | error | Download piped into a shell | |
+| DF018 | warning | Commented-out instruction | sample |
+| DF019 | error | No `.dockerignore` for the build context | sample |
+| DF020 | error | `.dockerignore` does not start with `*` | sample |
+| DF021 | warning | `-dev` or meta-package installed in the runtime stage | sample |
+| DF022 | error | Secret-like `ARG` or `ENV` with a value | |
+| DF023 | warning or error | Last stage not named `final`, or no `FROM` | sample |
+
+Rules that need judgement stay manual: dependency manifests copied before sources, `TARGETARCH`
+declared late, runtime installs before the application copy, the smallest suitable base, and
+lockfiles in locked mode.
+
+## Script Reference
+
+```powershell
+./scripts/Test-Dockerfile.ps1 -Path ./Dockerfile
+./scripts/Test-Dockerfile.ps1 -Path ./Dockerfile.gpu -ImageProfile single-arch
+./scripts/Test-Dockerfile.ps1 -Path ~/source/example -FailOn warning | Format-Table Rule, Line, Message
+./scripts/Invoke-Tests.ps1
+```
+
+Pass several paths as a comma-separated list from PowerShell. From another shell, run
+`pwsh -Command "./scripts/Test-Dockerfile.ps1 -Path a,b"`.
+
+## Troubleshooting
+
+| Symptom | Resolution |
+| --- | --- |
+| `no match for platform in manifest` | The base image does not publish that platform; inspect it and drop the platform or change the base |
+| `unsupported platform` from the `case` | Add the platform deliberately across the contract, or remove it from the build command |
+| `NETSDK1083` naming a semicolon-separated identifier | Quote the RID list as shown in the .NET pattern instead of escaping `;` as `%3B` |
+| Container ignores `docker stop` for ten seconds | The entrypoint shell is PID 1; use exec form or `exec` |
+| Non-root process cannot write a volume | Create the path in the image, owned by the runtime user, before `VOLUME` |
+| DF018 on prose comments | Reword comments that begin with an uppercase instruction keyword |
+
+> Brought to you by f2calv/.github

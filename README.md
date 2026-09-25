@@ -162,6 +162,18 @@ Run the focused regression suite:
 ./.github/skills/container-workflows/scripts/Invoke-Tests.ps1
 ```
 
+## Container images
+
+The [`container-images` skill](.github/skills/container-images/SKILL.md) applies the Dockerfile
+conventions per image profile — published, single-architecture, vendor, debug or sample — and
+documents the options that vary between images. Its audit script reports the rules that
+`docker buildx build --check` does not enforce:
+
+```powershell
+./.github/skills/container-images/scripts/Test-Dockerfile.ps1 -Path ../example
+./.github/skills/container-images/scripts/Invoke-Tests.ps1
+```
+
 ## .NET release train
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates
