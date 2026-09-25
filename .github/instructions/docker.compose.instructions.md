@@ -48,6 +48,9 @@ form as `.dockerignore`:
   `latest` and is a defect.
 - Where upstream publishes no versioned tag, pin by digest and say why in a comment. Where upstream
   documents only `latest`, pin the newest version-specific tag and record the upstream position.
+- Before pinning, confirm the tag exists and publishes the platforms you need with
+  `docker buildx imagetools inspect <image>:<tag>`; the newest tag in a registry listing can be a
+  nightly or single-architecture build.
 - Keep an image that also runs in the cluster on the same version in Compose and in the chart.
 
 ## Readiness and Restarts
@@ -73,3 +76,11 @@ form as `.dockerignore`:
 - Real values come from a gitignored mount or `env_file` with a safe default so a fresh clone still
   starts: `${USER_SECRETS_DIR:-./.secrets}:/path/in/container:ro`.
 - Never commit a `.env`; gitignore it alongside the secrets directory.
+
+## Validation
+
+- Validate every profile after an edit with `docker compose --profile '*' config --quiet`; without
+  `--profile '*'` services behind a profile are never parsed.
+- When a repository keeps a second Compose file for a variant topology, such as a replication
+  cluster, fold it into the main file behind a profile, and update every script, solution file and
+  README that referenced the old file in the same change.

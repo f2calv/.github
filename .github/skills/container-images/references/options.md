@@ -16,7 +16,7 @@ Declare a shape other than `service` in the header comment as `# Shape: job` or 
 | Output | Logs to stdout | Logs to stdout; exit code | Product to stdout or a mounted directory; diagnostics to stderr; exit code |
 | Writable paths | State and cache directories owned by the runtime user | Same as service | A `VOLUME` owned by the runtime user, plus `--user "$(id -u):$(id -g)"` documented for bind mounts |
 | Interactivity | None | Never prompt | Never prompt without a TTY; offer a flag that skips each prompt |
-| Validation | Smoke-run until it logs start-up, then stop it cleanly | Run to completion and check the exit code | Run `--version` or `--help` in CI before publishing |
+| Validation | Smoke-run until it logs start-up, then stop it cleanly; a service that needs deployment configuration may instead exit naming the missing input | Run to completion and check the exit code | Run `--version` or `--help` in CI before publishing |
 | Floating tag | Deployments pin an exact version | Deployments pin an exact version | A convenience `latest` tag is common; automation still pins an exact version |
 
 A tool can be distributed both as an image and as a native package, such as a .NET global tool.
@@ -52,6 +52,7 @@ before adopting, because publishers add and retire platforms.
 | --- | --- | --- | --- |
 | .NET | `mcr.microsoft.com/dotnet/runtime:10.0-noble-chiseled` | Yes / Yes / Yes | No shell or package manager. The `10.0` tags are Ubuntu 24.04, not Debian |
 | ASP.NET Core | `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled` | Yes / Yes / Yes | Also needed by console apps whose dependencies carry a `FrameworkReference` to `Microsoft.AspNetCore.App` |
+| .NET needing ICU or time zones | `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra` | Yes / Yes / Yes | The chiselled variant with ICU and tzdata added; still no shell. The full `aspnet:10.0` image already ships tzdata |
 | Go, `CGO_ENABLED=0` | `gcr.io/distroless/static-debian13:nonroot` | Yes / Yes / Yes | CA certificates, tzdata and a non-root user |
 | Rust `*-linux-gnu` | `gcr.io/distroless/cc-debian13:nonroot` | Yes / Yes / Yes | glibc and libgcc; build on Debian 13 or older |
 | Rust `*-linux-musl` | `gcr.io/distroless/static-debian13:nonroot` | Yes / Yes / Yes | Fully static binaries only |

@@ -161,6 +161,9 @@ Name the shape in the header comment when it is not `service`.
 - Use exec form for `ENTRYPOINT` and `CMD`; a shell stays PID 1 and does not forward `SIGTERM`.
   Resolve a value known at build time into a fixed entrypoint. When expansion at start-up is
   unavoidable, use `["sh", "-c", "exec <command> ${VAR}"]`, which needs a shell in the image.
+- Build arguments are scoped to the stage that declares them. Redeclare an `ARG` with its default in
+  every stage that reads it; an `ARG WORKLOAD` without a default in the runtime stage lets an
+  entrypoint such as `exec dotnet ${WORKLOAD}.dll` start `dotnet .dll`.
 - Apply the credential rules in `workflow.instructions.md`. In an image this means no credential,
   token, key or connection string in `ARG`, `ENV`, `COPY` or `LABEL`; use
   `RUN --mount=type=secret` at build time and orchestrator-injected secrets at runtime. Copied
@@ -192,5 +195,8 @@ Name the shape in the header comment when it is not `service`.
 
 ## Validation
 
-- After changing a Dockerfile or its packaging, run the skill's audit, build every declared platform
-  and smoke-run the native image. The `container-workflows` skill owns the local build scripts.
+- After changing a Dockerfile or its packaging, run the skill's audit, build the native platform and
+  smoke-run it, and leave the full platform matrix to CI unless the change is platform-specific. The
+  `container-workflows` skill owns the local build scripts.
+- On a workstation, run one image build at a time. Concurrent multi-platform builds, each emulating
+  arm under QEMU, can exhaust a laptop's memory.

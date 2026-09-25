@@ -286,6 +286,35 @@ Verified in September 2026 on yamlizr with the .NET 10.0.401 SDK:
 - A default three-platform build executed no `test` step.
 - Editing a test file left the publish layer cached.
 
+## Verified Download
+
+Install a tool that no package repository carries from a versioned release, and check it against
+its published digest. GitHub releases publish a SHA-256 `digest` for every asset, readable without
+authentication from `https://api.github.com/repos/<owner>/<repo>/releases/latest`.
+
+```dockerfile
+ARG TARGETARCH
+ARG TOOL_VERSION=1.2.3
+RUN <<EOF
+set -eux
+case "$TARGETARCH" in
+    amd64) SHA256=<amd64-asset-digest> ;;
+    arm64) SHA256=<arm64-asset-digest> ;;
+    *) echo "tool publishes no build for linux/$TARGETARCH" >&2; exit 1 ;;
+esac
+curl -fsSL -o /tmp/tool.tar.gz \
+    "https://github.com/<owner>/<repo>/releases/download/v${TOOL_VERSION}/tool_linux_${TARGETARCH}_${TOOL_VERSION}.tar.gz"
+echo "${SHA256}  /tmp/tool.tar.gz" | sha256sum -c -
+tar -xzf /tmp/tool.tar.gz -C /tmp
+install -m 0755 /tmp/tool /usr/local/bin/tool
+rm -f /tmp/tool /tmp/tool.tar.gz
+tool --version
+EOF
+```
+
+Bump the version and both digests together. Keep a tool that is only needed for investigation in
+the optional `debug` target rather than the published image.
+
 ## Writable Directory on a Chiselled Base
 
 ```dockerfile
