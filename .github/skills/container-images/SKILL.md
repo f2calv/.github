@@ -138,6 +138,11 @@ Exit codes: `0` no blocking findings, `2` blocking findings, `1` the audit faile
 | DF021 | warning | `-dev` or meta-package installed in the runtime stage | sample |
 | DF022 | error | Secret-like `ARG` or `ENV` with a value | |
 | DF023 | warning or error | Last stage not named `final`, or no `FROM` | sample |
+| DF024 | warning | `EXPOSE` in a `job` or `tool` image | sample |
+
+Rules about the published image follow `FROM <stage>` inheritance, so `FROM runtime AS final`
+inherits the runtime stage's `USER`, entrypoint, provenance and labels. Stages derived from the
+runtime, such as `debug`, are not expected to run on `$BUILDPLATFORM`.
 
 Rules that need judgement stay manual: dependency manifests copied before sources, `TARGETARCH`
 declared late, runtime installs before the application copy, the smallest suitable base, and

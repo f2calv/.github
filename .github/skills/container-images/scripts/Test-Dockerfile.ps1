@@ -8,7 +8,11 @@
     Parses each Dockerfile, including line continuations, heredocs, parser directives and stages,
     and reports the house rules that `docker buildx build --check` does not enforce. The image
     profile relaxes rules: it is read from a `# Profile: <name>` header comment, inferred as `debug`
-    for files named `*.Debug`, and otherwise defaults to `published`.
+    for files named `*.Debug`, and otherwise defaults to `published`. The workload shape is read from
+    a `# Shape: <service|job|tool>` header comment and defaults to `service`.
+
+    Rules about the published image follow `FROM <stage>` inheritance, so a `final` stage derived
+    from a shared runtime stage inherits its USER, ENTRYPOINT, ARG and LABEL instructions.
 
     Directories are searched recursively. `.git`, `.devcontainer`, `node_modules`, `bin`, `obj`,
     `target` and `deps` are skipped: dev container Dockerfiles are owned by the devcontainer skill,
@@ -318,6 +322,49 @@ function Resolve-ImageProfile {
     return 'published'
 }
 
+function Resolve-WorkloadShape {
+    <#
+    .SYNOPSIS
+        Reads the workload shape from a `# Shape: <name>` header comment; defaults to service.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory = $true)][pscustomobject]$Model)
+
+    foreach ($comment in $Model.Header) {
+        if ($comment -match '^#\s*Shape:\s*(service|job|tool)\s*$') {
+            return $Matches[1].ToLowerInvariant()
+        }
+    }
+
+    return 'service'
+}
+
+function Get-StageChain {
+    <#
+    .SYNOPSIS
+        Returns a stage and every stage it derives from through `FROM <stage>`, base first.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Stage,
+        [Parameter(Mandatory = $true)][pscustomobject[]]$Stages
+    )
+
+    $chain = [Collections.Generic.List[pscustomobject]]::new()
+    $visited = [Collections.Generic.HashSet[int]]::new()
+    $current = $Stage
+    while ($null -ne $current -and $visited.Add([int]$current.Index)) {
+        $chain.Insert(0, $current)
+        $reference = $current.Resolved.ToLowerInvariant()
+        $parent = @($Stages | Where-Object { $_.Name -and $_.Name.ToLowerInvariant() -eq $reference -and $_.Index -lt $current.Index } | Select-Object -Last 1)
+        $current = if ($parent.Count -gt 0) { $parent[0] } else { $null }
+    }
+
+    $chain
+}
+
 #endregion
 
 #region Audit
@@ -385,7 +432,10 @@ function Get-RawFinding {
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
-    param([Parameter(Mandatory = $true)][pscustomobject]$Model)
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Model,
+        [Parameter(Mandatory = $false)][string]$Shape = 'service'
+    )
 
     if (-not $Model.Directives.ContainsKey('syntax')) {
         ConvertTo-Finding 1 'DF001' 'error' 'Missing parser directive `# syntax=docker/dockerfile:1` on the first line.'
@@ -402,6 +452,9 @@ function Get-RawFinding {
 
     $stageNames = @($stages | Where-Object { $_.Name } | ForEach-Object { $_.Name.ToLowerInvariant() })
     $final = $stages[$stages.Count - 1]
+    $finalChain = @(Get-StageChain -Stage $final -Stages $stages)
+    $finalChainIndexes = @($finalChain | ForEach-Object { $_.Index })
+    $finalInstructions = @($finalChain | ForEach-Object { $_.Instructions })
 
     foreach ($stage in $stages) {
         $image = $stage.Resolved
@@ -418,7 +471,8 @@ function Get-RawFinding {
 
         $hasRun = @($stage.Instructions | Where-Object Keyword -EQ 'RUN').Count -gt 0
         $pinned = $null -ne $stage.Platform -and $stage.Platform -match 'BUILDPLATFORM'
-        if ($stage.Index -ne $final.Index -and $hasRun -and -not $isStageReference -and -not $pinned) {
+        $runtimeSide = @(Get-StageChain -Stage $stage -Stages $stages | Where-Object { $_.Index -in $finalChainIndexes }).Count -gt 0
+        if (-not $runtimeSide -and $hasRun -and -not $pinned) {
             ConvertTo-Finding $stage.Line 'DF004' 'warning' "Stage '$($stage.Name)' runs commands but is not pinned to --platform=`$BUILDPLATFORM."
         }
     }
@@ -432,7 +486,7 @@ function Get-RawFinding {
         ConvertTo-Finding $final.Line 'DF023' 'warning' "The last stage is $label; name it 'final'."
     }
 
-    $users = @($final.Instructions | Where-Object Keyword -EQ 'USER')
+    $users = @($finalInstructions | Where-Object Keyword -EQ 'USER')
     if ($users.Count -eq 0) {
         ConvertTo-Finding $final.Line 'DF005' 'error' 'The final stage never sets USER, so it inherits the base image user.'
     }
@@ -440,7 +494,7 @@ function Get-RawFinding {
         ConvertTo-Finding $users[-1].Line 'DF005' 'error' 'The final stage runs as root.'
     }
 
-    foreach ($instruction in @($final.Instructions | Where-Object { $_.Keyword -in @('ENTRYPOINT', 'CMD') })) {
+    foreach ($instruction in @($finalInstructions | Where-Object { $_.Keyword -in @('ENTRYPOINT', 'CMD') })) {
         $arguments = $instruction.Arguments.Trim()
         if (-not $arguments.StartsWith('[')) {
             ConvertTo-Finding $instruction.Line 'DF006' 'error' "$($instruction.Keyword) uses shell form; use exec form so the process receives SIGTERM."
@@ -483,13 +537,13 @@ function Get-RawFinding {
             if ($flat -match '\b(curl|wget)\b[^|;&\n]*\|\s*(sudo\s+)?(ba|da|z)?sh\b') {
                 ConvertTo-Finding $instruction.Line 'DF017' 'error' 'Download piped into a shell; fetch a versioned artifact and verify it.'
             }
-            if ($stage.Index -eq $final.Index -and $installs -and $flat -match '\binstall\b[^\n]*(\s\S+-dev\b|\sbuild-essential\b)') {
+            if ($stage.Index -in $finalChainIndexes -and $installs -and $flat -match '\binstall\b[^\n]*(\s\S+-dev\b|\sbuild-essential\b)') {
                 ConvertTo-Finding $instruction.Line 'DF021' 'warning' 'The runtime stage installs a -dev or meta-package; install only the runtime library.'
             }
         }
     }
 
-    $finalArgs = @(foreach ($instruction in @($final.Instructions | Where-Object Keyword -EQ 'ARG')) {
+    $finalArgs = @(foreach ($instruction in @($finalInstructions | Where-Object Keyword -EQ 'ARG')) {
             foreach ($pair in @(ConvertFrom-KeyValueArgument -Arguments $instruction.Arguments)) {
                 [pscustomobject]@{ Name = $pair.Name; Value = $pair.Value; Line = $instruction.Line }
             }
@@ -503,11 +557,17 @@ function Get-RawFinding {
         ConvertTo-Finding $final.Line 'DF014' 'error' "The final stage is missing provenance ARGs: $($missingProvenance -join ', ')."
     }
 
-    $labelText = @($final.Instructions | Where-Object Keyword -EQ 'LABEL' | ForEach-Object { $_.Arguments }) -join ' '
+    $labelText = @($finalInstructions | Where-Object Keyword -EQ 'LABEL' | ForEach-Object { $_.Arguments }) -join ' '
     $presentKeys = @([regex]::Matches($labelText, 'org\.opencontainers\.image\.([a-z.]+)\s*=') | ForEach-Object { $_.Groups[1].Value })
     $missingKeys = @($script:OciLabelKeys | Where-Object { $_ -notin $presentKeys })
     if ($missingKeys.Count -gt 0) {
         ConvertTo-Finding $final.Line 'DF015' 'error' "The final stage is missing OCI labels: $($missingKeys -join ', ')."
+    }
+
+    if ($Shape -ne 'service') {
+        foreach ($instruction in @($finalInstructions | Where-Object Keyword -EQ 'EXPOSE')) {
+            ConvertTo-Finding $instruction.Line 'DF024' 'warning' "A $Shape image listens on no port; remove EXPOSE or declare the image a service."
+        }
     }
 
     foreach ($instruction in @($Model.Instructions | Where-Object Keyword -EQ 'HEALTHCHECK')) {
@@ -547,7 +607,8 @@ function Get-DockerfileFinding {
 
     $model = Read-DockerfileModel -Line @(Get-Content -LiteralPath $FilePath)
     $resolvedProfile = Resolve-ImageProfile -FilePath $FilePath -Model $model -Requested $ImageProfile
-    $raw = @(Get-RawFinding -Model $model) + @(Test-DockerIgnore -FilePath $FilePath -ContextPath $ContextPath)
+    $shape = Resolve-WorkloadShape -Model $model
+    $raw = @(Get-RawFinding -Model $model -Shape $shape) + @(Test-DockerIgnore -FilePath $FilePath -ContextPath $ContextPath)
 
     $raw |
         Where-Object { $_.Rule -notin $Skip -and (Test-RuleEnabled -Rule $_.Rule -ImageProfile $resolvedProfile) } |
@@ -556,6 +617,7 @@ function Get-DockerfileFinding {
             [pscustomobject]@{
                 Path     = $FilePath
                 Profile  = $resolvedProfile
+                Shape    = $shape
                 Line     = $_.Line
                 Rule     = $_.Rule
                 Severity = $_.Severity

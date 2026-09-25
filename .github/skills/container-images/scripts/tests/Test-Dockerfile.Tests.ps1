@@ -215,6 +215,52 @@ Describe 'Image profiles' {
     }
 }
 
+Describe 'Stage inheritance and workload shapes' {
+    BeforeAll {
+        $script:Layered = $script:Compliant.Replace('FROM gcr.io/distroless/static-debian13:nonroot AS final', 'FROM debian:13-slim AS runtime').Replace(
+            'ENTRYPOINT ["/app/app"]',
+            "ENTRYPOINT [`"/app/app`"]`n`nFROM runtime AS debug`nUSER root`nRUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*`nUSER nonroot:nonroot`n`nFROM runtime AS final")
+    }
+
+    It 'lets final inherit USER, provenance and labels from its runtime stage' {
+        $rules = Get-Rule -Content $script:Layered
+        $rules | Should -Not -Contain 'DF005'
+        $rules | Should -Not -Contain 'DF014'
+        $rules | Should -Not -Contain 'DF015'
+    }
+
+    It 'does not require runtime-side stages to be pinned to BUILDPLATFORM' {
+        Get-Rule -Content $script:Layered | Should -Not -Contain 'DF004'
+    }
+
+    It 'still reports a root USER inherited from the runtime stage' {
+        Get-Rule -Content $script:Layered.Replace("USER nonroot:nonroot`nENTRYPOINT", "USER root`nENTRYPOINT") | Should -Contain 'DF005'
+    }
+
+    It 'returns the chain base first' {
+        $model = Read-DockerfileModel -Line @($script:Layered -split "`n")
+        $chain = @(Get-StageChain -Stage $model.Stages[-1] -Stages $model.Stages)
+        @($chain | ForEach-Object { $_.Name }) | Should -Be @('runtime', 'final')
+    }
+
+    It 'reads the workload shape from the header and defaults to service' {
+        (Resolve-WorkloadShape -Model (Read-DockerfileModel -Line @($script:Compliant -split "`n"))) | Should -Be 'service'
+        $tool = $script:Compliant.Replace('# Example image', "# Shape: tool`n# Example image")
+        (Resolve-WorkloadShape -Model (Read-DockerfileModel -Line @($tool -split "`n"))) | Should -Be 'tool'
+    }
+
+    It 'reports EXPOSE in a <Shape> image' -TestCases @(@{ Shape = 'tool' }, @{ Shape = 'job' }) {
+        param($Shape)
+
+        $content = $script:Compliant.Replace('# Example image', "# Shape: $Shape`n# Example image").Replace('USER nonroot:nonroot', "EXPOSE 8080`nUSER nonroot:nonroot")
+        Get-Rule -Content $content | Should -Contain 'DF024'
+    }
+
+    It 'accepts EXPOSE in a service image' {
+        Get-Rule -Content $script:Compliant.Replace('USER nonroot:nonroot', "EXPOSE 8080`nUSER nonroot:nonroot") | Should -Not -Contain 'DF024'
+    }
+}
+
 Describe 'Find-Dockerfile' {
     It 'finds Dockerfile variants and skips dev container, deps and ignore files' {
         $root = Join-Path $TestDrive 'discovery'
