@@ -73,7 +73,7 @@ quotes: MSBuild reads `%3B` as a literal semicolon, which yields one invalid ide
 
 ```dockerfile
 COPY --parents Directory.Build.props Directory.Packages.props src/**/*.csproj ./
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=shared \
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "src/$APP_NAME/$APP_NAME.csproj" \
         "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
@@ -95,11 +95,14 @@ EOF
 ```
 
 - `--network=none` proves the publish step no longer reaches NuGet.
+- The restore runs once for every platform and writes the cache, so it is `locked`. The publish only
+  reads packages the restore already wrote, so its three legs can share the cache concurrently.
 - The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link
   starts the right application. Use `ENTRYPOINT ["/app/entrypoint"]`; it works on chiselled images
   because it needs no shell.
 - Add `packages.lock.json` (`RestorePackagesWithLockFile`) and restore with `--locked-mode` to make
   dependency drift fail the build.
+- House defaults for .NET services: HTTP on 8080, the .NET 8+ image default, and gRPC on 5001.
 
 Verified in September 2026 with the .NET 10.0.401 SDK: a three-platform build succeeded, and the
 amd64 and arm/v7 images started through the link and exited cleanly on `SIGTERM`.

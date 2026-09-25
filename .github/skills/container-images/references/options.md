@@ -53,20 +53,26 @@ window; use `-debian13`.
 
 ## Cache Mount Sharing
 
-`sharing=locked` admits one writer at a time. In a multi-platform build every platform leg mounts
-the same cache id, so a locked package cache makes the per-platform compile steps queue behind one
-another. Use `shared` where the tool locks its own cache.
+Every platform leg of a multi-platform build mounts the same cache id. `sharing=locked` admits one
+leg at a time, which serialises those steps but cannot corrupt the cache. `shared` lets the legs run
+concurrently, which is safe when the step only reads the cache, or when the tool coordinates through
+a lock file inside the mounted directory. Each build container has its own `/tmp` and its own view of
+paths outside the mount, so a lock kept there is invisible to the other legs. Default to `locked`.
 
-| Cache | Target | Sharing | Notes |
+| Cache | Target | Sharing | Reason |
 | --- | --- | --- | --- |
 | apt | `/var/cache/apt`, `/var/lib/apt` | `locked` | apt fails rather than waits on its lock |
-| NuGet | `/root/.nuget/packages` | `shared` | Designed for concurrent restores |
-| Go modules | `/go/pkg/mod` | `shared` | The module cache is safe for concurrent `go` commands |
-| Go build | `/root/.cache/go-build` | `locked` | Per-platform `id`, so no contention |
-| cargo registry and git | `/usr/local/cargo/registry`, `/usr/local/cargo/git` | `shared` | cargo takes its own package-cache lock |
+| NuGet | `/root/.nuget/packages` | `locked` | On Linux NuGet keeps its restore locks under the temporary directory, outside the mount |
+| Go modules | `/go/pkg/mod` | `shared` | `go` locks inside the module cache itself |
+| Go build | `/root/.cache/go-build` | `locked` | Per-platform `id`, so the lock costs nothing |
+| cargo registry and git | `/usr/local/cargo/registry`, `/usr/local/cargo/git` | `locked` | cargo's `.package-cache` lock sits in `CARGO_HOME`, outside these mounts |
 | cargo target | `/src/target` | `locked` | Per-platform `id` |
-| uv | `/root/.cache/uv` | `shared` | Safe for concurrent readers and writers |
-| Anything else | | `locked` | Until the tool documents concurrent use |
+| uv | `/root/.cache/uv` | `shared` | uv locks inside its cache directory |
+| Anything else | | `locked` | Until the tool is shown to lock inside the mounted directory |
+
+The NuGet and cargo reasons come from how each tool places its lock files. The concurrent-write
+failure has not been reproduced here. Earlier Dockerfiles in these repositories adopted `locked`
+for NuGet after restore problems on multi-platform builds; the cause was never recorded.
 
 ## Provenance
 

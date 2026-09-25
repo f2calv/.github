@@ -84,8 +84,10 @@ docker run --rm example/app:local
 * `--pull` stops a stale local base image masking a broken build.
 * Without the containerd image store, `--load` accepts one platform; use
   `--output type=oci,dest=image.tar` or a push to keep every platform.
-* Repository names must be lowercase. Tags may be mixed case but must match
-  `[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}`, so sanitise branch names, which contain `/`.
+* Keep registry, repository and tag values lowercase. Docker only requires the repository name to be
+  lowercase, and a tag must match `[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}`, but build scripts run on both
+  case-insensitive Windows and case-sensitive Linux file systems, where mixed case causes mismatches.
+  Sanitise branch names, which contain `/`, before using them as tags.
 * The build workflow attaches `--provenance=mode=max --sbom=true` when attestations are enabled.
 * Use the `container-workflows` skill for the repository's scripted local builds.
 
@@ -156,6 +158,7 @@ Pass several paths as a comma-separated list from PowerShell. From another shell
 | `NETSDK1083` naming a semicolon-separated identifier | Quote the RID list as shown in the .NET pattern instead of escaping `;` as `%3B` |
 | Container ignores `docker stop` for ten seconds | The entrypoint shell is PID 1; use exec form or `exec` |
 | Non-root process cannot write a volume | Create the path in the image, owned by the runtime user, before `VOLUME` |
+| `/bin/sh: set: Illegal option -` | The Dockerfile has CRLF line endings; renormalise it under the shared `.gitattributes` (`* text=auto eol=lf`) |
 | DF018 on prose comments | Reword comments that begin with an uppercase instruction keyword |
 
 > Brought to you by f2calv/.github

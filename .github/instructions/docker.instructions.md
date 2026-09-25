@@ -5,7 +5,8 @@ applyTo: '**/Dockerfile,**/Dockerfile.*,**/*.dockerfile,**/.dockerignore'
 
 # Docker
 
-Rules that hold for every Dockerfile. Choices that vary per image — build strategy, platform set,
+Rules that hold for every Dockerfile. Images are deployed to Kubernetes; Compose runs them only for
+local development and testing. Choices that vary per image — build strategy, platform set,
 runtime base, pinning mode, cache sharing, provenance, entrypoint and debug variants — are made
 with the `container-images` skill, which also carries the patterns and a static audit. Compose files
 follow `docker.compose.instructions.md`. Dev container Dockerfiles belong to the `devcontainer`
@@ -34,7 +35,6 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
 - Build clean under `docker buildx build --check`. Use `# check=skip=<rule>` only for a deliberate
   violation and give the reason beneath it. `--check` does not enforce this file; the skill's audit
   does.
-- Dockerfiles take LF line endings from the shared `.gitattributes`; a CRLF heredoc breaks `/bin/sh`.
 
 ## Stages
 
@@ -46,7 +46,8 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
   compile and provenance blocks with `-- Section --` sub-banners.
 - Inside the runtime stage keep this order: `FROM` → `WORKDIR` → runtime package install →
   `COPY --from=build` and runtime configuration → runtime `ENV`, `EXPOSE`, `VOLUME` → provenance →
-  `LABEL` → `USER` → `ENTRYPOINT`/`CMD`.
+  `LABEL` → `USER` → `ENTRYPOINT`/`CMD`. Installing packages before the application copy means a
+  source edit neither reinstalls them nor stops the install running in parallel with `build`.
 - Never leave commented-out instructions; git keeps history. Put investigation tooling in an
   optional `debug` target that derives from the same runtime stage as `final`.
 
@@ -88,11 +89,12 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
 - Copy only dependency manifests and lockfiles, resolve dependencies, then copy sources. Runtime
   configuration such as `appsettings.json` is not a manifest. Use `COPY --parents` for globbed
   manifests.
-- Install runtime packages before copying build output, so a source edit neither reinstalls them nor
-  stops the install running in parallel with `build`.
 - Mount package and compiler caches with `RUN --mount=type=cache`. Give per-platform compiler output
-  a per-platform `id`, and copy anything produced inside a cache mount out in the same `RUN`. The
-  skill sets the `sharing` mode per tool.
+  a per-platform `id`, and copy anything produced inside a cache mount out in the same `RUN`.
+- Use `sharing=locked` unless the step only reads the cache, or the tool keeps its own lock inside the
+  mounted directory. Every platform leg of a multi-platform build mounts the same cache, and a tool
+  that locks elsewhere, such as NuGet in its temporary directory, cannot see the other legs. The
+  skill lists the per-tool modes.
 - Prefer `COPY --link` for `COPY --from=build`. Omit it when the destination path passes through a
   symlink, because a linked layer cannot read the layers beneath it.
 
@@ -138,7 +140,8 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
 - Use exec form for `ENTRYPOINT` and `CMD`; a shell stays PID 1 and does not forward `SIGTERM`.
   Resolve a value known at build time into a fixed entrypoint. When expansion at start-up is
   unavoidable, use `["sh", "-c", "exec <command> ${VAR}"]`, which needs a shell in the image.
-- Never put a credential, token, key or connection string in `ARG`, `ENV`, `COPY` or `LABEL`. Use
+- Apply the credential rules in `workflow.instructions.md`. In an image this means no credential,
+  token, key or connection string in `ARG`, `ENV`, `COPY` or `LABEL`; use
   `RUN --mount=type=secret` at build time and orchestrator-injected secrets at runtime. Copied
   configuration holds only safe defaults, each overridable by environment variable.
 - Design for a read-only root filesystem. Create every writable path — volumes, state and cache
@@ -146,7 +149,8 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
   root-owned.
 - Listen on ports above 1024 and `EXPOSE` them. Docker lowers the unprivileged-port floor inside
   containers, but not every runtime does.
-- Never add `HEALTHCHECK`. Kubernetes ignores it, and Compose declares its own `healthcheck:`.
+- Never add `HEALTHCHECK`. Kubernetes, the only deployment target, ignores it in favour of probes,
+  and Compose declares its own `healthcheck:`.
 - Leave no compiler, SDK or build toolchain in the runtime image. An interpreted runtime that ships
   its own package manager is exempt when it is the smallest maintained runtime for every target
   platform; note the exemption in the `final` banner.
