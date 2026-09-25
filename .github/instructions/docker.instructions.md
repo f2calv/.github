@@ -1,12 +1,13 @@
 ---
-description: 'Dockerfile and .dockerignore invariants — image profiles, stage layout, multi-architecture builds, layer caching, pinning, provenance and runtime hardening.'
+description: 'Dockerfile and .dockerignore invariants — image profiles, workload shapes, stage layout, multi-architecture builds, layer caching, pinning, provenance and runtime hardening.'
 applyTo: '**/Dockerfile,**/Dockerfile.*,**/*.dockerfile,**/.dockerignore'
 ---
 
 # Docker
 
-Rules that hold for every Dockerfile. Images are deployed to Kubernetes; Compose runs them only for
-local development and testing. Choices that vary per image — build strategy, platform set,
+Rules that hold for every Dockerfile. Classify each image twice: its profile says how it is built
+and published, and its workload shape says how it runs. Compose runs images only for local
+development and testing. Choices that vary per image — build strategy, platform set,
 runtime base, pinning mode, cache sharing, provenance, entrypoint and debug variants — are made
 with the `container-images` skill, which also carries the patterns and a static audit. Compose files
 follow `docker.compose.instructions.md`. Dev container Dockerfiles belong to the `devcontainer`
@@ -24,6 +25,24 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
 | `vendor` | Rebuilds or wrappers of a third-party image | Base pinned to the vendor's commit tag; provenance `ENV` optional |
 | `debug` | Variants never published, such as `Dockerfile.Debug` | No labels or provenance block |
 | `sample` | Playground and archived repositories | Only pinning, non-root and the secret rules apply |
+
+## Workload Shapes
+
+The shape is independent of the profile: a tool can be `published`, a service can be `single-arch`.
+Name the shape in the header comment when it is not `service`.
+
+| Shape | Runs as | Entrypoint | Ports |
+| --- | --- | --- | --- |
+| `service` (the default) | A long-running process on Kubernetes | The server, with no default arguments | `EXPOSE` every listening port |
+| `job` | A process Kubernetes runs to completion, such as a migration | The task; exits `0` on success | None |
+| `tool` | A command-line program started with `docker run --rm` on a workstation or in CI | The program; any default arguments go in `CMD` | None |
+
+- A job or tool never waits for interactive input; it fails with a message when input is missing.
+- A tool writes its product to stdout or a mounted directory and its diagnostics to stderr, and its
+  exit code is the result.
+- A tool reads credentials from environment variables or `--env-file`, never from command-line
+  arguments, which are visible in process listings and shell history.
+- CI smoke-tests a tool with a cheap invocation such as `--version` before publishing it.
 
 ## File Header
 
@@ -148,11 +167,12 @@ any profile other than `published` in the header comment as `# Profile: <name>`.
   configuration holds only safe defaults, each overridable by environment variable.
 - Design for a read-only root filesystem. Create every writable path — volumes, state and cache
   directories — in the image, owned by the runtime user; a mount point that does not exist is created
-  root-owned.
-- Listen on ports above 1024 and `EXPOSE` them. Docker lowers the unprivileged-port floor inside
-  containers, but not every runtime does.
-- Never add `HEALTHCHECK`. Kubernetes, the only deployment target, ignores it in favour of probes,
-  and Compose declares its own `healthcheck:`.
+  root-owned. A tool's bind-mounted output belongs to whoever runs the container, so document
+  `--user "$(id -u):$(id -g)"` for Linux hosts.
+- A service listens on ports above 1024 and `EXPOSE`s them. Docker lowers the unprivileged-port
+  floor inside containers, but not every runtime does.
+- Never add `HEALTHCHECK`. Kubernetes ignores it in favour of probes, a tool exits before a check
+  matters, and Compose declares its own `healthcheck:`.
 - Leave no compiler, SDK or build toolchain in the runtime image. An interpreted runtime that ships
   its own package manager is exempt when it is the smallest maintained runtime for every target
   platform; note the exemption in the `final` banner.

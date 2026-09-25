@@ -3,6 +3,26 @@
 Decision tables for choices that vary per image. Record the chosen option, and the rejected ones
 where the reason is not obvious, in the Dockerfile's header or stage banner.
 
+## Workload Shape
+
+Declare a shape other than `service` in the header comment as `# Shape: job` or `# Shape: tool`.
+
+| Concern | `service` | `job` | `tool` |
+| --- | --- | --- | --- |
+| Started by | Kubernetes Deployment or StatefulSet | Kubernetes Job, CronJob or init container | `docker run --rm` on a workstation or in a CI step |
+| Entrypoint | Server binary, no default arguments | Task binary | Program binary; default arguments, if any, in `CMD` |
+| Ports | `EXPOSE` each listener (8080 HTTP, 5001 gRPC for .NET) | None | None |
+| Input | Configuration and injected secrets | Configuration and injected secrets | Arguments, environment variables, `--env-file`, mounted files |
+| Output | Logs to stdout | Logs to stdout; exit code | Product to stdout or a mounted directory; diagnostics to stderr; exit code |
+| Writable paths | State and cache directories owned by the runtime user | Same as service | A `VOLUME` owned by the runtime user, plus `--user "$(id -u):$(id -g)"` documented for bind mounts |
+| Interactivity | None | Never prompt | Never prompt without a TTY; offer a flag that skips each prompt |
+| Validation | Smoke-run until it logs start-up, then stop it cleanly | Run to completion and check the exit code | Run `--version` or `--help` in CI before publishing |
+| Floating tag | Deployments pin an exact version | Deployments pin an exact version | A convenience `latest` tag is common; automation still pins an exact version |
+
+A tool can be distributed both as an image and as a native package, such as a .NET global tool.
+Keep the image's entrypoint and arguments identical to the native command so the documentation
+serves both.
+
 ## Build Strategy
 
 | Strategy | Use when | Shape |

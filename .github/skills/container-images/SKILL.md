@@ -1,6 +1,6 @@
 ---
 name: container-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files against the shared container image conventions. Use when writing a new image, choosing an image profile, build strategy, platform set, runtime base, pinning, cache sharing, provenance, entrypoint, debug variant or optional test stage, modernising a legacy Dockerfile, or checking the rules that docker buildx build --check does not enforce.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files against the shared container image conventions. Use when writing a new image, choosing an image profile, workload shape (service, job or command-line tool), build strategy, platform set, runtime base, pinning, cache sharing, provenance, entrypoint, debug variant or optional test stage, modernising a legacy Dockerfile, or checking the rules that docker buildx build --check does not enforce.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
 user-invocable: true
 compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
@@ -42,15 +42,18 @@ those.
 
 ### Step 1: Classify the Image
 
-Choose the profile from the table in `docker.instructions.md`. Ask when the choice is not evident;
-`single-arch`, `vendor` and `sample` each relax rules and need a stated reason in the header.
-Archived and playground repositories are usually better archived than migrated.
+Choose the profile, which says how the image is built and published, and the workload shape, which
+says how it runs, from the tables in `docker.instructions.md`. Ask when either is not evident.
+`single-arch`, `vendor` and `sample` each relax rules and need a stated reason in the header; a
+`job` or `tool` shape is declared as `# Shape: <name>`. Archived and playground repositories are
+usually better archived than migrated.
 
 ### Step 2: Choose Options
 
 Pick each option from [the options reference](references/options.md) and skip what the image does
 not need:
 
+* The workload shape's entrypoint, port, input and output conventions.
 * Build strategy and platform set.
 * Runtime base, confirmed to publish every declared platform.
 * Pinning mode, and a Dependabot `docker` entry when digests are used.
