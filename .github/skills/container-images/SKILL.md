@@ -139,6 +139,7 @@ Exit codes: `0` no blocking findings, `2` blocking findings, `1` the audit faile
 | DF022 | error | Secret-like `ARG` or `ENV` with a value | |
 | DF023 | warning or error | Last stage not named `final`, or no `FROM` | sample |
 | DF024 | warning | `EXPOSE` in a `job` or `tool` image | sample |
+| DF025 | warning | `.dockerignore` re-excludes a build or VCS directory without a trailing `/**` | sample |
 
 Rules about the published image follow `FROM <stage>` inheritance, so `FROM runtime AS final`
 inherits the runtime stage's `USER`, entrypoint, provenance and labels. Stages derived from the
@@ -166,6 +167,7 @@ Pass several paths as a comma-separated list from PowerShell. From another shell
 | --- | --- |
 | `no match for platform in manifest` | The base image does not publish that platform; inspect it and drop the platform or change the base |
 | `unsupported platform` from the `case` | Add the platform deliberately across the contract, or remove it from the build command |
+| `MSB4024` loading `nuget.g.props`, "Root element is missing" | Local `obj/` files reached the context as empty stubs; re-exclude `**/obj/**` rather than `**/obj` (DF025) |
 | `NETSDK1083` naming a semicolon-separated identifier | Quote the RID list as shown in the .NET pattern instead of escaping `;` as `%3B` |
 | Container ignores `docker stop` for ten seconds | The entrypoint shell is PID 1; use exec form or `exec` |
 | Non-root process cannot write a volume | Create the path in the image, owned by the runtime user, before `VOLUME` |

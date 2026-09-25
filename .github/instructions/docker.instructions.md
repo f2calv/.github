@@ -180,8 +180,12 @@ Name the shape in the header comment when it is not `service`.
 ## .dockerignore
 
 - Every build context has an allow-list `.dockerignore`: `*` first, then `!` entries for exactly what
-  the build reads, then re-exclusions of build output beneath them (`**/bin`, `**/obj`, `**/target`).
-  It keeps local secrets out of the context and stops unrelated edits invalidating cached layers.
+  the build reads, then re-exclusions of build output beneath them (`**/bin/**`, `**/obj/**`,
+  `**/target/**`). It keeps local secrets out of the context and stops unrelated edits invalidating
+  cached layers.
+- Re-exclude directories with a trailing `/**`. A bare `**/obj` after an allow-list entry that
+  matches files inside it still sends those files, as empty 0-byte stubs, and `COPY . .` then
+  overwrites real build output with them.
 - A Dockerfile that needs a wider context gets its own `<Dockerfile-name>.dockerignore` beside it
   instead of widening the shared file.
 - Update the allow-list in the same change as the Dockerfile that starts reading a new file.

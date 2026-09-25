@@ -176,6 +176,25 @@ Describe 'Get-DockerfileFinding' {
         @(Get-DockerfileFinding -FilePath $file | ForEach-Object { $_.Rule }) | Should -Not -Contain 'DF020'
     }
 
+    It 'reports <Pattern> re-excluded without /** after an allow-list entry' -TestCases @(
+        @{ Pattern = '**/obj' }, @{ Pattern = '**/bin' }, @{ Pattern = '**/*.Tests' }, @{ Pattern = '**/.git' }
+    ) {
+        param($Pattern)
+
+        $file = New-Fixture -Content $script:Compliant -DockerIgnore "*`n!src/**/*.cs`n$Pattern`n"
+        @(Get-DockerfileFinding -FilePath $file | ForEach-Object { $_.Rule }) | Should -Contain 'DF025'
+    }
+
+    It 'accepts directory re-exclusions that end with /**' {
+        $file = New-Fixture -Content $script:Compliant -DockerIgnore "*`n!src/**/*.cs`n**/obj/**`n**/bin/**`n**/*.Tests/**`n"
+        @(Get-DockerfileFinding -FilePath $file | ForEach-Object { $_.Rule }) | Should -Not -Contain 'DF025'
+    }
+
+    It 'ignores directory patterns that precede every allow-list entry' {
+        $file = New-Fixture -Content $script:Compliant -DockerIgnore "*`n**/obj`n!src/**/*.cs`n"
+        @(Get-DockerfileFinding -FilePath $file | ForEach-Object { $_.Rule }) | Should -Not -Contain 'DF025'
+    }
+
     It 'suppresses skipped rules' {
         $file = New-Fixture -Content $script:Compliant.Replace('USER nonroot:nonroot', '')
         @(Get-DockerfileFinding -FilePath $file -Skip 'DF005' | ForEach-Object { $_.Rule }) | Should -Not -Contain 'DF005'

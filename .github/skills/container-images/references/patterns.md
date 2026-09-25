@@ -74,7 +74,7 @@ quotes: MSBuild reads `%3B` as a literal semicolon, which yields one invalid ide
 ```dockerfile
 COPY --parents Directory.Build.props Directory.Packages.props src/**/*.csproj ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "src/$APP_NAME/$APP_NAME.csproj" \
+    dotnet restore "src/$APP_NAME/$APP_NAME.csproj" -p:Configuration=Release \
         "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 COPY . .
@@ -95,6 +95,14 @@ EOF
 ```
 
 - `--network=none` proves the publish step no longer reaches NuGet.
+- Pass the same configuration to restore and publish. A project whose references depend on
+  `Configuration`, such as packages in Release and sibling projects in Debug, otherwise restores the
+  Debug graph, which the offline Release publish cannot use. Without `--no-restore` the publish
+  silently restores again and hides the mismatch.
+- Re-exclude `**/bin/**` and `**/obj/**` in `.dockerignore`. With a bare `**/obj`, local restore
+  output reaches the context as empty stubs, `COPY . .` overwrites the container's restore output
+  with them, and the offline publish fails with `MSB4024 ... nuget.g.props ... Root element is
+  missing`.
 - The restore runs once for every platform and writes the cache, so it is `locked`. The publish only
   reads packages the restore already wrote, so its three legs can share the cache concurrently.
 - The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link

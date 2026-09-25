@@ -419,9 +419,24 @@ function Test-DockerIgnore {
         return
     }
 
-    $first = @(Get-Content -LiteralPath $ignoreFile | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } | Select-Object -First 1)
-    if ($first.Count -eq 0 -or $first[0] -notin @('*', '**', '/*', '/**')) {
+    $patterns = @(Get-Content -LiteralPath $ignoreFile | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
+    if ($patterns.Count -eq 0 -or $patterns[0] -notin @('*', '**', '/*', '/**')) {
         ConvertTo-Finding 0 'DF020' 'error' "'$([IO.Path]::GetFileName($ignoreFile))' is not an allow-list; its first pattern must be '*'."
+        return
+    }
+
+    # A bare directory re-exclusion after an allow-list entry still sends matching files beneath it,
+    # as empty stubs; only a trailing /** excludes them.
+    $seenException = $false
+    foreach ($pattern in $patterns) {
+        if ($pattern.StartsWith('!')) {
+            $seenException = $true
+            continue
+        }
+        $lastSegment = ($pattern.TrimEnd('/') -split '/')[-1]
+        if ($seenException -and $lastSegment -match '^(bin|obj|target|node_modules|\.git|\.vs|\.vscode|\.idea|[^/]*\.Tests)$') {
+            ConvertTo-Finding 0 'DF025' 'warning' "'$pattern' re-excludes a directory without '/**'; files the allow-list matched inside it still reach the context as empty stubs. Use '$($pattern.TrimEnd('/'))/**'."
+        }
     }
 }
 
