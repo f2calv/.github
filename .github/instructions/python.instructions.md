@@ -1,5 +1,5 @@
 ---
-description: 'Python coding conventions for style, typing, errors, logging, configuration, concurrency, testing, documentation, performance, dependencies and packaging.'
+description: 'Python coding conventions for style, typing, errors, logging, configuration, concurrency, testing, documentation, performance, environments, dependencies and packaging.'
 applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version,**/requirements*.txt'
 ---
 
@@ -109,6 +109,7 @@ applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version,**/requirement
 - **Run tooling inside the development container**, installing into the image's interpreter (or
   `pip install --user`) and letting VS Code use that interpreter. The container already isolates
   packages, so create a virtual environment only for a documented need, such as `uv sync` into a
-  project `.venv` or isolating conflicting tool dependencies, and never reuse or mount a
-  host-created one. The [dev container lifecycle reference](../skills/containers-devcontainer/references/lifecycle-scripts.md)
+  project `.venv` or isolating conflicting tool dependencies. Do not remove an existing environment
+  as part of a guidance-only change, and never reuse or mount a host-created one.
+  The [dev container lifecycle reference](../skills/containers-devcontainer/references/lifecycle-scripts.md)
   covers installation in lifecycle scripts.
