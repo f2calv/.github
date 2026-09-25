@@ -1,9 +1,39 @@
 ---
-description: 'xUnit test structure, integration credentials, naming, theories, assertions, regression coverage and test-project documentation.'
-applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md'
+description: 'Forward-only Microsoft.Testing.Platform and xUnit v3 conventions, plus test structure, credentials, naming, assertions and documentation.'
+applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md,**/*Tests*.csproj,**/global.json,**/.github/workflows/**,**/.vscode/tasks.json'
 ---
 
 # C# Testing
+
+## Forward-Only Test Platform
+
+- Every .NET repository selects `Microsoft.Testing.Platform` in its root `global.json`, including
+    repositories that do not yet contain tests. This makes the first future test project MTP-native
+    rather than silently inheriting VSTest:
+
+    ```json
+    {
+        "test": {
+            "runner": "Microsoft.Testing.Platform"
+        }
+    }
+    ```
+
+- Use xUnit v3 for xUnit projects. Reference `xunit.v3` and, when coverage is required,
+    `Microsoft.Testing.Extensions.CodeCoverage`. Remove `xunit`, `xunit.runner.visualstudio`,
+    `Microsoft.NET.Test.Sdk`, `coverlet.collector` and other VSTest-era packages.
+- Configure xUnit v3 test projects as MTP executables with `OutputType=Exe`, `IsTestProject=true`,
+    `UseMicrosoftTestingPlatformRunner=true` and `TestingPlatformDotnetTestSupport=true`.
+- Use the .NET 10 native test command: `dotnet test --project <path.csproj>` or
+    `dotnet test --solution <path.slnx>`. Never pass a project or solution as a bare positional
+    argument, and do not use `dotnet run` as the normal test command.
+- Pass MTP and xUnit v3 arguments directly, without the legacy `--` separator. Use native options
+    such as `--filter-class`, `--filter-method`, `--filter-trait`, `--filter-not-trait`, `--coverage`
+    and `--coverage-output-format cobertura`; never use VSTest `--filter`, `--collect`, `--logger` or
+    coverlet MSBuild properties.
+- Shared workflows and actions must require the MTP selection and fail with an actionable error when
+    it is absent. Do not retain VSTest detection, fallback command lines or dual coverage pipelines;
+    this workspace is forward-only.
 
 ## Folder Structure
 
