@@ -9,7 +9,7 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot
 }
 
-Describe 'Invoke-Deploy manifest handling' {
+Describe 'Invoke-Deploy manifest handling' -Tag 'Unit' {
     It 'selects the Application source path' {
         Get-ManifestSourcePrefix Application | Should -Be '.spec.source'
     }
@@ -36,11 +36,68 @@ Describe 'Invoke-Deploy manifest handling' {
         $fixture | Should -Match '<<: \*shared'
         Get-ManifestPatchExpression ApplicationSet | Should -Not -Match '<<'
     }
+
+        It 'patches a real Application fixture at spec.source' {
+                $manifest = Join-Path $TestDrive 'application.yaml'
+                Set-Content $manifest @'
+kind: Application
+spec:
+    source:
+        targetRevision: old
+        helm:
+            valuesObject:
+                _shared:
+                    image:
+                        repository: old
+                        tag: old
+                        pullPolicy: IfNotPresent
+                    podAnnotations: {}
+'@
+                $env:DEPLOY_CHART_VERSION = '1.2.3'
+                $env:DEPLOY_IMG_REPO = 'ghcr.io/example/app'
+                $env:DEPLOY_IMG_TAG = 'latest-dev'
+                $env:DEPLOY_POD_ANNOTATION = 'example.test/deployed-version'
+                $env:DEPLOY_STAMP = '1.2.3+stamp'
+                yq -i (Get-ManifestPatchExpression Application -Chart) $manifest
+                (yq '.spec.source.targetRevision' $manifest) | Should -Be '1.2.3'
+                (yq '.spec.source.helm.valuesObject._shared.image.repository' $manifest) | Should -Be 'ghcr.io/example/app'
+                (yq '.spec.template' $manifest) | Should -Be 'null'
+        }
+
+        It 'patches a real ApplicationSet fixture without changing its merge anchor' {
+                $manifest = Join-Path $TestDrive 'application-set.yaml'
+                Set-Content $manifest @'
+kind: ApplicationSet
+spec:
+    template:
+        spec:
+            source:
+                targetRevision: old
+                helm:
+                    valuesObject:
+                        _shared: &shared
+                            image:
+                                repository: old
+                                tag: old
+                                pullPolicy: IfNotPresent
+                            podAnnotations: {}
+                        worker:
+                            !!merge <<: *shared
+'@
+                $env:DEPLOY_CHART_VERSION = '1.2.3'
+                $env:DEPLOY_IMG_REPO = 'ghcr.io/example/app'
+                $env:DEPLOY_IMG_TAG = 'latest-dev'
+                $env:DEPLOY_POD_ANNOTATION = 'example.test/deployed-version'
+                $env:DEPLOY_STAMP = '1.2.3+stamp'
+                yq -i (Get-ManifestPatchExpression ApplicationSet -Chart) $manifest
+                (yq '.spec.template.spec.source.targetRevision' $manifest) | Should -Be '1.2.3'
+                (Get-Content $manifest -Raw) | Should -Match '<<: \*shared'
+        }
 }
 
 
 
-Describe 'Invoke-Deploy validation and safety' {
+Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
     It 'rejects Release build forwarding' {
         { ConvertTo-DeployBuildArguments @('-Configuration', 'Release') } | Should -Throw '*Debug builds*'
     }
@@ -49,8 +106,62 @@ Describe 'Invoke-Deploy validation and safety' {
         { Resolve-DeploymentManifestPath -OnlyCharts -ManifestPath app.yaml } | Should -Throw '*DashboardManifestPath*'
     }
 
+    It 'accepts an explicit charts-only manifest without an application manifest' {
+        $chartsOnlyRoot = Join-Path $TestDrive 'charts-only'
+        New-Item -ItemType Directory -Path $chartsOnlyRoot | Out-Null
+        $manifest = Join-Path $chartsOnlyRoot 'dashboard-only.yaml'
+        Set-Content $manifest "kind: Application`nspec:`n  source:`n    repoURL: ghcr.io/example`n    chart: charts/example-dashboards"
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $chartsOnlyRoot `
+            -OnlyCharts -ManifestRepo $chartsOnlyRoot -DashboardManifestPath 'dashboard-only.yaml'
+        $deployment = Initialize-DeploymentSettings @{
+            OnlyCharts = $true
+            ManifestRepo = $chartsOnlyRoot
+            DashboardManifestPath = 'dashboard-only.yaml'
+        }
+        $deployment.RelativePath | Should -Be 'dashboard-only.yaml'
+    }
+
     It 'requires deployment settings before proceeding' {
         { Initialize-DeploymentSettings @{} } | Should -Throw '*PodAnnotationName*'
+    }
+
+    It 'rejects conflicting dashboard modes' {
+        { Assert-DashboardMode -OnlyCharts -SkipDashboards } | Should -Throw '*cannot be used together*'
+    }
+
+    It 'discovers a dashboard chart and Application manifest from the application source' {
+        $chartDirectory = Join-Path $repositoryRoot 'charts/example-dashboards'
+        New-Item -ItemType Directory -Path $chartDirectory -Force | Out-Null
+        Set-Content (Join-Path $chartDirectory 'Chart.yaml') "apiVersion: v2`nname: example-dashboards`nversion: 1.0.0"
+        $applicationManifest = Join-Path $repositoryRoot 'application.yaml'
+        Set-Content $applicationManifest "kind: Application`nspec:`n  source:`n    repoURL: ghcr.io/example`n    chart: charts/example"
+        $dashboardManifest = Join-Path $repositoryRoot 'dashboard.yaml'
+        Set-Content $dashboardManifest "kind: Application`nspec:`n  source:`n    repoURL: ghcr.io/example`n    chart: charts/example-dashboards"
+        $result = Resolve-DashboardDeployment -Root $repositoryRoot -Repository $repositoryRoot `
+            -ApplicationManifest $applicationManifest -Registry 'ghcr.io'
+        $result.ChartPath | Should -Be 'charts/example-dashboards'
+        $result.RelativePath | Should -Be 'dashboard.yaml'
+        $result.ChartRepository | Should -Be 'example/charts/example-dashboards'
+    }
+
+    It 'discovers a dashboard chart and ApplicationSet manifest from the application source' {
+        $root = Join-Path $TestDrive 'application-set-discovery'
+        $chartDirectory = Join-Path $root 'charts/dashboards'
+        New-Item -ItemType Directory -Path $chartDirectory -Force | Out-Null
+        Set-Content (Join-Path $chartDirectory 'Chart.yaml') "apiVersion: v2`nname: dashboards`nversion: 1.0.0"
+        $applicationManifest = Join-Path $root 'application.yaml'
+        Set-Content $applicationManifest "kind: ApplicationSet`nspec:`n  template:`n    spec:`n      source:`n        repoURL: ghcr.io/example`n        chart: app/charts/application"
+        $dashboardManifest = Join-Path $root 'dashboard.yaml'
+        Set-Content $dashboardManifest "kind: ApplicationSet`nspec:`n  template:`n    spec:`n      source:`n        repoURL: ghcr.io/example`n        chart: app/charts/dashboards"
+        $result = Resolve-DashboardDeployment -Root $root -Repository $root `
+            -ApplicationManifest $applicationManifest -Registry 'ghcr.io'
+        $result.ChartRepository | Should -Be 'example/app/charts/dashboards'
+        $result.ChartName | Should -Be 'dashboards'
+    }
+
+    It 'skips dashboard discovery when explicitly disabled' {
+        Resolve-DashboardDeployment -Root $repositoryRoot -Repository $repositoryRoot `
+            -ApplicationManifest 'unused.yaml' -Registry 'ghcr.io' -Skip | Should -BeNullOrEmpty
     }
 
     It 'returns only the chart object when native commands emit output' {
@@ -100,6 +211,7 @@ Describe 'Invoke-Deploy validation and safety' {
     It 'performs no mutation under WhatIf' {
         Mock Initialize-DeploymentSettings { [pscustomobject]@{ Root = $repositoryRoot; Manifest = 'manifest.yaml'; RelativePath = 'manifest.yaml' } }
         Mock Assert-DeploymentPrerequisites
+        Mock Resolve-DashboardDeployment { $null }
         Mock Update-ManifestRepository
         Mock Assert-NoModelDrift
         Mock Invoke-DeploymentBuild
@@ -156,16 +268,136 @@ Describe 'Invoke-Deploy validation and safety' {
     It 'coordinates a full deployment and cleanup' {
         . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -ManifestRepo $repositoryRoot
         Mock Initialize-DeploymentSettings { [pscustomobject]@{ Root = $repositoryRoot; Manifest = 'manifest.yaml'; RelativePath = 'manifest.yaml' } }
+        Mock Resolve-DashboardDeployment { $null }
         Mock Assert-DeploymentPrerequisites
         Mock Update-ManifestRepository
         Mock Assert-NoModelDrift
         Mock Invoke-DeploymentBuild
         Mock Publish-ConfiguredDeploymentChart { $null }
         Mock Update-DeploymentManifest
-        Invoke-Deployment
+        Mock Publish-DeploymentChanges
+        Invoke-Deployment -CallerBoundParameters @{ OnlyCharts = $false; SkipDashboards = $false }
         Should -Invoke Update-ManifestRepository -Times 1
         Should -Invoke Invoke-DeploymentBuild -Times 1
         Should -Invoke Update-DeploymentManifest -Times 1
+    }
+
+    It 'publishes and patches a discovered dashboard during a normal deployment' {
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -ManifestRepo $repositoryRoot
+        $application = [pscustomobject]@{ Root = $repositoryRoot; Manifest = 'application.yaml'; RelativePath = 'application.yaml' }
+        $dashboard = [pscustomobject]@{
+            Root = $repositoryRoot
+            Manifest = 'dashboard.yaml'
+            RelativePath = 'dashboard.yaml'
+            ChartPath = 'charts/example-dashboards'
+            ChartRepository = 'example/charts/example-dashboards'
+            ChartName = 'example-dashboards'
+        }
+        Mock Initialize-DeploymentSettings { $application }
+        Mock Resolve-DashboardDeployment { $dashboard }
+        Mock Assert-DeploymentPrerequisites
+        Mock Update-ManifestRepository
+        Mock Assert-NoModelDrift
+        Mock Invoke-DeploymentBuild
+        Mock Publish-ConfiguredDeploymentChart {
+            if ($PublishOnlyCharts) { return [pscustomobject]@{ Version = '0.0.0-dev.1' } }
+            return $null
+        }
+        Mock Update-DeploymentManifest
+        Mock Publish-DeploymentChanges
+        Invoke-Deployment -CallerBoundParameters @{ OnlyCharts = $false; SkipDashboards = $false }
+        Should -Invoke Publish-ConfiguredDeploymentChart -Times 1 -ParameterFilter { $PublishOnlyCharts }
+        Should -Invoke Update-DeploymentManifest -Times 1 -ParameterFilter { $Dashboard }
+        Should -Invoke Update-DeploymentManifest -Times 1 -ParameterFilter { -not $Dashboard.IsPresent }
+        Should -Invoke Publish-DeploymentChanges -Times 1 -ParameterFilter {
+            $Deployments.Count -eq 2 -and $DashboardChart.Version -eq '0.0.0-dev.1'
+        }
+    }
+
+    It 'restores both manifests and does not commit when the dashboard patch fails' {
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -ManifestRepo $repositoryRoot
+        $application = [pscustomobject]@{ Root = $repositoryRoot; Manifest = 'application.yaml'; RelativePath = 'application.yaml' }
+        $dashboard = [pscustomobject]@{
+            Root = $repositoryRoot
+            Manifest = 'dashboard.yaml'
+            RelativePath = 'dashboard.yaml'
+            ChartPath = 'charts/example-dashboards'
+            ChartRepository = 'example/charts/example-dashboards'
+            ChartName = 'example-dashboards'
+        }
+        $script:updateCalls = 0
+        Mock Initialize-DeploymentSettings { $application }
+        Mock Resolve-DashboardDeployment { $dashboard }
+        Mock Assert-DeploymentPrerequisites
+        Mock Update-ManifestRepository
+        Mock Assert-NoModelDrift
+        Mock Invoke-DeploymentBuild
+        Mock Publish-ConfiguredDeploymentChart { [pscustomobject]@{ Version = '0.0.0-dev.1' } }
+        Mock Update-DeploymentManifest {
+            $script:updateCalls++
+            if ($script:updateCalls -eq 2) { throw 'dashboard patch failed' }
+        }
+        Mock Publish-DeploymentChanges
+        Mock Restore-DeploymentManifests
+        { Invoke-Deployment -CallerBoundParameters @{ OnlyCharts = $false; SkipDashboards = $false } } |
+            Should -Throw '*dashboard patch failed*'
+        Should -Invoke Publish-DeploymentChanges -Times 0
+        Should -Invoke Restore-DeploymentManifests -Times 1 -ParameterFilter {
+            $Deployments.Count -eq 2 -and
+            $Deployments.RelativePath -contains 'application.yaml' -and
+            $Deployments.RelativePath -contains 'dashboard.yaml'
+        }
+    }
+
+    It 'restores every partially patched manifest' {
+        $gitRoot = Join-Path $TestDrive 'restore-repository'
+        New-Item -ItemType Directory -Path $gitRoot | Out-Null
+        git -C $gitRoot init --initial-branch main | Out-Null
+        git -C $gitRoot config user.name 'Example User'
+        git -C $gitRoot config user.email 'user@example.com'
+        Set-Content (Join-Path $gitRoot 'application.yaml') 'original application'
+        Set-Content (Join-Path $gitRoot 'dashboard.yaml') 'original dashboard'
+        git -C $gitRoot add -- application.yaml dashboard.yaml
+        git -C $gitRoot commit -m 'initial' | Out-Null
+        Set-Content (Join-Path $gitRoot 'application.yaml') 'changed application'
+        Set-Content (Join-Path $gitRoot 'dashboard.yaml') 'changed dashboard'
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -ManifestRepo $gitRoot
+        $deployments = @(
+            [pscustomobject]@{ RelativePath = 'application.yaml' },
+            [pscustomobject]@{ RelativePath = 'dashboard.yaml' }
+        )
+        Restore-DeploymentManifests -Deployments $deployments
+        (Get-Content (Join-Path $gitRoot 'application.yaml') -Raw).Trim() | Should -Be 'original application'
+        (Get-Content (Join-Path $gitRoot 'dashboard.yaml') -Raw).Trim() | Should -Be 'original dashboard'
+    }
+
+    It 'commits application and dashboard changes together' {
+        $gitRoot = Join-Path $TestDrive 'publish-repository'
+        New-Item -ItemType Directory -Path $gitRoot | Out-Null
+        git -C $gitRoot init --initial-branch main | Out-Null
+        git -C $gitRoot config user.name 'Example User'
+        git -C $gitRoot config user.email 'user@example.com'
+        Set-Content (Join-Path $gitRoot 'application.yaml') 'original application'
+        Set-Content (Join-Path $gitRoot 'dashboard.yaml') 'original dashboard'
+        git -C $gitRoot add -- application.yaml dashboard.yaml
+        git -C $gitRoot commit -m 'initial' | Out-Null
+        Set-Content (Join-Path $gitRoot 'application.yaml') 'changed application'
+        Set-Content (Join-Path $gitRoot 'dashboard.yaml') 'changed dashboard'
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -ManifestRepo $gitRoot -DeploymentName 'example' -Tag 'latest-dev'
+        $deployments = @(
+            [pscustomobject]@{ RelativePath = 'application.yaml' },
+            [pscustomobject]@{ RelativePath = 'dashboard.yaml' }
+        )
+        $env:DEPLOY_STAMP = '1.2.3+stamp'
+        Mock Push-ManifestRepository
+        Publish-DeploymentChanges -Deployments $deployments `
+            -ApplicationChart ([pscustomobject]@{ Version = '2.0.0' }) `
+            -DashboardChart ([pscustomobject]@{ Version = '3.0.0' }) `
+            -Timestamp '20260927000000'
+        @(git -C $gitRoot diff-tree --no-commit-id --name-only -r HEAD) | Should -Be @('application.yaml', 'dashboard.yaml')
+        "$(git -C $gitRoot log -1 --format='%s')" | Should -Match 'chart=2.0.0 dashboards=3.0.0'
+        Should -Invoke Push-ManifestRepository -Times 1
     }
 
     It 'validates an existing manifest when yq is available' {
