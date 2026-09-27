@@ -99,6 +99,9 @@
               },
               {
                 "context": "build / app-build-dotnet"
+              },
+              {
+                "context": "image / container-image-build"
               }
             ]
           }
