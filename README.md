@@ -162,13 +162,26 @@ Run the focused regression suite:
 ./.github/skills/container-workflows/scripts/Invoke-Tests.ps1
 ```
 
+## Container images
+
+The [`container-images` skill](.github/skills/container-images/SKILL.md) applies the Dockerfile
+conventions per image profile — published, single-architecture, vendor, debug or sample — and
+documents the options that vary between images. Its audit script reports the rules that
+`docker buildx build --check` does not enforce:
+
+```powershell
+./.github/skills/container-images/scripts/Test-Dockerfile.ps1 -Path ../example
+./.github/skills/container-images/scripts/Invoke-Tests.ps1
+```
+
 ## .NET release train
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates
 dependency-ordered package releases across the .NET repositories open in the current workspace. It
 follows a repeatable per-repository checklist: update compatible packages, validate Debug and
 Release paths, merge the pull request, verify every package on NuGet, and continue with its direct
-consumers.
+consumers. The order includes `CasCap.Api.Voice` after its Azure API dependency and before
+applications that consume the voice package.
 
 Start at the first producer that needs updating:
 

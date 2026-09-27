@@ -71,36 +71,7 @@ Where a tool generates interface documentation (inputs, outputs, providers, reso
 
 ## Markdown Linting
 
-The `lint` job in CI, which runs `pre-commit`, is the authoritative gate. Reproduce it locally before pushing rather than discovering failures in CI.
-
-- **Run from the repository root** so the repository's own linter configuration is auto-discovered. Passing files from a parent directory silently skips that configuration and produces false MD025 failures.
-- **Prefer native `pre-commit`** when Python is available: `pre-commit run --all-files`, or `pre-commit run markdownlint --all-files` to scope to Markdown.
-- **No local Python? Run `pre-commit` in a container.** Build once with `pre-commit` and Node baked in, then mount the repository. Pin the `pre-commit` version to the one CI uses, and pass a named cache volume so hook environments survive between runs:
-
-  ```bash
-  docker build -t pre-commit-runner:local - <<'EOF'
-  FROM python:3.12-slim
-  RUN apt-get update \
-      && apt-get install -y --no-install-recommends git nodejs npm \
-      && rm -rf /var/lib/apt/lists/*
-  RUN pip install --no-cache-dir pre-commit==3.7.1
-  WORKDIR /src
-  EOF
-
-  docker run --rm \
-      -v "$PWD:/src" \
-      -v pre-commit-cache:/root/.cache/pre-commit \
-      pre-commit-runner:local \
-      sh -c 'git config --global --add safe.directory /src && pre-commit run --all-files'
-  ```
-
-  The `safe.directory` line is required because the mounted repository is owned by a different UID inside the container.
-
-- **If the image build fails on `pip install` with an SSL handshake error**, the network is blocking the PyPI package CDN. The index itself may still resolve, so packages appear reachable while none can be downloaded. Neither `--trusted-host` nor a different index fixes this; it is a middlebox rejecting the CDN's TLS. Fall back to invoking the underlying linter directly.
-- **Direct linter fallback** — read the version and arguments from the repository's own `.pre-commit-config.yaml` rather than assuming, because they differ between repositories:
-
-  ```bash
-  npx --yes markdownlint-cli@<pinned-version> --disable MD013 --disable MD034 -- "**/*.md"
-  ```
-
-- **Honour `exclude:` blocks manually.** Invoking the linter directly bypasses any `exclude:` regex in `.pre-commit-config.yaml`, so generated or vendored files that the real gate skips will report failures. Check for an `exclude:` before treating a direct-invocation failure as real.
+The CI `lint` job is authoritative. Run the repository's pre-commit configuration from its root so
+hook arguments and exclusions apply. Use the `pre-commit-management` skill for native execution,
+the pinned Docker fallback, hook/runtime updates, fleet alignment, and troubleshooting; do not
+bypass the configuration with a direct linter during normal validation.

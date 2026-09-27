@@ -5,7 +5,8 @@
 .SYNOPSIS
     Runs the central repository PowerShell tests.
 .PARAMETER TestPath
-    Optional Pester test paths. Defaults to root script and repository-baseline tests.
+    Optional Pester test paths. Defaults to root script, repository-baseline, container-workflows
+    and container-images tests.
 .EXAMPLE
     ./.scripts/Invoke-Tests.ps1 -TestPath ./.scripts/tests
 #>
@@ -15,7 +16,8 @@ param(
     [string[]]$TestPath = @(
         (Join-Path $PSScriptRoot 'tests'),
         (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests')
+        (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests'),
+        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests')
     )
 )
 

@@ -1,6 +1,6 @@
 ---
 description: 'Python coding conventions for style, typing, errors, logging, configuration, concurrency, testing, documentation, performance, dependencies and packaging.'
-applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version'
+applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version,**/requirements*.txt'
 ---
 
 # Python
@@ -105,3 +105,4 @@ applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version'
 - **The lock file is committed**, and CI installs with a locked, no-update sync so the dependency graph cannot silently drift.
 - **Runtime dependency versions are pinned exactly**; the lock file records the full resolution and Dependabot proposes the updates.
 - **Run tooling inside the development container.** Do not install interpreters or packages onto the host.
+- **No virtual environments inside a development container.** The container already isolates the interpreter and packages from the host, so a `venv` adds setup, `PATH` and interpreter-selection overhead without benefit. Install into the image's interpreter or the container user's site packages (`pip install --user`, with `~/.local/bin` on `PATH`), and let VS Code use the image's default interpreter. Never reuse or mount a host-created environment. Use a virtual environment only when a documented requirement needs one, such as `uv sync` into a project-managed `.venv` or isolating conflicting tool dependencies.

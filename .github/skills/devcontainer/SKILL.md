@@ -1,6 +1,6 @@
 ---
 name: devcontainer
-description: 'Create, update, reconcile, align, and validate Dev Containers. Use when adding file types that need local tools or VS Code extensions, changing images, Features, lifecycle scripts, mounts, lockfiles, or synchronizing host/container editor behavior, Dependabot, CI, documentation, and sibling repositories.'
+description: 'Create, update, reconcile, align, and validate Dev Containers. Use when adding file types that need local tools or VS Code extensions, changing images, Features, lifecycle scripts, mounts, lockfiles, or synchronizing host/container editor behavior, Dependabot, CI, documentation, and sibling repositories, or when diagnosing a Dev Container that fails to start on one workstation.'
 argument-hint: 'mode={add|update|upgrade|reconcile|audit|align} [scope=repository-or-workspace]'
 user-invocable: true
 compatibility: 'Authoring is cross-platform. Rebuild validation requires Docker and VS Code Dev Containers or the Dev Container CLI.'
@@ -41,6 +41,7 @@ These are selection guides, not templates to merge together.
 /devcontainer reconcile after adding PowerShell tests
 /devcontainer align the sibling repositories
 /devcontainer audit this workspace for drift
+/devcontainer diagnose why the container fails to start here
 ```
 
 | Mode | Contract |
@@ -233,6 +234,9 @@ Lifecycle order is `initializeCommand`, `onCreateCommand`, `updateContentCommand
 * `postAttachCommand` runs on every editor attach and should contain only attach-specific work.
 * Never authenticate, mutate remote systems, apply infrastructure, or change clusters from hooks.
 * Avoid unconditional operating-system upgrades on every start; they are slow and nondeterministic.
+* Do not create a Python virtual environment in lifecycle scripts. Install requirements into the
+  image's interpreter or with `pip install --user`, and add `~/.local/bin` to `PATH` through
+  `remoteEnv`. Follow the Python instructions for the exceptions.
 * Do not auto-install per-commit hooks. Document manual linting and optionally offer
   `pre-commit install --hook-type pre-push --install-hooks`.
 * Follow the repository's shell instructions: strict error handling, quoted expansions, validated
@@ -326,6 +330,27 @@ When repositories intentionally mirror each other:
 
 ## Troubleshooting
 
+### Diagnose a Failed Start
+
+When a configuration works on one workstation but not another, suspect the host before the
+repository. Gather evidence before editing tracked files.
+
+1. Read the newest Dev Containers extension log first. On Windows it is under
+   `%APPDATA%\Code\logs\<session>\window<n>\exthost\ms-vscode-remote.remote-containers\`; use
+   **Dev Containers: Show Container Log** on any platform. Search for `Error response from daemon`,
+   `Command failed` and `Exit code`.
+2. Compare the logged `docker run` arguments with the configuration. The extension adds its own
+   mounts, such as the WSLg Wayland socket, the Git credential helper and the `vscode` volume; a
+   failing mount that the repository does not declare points to host or extension settings.
+3. Reproduce the failing argument alone with a throwaway container such as
+   `docker run --rm --mount <failing-mount> alpine:3 true`, then remove any image pulled only for
+   the test. A standalone failure proves the cause is independent of the repository image.
+4. Check host state: `docker version`, `docker context ls`, `wsl -l -v`, the Docker Desktop WSL
+   integration setting for each distribution and whether the relevant distribution is running.
+5. Fix host-specific causes in host or user settings, not tracked repository files. Ask before
+   changing a user setting that affects every Dev Container, and note that Settings Sync may carry
+   it to other workstations.
+
 | Symptom | Response |
 | --- | --- |
 | Feature fails after a base upgrade | Check distribution support and Feature options first |
@@ -339,6 +364,8 @@ When repositories intentionally mirror each other:
 | Lockfile changes unexpectedly | Confirm the generator and repository lockfile policy |
 | Files become root-owned | Restore the non-root user and use explicit `sudo` only where needed |
 | Sibling repositories drift | Compare declared shared surfaces and update them together |
+| `accessing specified distro mount service: stat /run/guest-services/distro-services/<distro>.sock` | The extension's automatic WSLg Wayland mount targets a WSL distribution without working Docker Desktop integration. Enable that distribution under Docker Desktop **Resources > WSL integration** and restart Docker Desktop, or set the user setting `"dev.containers.mountWaylandSocket": false` when the container runs no Linux GUI applications. Starting the distribution alone does not fix it |
+| Works on one workstation only | Follow [Diagnose a Failed Start](#diagnose-a-failed-start) and compare host Docker, WSL and extension settings |
 
 ## References
 
