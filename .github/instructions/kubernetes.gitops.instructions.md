@@ -11,31 +11,35 @@ through GitOps.
 
 ## Repository Layout
 
-Lay the manifests out so that every namespace is reached the same way — an Application file that
-owns the namespace, beside a folder holding that namespace's components:
+Keep the root App-of-Apps source restricted to Argo CD `Application` and `ApplicationSet` manifests.
+Do not recursively scan a mixed tree containing Kubernetes resources, values files, or local charts.
+The default layout is:
 
 ```text
 src/
-├── project.yaml                          # Project definition
-├── bootstrap/                            # Platform and infrastructure, reconciled first
-│   ├── app-of-apps.yaml                  # Root Application for this layer
-│   ├── <namespace>.yaml                  # Application owning the folder below
-│   ├── <namespace>/
-│   │   ├── <component>.yaml              # One Application per component
-│   │   ├── <component>-values-<x.y.z>.yml  # Chart values, version in the filename
-│   │   └── _secrets.yaml                 # Shared resources, underscore-prefixed
-│   └── archive/                          # Retired manifests, kept for reference
-└── workloads/                            # Applications that depend on the platform
-    ├── app-of-apps.yaml                  # Root Application for this layer
-    ├── <workload>.yaml
-    ├── _configmap.yaml
-    ├── configmaps/                       # Per-environment configuration
-    └── secrets/
+├── bootstrap.yaml                        # Seeded root; source is applications/
+├── applications/                         # Applications only; recursive root scan is safe
+│   ├── platform/
+│   │   ├── app-projects.yaml
+│   │   └── <application>.yaml
+│   └── workloads/
+│       └── <application>.yaml
+└── resources/                            # Never scanned directly by the root
+  ├── app-projects/
+  │   └── projects.yaml
+  └── <application>/
+    ├── values/
+    ├── manifests/
+    └── chart/
 ```
 
-- The `<namespace>.yaml` and `<namespace>/` pair is the important part. The file is an Application
-  whose source path is the folder, so adding a component means dropping one file into the folder
-  rather than editing a parent manifest.
+- Let the root discover direct leaf Applications recursively. Do not add one wrapper Application per
+  namespace merely to discover the Applications in a sibling folder; it adds another finalizer and
+  ownership boundary without adding isolation.
+- Use a directory-source leaf Application when raw resources must be reconciled together. Point it
+  at a folder under `resources/`; do not place those resources in the root's Applications-only tree.
+- Keep a separate root only when layers have genuinely independent bootstrap, access, or lifecycle
+  boundaries. Use sync waves within one root for ordinary dependency ordering.
 - Keep a retired manifest in an `archive/` folder rather than deleting it, so the reasoning behind a
   past decision stays available. Ensure the controller does not scan it.
 
@@ -54,9 +58,13 @@ src/
 
 - Use a root Application that deploys other Applications, so the whole cluster bootstraps from one
   manifest.
-- Separate the roots by concern — typically one for infrastructure and platform components, another
-  for the workloads that depend on them. Infrastructure reconciles first.
+- Put dependency order on direct child Applications with `argocd.argoproj.io/sync-wave`. A root
+  waits for an earlier-wave child Application to become healthy before advancing only when Argo CD
+  has health assessment configured for its `Application` custom resource. Configure and verify that
+  assessment before depending on child waves for a clean-cluster bootstrap.
 - Label the roots distinctly from the applications they own, so a query can tell a root from a leaf.
+- Seed the root outside the directory it scans, or point it at a dedicated `applications/` child, so
+  it never attempts to reconcile itself.
 
 ## Application Manifests
 
@@ -70,21 +78,42 @@ src/
   Document any Application that deliberately opts out.
 - Create the target namespace through a sync option rather than a separate committed manifest.
 
+## Projects
+
+- Use AppProjects as authorization boundaries, not only as labels. Restrict source repositories,
+  destination clusters and namespaces, namespaced resource kinds, and cluster-scoped resource kinds.
+- The root's own project must exist before the root. Seed that project with the root, or initially
+  use a deliberately constrained pre-existing project. Reconcile all other AppProjects through an
+  earliest-wave directory-source Application before Applications that reference them.
+- Give the root only the permissions required to create approved child Applications. Keep broad
+  cluster-resource permissions in platform projects and out of workload projects.
+- Do not leave every leaf in an unrestricted `default` project once the initial bootstrap works.
+
 ## Namespaces
 
-- One namespace per concern, named after the concern rather than the product that currently fills it,
-  so replacing the implementation does not require renaming the namespace.
+- Treat a namespace as a security, ownership, policy, and lifecycle boundary. Give an application or
+  tightly coupled service suite its own namespace by default; do not group unrelated workloads into
+  broad `utilities`, `data`, `apps`, or environment-only namespaces for tidiness.
+- Keep shared operators in their conventional namespaces. Place tenant data-plane resources in the
+  tenant application's namespace when ownership is exclusive; use a dedicated shared-service
+  namespace only when several applications intentionally share one service and policy boundary.
 - Keep platform components in their conventional namespaces and application workloads out of them.
 - Never deploy a workload into the GitOps controller's own namespace.
+- Namespace changes are data migrations, not manifest moves. A PVC cannot move between namespaces;
+  snapshot or back up the data and restore it into a new claim rather than deleting/recreating the
+  original claim during a repository restructure.
 
 ## Naming
 
-- Name an Application file after the component or workload it deploys.
+- Name an Application file after its `metadata.name` by default, so the filename identifies the
+  Argo CD object a reviewer and operator will inspect. Keep a different established name only for a
+  documented controller constraint.
 - Prefix a shared resource that is not itself an Application — a ConfigMap or Secret consumed by
-  several workloads — so it sorts apart from the Applications, for example with an underscore.
-- Store a chart values file alongside the manifest that consumes it, suffixed `-values.yaml` and
-  carrying the chart version it targets, for example `<name>-values-1.2.3.yaml`. The version in the
-  filename must match the chart version being deployed.
+  several workloads — so it sorts apart from related resources, for example with an underscore.
+  Keep it outside the Applications-only discovery tree.
+- Store a chart values file in the consuming application's folder under `resources/`, suffixed
+  `-values.yaml` and carrying the chart version it targets, for example
+  `<name>-values-1.2.3.yaml`. The version in the filename must match the chart version being deployed.
 - Be deliberate about the file extension. A controller configured to scan for `*.yaml` silently
   ignores `*.yml`, which is a useful way to park a manifest but a confusing way to lose one.
 

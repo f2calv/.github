@@ -182,6 +182,14 @@ on-demand references cover chart contracts, dependency and schema maintenance, r
 rendering, OCI packaging, and safe Grafana dashboard delivery without loading those details into
 every chart-editing conversation.
 
+## GitOps repository structure
+
+The [`gitops-repository-structure` skill](.github/skills/gitops-repository-structure/SKILL.md)
+designs and migrates Argo CD App-of-Apps repositories around an Applications-only recursive root,
+direct leaf ownership, sync-wave ordering, restricted AppProjects, and application namespace
+boundaries. Its migration workflow preserves live resource identities while flattening wrapper
+Applications, then treats each stateful namespace move as a separate backup-and-restore operation.
+
 ## .NET HTTP MCP
 
 The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
