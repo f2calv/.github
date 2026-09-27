@@ -7,7 +7,7 @@ user-invocable: true
 
 # .NET HTTP MCP
 
-Expose a deliberately small, read-only application surface through the official MCP C# SDK.
+Expose a deliberately small, read-only-by-default application surface through the official MCP C# SDK.
 Reuse the application's running services and persistence; do not build a second application,
 an arbitrary database console, or an unrestricted remote administration endpoint.
 
@@ -151,6 +151,25 @@ if (mcpEnabled)
 * Preserve lifetimes. Do not capture a scoped `DbContext` in a singleton, create a second root
   provider, or keep per-call state in a shared tool target. Reuse the application's existing
   scoped store or context factory.
+
+### Explicitly authorized actions
+
+When the user separately authorizes a write capability, keep it in an explicitly registered action
+facade behind its own off-by-default gate. Reuse the application's domain service; never bypass
+policy through a raw upstream client. Reuse its request validation and bound model-controlled input.
+
+Describe the real side effect and require clear user intent for destination and content; prompt
+guidance or a model-supplied confirmation flag is not authorization. Review whether every caller
+with network access would gain the action before enabling it.
+
+Set annotations from actual behavior: sending externally is not read-only or idempotent, even when
+it is additive rather than destructive. Return minimal acknowledgements, not echoed sensitive input,
+and distinguish upstream acceptance from confirmed delivery.
+
+Audit the complete retry and logging path, including dependency libraries. Unless durable request
+deduplication exists, do not replay an outcome-uncertain operation automatically. Propagate caller
+cancellation and warn that timeouts or failures may occur after the action completed. Test through
+fake domain services and HTTP handlers; never send live messages merely to verify the tool.
 
 ## Shape useful, bounded results
 
