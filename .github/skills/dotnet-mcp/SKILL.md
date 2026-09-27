@@ -1,6 +1,6 @@
 ---
 name: dotnet-mcp
-description: 'Create, modernize, or audit read-only .NET MCP servers over Streamable HTTP with the official C# SDK, explicit tool registration, live application state, bounded history, privacy controls, and protocol-level validation.'
+description: 'Create, modify, modernize, or audit .NET MCP server tools, protocol prompts, registration, options, DTOs and tests, including Mcp-named files and Mcp folders. Covers read-only Streamable HTTP, live state, bounded history, privacy and protocol validation.'
 argument-hint: 'mode={create|update|audit} [scope=application]'
 user-invocable: true
 ---
@@ -35,6 +35,27 @@ an arbitrary database console, or an unrestricted remote administration endpoint
 4. Do not run tests or make live service/data reads without explicit approval. An MCP connection
    can disclose data to the client/model even when every tool is read-only. Use synthetic local
    fixtures for approved validation; never discover capabilities by reading production history.
+
+## Align file scope
+
+Use the [instruction file's naming convention](../../instructions/dotnet.mcp.instructions.md#naming)
+as the authority for MCP-specific files. Before narrowing coverage or reorganizing an existing
+implementation:
+
+1. Inventory tool/prompt attributes, registration helpers, options, MCP-only output types and tests by
+   content, not only filename. Classify shared application components separately.
+2. Move tracked files with `git mv` before editing their types or references. Update DI, tests,
+   XML references and documentation together. Preserve exposed tool names, parameter/property names,
+   namespaces where appropriate, and runtime behavior; this is file targeting, not API redesign.
+3. Check that every MCP-specific C# file matches `**/*Mcp*.cs` or `**/Mcp/**/*.cs`, using case-sensitive
+   examples. Confirm unrelated application files do not match; keep shared services and composition
+   roots outside the pattern rather than widening it to all C#.
+4. Distinguish static glob coverage from actual editor activation. Check VS Code customization
+   diagnostics in the intended workspace/profile before claiming automatic application works.
+   Report that check as pending if the editor cannot expose it.
+
+Skill selection remains task-driven through its description, including work on files not yet
+following the convention. The instruction `applyTo` glob does not itself invoke the skill.
 
 ## Refresh the SDK evidence
 

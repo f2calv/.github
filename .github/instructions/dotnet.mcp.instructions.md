@@ -1,6 +1,6 @@
 ---
 description: 'Model Context Protocol (MCP) server tool conventions — attributes, descriptions and naming.'
-applyTo: '**/*.cs'
+applyTo: '**/*Mcp*.cs,**/Mcp/**/*.cs'
 ---
 
 # MCP (Model Context Protocol)
@@ -24,6 +24,14 @@ description rules; the skill references them rather than repeating them.
 
 ## Naming
 
+- MCP-specific C# files and types use `Mcp` in their names, or live under an `Mcp` directory.
+  This includes tool facades, protocol prompts, registration, options, MCP-only DTOs and tests. Use this exact casing
+  for portable matching. Shared domain services and DTOs retain their domain names.
+- Keep application composition roots focused on calls to MCP-specific registration helpers;
+  do not rename an entire host or shared service just because it wires or supports MCP.
+- File naming scopes these instructions; it does not change model-facing tool names or trigger
+  skill discovery. Invoke the linked skill for MCP work even when an existing file is not yet named
+  to match.
 - Include the domain noun so tool names are unique across tool classes: `GetOrder`, not `GetItem`.
   Use verb-first actions such as `CancelSubscription`, and `Get<Noun>` / `Get<Noun>s` for single
   and collection queries.
