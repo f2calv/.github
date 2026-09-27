@@ -1,231 +1,49 @@
 ---
-description: 'Helm chart authoring conventions for metadata, schemas, dependencies, dashboards, and validation.'
+description: 'Core Helm chart invariants and the boundary between shared authoring workflows and repository-specific contracts.'
 applyTo: 'charts/**,**/*-helm/**'
 ---
 
 # Helm Chart Authoring
 
-Apply these conventions to custom charts and umbrella charts under `charts/` or a clearly named
-`*-helm/` directory.
-Keep chart behaviour explicit, reusable where appropriate, and aligned with the
-published dependency contract.
+Apply the generic Helm skill when creating, updating, migrating, auditing, packaging, documenting,
+or validating a chart. This always-loaded file retains only invariants needed while editing chart
+files; the skill owns the detailed workflow and reference material.
 
-## Universal Workload Chart
+## Contract
 
-Use the public `workload` chart at
-`oci://<registry>/<owner>/charts/workload` for containerised workloads that do not
-need application-specific Kubernetes templates. It is framework-neutral and
-uses sensible defaults while allowing consumers to override Kubernetes-native
-settings.
+* Treat each chart as a versioned package with explicit metadata, values, schema, dependencies,
+  fixtures, documentation, and release ownership.
+* Keep chart implementation and every affected contract surface synchronized in one change.
+* Pin shared dependencies exactly. Keep application-specific singleton dependencies local.
+* Preserve released chart versions and OCI tags. Never move or reuse them.
+* Keep representative chart-testing fixtures under `ci/` and exclude them from packages.
+* Keep each chart README self-contained for consumers. Do not replace install, configuration, or
+  operational guidance with a reference to internal Copilot customizations.
+* Preserve resource and dashboard identity during migrations unless the change explicitly replaces
+  it.
 
-The chart supports these primary workload modes:
+## Values and Templates
 
-* `Deployment`
-* `DaemonSet`
-* `StatefulSet`
-* `Job`
-* `ScaledObject`
-* `ScaledJob`
-* `CronJob`
+* Validate owned values with `values.schema.json`; let dependencies validate their own contracts.
+* Keep reusable and umbrella schema roots open when aliases, dependency values, or compatible
+  extensions require it.
+* Expose Kubernetes-native scheduling, security, resources, persistence, and pod metadata
+  consistently across pod-producing templates.
+* Keep primary workload modes mutually exclusive and fail invalid combinations with actionable
+  schema or template errors.
 
-Use `kind: Job` for a one-shot batch workload. Keep every primary workload mode mutually exclusive;
-an additional Job that must accompany another primary resource belongs in a separate chart release
-or workload alias.
-Preserve the sensible-default principle: common deployments should need few
-values, while runtime-specific configuration remains the consumer's
-responsibility. Do not add framework-specific probes, ports, commands, or
-environment variables as universal defaults.
+## Grafana Packages
 
-Expose `nodeSelector`, `tolerations`, `affinity`, and
-`topologySpreadConstraints` consistently in every pod-producing template.
-PodDisruptionBudget support is opt-in and limited to long-running modes:
-`Deployment`, `DaemonSet`, `StatefulSet`, and `ScaledObject`. Require a positive
-replica count and exactly one of `minAvailable` or `maxUnavailable` when a PDB
-is enabled.
+* Keep dashboards as standalone JSON files and preserve established UIDs, ConfigMap names, keys, and
+  folder placement.
+* Never process dashboard JSON or alert rules with Helm `tpl`; use exact replacement for a small,
+  approved placeholder set.
+* Ensure only one release per environment emits a given dashboard UID.
+* Keep dashboard queries, datasources, endpoints, alert behavior, and compatibility mappings in the
+  consuming repository.
 
-## Chart Metadata and Versioning
+## Validation Boundary
 
-Every `Chart.yaml` must define:
-
-* `apiVersion: v2`.
-* A stable, lowercase `name`.
-* A concise, user-facing `description`.
-* An explicit `type`, normally `application`.
-* A chart `version` that follows Semantic Versioning.
-* A quoted `appVersion` describing the packaged application or contract.
-
-Treat each chart as an independently versioned package. Increment its
-`Chart.yaml` version whenever its packaged behaviour changes. Published chart
-versions and their Git tags are immutable: never move or reuse a released
-version. Git tags use `<chart>/<version>`, such as `workload/1.1.0`; the
-`Chart.yaml` version and OCI artifact tag remain the bare semantic version.
-
-Treat chart implementation, metadata, generated contracts, and documentation as one atomic change.
-When chart behavior or values change, update the chart version, `values.yaml`, generated schema,
-dependency lock, chart README examples and default-values reference, repository catalogue version,
-and affected consumer documentation together. Never merge a chart change with stale version pins,
-render examples, or documented defaults.
-
-## Values Schemas
-
-Every custom chart must contain `values.schema.json` beside `Chart.yaml` and
-`values.yaml`. Declare JSON Schema Draft-07 explicitly:
-
-```json
-{
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "type": "object"
-}
-```
-
-Choose root strictness according to the chart's role:
-
-* Keep reusable and umbrella chart roots open. Validate their owned keys, but
-  allow additional root properties so aliases, consumer extensions, and future
-  compatible values remain possible.
-* Let each dependency validate its own values. Umbrella schemas should validate
-  alias-key structure without duplicating subchart schemas.
-* Use `additionalProperties: false` for small, fully known charts or nested
-  objects where unknown keys are errors.
-* Account for Helm's injected `global` values before closing a chart root. A
-  strict root that omits `global` can reject valid dependency-tree rendering.
-
-Place `# @schema` blocks next to values whose type, enum, range, pattern, or
-required structure needs validation. Treat those annotations as the source for
-schemas generated by the pinned `dadav/helm-schema` hook. Regenerate after
-changing annotated values and review the resulting schema diff. Keep deliberate
-hand-authored umbrella or small-chart schemas focused on the chart's owned
-contract.
-
-## Dependencies
-
-Choose a dependency source from its reuse boundary:
-
-* Consume genuinely shared charts, including `workload`, from their published
-  OCI repository and pin an exact chart version.
-* Keep application-specific singleton charts, including a local dashboard
-  bundle used by one umbrella, as `file://` dependencies.
-
-Run `helm dependency update` after changing dependencies and commit
-`Chart.lock`. Do not commit generated `.tgz` archives under the umbrella
-chart's `charts/` directory; packaging resolves and vendors dependencies from
-the lock.
-
-## Grafana Dashboards
-
-Store each dashboard as standalone JSON in `dashboards/<uid>.json`. For a new
-dashboard, the file basename and the JSON `uid` must match. Derive the default
-ConfigMap name as `grafana-dashboard-<basename>` and the data key as
-`<basename>.json`. Preserve an established Grafana UID during migrations;
-document any required compatibility mapping explicitly in the template instead
-of silently changing identity.
-
-Dashboard ConfigMaps must include:
-
-```yaml
-metadata:
-  labels:
-    grafana_dashboard: "1"
-  annotations:
-    grafana_folder: {{ .Values.dashboardFolder }}
-```
-
-Never pass dashboard JSON through Helm `tpl`. Grafana expressions such as
-`{{label}}` use the same delimiters and can be parsed or corrupted by Helm.
-Inject approved placeholders with exact, targeted `replace` calls:
-
-```gotemplate
-{{- $json = $json | replace "{{ .Values.datasources.prometheus }}" $.Values.datasources.prometheus }}
-```
-
-Gate dashboard rendering with an explicit value such as `enabled`, and apply
-the same condition to the umbrella dependency. Enable the dashboard source in
-only one release per environment so multiple releases cannot publish duplicate
-Grafana UIDs.
-
-Keep application-specific dashboard charts local and vendored into their
-umbrella chart. Publish a dashboard chart independently only after it becomes a
-genuinely shared dependency with its own compatibility contract.
-
-## Documentation
-
-Every chart must include a consumer-focused `README.md`. Document how to install,
-configure, and operate the packaged chart. Keep chart construction, schema
-generation, pre-commit hooks, CI implementation, and release mechanics in
-maintainer documentation or instructions rather than the chart README.
-
-Store representative chart-testing values under `ci/` in each chart source directory. Run them
-through chart-testing lint on every pull request, including changes that do not introduce a new
-chart version. Add `ci/` to `.helmignore` so validation fixtures remain available from source but
-are never published in the chart package.
-
-When `Chart.yaml` declares dependencies, include a Mermaid dependency graph in the chart README.
-Show the parent chart, every dependency alias, and the dependency chart and version each alias
-resolves to. Update the diagram in the same change as any dependency addition, removal, alias, or
-version change.
-
-Use this reader journey where the sections apply:
-
-1. Introduce the chart, the application or workload it deploys, and its dependency model.
-2. Add `## Install` with `### Helm` and `### Argo CD Application` examples.
-3. Add `## Setup` only when the deployed application needs post-install activation or registration.
-4. Add `## Configuration` with a concise defaults table, validated options, and a complete
-   `### Default Values` reference.
-5. Add `## Persistence` when the chart owns or mounts durable state.
-6. End with `## Related Projects` containing authoritative project and platform links.
-
-Keep examples consistent and directly usable:
-
-* Pin the chart version in the initial `helm install` example.
-* Use `helm upgrade --install` without `--version` only when the example intentionally tracks the
-  latest stable chart; say so in the surrounding text.
-* Include `--namespace my-namespace --create-namespace` in Helm examples and use the same
-  `my-namespace` placeholder in Argo CD and namespace-sensitive `kubectl` commands.
-* Provide equivalent Helm CLI and Argo CD `valuesObject` examples for important overrides such as
-  environment variables, persistence, and ephemeral storage.
-* Use `--set-string` for scalar container environment values and `--set-json` when an empty array or
-  object type must be preserved.
-* Point Argo CD OCI sources at the chart being documented, not at a generic dependency or example
-  image left over from another chart.
-* Use synthetic, runnable images and values. Do not publish examples that resolve to nonexistent
-  image tags or render zero workload replicas unless that is the stated purpose.
-
-Keep configuration reference material concise and authoritative:
-
-* Link workload kinds, controllers, and external tools to their official Kubernetes, KEDA, or
-  upstream project documentation.
-* Explain chart-specific choices and coupled values, but omit general application protocol behavior
-  that belongs in the upstream application's documentation.
-* Copy the complete `values.yaml` data into `### Default Values`, remove `# @schema` annotations,
-  and replace verbose source comments with single-line comments for key areas.
-* Compare the parsed embedded YAML with `values.yaml`; formatting and comments may differ, but every
-  key, type, and default value must match.
-
-The repository README should catalogue each published chart with a deep link to its chart README,
-latest published version, OCI reference, and a short purpose sentence. Keep per-chart details in the
-chart README rather than duplicating introductory paragraphs in the repository overview.
-
-Validate every chart-specific README and the repository catalogue against the version in
-`Chart.yaml` during pull requests. Update the documentation with every public contract or behavior
-change.
-
-## Validation
-
-Before considering a chart change complete:
-
-1. Run `helm lint` for the changed leaf chart and every affected umbrella.
-2. Run `helm template` with representative values for every supported resource
-   mode touched by the change.
-3. Confirm deliberately invalid values fail schema validation or template
-   guards with a non-zero exit code.
-4. Regenerate annotated schemas and confirm no unreviewed schema drift remains.
-5. Update dependencies and confirm `Chart.lock` and vendored archives match
-   `Chart.yaml`.
-6. Compare rendered manifests with the previous or source implementation when
-   migrating templates, dashboards, or values, and account for every intended
-   difference.
-
-## Custom Rules
-
-Add future workspace-wide Helm conventions here after they are implemented and
-validated across the affected charts.
+Validate dependencies, schemas, representative rendering, invalid inputs, package contents,
+documentation, and migration equivalence. Ask before running tests, chart-testing suites, registry
+operations, cluster commands, or publication.

@@ -1,5 +1,5 @@
 ---
-description: 'Grafana dashboard delivery through GitOps — chart packaging, sidecar provisioning, datasources and secrets, template variables and panel authoring pitfalls.'
+description: 'Grafana dashboard authoring conventions for datasources, secrets, variables, panels, API responses, and debugging.'
 applyTo: '**/dashboards/**,**/*dashboard*.json,**/grafana/**'
 ---
 
@@ -9,37 +9,6 @@ Conventions for authoring Grafana dashboards that are delivered as Kubernetes ma
 Prometheus or arbitrary REST/JSON endpoints. Keep application-specific facts — endpoint paths,
 secret names, metric names, entity names — in the consuming repository's own instructions, never in
 a shared file.
-
-## Packaging Dashboards in a Chart
-
-- Author each dashboard as a plain `<uid>.json` file under a `dashboards/` folder, with the filename
-  matching the dashboard `uid`. One chart template iterates `.Files.Glob "dashboards/*.json"` and
-  emits one `ConfigMap` per file. Dashboards then stay lintable JSON rather than YAML-embedded text,
-  and adding a board is dropping in a file.
-- Label every dashboard `ConfigMap` with the sidecar discovery label (`grafana_dashboard: "1"` for
-  the kube-prometheus-stack sidecar). Discovery is label-driven; there is no registration step.
-- Route dashboards into a named folder with a `grafana_folder: <Folder>` annotation on each
-  `ConfigMap`, and set the sidecar to `sidecar.dashboards.folderAnnotation: grafana_folder` plus
-  `provider.foldersFromFilesStructure: true`. Without both sidecar settings the annotation is
-  ignored and every dashboard lands in the default folder.
-- Treat the sidecar configuration as cluster-wide. It is shared by every dashboard-producing
-  workload, so enabling folder-from-structure behaviour re-routes existing dashboards that carry no
-  annotation into a folder named after their source path. Verify the others still land where
-  expected.
-- A dashboard `ConfigMap` re-imports on content change with no version bump, unlike a provisioned
-  datasource.
-
-## Helm Templating and Dashboard JSON
-
-- Never run dashboard JSON through Helm's `tpl`. Grafana legend and label interpolation tokens such
-  as `{{instance}}` or `{{job}}` are valid Grafana syntax but collide with Helm's `{{ }}` action
-  delimiters, and `tpl` fails to parse the whole document.
-- To inject a small number of values, such as datasource UIDs, use a targeted string `replace` of
-  known placeholders rather than `tpl` over the document.
-- Only the placeholders explicitly replaced are substituted; anything else is passed through
-  literally. Keep such placeholders to the minimum the panels actually consume.
-- If templating a dashboard is unavoidable, escape every Grafana token first — but prefer the
-  targeted replace, which cannot break on a token added later by a panel editor.
 
 ## Datasource Provisioning and Secrets
 

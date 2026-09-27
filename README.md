@@ -174,6 +174,14 @@ documents the options that vary between images. Its audit script reports the rul
 ./.github/skills/container-images/scripts/Invoke-Tests.ps1
 ```
 
+## Helm charts
+
+The [`helm-charts` skill](.github/skills/helm-charts/SKILL.md) provides create, update, migration,
+audit, packaging, documentation, and validation workflows for custom and umbrella charts. Its
+on-demand references cover chart contracts, dependency and schema maintenance, representative
+rendering, OCI packaging, and safe Grafana dashboard delivery without loading those details into
+every chart-editing conversation.
+
 ## .NET HTTP MCP
 
 The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
