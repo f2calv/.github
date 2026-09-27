@@ -27,7 +27,12 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 ## Options Synchronisation
 
 - Define every configuration property with a sensible default on the options record or class, so the application runs out of the box and each value remains overridable.
-- When adding, renaming or removing a bindable property on an options type — or on any nested type reachable from it — update the base file, each applicable tracked environment override, each existing local tier used by the repository, and every documentation example in the same change.
+- Treat options-type defaults as the canonical base configuration. Do not repeat a key in
+  `appsettings.json` when its value is identical to the code default; the duplicate adds noise and
+  can drift. Keep base-file keys only for required values without a safe code default, deliberate
+  overrides, placeholders that make a tracked example runnable, or collection content that cannot
+  be expressed as an empty/default object.
+- When adding, renaming or removing a bindable property on an options type — or on any nested type reachable from it — review the base file, each applicable tracked environment override, each existing local tier used by the repository, and every documentation example in the same change. Add or retain a key only where that provider intentionally differs from the code default.
 - Add a key to an environment-specific file only when that environment genuinely needs to override the type's default.
 - Add a key to a local file only when it differs from the tracked defaults or contains private
   configuration that cannot be committed to a public repository.

@@ -16,6 +16,9 @@ files; the skill owns the detailed workflow and reference material.
 * Keep chart implementation and every affected contract surface synchronized in one change.
 * Pin shared dependencies exactly. Keep application-specific singleton dependencies local.
 * Preserve released chart versions and OCI tags. Never move or reuse them.
+* Publish public application charts under `ghcr.io/<owner>/charts/<chart-name>`. Keep the chart
+  directory basename, `Chart.yaml` name, and final OCI path segment identical and globally unique
+  within the shared namespace.
 * Keep representative chart-testing fixtures under `ci/` and exclude them from packages.
 * Keep each chart README self-contained for consumers. Do not replace install, configuration, or
   operational guidance with a reference to internal Copilot customizations.

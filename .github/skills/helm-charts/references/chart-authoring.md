@@ -28,6 +28,13 @@ Increment an independently versioned chart whenever its packaged contents change
 reuse a released chart version or OCI tag. Use repository-specific tag conventions when source tags
 identify individual charts.
 
+Publish public application charts under `ghcr.io/<owner>/charts/<chart-name>`. Pass the full final
+coordinate to shared packaging workflows. Keep the chart directory basename, `Chart.yaml` name, and
+final OCI segment identical because packaging derives and publishes that name. The account-level
+namespace is shared across source repositories, so names must be globally unique. Use the
+application name for its primary chart and `<application>-<purpose>` for ancillary charts instead of
+generic names such as `dashboards`.
+
 ## Values and Schemas
 
 Keep `values.yaml`, `values.schema.json`, templates, and README examples synchronized.
