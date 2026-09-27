@@ -174,6 +174,14 @@ documents the options that vary between images. Its audit script reports the rul
 ./.github/skills/container-images/scripts/Invoke-Tests.ps1
 ```
 
+## .NET HTTP MCP
+
+The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
+workflow for read-only application tools over Streamable HTTP. It covers current SDK verification,
+feature and role gating, live runtime snapshots, bounded channel history, privacy, HTTP access
+controls, and protocol-level validation. Naming and description rules remain in the shared MCP
+instructions.
+
 ## .NET release train
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates
