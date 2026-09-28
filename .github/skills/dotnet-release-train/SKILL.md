@@ -125,7 +125,13 @@ unless the user explicitly asks for parallel sessions.
 - Package publication, not merge completion, unlocks the next consumer.
 - Release builds matter even when Debug builds pass, because Debug commonly uses local project
   references while Release consumes NuGet packages.
-- A successful package push is not proof that NuGet clients can restore it.
+- A successful package push is not proof that NuGet clients can restore it. Verify every expected
+  package ID at the exact version through the package source's restore endpoint, and stop the chain
+  when any package from a multi-package producer is absent.
+- The availability helpers support public nuget.org only; authenticated feeds need a separate
+  credential-safe implementation. Never put a NuGet API key in source, configuration or logs.
+- Use `--skip-duplicate` only to make an idempotent publication retry safe; it never permits
+  rebuilding or replacing an immutable published version.
 - Keep each repository's package holds in its own instructions; do not duplicate them here.
 - Do not mix deployment or live-cluster debugging into the release train unless the user asks for it.
 - Keep status updates short: current repository, latest verified package version, blocker, next

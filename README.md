@@ -220,6 +220,19 @@ Run the helper regression suite through npm:
 npm run test:release-train
 ```
 
+## .NET test platform
+
+The [`dotnet-test-platform` skill](.github/skills/dotnet-test-platform/SKILL.md) configures and
+migrates repositories to Microsoft.Testing.Platform with xUnit v3, covering the `global.json` runner
+selection, test project properties, native `dotnet test` syntax, coverage and CI steps. Test
+structure and assertion rules remain in the shared testing instructions.
+
+## .NET performance
+
+The [`dotnet-performance` skill](.github/skills/dotnet-performance/SKILL.md) applies measured
+hot-path optimizations — `ValueTask` signatures, span parsing, `SearchValues`, frozen collections,
+`PipeReader` loops and pooled buffers — without loading them into every C# conversation.
+
 ## Create a repository
 
 Create, configure, and clone a public repository:
