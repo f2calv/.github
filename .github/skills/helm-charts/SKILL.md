@@ -1,6 +1,6 @@
 ---
 name: helm-charts
-description: 'Create, update, migrate, audit, package, document, and validate Helm charts and umbrella charts, including values schemas, dependencies, OCI releases, chart-testing fixtures, Argo CD examples, and Grafana dashboard ConfigMaps. Use for Chart.yaml, values.yaml, templates, charts, Helm release workflows, or dashboard JSON packaged by Helm.'
+description: 'Create, update, migrate, audit, package and validate Helm and umbrella charts: values schemas, dependencies, OCI releases, chart-testing, Argo CD examples and Grafana dashboard ConfigMaps. Use for Chart.yaml, values.yaml, templates or chart releases.'
 argument-hint: 'mode={create|update|migrate|audit|package} [path=chart-or-repository]'
 user-invocable: true
 compatibility: 'Authoring is cross-platform. Validation requires Helm 3 and any repository-pinned schema, chart-testing, or documentation tools.'

@@ -1,6 +1,6 @@
 ---
 name: archive-repo
-description: 'Retire and archive GitHub repositories safely, including final documentation, open work, security, integrations, and local cleanup - Brought to you by f2calv/.github'
+description: 'Retire and archive GitHub repositories safely, including final documentation, open work, security, integrations and local cleanup.'
 argument-hint: 'repositories=owner/name,... [remove-local={true|false}]'
 user-invocable: true
 disable-model-invocation: true

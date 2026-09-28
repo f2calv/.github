@@ -1,6 +1,6 @@
 ---
 name: repository-privacy
-description: 'Check that a change, a commit message, an issue, a pull request or a release note is safe to publish from a public repository. Covers the public and private boundary, scanning for personally identifiable information, placeholder conventions, and how to reference private work from public content without disclosing it. Use before committing or pushing to a public repository, before opening or commenting on a public issue or pull request, and when a public change depends on private context.'
+description: 'Check that a commit, issue, pull request, review or release note is safe to publish from a public repository: PII scanning, placeholders and the public/private boundary. Use before committing, pushing or posting public GitHub content.'
 user-invocable: true
 compatibility: 'The PII scanner requires PowerShell 7 and git. Run it against the repository being checked with -RepoRoot.'
 ---
