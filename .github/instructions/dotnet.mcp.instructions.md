@@ -1,79 +1,41 @@
 ---
 description: 'Model Context Protocol (MCP) server tool conventions — attributes, descriptions and naming.'
-applyTo: '**/*.cs'
+applyTo: '**/*Mcp*.cs,**/Mcp/**/*.cs'
 ---
 
 # MCP (Model Context Protocol)
 
-Feature libraries with `*QueryService` types decorated with `[McpServerToolType]` follow these conventions. Individual methods exposed to the Agent are decorated with `[McpServerTool]` and every such method — including currently commented-out candidates — must also carry a `[Description]` attribute on the method and on each of its parameters. Return-type objects and their nested types must have `[Description]` on every public property.
+Apply these conventions to MCP tools. Use the [dotnet-mcp skill](../skills/dotnet-mcp/SKILL.md)
+for HTTP implementation, SDK-specific behavior and validation. This file owns naming and
+description rules; the skill references them rather than repeating them.
 
-## Pattern
+## Descriptions
 
-```csharp
-[McpServerTool]
-[Description("...")]
-public async Task<Foo> DoSomething(
-    [Description("...")] string bar,
-    CancellationToken cancellationToken = default)
-```
+- Use separate `[McpServerTool]` and `[Description(...)]` attributes on exposed methods.
+  Describe every model-supplied parameter and every public output DTO property, including nested
+  types. SDK/DI-injected parameters are not model arguments.
+- Write concise, readable plain English without XML markup or localization. Explain the action
+  and domain; distinguish similar tools with explicit cross-references where useful.
+- Put units, ranges and constraints on parameters/properties rather than repeating them in the
+  method description. For string-valued enums, list every accepted value and its meaning.
+  For complex inputs, summarize the key fields and constraints.
+- Keep XML documentation for developers separate from model guidance; neither replaces the other.
+  Avoid narrating an obvious return type or repeating identical descriptions across tools.
 
-> Note: `McpServerToolAttribute` (v1.1.0) has **no** `Description` property. The correct pattern is always two separate attributes: `[McpServerTool]` then `[Description(...)]`.
+## Naming
 
-## MCP `[Description]` text vs XML doc comments
-
-XML doc comments (`<summary>`, `<param>`, `<returns>`) are read by developers and tooling (IntelliSense, generated docs). They may contain `<see cref="..."/>` deep-links, `<remarks>` blocks, multi-sentence explanations, and coding-specific detail.
-
-`[Description]` text on MCP tools is **not** UI copy and is **not** a contract with humans. It is:
-
-- Contextual guidance for an LLM deciding **which tool to call** and **how to map arguments**
-- Never shown to end users
-- Not subject to grammar or localisation requirements
-
-Therefore MCP descriptions should be:
-
-- **Concise** — one sentence per method/parameter is usually enough
-- **Semantically rich** — include the key noun, verb, and any units or constraints the LLM needs (e.g. `"0=fully open, 100=fully closed"`, `"range 14–25"`)
-- **Disambiguation-first** — if two tools or parameters could be confused, the description must distinguish them
-- **Enum-aware** — when a parameter is typed as `string` but represents an enum, list **all valid values with a brief label** in the description text (the LLM cannot infer them from the type):
-
-```csharp
-[Description("Status filter. Values: Active, Suspended, Cancelled, Expired.")]
-string? status = null
-```
-
-- **No XML markup** — plain text only; `<see cref="..."/>` links are meaningless to an LLM
-- **No localization** — English only; multiple languages add noise without benefit
-
-## Checklist when adding or editing a `[McpServerTool]` method
-
-1. Add `[McpServerTool]` then `[Description("...")]` on the method — one sentence naming what it does.
-2. Add `[Description("...")]` on every non-`CancellationToken` parameter.
-3. For `string` parameters representing an enum: list all enum member names with a brief description each.
-4. For complex request-object parameters: summarise the key fields and their constraints in the description.
-5. Ensure every public property on the return type (and any nested types) has `[Description("...")]` with a concise label and unit/range where applicable.
-6. Keep XML `<summary>` comments intact — they serve a different audience and must not be replaced by or merged with `[Description]` text.
-
-## Method naming
-
-.NET MCP servers convert PascalCase method names to `snake_case` for the tool registry. Both forms must read naturally and be unambiguous.
-
-- **Domain-prefix every tool name** so it is globally unique across all `[McpServerToolType]` classes (e.g. `GetOrder`, not `GetItem`; `GetCustomerAddress`, not `GetAddress`).
-- **Verb-first for actions**: `CancelSubscription`, `ExecutePayment` — not `SubscriptionCancel`.
-- **Get/List pairing**: Use `Get<Noun>` for a single-item lookup and `Get<Noun>s` (plural) for the list variant.
-- **Human/LLM-friendly vocabulary**: Prefer everyday words over protocol or industry jargon (e.g. *Payment* over *Settlement*, *retry* over *exponential backoff*).
-- **Read in snake_case**: Before committing, mentally convert the name — `GetCustomerSubscriptionPaymentHistory` → `get_customer_subscription_payment_history` is too long; `GetCustomerPaymentStatus` → `get_customer_payment_status` is fine.
-
-## snake_case references
-
-When an `[McpServerTool]` method is renamed, search for its old `snake_case` form in:
-
-- `appsettings*.json` — `IncludeTools` / `ExcludeTools` arrays reference tools by snake_case name.
-- System prompt / instructions markdown files that may list tool names.
-
-## Description anti-patterns
-
-Avoid these in `[Description]` text:
-
-- **Return-type narration** — *"Returns the names of affected records"* duplicates what the LLM already infers from the method signature.
-- **Restating parameter constraints on the method** — keep constraints on the parameter `[Description]`; the method description should say *what* the tool does, not *how* to fill in every field.
-- **Identical wording across tools** — if two tools could be confused, their descriptions must explicitly cross-reference each other (e.g. *"For a summary overview use GetOrderSummary"* on the full-detail tool).
+- MCP-specific C# files and types use `Mcp` in their names, or live under an `Mcp` directory.
+  This includes tool facades, protocol prompts, registration, options, MCP-only DTOs and tests. Use this exact casing
+  for portable matching. Shared domain services and DTOs retain their domain names.
+- Keep application composition roots focused on calls to MCP-specific registration helpers;
+  do not rename an entire host or shared service just because it wires or supports MCP.
+- File naming scopes these instructions; it does not change model-facing tool names or trigger
+  skill discovery. Invoke the linked skill for MCP work even when an existing file is not yet named
+  to match.
+- Include the domain noun so tool names are unique across tool classes: `GetOrder`, not `GetItem`.
+  Use verb-first actions such as `CancelSubscription`, and `Get<Noun>` / `Get<Noun>s` for single
+  and collection queries.
+- Prefer short, everyday vocabulary. Check that both the C# name and its exposed `snake_case`
+  form remain readable and unambiguous.
+- When renaming a tool, update its exposed-name references in configuration (including
+  `IncludeTools` / `ExcludeTools`), prompts, instructions, documentation and request examples.

@@ -40,6 +40,18 @@ implementations bundled here.
 `Invoke-Deploy.ps1` reads deployment-specific defaults from the caller's gitignored
 `deploy.local.psd1`. Explicit command-line parameters take precedence.
 
+The deployment script reads each Argo CD manifest's `kind` and supports both `Application` and
+`ApplicationSet`. It patches `.spec.source` for an `Application` and
+`.spec.template.spec.source` for an `ApplicationSet`, failing on any other resource kind.
+
+During a normal deployment, the script also looks under `charts/` for one chart named `dashboards`
+or ending in `-dashboards`. When found, it derives the expected chart coordinate from the
+application manifest, locates the matching Argo CD manifest, publishes a timestamped development
+chart, and patches its `targetRevision`. Use `-SkipDashboards` to omit this step or `-OnlyCharts` to
+publish and patch only the discovered dashboard chart. `DashboardChartPath`,
+`DashboardChartRepository`, and `DashboardManifestPath` remain explicit overrides for repositories
+that do not follow the convention.
+
 ## Script Reference
 
 Repository shims resolve scripts from `~/.copilot/skills/container-workflows/scripts` first, then

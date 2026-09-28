@@ -174,6 +174,30 @@ documents the options that vary between images. Its audit script reports the rul
 ./.github/skills/container-images/scripts/Invoke-Tests.ps1
 ```
 
+## Helm charts
+
+The [`helm-charts` skill](.github/skills/helm-charts/SKILL.md) provides create, update, migration,
+audit, packaging, documentation, and validation workflows for custom and umbrella charts. Its
+on-demand references cover chart contracts, dependency and schema maintenance, representative
+rendering, OCI packaging, and safe Grafana dashboard delivery without loading those details into
+every chart-editing conversation.
+
+## GitOps repository structure
+
+The [`gitops-repository-structure` skill](.github/skills/gitops-repository-structure/SKILL.md)
+designs and migrates Argo CD App-of-Apps repositories around an Applications-only recursive root,
+direct leaf ownership, sync-wave ordering, restricted AppProjects, and application namespace
+boundaries. Its migration workflow preserves live resource identities while flattening wrapper
+Applications, then treats each stateful namespace move as a separate backup-and-restore operation.
+
+## .NET HTTP MCP
+
+The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
+workflow for read-only application tools over Streamable HTTP. It covers current SDK verification,
+feature and role gating, live runtime snapshots, bounded channel history, privacy, HTTP access
+controls, and protocol-level validation. Naming and description rules remain in the shared MCP
+instructions.
+
 ## .NET release train
 
 The [`dotnet-release-train` skill](.github/skills/dotnet-release-train/SKILL.md) coordinates
