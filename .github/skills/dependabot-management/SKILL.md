@@ -1,6 +1,6 @@
 ---
 name: dependabot-management
-description: 'Audit, create, align, and troubleshoot Dependabot configurations by matching supported package ecosystems to manifests, lockfiles, workflows, containers, infrastructure, and pre-commit hooks. Use when reviewing dependabot.yml, adding missing ecosystems, standardizing dependency update policy across repositories, or diagnosing missing and noisy Dependabot pull requests.'
+description: 'Audit, create, align and troubleshoot dependabot.yml by matching package ecosystems to manifests, lockfiles, workflows, containers, infrastructure and pre-commit hooks. Use for missing ecosystems or missing and noisy Dependabot pull requests.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|troubleshoot}]'
 user-invocable: true
 ---
@@ -27,6 +27,9 @@ configured directory against an updateable manifest or dependency reference.
   GitHub-hosted packages, supported OIDC authentication, or Dependabot secrets for private
   registries.
 - Do not run builds or tests without the approval required by the repository's workflow rules.
+- Every package ecosystem the repository uses needs coverage, with one entry per manifest directory
+  or a `directories` pattern covering them all. Automated updates pass through the same pull request
+  checks as manually authored changes; never exempt Dependabot pull requests from required checks.
 
 ## Ecosystem Discovery
 

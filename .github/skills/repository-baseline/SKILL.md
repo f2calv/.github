@@ -37,6 +37,20 @@ skill. Use the scripts as the implementation authority and this document as the 
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
 
+## Policy Conventions
+
+- The default-branch ruleset requires `lint / lint`, `versioning / gha-release-versioning`, the
+  repository's own validation check and the SonarQube Quality Gate for every public and private
+  repository.
+- Configure every public repository in SonarQube Cloud on the Free plan through its GitHub
+  integration. Grant the SonarQube GitHub App access to all repositories, enable automatic import for
+  new repositories and bulk-import existing repositories when establishing the integration.
+- Use SonarQube Cloud automatic analysis where the repository is eligible. Use CI-based analysis where
+  the language, project structure or required build context is not supported, and never run
+  automatic and CI-based analysis together for the same SonarQube project.
+- Configure every private repository against a self-hosted SonarQube Community Build instance and run
+  its scanner in continuous integration.
+
 ## Assets
 
 | Asset | Purpose |

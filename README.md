@@ -195,7 +195,16 @@ Applications, then treats each stateful namespace move as a separate backup-and-
 The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
 workflow for read-only application tools over Streamable HTTP. It covers current SDK verification,
 feature and role gating, live runtime snapshots, bounded channel history, privacy, HTTP access
-controls, and protocol-level validation. Naming and description rules remain in the shared MCP
+controls, and protocol-level validation. Detailed result, HTTP security and validation guidance loads
+on demand from its `references/` folder. Naming and description rules remain in the shared MCP
+instructions.
+
+## GitHub issues and pull requests
+
+The [`github-issues-and-pull-requests` skill](.github/skills/github-issues-and-pull-requests/SKILL.md)
+runs the issue and pull-request lifecycle: issue types, labels and quality, descriptions generated
+from the full branch diff, Dependabot folding, code-scanning and SonarQube gates, and merge
+readiness. Always-on branch, remote-operation and release-tag invariants stay in the GitHub
 instructions.
 
 ## .NET release train
