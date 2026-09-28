@@ -6,9 +6,9 @@ applyTo: '**'
 # Workflow
 
 How the agent works in any repository — execution, commits, git history, credential handling,
-confidentiality, repository layout and code lifecycle. Conventions for running a repository *on
-GitHub* — branches, pull requests, status checks, dependency automation and releases — belong in
-`github.instructions.md`.
+confidentiality, repository layout and code lifecycle. GitHub invariants — branch naming, remote
+operations, merge gates and release tags — belong in `github.instructions.md`; the issue and
+pull-request lifecycle belongs in the `github-issues-and-pull-requests` skill.
 
 ## Copilot Workflow
 

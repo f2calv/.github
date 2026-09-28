@@ -1,6 +1,6 @@
 ---
 name: gitops-repository-structure
-description: 'Restructure App-of-Apps repositories, isolate namespaces, and migrate Argo ownership without deleting PVCs. - Brought to you by f2calv/.github'
+description: 'Restructure App-of-Apps repositories, isolate namespaces and migrate Argo CD ownership without deleting PVCs.'
 argument-hint: '[repository=path] [scope={audit|plan|migrate}]'
 user-invocable: true
 ---

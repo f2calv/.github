@@ -1,39 +1,16 @@
 ---
-description: 'Forward-only Microsoft.Testing.Platform and xUnit v3 conventions, plus test structure, credentials, naming, assertions and documentation.'
-applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md,**/*Tests*.csproj,**/global.json,**/.github/workflows/**,**/.vscode/tasks.json'
+description: 'C# test structure, credentials, diagnostics, naming, assertions, duplication and README conventions for xUnit v3 on Microsoft.Testing.Platform.'
+applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md,**/*Tests*.csproj'
 ---
 
 # C# Testing
 
-## Forward-Only Test Platform
+## Test Platform
 
-- Every .NET repository selects `Microsoft.Testing.Platform` in its root `global.json`, including
-    repositories that do not yet contain tests. This makes the first future test project MTP-native
-    rather than silently inheriting VSTest:
-
-    ```json
-    {
-        "test": {
-            "runner": "Microsoft.Testing.Platform"
-        }
-    }
-    ```
-
-- Use xUnit v3 for xUnit projects. Reference `xunit.v3` and, when coverage is required,
-    `Microsoft.Testing.Extensions.CodeCoverage`. Remove `xunit`, `xunit.runner.visualstudio`,
-    `Microsoft.NET.Test.Sdk`, `coverlet.collector` and other VSTest-era packages.
-- Configure xUnit v3 test projects as MTP executables with `OutputType=Exe`, `IsTestProject=true`,
-    `UseMicrosoftTestingPlatformRunner=true` and `TestingPlatformDotnetTestSupport=true`.
-- Use the .NET 10 native test command: `dotnet test --project <path.csproj>` or
-    `dotnet test --solution <path.slnx>`. Never pass a project or solution as a bare positional
-    argument, and do not use `dotnet run` as the normal test command.
-- Pass MTP and xUnit v3 arguments directly, without the legacy `--` separator. Use native options
-    such as `--filter-class`, `--filter-method`, `--filter-trait`, `--filter-not-trait`, `--coverage`
-    and `--coverage-output-format cobertura`; never use VSTest `--filter`, `--collect`, `--logger` or
-    coverlet MSBuild properties.
-- Shared workflows and actions must require the MTP selection and fail with an actionable error when
-    it is absent. Do not retain VSTest detection, fallback command lines or dual coverage pipelines;
-    this workspace is forward-only.
+- Tests run on `Microsoft.Testing.Platform` with xUnit v3 only — no VSTest packages, properties or
+  command lines. Use the `dotnet-test-platform` skill for project setup, migration, `dotnet test`
+  syntax, filters, coverage and CI steps.
+- **Do not run tests without explicit user approval.**
 
 ## Folder Structure
 
@@ -71,7 +48,12 @@ Additional subfolders are permitted where a project has a genuinely distinct tes
 - Keep integration tests read-only against the target service wherever the service supports it. Do not create, update or delete shared remote resources as a side effect of a test run.
 - Perform account registration, linking or interactive authentication outside the test run. Never initiate an interactive login or a registration flow in CI.
 - Exception: a lightweight integration test needing only `HttpClient` may take `ITestOutputHelper` directly without `TestBase`.
-- **Do not run integration tests without explicit user approval.**
+
+## Fixtures and Disposal
+
+- Dispose every `ServiceProvider` a test builds with `using` / `await using`.
+- Make helper classes `static` when they have no instance state.
+- Avoid shared mutable static state in fixtures; each test must be independently repeatable.
 
 ## Diagnostic Output
 
@@ -125,12 +107,6 @@ Test code is held to the same duplication gate as production code, and copy-past
 - Keep shared generators and fixtures in dedicated `*TestData.cs` files at the `Tests/` root.
 - Keep hardcoded reference data for regression tests in `*Patterns.cs` files.
 - Put stateless object-building helpers in `static` helper classes.
-
-## Test Runner Changes
-
-- Before changing test runner or test platform, verify console-output visibility and `ITestOutputHelper` behaviour against the repository's exact SDK, xUnit and test-platform versions. Quiet command output is easily misread as no test execution.
-- Record the commands, verbosity settings, discovered-test counts, passed/failed/skipped totals and observed output behaviour from that investigation.
-- Do not remove `ITestOutputHelper` or swap runners on the strength of an unverified limitation.
 
 ## Test Project README
 

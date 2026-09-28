@@ -71,26 +71,9 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 - An undocumented incompatibility blocks the release train until its cause is understood and either
   fixed or recorded as a repository-specific hold.
 
-## Publication
+## Publication and Release Trains
 
-- Publish packages only through the repository's established CI workflow and trusted package-source
-  authentication. Never put a NuGet API key in source, configuration or logs.
-- Derive the package version from the immutable release tag produced by CI. Do not predict a release
-  version locally and use it as publication evidence.
-- A successful push is not proof that consumers can restore a package. Verify every expected package
-  ID and exact version through the configured package source's restore endpoint before updating
-  downstream repositories. The `dotnet-release-train` helpers support public nuget.org only;
-  authenticated feeds require a separate credential-safe implementation.
-- Do not continue a dependent release train when one package from a multi-package producer is absent.
-- Use `--skip-duplicate` only to make an idempotent retry safe. It does not permit rebuilding or
-  replacing an immutable published version.
-
-## Release Trains
-
-- Use the `dotnet-release-train` skill for dependency-ordered releases across repositories.
-- Never add private repository coordinates, dependency topology or project details to reusable
-  public instructions or examples.
-- Pause downstream work until the upstream GitHub release and every consumed NuGet package version
-  are verified.
-- Rebuild each consumer in Release after changing internal package versions, even when its Debug build
-  already succeeds against local project references.
+- Publish packages only through the repository's established CI workflow with trusted package-source
+  authentication, deriving the version from the immutable release tag CI produces.
+- Use the `dotnet-release-train` skill to verify publication and to propagate releases through
+  dependent repositories.

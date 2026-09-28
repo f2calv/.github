@@ -1,6 +1,6 @@
 ---
 name: devcontainer
-description: 'Create, update, reconcile, align, and validate Dev Containers. Use when adding file types that need local tools or VS Code extensions, changing images, Features, lifecycle scripts, mounts, lockfiles, or synchronizing host/container editor behavior, Dependabot, CI, documentation, and sibling repositories, or when diagnosing a Dev Container that fails to start on one workstation.'
+description: 'Create, update, align and validate Dev Containers: images, Features, lifecycle scripts, mounts, lockfiles, extensions and host/editor sync across repositories. Use when adding tooling or diagnosing a Dev Container that fails to start.'
 argument-hint: 'mode={add|update|upgrade|reconcile|audit|align} [scope=repository-or-workspace]'
 user-invocable: true
 compatibility: 'Authoring is cross-platform. Rebuild validation requires Docker and VS Code Dev Containers or the Dev Container CLI.'

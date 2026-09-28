@@ -1,5 +1,5 @@
 ---
-description: 'Application configuration layering, options synchronisation, command-line precedence and secret-safety conventions.'
+description: 'Application configuration layering, options types and validation, options synchronisation, command-line precedence and secret-safety conventions.'
 applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 ---
 
@@ -26,7 +26,9 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 
 ## Options Synchronisation
 
-- Define every configuration property with a sensible default on the options record or class, so the application runs out of the box and each value remains overridable.
+- Give every optional configuration property an explicit safe default on the options record or
+  class, so the application runs out of the box and each value remains overridable. Keep required
+  credentials and identifiers required rather than supplying plausible-looking fallback values.
 - Treat options-type defaults as the canonical base configuration. Do not repeat a key in
   `appsettings.json` when its value is identical to the code default; the duplicate adds noise and
   can drift. Keep base-file keys only for required values without a safe code default, deliberate
@@ -36,25 +38,39 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 - Add a key to an environment-specific file only when that environment genuinely needs to override the type's default.
 - Add a key to a local file only when it differs from the tracked defaults or contains private
   configuration that cannot be committed to a public repository.
-- Apply data-annotation validation to required values, and preserve existing validation when changing an options model.
+
+## Options Types
+
+- **Validation attributes**: bindable properties carry `System.ComponentModel.DataAnnotations`
+  attributes — `[Url]` on URIs, `[Range(1, 65535)]` on ports, `[MinLength(1)]` on secrets and
+  identifiers, `[Range(1, int.MaxValue)]` on millisecond timings, `[Range(0.0, 1.0)]` on ratios,
+  `[Phone]` on phone numbers. Nested complex objects carry `[ValidateObjectMembers]`. Preserve
+  existing validation when changing an options model.
+- **Attribute layout**: inline same-family attributes (`[Required, Range(1, 65535)]`); keep different
+  families on separate lines (`[Required, Url]` above `[JsonPropertyName]`).
+- **Boolean naming**: describe state with a `{Feature}{State}` form (`DistributedLockingEnabled`),
+  never an imperative prefix (`EnableDistributedLocking`).
+- **Constants extraction**: move `const` keys, profile names and identifiers that are not bindable
+  properties into a dedicated `static class` in the same namespace (for example `CacheProfiles` beside
+  `CacheConfig`), keeping the options type focused on its bindable shape.
+- **Duration properties** (conventionally `Ms`-suffixed) on a configuration root link every consuming
+  service in XML documentation: `/// Used by <see cref="MyCompany.Services.WidgetMonitorBgService"/>.`
 
 ## Secret Safety
 
-- In a public repository, tracked configuration files must never contain real secrets or personally
-  identifiable information. Use safe public defaults, generic placeholders or `null`.
-- Gitignored local files may contain private values needed for development or deployment, but remain
-  credentials borrowed from their source: never print them, persist them to logs or copy them into a
-  public repository.
-- Never commit credentials, access or refresh tokens, secret-bearing connection strings, API keys or
-  passwords in any repository. In a public repository, also never commit real account identifiers,
-  hostnames, IP addresses, phone numbers or tenant identifiers.
-- A private deployment repository may track non-secret environment configuration and identifiers
-  when it owns that desired state. Keep credentials in its deployment secret store rather than in a
-  ConfigMap.
-- Supply continuous integration credentials through repository secrets and environment variables.
-- Treat every file shipped in a published package, container image or sample output as public.
-- Keep credential caches, token files and account state outside the repository. Never add their contents or paths to tracked examples, logs, tests or documentation.
-- Never log or echo a secret, an `Authorization` header, or any encoded form derived from one, including in progress output, error messages and exception detail.
+The shared credential and confidentiality rules apply in full. Configuration-specific additions:
+
+- Tracked configuration in a public repository holds only safe public defaults, generic placeholders
+  or `null` — never secrets, personal data, real account or tenant identifiers, hostnames or
+  addresses.
+- Gitignored local files may hold private development or deployment values; never print them, log
+  them or copy them into a public repository.
+- A private deployment repository may track non-secret environment configuration and identifiers it
+  owns. Keep credentials in its deployment secret store, not a ConfigMap.
+- Supply CI credentials through repository secrets and environment variables.
+- Treat every file shipped in a package, container image or sample output as public.
+- Keep credential caches, token files and account state outside the repository and out of tracked
+  examples, logs, tests and documentation.
 - Keep tracked examples runnable once the consumer supplies their own credentials.
 
 ## Command-Line Precedence

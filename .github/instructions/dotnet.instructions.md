@@ -33,9 +33,8 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
   `TreatWarningsAsErrors`, unused private members, unread fields, formatting drift, and naming
   violations must fail builds rather than remain editor suggestions.
 - Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members. Do not add them to `WarningsNotAsErrors`.
-- Promote other style preferences from suggestion to warning only in small measured tranches whose
-  complete fleet fallout can be fixed together. Do not mix namespace, API, or architecture changes
-  into a mechanical formatting rollout.
+- Promote other style preferences to warnings only through the `editorconfig-management` skill's
+  measured tranches.
 - Analyzer packages are declared once centrally and flow to every project; do not add them ad hoc per project.
 
 ## Solution Format
@@ -55,10 +54,13 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 - Stable .NET releases do not require an SDK version in `global.json`; let the installed compatible stable SDK and the CI setup step select it.
 - Pin the SDK `version` and `rollForward` policy when using a preview SDK, isolating an SDK regression, or when a workflow requires bit-for-bit reproducibility.
-- Keep `global.json` when it configures repository-wide .NET CLI behaviour without pinning an SDK, such as selecting the test runner.
+- Keep `global.json` when it configures repository-wide .NET CLI behaviour without pinning an SDK.
+  Every .NET repository's root `global.json` selects the test runner with
+  `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, even before it has tests; use the
+  `dotnet-test-platform` skill for test project setup and migration.
 
 ## Verification
 
 - After any refactoring, build the **entire solution** rather than only the affected project, so compilation errors in dependent projects surface immediately.
 - Where Debug and Release solutions both exist, build the Debug solution locally; it is the one wired to local project references.
-- Ask before running a build. Never run tests automatically — they may be integration tests requiring credentials or external services.
+- Ask before running a build.

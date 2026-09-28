@@ -195,7 +195,16 @@ Applications, then treats each stateful namespace move as a separate backup-and-
 The [`dotnet-mcp` skill](.github/skills/dotnet-mcp/SKILL.md) provides a create, update, and audit
 workflow for read-only application tools over Streamable HTTP. It covers current SDK verification,
 feature and role gating, live runtime snapshots, bounded channel history, privacy, HTTP access
-controls, and protocol-level validation. Naming and description rules remain in the shared MCP
+controls, and protocol-level validation. Detailed result, HTTP security and validation guidance loads
+on demand from its `references/` folder. Naming and description rules remain in the shared MCP
+instructions.
+
+## GitHub issues and pull requests
+
+The [`github-issues-and-pull-requests` skill](.github/skills/github-issues-and-pull-requests/SKILL.md)
+runs the issue and pull-request lifecycle: issue types, labels and quality, descriptions generated
+from the full branch diff, Dependabot folding, code-scanning and SonarQube gates, and merge
+readiness. Always-on branch, remote-operation and release-tag invariants stay in the GitHub
 instructions.
 
 ## .NET release train
@@ -219,6 +228,19 @@ Run the helper regression suite through npm:
 ```powershell
 npm run test:release-train
 ```
+
+## .NET test platform
+
+The [`dotnet-test-platform` skill](.github/skills/dotnet-test-platform/SKILL.md) configures and
+migrates repositories to Microsoft.Testing.Platform with xUnit v3, covering the `global.json` runner
+selection, test project properties, native `dotnet test` syntax, coverage and CI steps. Test
+structure and assertion rules remain in the shared testing instructions.
+
+## .NET performance
+
+The [`dotnet-performance` skill](.github/skills/dotnet-performance/SKILL.md) applies measured
+hot-path optimizations — `ValueTask` signatures, span parsing, `SearchValues`, frozen collections,
+`PipeReader` loops and pooled buffers — without loading them into every C# conversation.
 
 ## Create a repository
 

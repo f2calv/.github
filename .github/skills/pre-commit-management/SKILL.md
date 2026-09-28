@@ -1,6 +1,6 @@
 ---
 name: pre-commit-management
-description: 'Audit, add, align, update, run, and troubleshoot pre-commit across one repository or an explicit multi-root workspace. Use when managing .pre-commit-config.yaml, updating hook revisions or the pre-commit runtime, adding CI lint gates or Dependabot coverage, installing an opt-in pre-push hook, or running hooks without local Python through the bundled Docker fallback.'
+description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|update|run|install-pre-push|troubleshoot}] [files=...]'
 user-invocable: true
 compatibility: 'Native execution requires pre-commit 4.6.2 and Git. The fallback requires Docker. Fleet auditing requires PowerShell 7.4 and Git.'
