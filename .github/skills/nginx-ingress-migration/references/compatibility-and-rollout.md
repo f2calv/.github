@@ -116,10 +116,13 @@ CD:
 3. verify all owning Applications reconciled, the live type is correct, and referenced auth files
    exist;
 4. verify invalid credentials return 401 and an operator verifies the intended credential;
-5. remove the force/replace annotation immediately in a second commit.
+5. overwrite the annotation immediately in a second commit with
+   `argocd.argoproj.io/sync-options: Force=false,Replace=false` and verify the live value.
 
 Do not use a permanent forced replacement for credentials: it recreates the Secret on later syncs
-and can cause unnecessary authentication churn.
+and can cause unnecessary authentication churn. Merely omitting the annotation might leave the
+live force value behind after server-side apply or recreation changed field ownership. Remove the
+explicit false annotation later only when the reconciler demonstrably deletes the live field.
 
 ## TCP and UDP
 

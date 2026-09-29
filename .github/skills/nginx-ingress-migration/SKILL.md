@@ -201,7 +201,9 @@ mapping rules.
 - Secret `type` is immutable. When converting an existing `Opaque` Secret in place, stage a
   one-time Argo resource annotation `argocd.argoproj.io/sync-options: Force=true,Replace=true`,
   verify the Secret was recreated with the F5 type and the controller materialized its auth file,
-  then remove the annotation in a second commit. Never leave forced replacement enabled.
+  then overwrite it in a second commit with `Force=false,Replace=false` and verify the live
+  annotation changed. Omitting an annotation after a forced recreation might not remove the live
+  field under server-side apply ownership. Never leave forced replacement enabled.
 - Decode or print neither htpasswd data nor TLS/private key material. Verify key presence and Secret
   references only.
 
