@@ -37,8 +37,25 @@ Check more than command exit codes:
 * README examples and embedded defaults against the source values;
 * version consistency across metadata, catalogues, workflows, and consumers.
 
+For master/minion or other split ownership models, assert one host owner, no paths on the master,
+no TLS on minions, unique paths, correct namespaces, and exact rendered backend Service names.
+Render at least two master entries to catch YAML document-separator whitespace bugs.
+
 During migrations, render the old and new implementations with equivalent inputs and compare
 normalized manifests. Account for every difference as intentional, generated noise, or a defect.
+
+For backward-compatible chart features:
+
+1. render every existing fixture from the previous immutable source and the candidate;
+2. normalize only expected packaging metadata such as `helm.sh/chart`;
+3. compare the remaining manifests byte-for-byte or structurally;
+4. investigate image changes before normalizing `app.kubernetes.io/version`, because `appVersion`
+   often supplies a default image tag;
+5. render new success fixtures and assert exact generated names and annotations;
+6. run expected failures from a location chart-testing does not treat as a success fixture.
+
+When schema generation is chart-scoped, verify the changed key exists in the generated schema. A
+green generator hook is insufficient if dependency filtering caused the local chart to be skipped.
 
 ## Handoff
 
