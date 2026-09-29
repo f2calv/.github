@@ -129,6 +129,27 @@ a shared file.
   parameter, or invalid JSON. Distinguish the two before changing anything.
 - Widen the time range and re-run before concluding the query is wrong. Comparing a narrow window
   against a wide one separates an empty window from a broken query.
+- A counter has no series until it is first incremented, and loses it again when the producer
+  restarts. A stat panel over an event counter where absence means zero (drops, errors, timeouts)
+  therefore shows no data on a healthy system; append `or vector(0)` after the aggregation, for
+  example `sum(increase(app_dropped_total[$__range])) or vector(0)`. Aggregate first so the fallback
+  cannot collide with a labelled series.
+- For the same reason, rate panels over rarely incremented counters show gaps after every producer
+  restart until the next event. Confirm a restart before treating a gap as a scrape outage.
+
+## Metric Names from OpenTelemetry
+
+- Metrics exported through OTLP and translated to Prometheus do not keep the instrument name
+  verbatim. The translation adds a unit suffix (`ms` becomes `_milliseconds`), `_total` for
+  monotonic counters, and `_ratio` for a gauge whose unit is `1`. Braced annotation units such as
+  `{message}` add nothing.
+- A panel written against the instrument name then shows no data without a warning. List the
+  exported names from the Prometheus label-values API (`/api/v1/label/__name__/values`) before
+  writing a query, and after changing an instrument's unit or type.
+- Give count-valued gauges an annotation unit such as `{message}` rather than `1`, so the exported
+  name matches the instrument name. Up-down counters are sums, not gauges, and are unaffected.
+- After a rename, the old series remains in Prometheus until retention expires. Query only the
+  current name rather than combining the two.
 
 ## Debugging Toolkit
 
