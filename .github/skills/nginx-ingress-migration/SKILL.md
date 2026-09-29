@@ -192,12 +192,16 @@ mapping rules.
 - Query the target Service and EndpointSlices before preserving an L4 mapping. A stale ConfigMap can
   name a Service that no longer exists or an optional backend that was retired; record such source
   defects separately from migration regressions.
-- For Basic Auth, create a migration Secret whose F5-required data key is `htpasswd`; do not mutate
-  the source Secret's `auth` key while ingress-nginx still consumes it. Point the migrated Ingress
-  at the new Secret through the F5 Basic Auth annotation.
+- For Basic Auth, create a migration Secret with `type: nginx.org/htpasswd` and the F5-required data
+  key `htpasswd`; do not mutate the source Secret's `auth` key while ingress-nginx still consumes
+  it. Point the migrated Ingress at the new Secret through the F5 Basic Auth annotation.
 - For an approved non-parallel cutover, a coordinated key rename can be acceptable when source and
   target never consume the Secret concurrently. Render all owners together and retain the exact Git
   reversal; do not leave one controller reading `auth` while the other expects `htpasswd`.
+- Secret `type` is immutable. When converting an existing `Opaque` Secret in place, stage a
+  one-time Argo resource annotation `argocd.argoproj.io/sync-options: Force=true,Replace=true`,
+  verify the Secret was recreated with the F5 type and the controller materialized its auth file,
+  then remove the annotation in a second commit. Never leave forced replacement enabled.
 - Decode or print neither htpasswd data nor TLS/private key material. Verify key presence and Secret
   references only.
 
@@ -218,6 +222,13 @@ For Helm-generated routes, assert that protocol annotations equal actual rendere
 every shared host has exactly one master or consolidated owner, masters contain no paths, minions
 contain no TLS or conflicting paths, and every Ingress or TransportServer receives an accepted or
 valid controller event.
+
+For every Basic Auth route, inspect the generated NGINX configuration for its
+`auth_basic_user_file`, verify that file exists inside the controller Pod, and compare its
+fingerprint with the live Secret without printing content. A 401 response without credentials does
+not prove the file exists: NGINX emits the challenge before it attempts password verification.
+After materialization, verify an invalid credential returns a normal 401 and an authorized operator
+confirms a valid credential succeeds.
 
 Ask before running tests or suites. Ask separately before accessing a cluster. When authorized,
 verify controller logs/events, configuration acceptance, status, readiness, metrics, certificates,

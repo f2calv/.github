@@ -85,13 +85,14 @@ Ingress backend, then assert the exact rendered value.
 ## Basic Auth Secrets
 
 Community ingress-nginx commonly reads an htpasswd file from the Secret data key `auth`. F5 NGINX
-Ingress Controller expects the referenced Secret to contain `htpasswd`.
+Ingress Controller 5.6.3 expects the referenced Secret to have type `nginx.org/htpasswd` and contain
+the file in data key `htpasswd`.
 
 During parallel operation:
 
 1. Keep the source Secret unchanged.
-2. Create a separately named target Secret with the same htpasswd bytes under `htpasswd`, using a
-   secret-safe process outside public examples.
+2. Create a separately named target Secret with type `nginx.org/htpasswd` and the same htpasswd
+   bytes under `htpasswd`, using a secret-safe process outside public examples.
 3. Reference it with the version-supported F5 Basic Auth annotation.
 4. Verify a valid credential, an invalid credential, no credential, response code, challenge
    header, and realm.
@@ -99,6 +100,26 @@ During parallel operation:
    expired.
 
 Never print or decode either Secret during inspection or validation.
+
+An `Opaque` Secret can produce a generated `auth_basic_user_file` directive while F5 does not
+materialize the referenced file under `/etc/nginx/secrets`. The unauthenticated request still
+returns 401 because NGINX sends the challenge before reading the file; credential submission then
+fails regardless of correctness. Diagnose this by checking `nginx -T`, verifying the referenced
+file exists, and comparing file/Secret fingerprints without outputting either payload.
+
+Kubernetes makes `Secret.type` immutable. For a non-parallel in-place conversion managed by Argo
+CD:
+
+1. commit the new type and add the resource annotation
+   `argocd.argoproj.io/sync-options: Force=true,Replace=true`;
+2. let Argo delete and recreate the Secret;
+3. verify all owning Applications reconciled, the live type is correct, and referenced auth files
+   exist;
+4. verify invalid credentials return 401 and an operator verifies the intended credential;
+5. remove the force/replace annotation immediately in a second commit.
+
+Do not use a permanent forced replacement for credentials: it recreates the Secret on later syncs
+and can cause unnecessary authentication churn.
 
 ## TCP and UDP
 
