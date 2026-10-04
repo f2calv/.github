@@ -130,4 +130,3 @@ Before declaring success:
 - backup targets remain Available;
 - no temporary benchmark state remains;
 - configuration management is idempotent.
-
