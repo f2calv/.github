@@ -26,6 +26,10 @@ repository settings, required checks and SonarQube setup. How the agent works da
 
 ## Remote Operations
 
+- Treat an explicit request to create or edit a GitHub issue or pull request as authorization to
+  perform the operation immediately. Use a non-interactive tool or API path; never open a
+  confirmation form in the VS Code chat. Report the resulting URL so the user can review it later
+  in their browser.
 - Review pull requests locally in the current editor session or with a local subagent. Never request
   GitHub Copilot code review, invoke a cloud coding agent or start another remote review workflow
   unless the user explicitly requests that remote operation. A general request to review, publish or
@@ -33,8 +37,12 @@ repository settings, required checks and SonarQube setup. How the agent works da
 - Link a pull request to an issue only when both repositories have the same visibility: public to
   public, or private to private. Never link or identify an issue across the public/private boundary
   in either direction.
-- Never merge a pull request while a required status check or the SonarQube Quality Gate is absent,
-  pending or failing on its current head.
+- Never merge a pull request while a required status check is absent, pending or failing on its
+  current head.
+- Require the SonarQube Quality Gate when the repository is configured for supported pull-request
+  analysis. Never treat an expected but absent, pending or failing gate as passing. When the
+  repository's SonarQube edition or GitHub visibility cannot produce pull-request analysis, record
+  that limitation in the merge report and rely on the repository's required checks instead.
 
 ## Releases
 

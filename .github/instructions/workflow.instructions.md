@@ -50,6 +50,11 @@ pull-request lifecycle belongs in the `github-issues-and-pull-requests` skill.
 - **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable and preferred where the changes are disconnected, or where one repository should not know about the other. A single shared message is fine when the change is genuinely coupled.
 - **Git tooling**: Use command-line `git` through the terminal for all git operations. Do not use graphical git integrations; the command line is lighter and makes each operation explicit.
 - **Absolute paths in terminal commands**: Always pass absolute paths (for example `git -C <absolute-path> ...`). Never rely on a `cd` or `Push-Location` persisting within or between commands.
+- **Confirm alternate checkouts explicitly**: Before creating or using a clean deployment clone,
+  cutover clone, temporary clone, secondary checkout or Git worktree, explain why the current
+  checkout is unsuitable and ask for permission through a UI yes/no choice. Do not infer approval
+  from authorization to build, deploy, commit or push. State the proposed path and intended lifetime,
+  and keep using the current checkout when permission is declined.
 - **Read before writing**: Consult existing repository notes and conventions for a subsystem before changing it, not after.
 - **Never auto-install git hooks**: Do not wire `pre-commit install` into a dev container's post-create step, a setup script or setup documentation. The per-commit cost is fixed interpreter startup per hook, not proportional to the number of files changed. Use the `pre-commit-management` skill for execution and updates; offer its explicit pre-push install mode only when the user requests a local hook.
 

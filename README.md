@@ -182,6 +182,13 @@ on-demand references cover chart contracts, dependency and schema maintenance, r
 rendering, OCI packaging, and safe Grafana dashboard delivery without loading those details into
 every chart-editing conversation.
 
+## NGINX ingress migration
+
+The [`nginx-ingress-migration` skill](.github/skills/nginx-ingress-migration/SKILL.md) migrates
+Kubernetes community ingress-nginx to F5 NGINX Ingress Controller OSS through explicit
+compatibility mapping, isolated parallel controllers, staged HTTP and TCP/UDP cutover, tested
+rollback, and evidence-gated cleanup.
+
 ## GitOps repository structure
 
 The [`gitops-repository-structure` skill](.github/skills/gitops-repository-structure/SKILL.md)

@@ -65,10 +65,16 @@ dependencies, templates, documentation, fixtures, and release boundaries.
 
 * Keep common installations concise and explicit.
 * Put Kubernetes-native scheduling, security, persistence, and resource settings behind typed values.
+* When an annotation or field references a generated resource name, derive it from the same helper
+  that renders the resource. Prefer a small typed `valueFrom` contract over arbitrary `tpl` or
+  consumer-side reconstruction of release-prefixed names.
 * Keep mutually exclusive workload modes and conflicting settings guarded by schemas or template
   failures.
 * Let each dependency validate its own values. An umbrella chart validates the structure it owns
   without copying a subchart schema.
+* Let an application umbrella own host-level resources shared by its aliases, such as one
+  mergeable master Ingress, while leaf dependencies own their route-level minions. Keep
+  cross-application masters in the consuming GitOps repository.
 * Treat chart behavior, metadata, values, schemas, lock files, examples, and documentation as one
   public contract.
 
@@ -113,6 +119,11 @@ At minimum, validation should cover:
 6. documentation and version consistency;
 7. semantic comparison with the previous rendering during migrations.
 
+For additive reusable-chart changes, render every existing fixture from the previous and candidate
+chart, normalize only intentional metadata such as the chart-version label, and require semantic
+equality. Keep `appVersion` unchanged when it supplies a default image tag and the packaged
+application did not change.
+
 Report commands that were not run and the reason. A successful `helm lint` alone does not prove
 conditional templates, invalid inputs, package contents, or migration equivalence.
 
@@ -121,8 +132,16 @@ conditional templates, invalid inputs, package contents, or migration equivalenc
 * If a dependency alias renders nothing, verify the alias key, `condition`, and parent values path.
 * If schema validation rejects dependency values, check whether the umbrella schema incorrectly
   closes or duplicates the dependency contract.
+* If `--no-dependencies` makes a schema generator skip a local chart whose name also appears as a
+  dependency, split generation into one chart-scoped hook per local chart.
+* Keep expected-failure fixtures outside a chart-testing `ci/` directory when every file there is
+  treated as a success case. Execute those fixtures from a dedicated test script.
 * If packaged fixtures or source files appear in the archive, review `.helmignore` and inspect the
   generated package.
+* In Helm templates, `default true $value` converts an explicit `false` back to `true`; use
+  `hasKey` when a boolean defaults on but must remain explicitly disableable.
+* Aggressive `{{- ... -}}` trimming around ranged multi-document templates can join a document
+  separator to the previous YAML line. Render multiple entries and parse the result, not just one.
 * If Grafana tokens fail Helm parsing, remove whole-document `tpl` and use exact placeholder
   replacement.
 * If a dashboard appears twice, find every release emitting the same UID and assign one owner per
