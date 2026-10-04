@@ -26,6 +26,10 @@ repository settings, required checks and SonarQube setup. How the agent works da
 
 ## Remote Operations
 
+- Treat an explicit request to create or edit a GitHub issue or pull request as authorization to
+  perform the operation immediately. Use a non-interactive tool or API path; never open a
+  confirmation form in the VS Code chat. Report the resulting URL so the user can review it later
+  in their browser.
 - Review pull requests locally in the current editor session or with a local subagent. Never request
   GitHub Copilot code review, invoke a cloud coding agent or start another remote review workflow
   unless the user explicitly requests that remote operation. A general request to review, publish or
