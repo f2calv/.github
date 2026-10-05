@@ -16,12 +16,12 @@ pull-request lifecycle belongs in the `github-issues-and-pull-requests` skill.
 - **Auto-commit and auto-push are independent session switches**: Both default to off. Enable or disable either switch only when the user explicitly asks to change its ongoing status. A one-shot request such as "commit this" or "push this branch" authorizes that operation only; it does not enable the corresponding switch. Auto-commit never implies auto-push.
 - **Surface enabled automation periodically**: When either switch is on, pause at a natural phase boundary after a substantial batch and ask: "We are currently auto-committing changes and auto-pushing. Would you like to change this status?" Adapt the sentence when only one switch is enabled. Do not interrupt every individual commit or push.
 - **Respect switch changes immediately**: Before each automatic commit or push, apply the latest user instruction. Never push when auto-push is off unless the user gives explicit one-shot approval, even when auto-commit is on or prior work in the session was pushed.
-- **Never commit directly on the default branch**: Before creating any user-requested or automatic
-  commit, resolve the repository's default branch and compare it with the current branch. When they
-  match, automatically create and switch to a new branch first, following the branch-history
-  inference rules in `github.instructions.md`. Do not treat a request to commit as authorization to
-  commit on the default branch; changes reach it through a pull request. A repository-specific
-  instruction may define an explicit exception.
+- **Never commit directly on the default branch unless repository-specific instructions explicitly
+  override this rule**: Before creating any user-requested or automatic commit, resolve the
+  repository's default branch and compare it with the current branch. When they match, automatically
+  create and switch to a new branch first, following the branch-history inference rules in
+  `github.instructions.md`. Do not treat a request to commit as authorization to commit on the
+  default branch; changes reach it through a pull request.
 - **Small unrelated tweaks may ride on the current feature branch**: A small ad hoc change, such as
   a Copilot instruction or skill tweak or a Markdown update, may be committed to the current
   non-default branch even when it is unrelated to that branch's feature. Do not create a separate
