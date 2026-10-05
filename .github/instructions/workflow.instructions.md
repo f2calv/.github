@@ -93,6 +93,20 @@ Repositories follow a consistent layout, regardless of language:
   *.{bat,[bB][aA][tT]} text eol=crlf
   ```
 
+## Bootstrapping New Repositories
+
+- When the user says a new repository is similar to named repositories and identifies the
+  conventions or files to carry over, treat those exemplars and the request as the approved design.
+  Inspect their current files and reproduce the applicable conventions directly, changing only the
+  new repository's identity and genuinely different behavior.
+- Do not create `.azure/requirements.json`, `project-plan.md`, questionnaires, manifests or another
+  fixed planning receipt unless the user explicitly asks for a requirements or planning artifact.
+  Bootstrap instructions in the conversation remain the source of truth.
+- Copy conventions, structure and public-safe defaults, never repository-specific identifiers,
+  credentials, deployment coordinates or behavior the new repository does not yet implement.
+- Verify the resulting file inventory against the named exemplars and document intentional
+  omissions rather than filling them with speculative placeholders.
+
 ## Forward-Only Maintenance
 
 - Maintain only current supported behaviour. Remove deprecated, retired, legacy and no-op code instead of preserving compatibility aliases or shims.
