@@ -29,9 +29,10 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Analyzers
 
 - Configure analyzer severities in `.editorconfig`, which is the single source of truth for style and analyzer rules; enable `EnforceCodeStyleInBuild` so style rules are enforced by the compiler and not only by the IDE.
-- Set `IDE0051`, `IDE0052`, `IDE0055`, and the shared naming rules to `warning`. With
-  `TreatWarningsAsErrors`, unused private members, unread fields, formatting drift, and naming
-  violations must fail builds rather than remain editor suggestions.
+- Use the canonical DotNet EditorConfig tranche for warning severities, including `IDE0051`,
+  `IDE0052`, `IDE0055`, explicit interface-member accessibility, safe syntax modernizations,
+  logging argument cost and the shared naming rules. With `TreatWarningsAsErrors`, promoted
+  violations fail builds rather than remaining editor suggestions.
 - Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members. Do not add them to `WarningsNotAsErrors`.
 - Promote other style preferences to warnings only through the `editorconfig-management` skill's
   measured tranches.
