@@ -39,8 +39,8 @@ not enforce, so apply them while writing:
 - Allman braces. Omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using` bodies.
 - PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching (`is`, `not`, switch
   expressions); nullable reference types and implicit usings enabled; latest stable C# (currently 14.0).
-- Expression bodies for accessors, properties, indexers, lambdas and single-expression methods, not
-  for constructors, operators or local functions. Move `=>` to the next line when it would scroll.
+- Expression bodies for accessors, properties, indexers, lambdas, constructors and single-expression
+  methods, not operators or local functions. Move `=>` to the next line when it would scroll.
 - Explicit interface properties use accessor blocks (`{ get => …; }`), never `=>`, and carry
   `/// <inheritdoc/>`.
 - Wrap long parameter lists one per line, with the closing parenthesis and any `: base(...)` on its
