@@ -29,8 +29,11 @@ dotnet_diagnostic.IDE0046.severity = warning
 dotnet_diagnostic.IDE0047.severity = warning
 dotnet_diagnostic.IDE0048.severity = warning
 dotnet_diagnostic.IDE0053.severity = warning
+dotnet_diagnostic.IDE0059.severity = warning
 dotnet_diagnostic.IDE0065.severity = warning
+dotnet_diagnostic.IDE0075.severity = warning
 dotnet_diagnostic.IDE0078.severity = warning
+dotnet_diagnostic.IDE0090.severity = warning
 dotnet_diagnostic.IDE0161.severity = warning
 dotnet_diagnostic.IDE0200.severity = warning
 dotnet_diagnostic.IDE0270.severity = warning
@@ -43,6 +46,7 @@ dotnet_diagnostic.IDE0350.severity = warning
 
 # These correctness and performance diagnostics have non-breaking fixes.
 dotnet_diagnostic.CA1510.severity = warning
+dotnet_diagnostic.CA1859.severity = warning
 dotnet_diagnostic.CA1861.severity = warning
 dotnet_diagnostic.CA1869.severity = warning
 dotnet_diagnostic.CA1873.severity = warning
@@ -54,6 +58,10 @@ dotnet_diagnostic.IDE0058.severity = none
 
 # Public namespaces intentionally model API ownership rather than physical folders.
 dotnet_diagnostic.IDE0130.severity = none
+
+# Range/index syntax is unavailable to libraries that still target netstandard2.0.
+dotnet_diagnostic.IDE0056.severity = none
+dotnet_diagnostic.IDE0057.severity = none
 
 #### Core EditorConfig Options ####
 
@@ -266,9 +274,14 @@ dotnet_naming_rule.types_should_be_pascal_case.severity = warning
 dotnet_naming_rule.types_should_be_pascal_case.symbols = types
 dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case
 
-dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = warning
-dotnet_naming_rule.non_field_members_should_be_pascal_case.symbols = non_field_members
-dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.severity = warning
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.symbols = methods_and_events
+dotnet_naming_rule.methods_and_events_should_be_pascal_case.style = pascal_case
+
+# Existing public packages can contain property names that require a versioned breaking migration.
+dotnet_naming_rule.properties_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.properties_should_be_pascal_case.symbols = properties
+dotnet_naming_rule.properties_should_be_pascal_case.style = pascal_case
 
 # Symbol specifications
 
@@ -280,9 +293,13 @@ dotnet_naming_symbols.types.applicable_kinds = class, struct, interface, enum
 dotnet_naming_symbols.types.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
 dotnet_naming_symbols.types.required_modifiers =
 
-dotnet_naming_symbols.non_field_members.applicable_kinds = property, event, method
-dotnet_naming_symbols.non_field_members.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
-dotnet_naming_symbols.non_field_members.required_modifiers =
+dotnet_naming_symbols.methods_and_events.applicable_kinds = event, method
+dotnet_naming_symbols.methods_and_events.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.methods_and_events.required_modifiers =
+
+dotnet_naming_symbols.properties.applicable_kinds = property
+dotnet_naming_symbols.properties.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
+dotnet_naming_symbols.properties.required_modifiers =
 
 # Naming styles
 

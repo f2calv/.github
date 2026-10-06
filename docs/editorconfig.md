@@ -45,11 +45,25 @@ does not match generated output. Use `-WhatIf` to preview a write operation with
 
 ## Enforcement
 
-The first enforcement tranche promotes formatting (`IDE0055`), unused private members (`IDE0051`
-and `IDE0052`), and naming rules to warning. .NET repositories set `EnforceCodeStyleInBuild` and
-`TreatWarningsAsErrors`, so these violations fail builds rather than remaining editor suggestions.
+The build-enforced .NET profile promotes formatting, unused private members, interface/type and
+method/event naming, safe C# modernizations, guard clauses, avoidable allocations, logging argument
+cost, and xUnit assertion-result reuse to warnings. The canonical fragment contains the exact rule
+list. .NET repositories set `EnforceCodeStyleInBuild` and `TreatWarningsAsErrors`, so these
+violations fail builds rather than remaining editor suggestions.
+
+The profile deliberately does not enforce:
+
+- `IDE0058`, because fluent APIs, assertions, concurrency primitives and mutable builders routinely
+ return values that callers intentionally ignore;
+- `IDE0130`, because public namespaces model API ownership and intentionally need not mirror folders;
+- `IDE0056` and `IDE0057`, because their range/index fixes do not compile in libraries targeting
+ `netstandard2.0`;
+- property naming as a build error, because published packages can contain legacy public property
+ names that require a versioned breaking migration. Interface, type, method and event naming remain
+ build-enforced.
+
 Other style preferences remain standardized suggestions until a measured rollout can promote a
-small related set without mixing mechanical cleanup with namespace, API, or architecture changes.
+small related set without mixing mechanical cleanup with namespace, API or architecture changes.
 
 Formatting settings remain in EditorConfig, while `.gitattributes` owns Git checkout line-ending
 normalization. Language formatters may apply the declared rules but must not define a conflicting
@@ -60,7 +74,9 @@ policy.
 Apply policy changes in reviewable stages:
 
 1. Generate the target `.editorconfig` and inspect the policy-only diff.
-2. Apply mechanical formatting separately from behavioral changes.
+2. Apply mechanical formatting separately from behavioral changes. In multi-target repositories,
+   apply fixes one project at a time; solution-wide `dotnet format` can merge target-specific fixes
+   into conflict markers or duplicate edits. Use the solution only for read-only verification.
 3. Enable `EnforceCodeStyleInBuild` in the repository root `Directory.Build.props`.
 4. Build the complete solution and correct every warning promoted to an error.
 5. Run the generator with `-Check` and the repository's normal validation before publishing.
