@@ -36,8 +36,11 @@ applyTo: '**/mcp.json,**/.mcp.json'
   and include the environment or data scope only when it prevents ambiguity.
 - Reuse shared endpoint and credential inputs across related HTTP servers instead of prompting once
   per route.
-- Pin local server packages, container images and source checkouts to an immutable version or digest.
-  Never use `latest`, an unversioned package invocation or an unpinned Git branch.
+- Use the latest stable MCP package and container image by default because MCP implementations evolve
+  quickly. Docker-launched servers use `--pull=always` with the image's `latest` tag so every start
+  checks for updates. Pin an immutable package or image only when a documented compatibility or
+  supply-chain constraint requires it.
+- Pin source checkouts to immutable commits; never invoke an unpinned Git branch.
 - For PowerShell stdio wrappers, use `-NoProfile` and `-NonInteractive`. Resolve workspace scripts via
   `${workspaceFolder}` rather than an absolute path.
 - Pass configuration as separate argument-array entries. Do not construct a shell command string or
