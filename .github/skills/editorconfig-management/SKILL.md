@@ -41,6 +41,7 @@ The central repository owns:
 | `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
 | `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
 | `.scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
+| `.scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
 | `.scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
@@ -130,8 +131,23 @@ does not pass its own drift check is a failure.
 5. In multi-target .NET repositories, never apply fixes solution-wide. Run `dotnet format` once per
    project and diagnostic family, then verify at solution scope. Roslyn can otherwise merge
    target-specific edits into literal conflict markers or duplicate expressions.
-6. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
-7. Run `git diff --check` and parse every changed structured file.
+6. Route `IDE*` diagnostics through `dotnet format <project> style --diagnostics ...` and `CA*`
+   diagnostics through `dotnet format <project> analyzers --diagnostics ...`. Verify with the same
+   subcommand plus `--verify-no-changes`; the wrong subcommand can exit successfully while silently
+   skipping the requested diagnostics. Prefer the central helper for repeatable repository passes:
+
+   ```powershell
+   ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040
+   ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040 `
+      -Check
+   ```
+
+7. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
+8. Run `git diff --check` and parse every changed structured file.
 
 ### 5. Tighten .NET Enforcement
 
