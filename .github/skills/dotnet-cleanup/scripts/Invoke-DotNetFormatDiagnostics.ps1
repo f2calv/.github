@@ -18,9 +18,9 @@
 .PARAMETER Check
     Verifies that formatting would make no changes.
 .EXAMPLE
-    ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 -RepositoryPath ../agentizr -Diagnostic IDE0040
+    ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 -RepositoryPath ../agentizr -Diagnostic IDE0040
 .EXAMPLE
-    ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 -RepositoryPath ../agentizr -Diagnostic CA1859,CA1861 -Check
+    ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 -RepositoryPath ../agentizr -Diagnostic CA1859,CA1861 -Check
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(

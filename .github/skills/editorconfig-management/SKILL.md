@@ -41,7 +41,7 @@ The central repository owns:
 | `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
 | `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
 | `.scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
-| `.scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
+| `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
 | `.scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
@@ -137,10 +137,10 @@ does not pass its own drift check is a failure.
    skipping the requested diagnostics. Prefer the central helper for repeatable repository passes:
 
    ```powershell
-   ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
       -RepositoryPath <repository-path> `
       -Diagnostic IDE0040
-   ./.scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
       -RepositoryPath <repository-path> `
       -Diagnostic IDE0040 `
       -Check
