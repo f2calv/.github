@@ -27,6 +27,15 @@ files; the skill owns the detailed workflow and reference material.
 
 ## Values and Templates
 
+* Before creating a raw Kubernetes resource beside a Helm release, inspect the pinned chart's values
+  and rendered templates for that resource kind and behavior. When the chart can express the
+  required Ingress, Service, ConfigMap, Certificate, persistence, RBAC, monitoring or other resource
+  without changing semantics, configure it through the release's values and keep the chart as the
+  single owner.
+* Keep a raw resource only when the pinned chart lacks the capability, the resource is intentionally
+  shared across releases/applications, or it requires an independent lifecycle or sync order. Record
+  that ownership reason beside the raw resource so a later chart upgrade does not create a second
+  owner.
 * Validate owned values with `values.schema.json`; let dependencies validate their own contracts.
 * Keep reusable and umbrella schema roots open when aliases, dependency values, or compatible
   extensions require it.

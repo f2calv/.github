@@ -68,6 +68,8 @@ $script:RelaxedRules = @{
 }
 $script:SampleRules = @('DF002', 'DF005', 'DF017', 'DF022')
 $script:ProvenanceArgs = @('GIT_REPOSITORY', 'GIT_BRANCH', 'GIT_COMMIT', 'GIT_TAG', 'GITHUB_WORKFLOW', 'GITHUB_RUN_ID', 'GITHUB_RUN_NUMBER')
+$script:DotNetBuildArgs = @('WORKLOAD', 'PROJECT', 'CONFIGURATION', 'TARGET_FRAMEWORK', 'VERSION', 'GIT_REPOSITORY', 'GIT_BRANCH', 'GIT_COMMIT', 'GITHUB_WORKFLOW', 'GITHUB_RUN_ID', 'GITHUB_RUN_NUMBER')
+$script:DotNetPublishTokens = @('--configuration', '--framework', '--output', '--runtime', '--self-contained', '--no-restore', '-p:Version=', '-p:SourceRevisionId=', '-p:GitRepository=', '-p:GitBranch=', '-p:BuildWorkflow=', '-p:BuildRunId=', '-p:BuildRunNumber=')
 $script:OciLabelKeys = @('title', 'description', 'source', 'licenses', 'version', 'revision')
 $script:ExcludedDirectories = @('.git', '.devcontainer', 'node_modules', 'bin', 'obj', 'target', 'deps')
 $script:Keywords = 'FROM|RUN|COPY|ADD|ENV|ARG|ENTRYPOINT|CMD|USER|WORKDIR|EXPOSE|LABEL|VOLUME|HEALTHCHECK|SHELL|ONBUILD|STOPSIGNAL'
@@ -558,6 +560,50 @@ function Get-RawFinding {
         }
     }
 
+    $dotNetPublishCount = 0
+    foreach ($stage in @($stages | Where-Object { $_.Resolved -match 'mcr\.microsoft\.com/dotnet/sdk:' })) {
+        $publishInstructions = @($stage.Instructions | Where-Object {
+                $_.Keyword -eq 'RUN' -and ((@($_.Arguments) + $_.Heredocs) -join "`n") -match '\bdotnet\s+publish\b'
+            })
+        if ($publishInstructions.Count -eq 0) {
+            continue
+        }
+            $dotNetPublishCount += $publishInstructions.Count
+
+        $buildArgNames = @(foreach ($instruction in @($stage.Instructions | Where-Object Keyword -EQ 'ARG')) {
+                foreach ($pair in @(ConvertFrom-KeyValueArgument -Arguments $instruction.Arguments)) {
+                    $pair.Name
+                }
+            })
+        $missingBuildArgs = @($script:DotNetBuildArgs | Where-Object { $_ -notin $buildArgNames })
+        if ($missingBuildArgs.Count -gt 0) {
+            ConvertTo-Finding $stage.Line 'DF026' 'error' "The .NET publish stage is missing canonical ARGs: $($missingBuildArgs -join ', ')."
+        }
+
+        foreach ($instruction in $publishInstructions) {
+            if ($instruction.Arguments -notmatch '--network=none' -or $instruction.Arguments -notmatch '--mount=type=cache,target=/root/\.nuget/packages,sharing=shared') {
+                ConvertTo-Finding $instruction.Line 'DF026' 'error' 'The .NET publish RUN must use --network=none and the shared read-only NuGet cache from the canonical template.'
+            }
+
+            $text = (@($instruction.Arguments) + $instruction.Heredocs) -join "`n"
+            $previousIndex = -1
+            foreach ($token in $script:DotNetPublishTokens) {
+                $index = $text.IndexOf($token, [StringComparison]::Ordinal)
+                if ($index -lt 0) {
+                    ConvertTo-Finding $instruction.Line 'DF026' 'error' "The .NET publish command is missing canonical token '$token'."
+                    continue
+                }
+                if ($index -lt $previousIndex) {
+                    ConvertTo-Finding $instruction.Line 'DF026' 'error' "The .NET publish token '$token' is out of canonical order."
+                }
+                $previousIndex = [Math]::Max($previousIndex, $index)
+            }
+                if ($text -notmatch 'ln\s+-s\s+"\$WORKLOAD\.dll"\s+/app/publish/entrypoint\.dll') {
+                    ConvertTo-Finding $instruction.Line 'DF026' 'error' 'The .NET publish stage must create /app/publish/entrypoint.dll from $WORKLOAD.dll.'
+                }
+        }
+    }
+
     $finalArgs = @(foreach ($instruction in @($finalInstructions | Where-Object Keyword -EQ 'ARG')) {
             foreach ($pair in @(ConvertFrom-KeyValueArgument -Arguments $instruction.Arguments)) {
                 [pscustomobject]@{ Name = $pair.Name; Value = $pair.Value; Line = $instruction.Line }
@@ -578,6 +624,22 @@ function Get-RawFinding {
     if ($missingKeys.Count -gt 0) {
         ConvertTo-Finding $final.Line 'DF015' 'error' "The final stage is missing OCI labels: $($missingKeys -join ', ')."
     }
+
+        if ($dotNetPublishCount -gt 0) {
+            if ('WORKLOAD' -notin $argNames) {
+                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime chain must redeclare WORKLOAD for the OCI title.'
+            }
+            if ($missingKeys.Count -gt 0) {
+                ConvertTo-Finding $final.Line 'DF026' 'error' "The .NET runtime chain is missing canonical OCI labels: $($missingKeys -join ', ')."
+            }
+            if ($labelText -notmatch 'org\.opencontainers\.image\.title\s*=\s*"?\$WORKLOAD"?') {
+                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET OCI title must use $WORKLOAD.'
+            }
+            $entrypoints = @($finalInstructions | Where-Object Keyword -EQ 'ENTRYPOINT')
+            if ($entrypoints.Count -ne 1 -or $entrypoints[0].Arguments -ne '["dotnet", "entrypoint.dll"]') {
+                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime entrypoint must be ["dotnet", "entrypoint.dll"].'
+            }
+        }
 
     if ($Shape -ne 'service') {
         foreach ($instruction in @($finalInstructions | Where-Object Keyword -EQ 'EXPOSE')) {
@@ -626,19 +688,19 @@ function Get-DockerfileFinding {
     $raw = @(Get-RawFinding -Model $model -Shape $shape) + @(Test-DockerIgnore -FilePath $FilePath -ContextPath $ContextPath)
 
     $raw |
-        Where-Object { $_.Rule -notin $Skip -and (Test-RuleEnabled -Rule $_.Rule -ImageProfile $resolvedProfile) } |
-        Sort-Object Line, Rule |
-        ForEach-Object {
-            [pscustomobject]@{
-                Path     = $FilePath
-                Profile  = $resolvedProfile
-                Shape    = $shape
-                Line     = $_.Line
-                Rule     = $_.Rule
-                Severity = $_.Severity
-                Message  = $_.Message
-            }
+    Where-Object { $_.Rule -notin $Skip -and (Test-RuleEnabled -Rule $_.Rule -ImageProfile $resolvedProfile) } |
+    Sort-Object Line, Rule |
+    ForEach-Object {
+        [pscustomobject]@{
+            Path     = $FilePath
+            Profile  = $resolvedProfile
+            Shape    = $shape
+            Line     = $_.Line
+            Rule     = $_.Rule
+            Severity = $_.Severity
+            Message  = $_.Message
         }
+    }
 }
 
 function Find-Dockerfile {

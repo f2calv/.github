@@ -60,16 +60,33 @@ Describe 'Invoke-Build profiles' {
 
     It 'builds an application Release image through Docker Buildx' {
         $settings = [pscustomobject]@{ Configuration = 'Release'; ImageName = 'example'; RepositoryName = 'example'; BuilderName = 'example1'; Platforms = 'linux/amd64' }
+        Mock Resolve-DotNetVersion { '1.2.3' }
         Mock Resolve-BuildTag { 'test-tag' }
         Mock Initialize-BuildxBuilder
         Mock git { $global:LASTEXITCODE = 0; if ($args -contains 'branch') { 'main' } else { 'abc123' } }
         Mock docker { $global:LASTEXITCODE = 0 }
         Invoke-StandardBuild $settings $repositoryRoot Application 'test-tag' $null 'Worker' $null
-        Should -Invoke docker -ParameterFilter { $args -contains 'build' -and $args -contains 'WORKLOAD=Worker' }
+        Should -Invoke docker -ParameterFilter { $args -contains 'build' -and $args -contains 'WORKLOAD=Worker' -and $args -contains 'VERSION=1.2.3' }
+    }
+
+    It 'uses the Dockerfile workload default without an application assembly override' {
+        $settings = [pscustomobject]@{ Configuration = 'Release'; ImageName = 'example'; RepositoryName = 'example'; BuilderName = 'example1'; Platforms = 'linux/amd64' }
+        Mock Resolve-DotNetVersion { '1.2.3' }
+        Mock Resolve-BuildTag { 'latest-dev' }
+        Mock Initialize-BuildxBuilder
+        Mock git { $global:LASTEXITCODE = 0; 'value' }
+        Mock docker { $global:LASTEXITCODE = 0 }
+
+        Invoke-StandardBuild $settings $repositoryRoot Application $null $null $null $null
+
+        Should -Invoke docker -ParameterFilter {
+            $args -contains 'build' -and -not @($args | Where-Object { $_ -like 'WORKLOAD=*' })
+        }
     }
 
     It 'mirrors dependencies for an application Debug image' {
         $settings = [pscustomobject]@{ Configuration = 'Debug'; ImageName = 'example'; RepositoryName = 'example'; BuilderName = 'example1'; Platforms = 'linux/amd64' }
+        Mock Resolve-DotNetVersion { '1.2.3' }
         Mock Resolve-BuildTag { 'latest-dev' }
         Mock Get-DependencyRepositories { @('Shared.One') }
         Mock Sync-Dependencies
@@ -82,7 +99,7 @@ Describe 'Invoke-Build profiles' {
 
     It 'builds and smoke-tests a local yamlizr image' {
         $settings = [pscustomobject]@{ Configuration = 'Release'; ImageName = 'yamlizr'; RepositoryName = 'yamlizr'; BuilderName = 'yamlizr1'; Platforms = 'linux/amd64' }
-        Mock Resolve-YamlizrVersion { '1.2.3' }
+        Mock Resolve-DotNetVersion { '1.2.3' }
         Mock Resolve-BuildTag { 'latest-dev' }
         Mock Initialize-BuildxBuilder
         Mock Invoke-YamlizrSmokeTest
@@ -94,12 +111,13 @@ Describe 'Invoke-Build profiles' {
 
     It 'builds a SignalCli image with its project argument' {
         $settings = [pscustomobject]@{ Configuration = 'Release'; ImageName = 'signalcli'; RepositoryName = 'signalcli'; BuilderName = 'signalcli1'; Platforms = 'linux/amd64' }
+        Mock Resolve-DotNetVersion { '1.2.3' }
         Mock Resolve-BuildTag { 'latest-dev' }
         Mock Initialize-BuildxBuilder
         Mock git { $global:LASTEXITCODE = 0; 'value' }
         Mock docker { $global:LASTEXITCODE = 0 }
         Invoke-StandardBuild $settings $repositoryRoot SignalCli $null $null $null 'samples/Host.csproj'
-        Should -Invoke docker -ParameterFilter { $args -contains 'PROJECT=samples/Host.csproj' }
+        Should -Invoke docker -ParameterFilter { $args -contains 'PROJECT=samples/Host.csproj' -and $args -contains 'VERSION=1.2.3' }
     }
 
     It 'builds a multi-arch output without starting an interactive container' {
@@ -116,13 +134,13 @@ Describe 'Invoke-Build profiles' {
         finally { $env:OUTPUT = $previousOutput }
     }
 
-    It 'uses a requested yamlizr version without GitVersion' {
-        Resolve-YamlizrVersion -RequestedVersion '2.3.4' -RepositoryRoot $repositoryRoot | Should -Be '2.3.4'
+    It 'uses a requested .NET version without GitVersion' {
+        Resolve-DotNetVersion -RequestedVersion '2.3.4' -RepositoryRoot $repositoryRoot | Should -Be '2.3.4'
     }
 
-    It 'falls back to a local yamlizr version when GitVersion is unavailable' {
+    It 'falls back to a local .NET version when GitVersion is unavailable' {
         Mock Install-GitVersion { $false }
-        Resolve-YamlizrVersion -RepositoryRoot $repositoryRoot | Should -Be '0.0.1'
+        Resolve-DotNetVersion -RepositoryRoot $repositoryRoot | Should -Be '0.0.1'
     }
 
     It 'rejects a Dockerfile without sibling dependencies' {
@@ -155,7 +173,7 @@ Describe 'Invoke-Build profiles' {
     }
 
     It 'accepts a successful yamlizr smoke test' {
-        Mock docker { $global:LASTEXITCODE = 0; if ($args -contains '--version') { '1.2.3+abc' } }
+        Mock docker { $global:LASTEXITCODE = 0; if ($args -contains '--version') { '1.2.3' } }
         Invoke-YamlizrSmokeTest -Image 'example:latest' -ExpectedVersion '1.2.3'
         Should -Invoke docker -Times 2
     }
