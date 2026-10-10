@@ -24,7 +24,7 @@ ARG GITHUB_RUN_ID=0
 ARG GITHUB_RUN_NUMBER=0
 
 # -- Dependency layer ----------------------------------------------------------
-COPY --parents src/**/*.csproj ./
+COPY --parents {{SOURCE_MANIFESTS}} ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" \
         -p:Configuration="$CONFIGURATION" \

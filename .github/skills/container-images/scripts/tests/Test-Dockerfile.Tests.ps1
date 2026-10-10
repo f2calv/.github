@@ -52,6 +52,7 @@ ENTRYPOINT ["/app/app"]
     $script:DotNetCompliant = (Get-Content -LiteralPath $templatePath -Raw)
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{WORKLOAD}}', 'Example.App')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{PROJECT}}', 'src/Example.App/Example.App.csproj')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SOURCE_MANIFESTS}}', 'src/**/*.csproj')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{IMAGE_DESCRIPTION}}', 'Example .NET service')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{IMAGE_SOURCE}}', 'https://example.com/source')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SPDX_LICENSE}}', 'MIT')
