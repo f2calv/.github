@@ -161,6 +161,8 @@ Rules that need judgement stay manual. Check each by hand when authoring or migr
   `appsettings.json` only after restore.
 * `TARGETARCH` is declared late, and runtime packages are installed before the application copy.
 * Restore and publish use the same configuration, and a RID-specific publish runs `--no-restore`.
+* A .NET application publish receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
+  `Version` and `SourceRevisionId`; the same values drive the OCI version and revision labels.
 * Every stage that reads a build argument redeclares it with a default.
 * Each `VOLUME` path exists in the image, owned by the runtime user.
 * The base image is the smallest suitable one, still inside its publisher's support window.

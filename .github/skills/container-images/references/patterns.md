@@ -80,6 +80,8 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
 COPY . .
 ARG TARGETARCH
 ARG TARGETVARIANT
+ARG VERSION=0.0.0-local
+ARG GIT_COMMIT=n/a
 RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
 set -eux
 case "${TARGETARCH}${TARGETVARIANT}" in
@@ -89,7 +91,8 @@ case "${TARGETARCH}${TARGETVARIANT}" in
     *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
 esac
 dotnet publish "src/$APP_NAME/$APP_NAME.csproj" --configuration Release --runtime "$RID" \
-    --self-contained false --no-restore --output /out
+  --self-contained false --no-restore --output /out \
+  -p:Version="$VERSION" -p:SourceRevisionId="$GIT_COMMIT"
 ln -s "$APP_NAME" /out/entrypoint
 EOF
 ```
@@ -108,6 +111,9 @@ EOF
 - The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link
   starts the right application. Use `ENTRYPOINT ["/app/entrypoint"]`; it works on chiselled images
   because it needs no shell.
+- `VERSION` and `GIT_COMMIT` stamp the entry assembly with the same semantic version and source
+  revision used by the image's OCI labels. Keep any additional generated assembly metadata in the
+  repository's root `Directory.Build.props`.
 - Add `packages.lock.json` (`RestorePackagesWithLockFile`) and restore with `--locked-mode` to make
   dependency drift fail the build.
 - House defaults for .NET services: HTTP on 8080, the .NET 8+ image default, and gRPC on 5001.
