@@ -64,9 +64,12 @@ not need:
 
 ### Step 3: Author
 
-Start from [the patterns reference](references/patterns.md) or the matching public
-`multi-arch-container-*` repository. Keep comments explaining every non-obvious choice, and update
-the `.dockerignore` allow-list for every file the build reads.
+Start .NET service images from the bundled
+[published](templates/dotnet-service.dockerfile.tmpl) or
+[Debug](templates/dotnet-service-debug.dockerfile.tmpl) template. Start other workloads from the
+[patterns reference](references/patterns.md) or the matching public `multi-arch-container-*`
+repository. Preserve template ordering and formatting; explain workload-required deviations beside
+them. Update the `.dockerignore` allow-list for every file the build reads.
 
 ### Step 4: Validate
 
@@ -150,6 +153,7 @@ Exit codes: `0` no blocking findings, `2` blocking findings, `1` the audit faile
 | DF023 | warning or error | Last stage not named `final`, or no `FROM` | sample |
 | DF024 | warning | `EXPOSE` in a `job` or `tool` image | sample |
 | DF025 | warning | `.dockerignore` re-excludes a build or VCS directory without a trailing `/**` | sample |
+| DF026 | error | .NET publish stage diverges from the canonical arguments, offline cache or option order | sample |
 
 Rules about the published image follow `FROM <stage>` inheritance, so `FROM runtime AS final`
 inherits the runtime stage's `USER`, entrypoint, provenance and labels. Stages derived from the
@@ -162,7 +166,14 @@ Rules that need judgement stay manual. Check each by hand when authoring or migr
 * `TARGETARCH` is declared late, and runtime packages are installed before the application copy.
 * Restore and publish use the same configuration, and a RID-specific publish runs `--no-restore`.
 * A .NET application publish receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
-  `Version` and `SourceRevisionId`; the same values drive the OCI version and revision labels.
+  `Version` and `SourceRevisionId`, plus the complete build provenance property set from the
+  canonical template; the same version and commit drive the OCI version and revision labels.
+* A .NET Dockerfile retains the canonical template's argument order, restore/publish option order,
+  line wrapping and stage order except where an adjacent comment explains a workload requirement.
+* `WORKLOAD` is the output assembly name, `PROJECT` is the independent project path, publish creates
+  the canonical `entrypoint.dll` alias, and every .NET runtime uses the same exec-form entrypoint.
+* Published and sibling-project Debug .NET images both retain all six OCI labels; runtime base,
+  native packages, ports, writable paths and dependency-copy lists are the expected variable parts.
 * Every stage that reads a build argument redeclares it with a default.
 * Each `VOLUME` path exists in the image, owned by the runtime user.
 * The base image is the smallest suitable one, still inside its publisher's support window.

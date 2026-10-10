@@ -48,6 +48,15 @@ USER nonroot:nonroot
 ENTRYPOINT ["/app/app"]
 '@ -replace "`r`n", "`n"
 
+    $templatePath = Join-Path $PSScriptRoot '../../templates/dotnet-service.dockerfile.tmpl'
+    $script:DotNetCompliant = (Get-Content -LiteralPath $templatePath -Raw)
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{WORKLOAD}}', 'Example.App')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{PROJECT}}', 'src/Example.App/Example.App.csproj')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{IMAGE_DESCRIPTION}}', 'Example .NET service')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{IMAGE_SOURCE}}', 'https://example.com/source')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SPDX_LICENSE}}', 'MIT')
+    $script:DotNetCompliant = $script:DotNetCompliant -replace "`r`n", "`n"
+
     function script:New-Fixture {
         param(
             [Parameter(Mandatory = $true)][string]$Content,
@@ -158,6 +167,37 @@ Describe 'Get-DockerfileFinding' {
     It 'accepts sh -c when the command is exec-ed' {
         $content = $script:Compliant.Replace('ENTRYPOINT ["/app/app"]', 'ENTRYPOINT ["sh", "-c", "exec /app/app ${ARGS}"]')
         Get-Rule -Content $content | Should -Not -Contain 'DF007'
+    }
+
+    It 'accepts the canonical .NET service template' {
+        Get-Rule -Content $script:DotNetCompliant | Should -Not -Contain 'DF026'
+    }
+
+    It 'reports DF026 when a canonical .NET build argument is missing' {
+        $content = $script:DotNetCompliant.Replace("ARG GITHUB_RUN_ID=0`n", '')
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'reports DF026 when .NET publish properties are out of order' {
+        $content = $script:DotNetCompliant.Replace(
+            "    -p:BuildRunId=`"`$GITHUB_RUN_ID`" \`n    -p:BuildRunNumber=`"`$GITHUB_RUN_NUMBER`"",
+            "    -p:BuildRunNumber=`"`$GITHUB_RUN_NUMBER`" \`n    -p:BuildRunId=`"`$GITHUB_RUN_ID`"")
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'reports DF026 when the stable .NET entrypoint alias is missing' {
+        $content = $script:DotNetCompliant.Replace('ln -s "$WORKLOAD.dll" /app/publish/entrypoint.dll', '')
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'reports DF026 when the .NET entrypoint names a workload DLL directly' {
+        $content = $script:DotNetCompliant.Replace('ENTRYPOINT ["dotnet", "entrypoint.dll"]', 'ENTRYPOINT ["dotnet", "Example.App.dll"]')
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'reports DF026 when a Debug .NET image omits OCI licenses' {
+        $content = $script:DotNetCompliant.Replace('org.opencontainers.image.licenses=', 'org.example.licenses=')
+        Get-Rule -Content $content -Name 'Dockerfile.Debug' | Should -Contain 'DF026'
     }
 
     It 'reports a missing .dockerignore' {

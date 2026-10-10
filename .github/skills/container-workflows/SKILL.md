@@ -37,6 +37,11 @@ implementations bundled here.
 | `Yamlizr` | Versioned CLI image with startup smoke checks |
 | `MultiArch` | Interactive multi-architecture sample build |
 
+Every .NET profile resolves a semantic version from an explicit `-Version` value or GitVersion and
+passes it as the image's `VERSION` build argument. Mutable local tags such as `latest-dev` select an
+image but never redefine the assembly version. Yamlizr's smoke check requires the reported assembly
+informational version to equal the resolved version exactly.
+
 `Invoke-Deploy.ps1` reads deployment-specific defaults from the caller's gitignored
 `deploy.local.psd1`. Explicit command-line parameters take precedence.
 

@@ -67,35 +67,10 @@ EOF
 
 ## .NET
 
-Restore every runtime identifier once, before `TARGETARCH`, then publish offline per platform. A
-RID-specific publish otherwise restores again in every platform leg. Pass the list with escaped
-quotes: MSBuild reads `%3B` as a literal semicolon, which yields one invalid identifier.
-
-```dockerfile
-COPY --parents Directory.Build.props Directory.Packages.props src/**/*.csproj ./
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "src/$APP_NAME/$APP_NAME.csproj" -p:Configuration=Release \
-        "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
-
-COPY . .
-ARG TARGETARCH
-ARG TARGETVARIANT
-ARG VERSION=0.0.0-local
-ARG GIT_COMMIT=n/a
-RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
-set -eux
-case "${TARGETARCH}${TARGETVARIANT}" in
-    amd64) RID=linux-x64   ;;
-    arm64) RID=linux-arm64 ;;
-    armv7) RID=linux-arm   ;;
-    *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
-esac
-dotnet publish "src/$APP_NAME/$APP_NAME.csproj" --configuration Release --runtime "$RID" \
-  --self-contained false --no-restore --output /out \
-  -p:Version="$VERSION" -p:SourceRevisionId="$GIT_COMMIT"
-ln -s "$APP_NAME" /out/entrypoint
-EOF
-```
+Use the canonical [published](../templates/dotnet-service.dockerfile.tmpl) or
+[Debug](../templates/dotnet-service-debug.dockerfile.tmpl) template. Those files are the copy-ready
+authority for argument order, manifest copy, restore/publish formatting, assembly provenance and
+stage ordering; this reference records the rationale only.
 
 - `--network=none` proves the publish step no longer reaches NuGet.
 - Pass the same configuration to restore and publish. A project whose references depend on
@@ -111,9 +86,9 @@ EOF
 - The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link
   starts the right application. Use `ENTRYPOINT ["/app/entrypoint"]`; it works on chiselled images
   because it needs no shell.
-- `VERSION` and `GIT_COMMIT` stamp the entry assembly with the same semantic version and source
-  revision used by the image's OCI labels. Keep any additional generated assembly metadata in the
-  repository's root `Directory.Build.props`.
+- The version, source revision, repository, branch and workflow/run identity are baked into assembly
+  metadata. Keep the generated `AssemblyMetadata` declarations in the repository's root
+  `Directory.Build.props`; runtime environment variables do not redefine build provenance.
 - Add `packages.lock.json` (`RestorePackagesWithLockFile`) and restore with `--locked-mode` to make
   dependency drift fail the build.
 - House defaults for .NET services: HTTP on 8080, the .NET 8+ image default, and gRPC on 5001.
