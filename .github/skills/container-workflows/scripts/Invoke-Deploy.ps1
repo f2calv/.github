@@ -72,7 +72,7 @@ function Get-ManifestPatchExpression {
     if ($Chart) { $parts.Add("$source.targetRevision = strenv(DEPLOY_CHART_VERSION)") }
     $parts.Add("$source.helm.valuesObject._shared.image.repository = strenv(DEPLOY_IMG_REPO)")
     $parts.Add("$source.helm.valuesObject._shared.image.tag = strenv(DEPLOY_IMG_TAG)")
-    $parts.Add("$source.helm.valuesObject._shared.image.pullPolicy = `"Always`"")
+    $parts.Add("$source.helm.valuesObject._shared.image.pullPolicy = `"IfNotPresent`"")
     $parts.Add("$source.helm.valuesObject._shared.podAnnotations[strenv(DEPLOY_POD_ANNOTATION)] = strenv(DEPLOY_STAMP)")
     $parts.Add("($source.helm.valuesObject[] | select(has(`"podAnnotations`"))).podAnnotations[strenv(DEPLOY_POD_ANNOTATION)] = strenv(DEPLOY_STAMP)")
     return $parts -join ' | '
@@ -223,6 +223,14 @@ function Publish-ConfiguredDeploymentChart {
 #endregion Build and chart
 
 #region Manifest update
+function Get-DeploymentImageDigest {
+    [CmdletBinding()][OutputType([string])]
+    param([Parameter(Mandatory)][string]$Reference)
+    $digest = "$(docker buildx imagetools inspect $Reference --format '{{.Manifest.Digest}}')".Trim()
+    if ($LASTEXITCODE -ne 0 -or $digest -notmatch '^sha256:[0-9a-f]{64}$') { throw "Could not resolve the registry digest of '$Reference'." }
+    return $digest
+}
+
 function Get-DeploymentGitVersion {
     [CmdletBinding()][OutputType([string])]
     param([Parameter(Mandatory)][string]$Root)
@@ -246,7 +254,9 @@ function Update-DeploymentManifest {
     if ($LASTEXITCODE -ne 0) { throw 'yq failed to read the manifest kind.' }
     $env:DEPLOY_CHART_VERSION = if ($DeploymentChart) { $DeploymentChart.Version } else { '' }
     $env:DEPLOY_IMG_REPO = $ImageRepository
-    $env:DEPLOY_IMG_TAG = $Tag
+    # The mutable tag stays readable; the digest pins the exact image so a reschedule cannot drift.
+    $digest = Get-DeploymentImageDigest "${ImageRepository}:${Tag}"
+    $env:DEPLOY_IMG_TAG = "$Tag@$digest"
     $env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
     $env:DEPLOY_STAMP = "$(Get-DeploymentGitVersion $Deployment.Root)+$Timestamp"
     $expression = Get-ManifestPatchExpression -Kind $kind -Chart:$Chart
@@ -257,7 +267,7 @@ function Update-DeploymentManifest {
     git -C $ManifestRepo --no-pager diff --stat -- $Deployment.RelativePath
     if ($NoCommit) { Write-Host 'GitOps manifest patched but not committed (-NoCommit).' -ForegroundColor Yellow; return }
     git -C $ManifestRepo add -- $Deployment.RelativePath
-    $message = "deploy($DeploymentName): $Tag $($env:DEPLOY_STAMP)"
+    $message = "deploy($DeploymentName): $Tag@$($digest.Substring(0, 19)) $($env:DEPLOY_STAMP)"
     if ($DeploymentChart) { $message += " chart=$($DeploymentChart.Version)" }
     git -C $ManifestRepo commit -m $message
     if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }

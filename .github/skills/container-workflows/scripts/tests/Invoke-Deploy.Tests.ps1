@@ -28,7 +28,18 @@ Describe 'Invoke-Deploy manifest handling' -Tag 'Unit' {
         $expression | Should -Match '_shared\.image\.repository'
         $expression | Should -Match '_shared\.image\.tag'
         $expression | Should -Match '_shared\.podAnnotations'
+        $expression | Should -Match 'pullPolicy = "IfNotPresent"'
         $expression | Should -Not -Match '<<'
+    }
+
+    It 'resolves a registry digest and rejects anything else' {
+        $validDigest = 'sha256:' + ('a' * 64)
+        Mock docker { $global:LASTEXITCODE = 0; $validDigest }
+        Get-DeploymentImageDigest 'ghcr.io/example/app:latest-dev' | Should -Be $validDigest
+        Mock docker { $global:LASTEXITCODE = 0; 'not-a-digest' }
+        { Get-DeploymentImageDigest 'ghcr.io/example/app:latest-dev' } | Should -Throw '*registry digest*'
+        Mock docker { $global:LASTEXITCODE = 1 }
+        { Get-DeploymentImageDigest 'ghcr.io/example/app:latest-dev' } | Should -Throw '*registry digest*'
     }
 
     It 'leaves YAML merge anchors outside the patch expression' {
@@ -198,6 +209,7 @@ Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
             -Tag 'latest-dev' -PodAnnotationName 'example/deployed' -DeploymentName 'example'
         Mock yq { $global:LASTEXITCODE = 0; if ($args -contains '.kind') { 'Application' } }
         Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock Get-DeploymentImageDigest { 'sha256:' + ('a' * 64) }
         Mock git { $global:LASTEXITCODE = if ($args -contains '--quiet') { 1 } else { 0 } }
         Mock Push-ManifestRepository
         Update-DeploymentManifest $deployment $null '20260923000000'
@@ -235,11 +247,14 @@ Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
             -ImageRepository 'ghcr.io/example/app' -PodAnnotationName 'example/deployed'
         $deployment = [pscustomobject]@{ Root = $repositoryRoot; Manifest = $manifest; RelativePath = 'application.yaml' }
         Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock Get-DeploymentImageDigest { 'sha256:' + ('b' * 64) }
         Mock Push-ManifestRepository
         Update-DeploymentManifest $deployment ([pscustomobject]@{ Version = '2.0.0' }) '20260927000000'
         @(git -C $gitRoot diff-tree --no-commit-id --name-only -r HEAD) | Should -Be @('application.yaml')
         "$(git -C $gitRoot log -1 --format='%s')" | Should -Match 'chart=2\.0\.0$'
         (yq '.spec.source.targetRevision' $manifest) | Should -Be '2.0.0'
+        (yq '.spec.source.helm.valuesObject._shared.image.tag' $manifest) | Should -Be ('latest-dev@sha256:' + ('b' * 64))
+        (yq '.spec.source.helm.valuesObject._shared.image.pullPolicy' $manifest) | Should -Be 'IfNotPresent'
         Should -Invoke Push-ManifestRepository -Times 1
     }
 
@@ -284,6 +299,7 @@ Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
             -Tag 'latest-dev' -PodAnnotationName 'example/deployed' -DeploymentName 'example'
         Mock yq { $global:LASTEXITCODE = 0; if ($args -contains '.kind') { 'ApplicationSet' } }
         Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock Get-DeploymentImageDigest { 'sha256:' + ('a' * 64) }
         Mock git { $global:LASTEXITCODE = 0 }
         Mock Push-ManifestRepository
         Update-DeploymentManifest $deployment $null '20260923000000'

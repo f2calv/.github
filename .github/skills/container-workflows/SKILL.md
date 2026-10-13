@@ -49,6 +49,10 @@ The deployment script reads each Argo CD manifest's `kind` and supports both `Ap
 `ApplicationSet`. It patches `.spec.source` for an `Application` and
 `.spec.template.spec.source` for an `ApplicationSet`, failing on any other resource kind.
 
+The pushed tag is mutable, so the script resolves its registry digest and writes the image tag as
+`<tag>@sha256:<digest>` with `pullPolicy: IfNotPresent`. Every rollout is therefore traceable to
+one image, and a pod reschedule cannot silently pick up a later push of the same tag.
+
 Grafana dashboards ship inside the application chart as a `file://` subchart, so a `-Chart`
 deployment publishes and rolls them out with the application. There is no separate dashboard
 chart, manifest or deployment mode.
