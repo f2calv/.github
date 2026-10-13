@@ -41,11 +41,23 @@ The central repository owns:
 | `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
 | `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
 | `.scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
+| `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
 | `.scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
 Change policy in the fragments, not in generated consumer files. Regenerate every affected
 repository after a fragment change.
+
+## .NET Reference Baseline
+
+Use the tracked root `.editorconfig` in the public CasCap.Common repository as the proven reference
+for future .NET audits and rollouts. It records the complete generated profile whose analyzer
+fallout has been fixed across a multi-target library and test suite.
+
+The central fragments remain the source of truth: never hand-copy or edit the CasCap.Common file as
+policy. Before rolling out to another .NET repository, run the generator `-Check` against
+CasCap.Common and stop if it has drifted. Inspect its current generated file to understand the
+accepted rules and exclusions, then generate the target repository from the same central profile.
 
 ## Profile Selection
 
@@ -79,8 +91,8 @@ entire central profile into an override.
 For each repository:
 
 1. Detect the language profile from tracked manifests and source files.
-2. Inspect the root `.editorconfig`, if present, and compare effective sections with the generated
-   profile.
+2. For .NET, verify and inspect the CasCap.Common reference baseline first. Inspect the target root
+   `.editorconfig`, if present, and compare effective sections with that generated profile.
 3. Inspect formatter configuration, `.gitattributes`, pre-commit hooks, and build properties for
    conflicting ownership.
 4. For .NET, inspect `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, analyzer severities,
@@ -116,17 +128,41 @@ does not pass its own drift check is a failure.
 3. Preserve Markdown trailing spaces because two spaces encode a hard line break.
 4. Use the language's native formatter where it owns syntax: `dotnet format`, `gofmt`, `rustfmt`,
    Terraform formatting, or the repository's pinned Python formatter.
-5. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
-6. Run `git diff --check` and parse every changed structured file.
+5. In multi-target .NET repositories, never apply fixes solution-wide. Run `dotnet format` once per
+   project and diagnostic family, then verify at solution scope. Roslyn can otherwise merge
+   target-specific edits into literal conflict markers or duplicate expressions.
+6. Route `IDE*` diagnostics through `dotnet format <project> style --diagnostics ...` and `CA*`
+   diagnostics through `dotnet format <project> analyzers --diagnostics ...`. Verify with the same
+   subcommand plus `--verify-no-changes`; the wrong subcommand can exit successfully while silently
+   skipping the requested diagnostics. Prefer the central helper for repeatable repository passes:
+
+   ```powershell
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040 `
+      -Check
+   ```
+
+7. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
+8. Run `git diff --check` and parse every changed structured file.
 
 ### 5. Tighten .NET Enforcement
 
-The current build-breaking tranche is:
+The current build-breaking tranche covers:
 
-- `IDE0051`: unused private members
-- `IDE0052`: unread private fields
-- `IDE0055`: formatting
-- shared interface, type, and non-field-member naming rules
+- unused private members and unread private fields;
+- formatting and explicit interface-member accessibility;
+- interface/type and method/event naming;
+- safe expression, pattern, collection, deconstruction, inference and primary-constructor
+   modernizations;
+- guard clauses, avoidable allocations, logging argument cost and xUnit assertion-result reuse.
+
+The canonical DotNet fragment is the exact rule list. Keep `IDE0058` and `IDE0130` disabled, and do
+not promote `IDE0056` or `IDE0057` while supported libraries target `netstandard2.0`. Property
+naming remains a suggestion until legacy published contracts have versioned migrations.
 
 Require both build properties in the root `Directory.Build.props`:
 
@@ -140,7 +176,7 @@ naming at the source; do not weaken severity to make a build pass. A documented 
 naming exception may remain narrowly suppressed when renaming would break the external schema.
 
 Keep other shared style preferences standardized as suggestions until their fleet fallout has been
-measured. Promote only a small related tranche at a time. Namespace, public API, and architecture
+measured. Promote only a small related tranche at a time. Namespace, public API and architecture
 changes require their own reviewable tranche rather than being hidden inside formatting cleanup.
 
 ### 6. Validate

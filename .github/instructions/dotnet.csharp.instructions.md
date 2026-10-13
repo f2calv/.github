@@ -31,16 +31,18 @@ hot-path work.
 
 ## Style
 
-The repository `.editorconfig` is authoritative. Most preferences are suggestions the build does
-not enforce, so apply them while writing:
+The repository `.editorconfig` is authoritative. Its promoted tranche is build-enforced; remaining
+preferences are suggestions, so apply both while writing:
 
 - 4 spaces, LF, final newline; file-scoped namespaces with usings above; pure alphabetical usings
   with no `System.*` first and no blank-line groups, including in `GlobalUsings.cs`.
 - Allman braces. Omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using` bodies.
 - PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching (`is`, `not`, switch
   expressions); nullable reference types and implicit usings enabled; latest stable C# (currently 14.0).
-- Expression bodies for accessors, properties, indexers, lambdas and single-expression methods, not
-  for constructors, operators or local functions. Move `=>` to the next line when it would scroll.
+- Expression bodies for accessors, properties, indexers, lambdas, constructors and single-expression
+  methods, not operators or local functions. Move `=>` to the next line when it would scroll.
+- Declare interface members with explicit `public` accessibility; the build enforces accessibility
+  modifiers on interface members as well as implementations.
 - Explicit interface properties use accessor blocks (`{ get => …; }`), never `=>`, and carry
   `/// <inheritdoc/>`.
 - Wrap long parameter lists one per line, with the closing parenthesis and any `: base(...)` on its

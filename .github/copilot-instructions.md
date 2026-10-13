@@ -65,4 +65,21 @@ A repository keeps a single `.github/copilot-instructions.md` containing:
 1. A pointer to this repository for the shared instructions and skills.
 2. Rules genuinely specific to that repository — its purpose, architecture, domain terminology, and any deliberate deviation from a central rule.
 
+Every newly bootstrapped repository starts that file with this exact preamble, kept byte-identical
+through the final sentence so the shared boundary does not drift between repositories:
+
+```markdown
+# Copilot Instructions
+
+## Shared Instructions
+
+Shared Copilot instructions, skills and prompts are maintained centrally in the [.github](https://github.com/f2calv/.github) repository, under `.github/instructions/`, `.github/skills/` and `.github/prompts/`. They are deliberately not copied into this repository, so a change there takes effect everywhere without a pull request here.
+
+To load them, clone that repository and either add it to this VS Code workspace, or link its folders into `~/.copilot/`. Its README explains both.
+
+If those shared files are not visible, stop and tell the user rather than guessing the conventions — this repository depends on them.
+
+Everything below is specific to this repository.
+```
+
 It must not contain a `.github/instructions/` folder or a copy of any centrally maintained file.

@@ -82,6 +82,8 @@ Choose the source according to the reuse boundary:
 
 * Pin shared charts to an exact published OCI version.
 * Use `file://` for application-specific charts consumed only by the same repository or umbrella.
+  Keep such a subchart at the default `version: 0.1.0` and pin the dependency to that exact value;
+  the path is the link, so never bump either when the subchart's content changes.
 * Use aliases when one dependency appears more than once for distinct responsibilities.
 * Put each dependency condition on the alias path that consumers configure.
 

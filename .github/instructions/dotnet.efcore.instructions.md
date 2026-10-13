@@ -28,6 +28,13 @@ applyTo: '**/*DbContext*.cs,**/*EntityTypeConfiguration*.cs,**/Entities/**/*.cs,
   `UpdateData`, `InsertData` or `DeleteData` churn after model changes. Verify each generated
   operation is intentional. Remove demonstrable no-op seed updates before committing, then inspect
   the generated SQL and confirm the model snapshot still matches the intended model.
+- Do not use `HasData` for large, mutable or runtime-owned datasets. EF embeds the complete payload
+  in every model snapshot and can generate enormous or destructive data operations after unrelated
+  model changes. Bootstrap such data through an explicit idempotent initializer or deployment job
+  using stable natural keys and upserts that preserve runtime-owned columns.
+- Removing existing `HasData` is a data migration, not a metadata-only refactor: generated
+  `DeleteData` operations can erase live rows. Review and deliberately neutralize or replace those
+  operations, then verify both fresh initialization and upgrade from an existing database.
 - Gate deployment on model consistency. Before building or deploying an EF-backed application, run
   `dotnet ef migrations has-pending-model-changes` against the current model. Stop before publishing
   artifacts or mutating deployment manifests when model changes have no migration.

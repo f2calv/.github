@@ -11,6 +11,10 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 - Declare one `UserSecretsId` for the whole repository in the root `Directory.Build.props`, as a GUID. Never declare a second one in an individual project file: each distinct identifier creates a separate secrets store, so per-project identifiers scatter the same credentials across several places and make them easy to set in one project and miss in another.
 - Changing an existing `UserSecretsId` orphans whatever is already stored under the old one. Check for an existing store before changing it, and migrate the contents rather than silently stranding them.
 - Keep individual project files minimal — only project-specific properties and references belong there.
+- Keep repository-wide generated assembly attributes and `AssemblyMetadata` items in the root
+  `Directory.Build.props`. Containerized applications receive `Version` and `SourceRevisionId` from
+  the build invocation; expose additional source-revision metadata there rather than repeating it
+  in application project files.
 - Centralise warning suppressions (`NoWarn`) in `Directory.Build.props`, with a comment naming each suppressed diagnostic and why it is suppressed. Never suppress a diagnostic inline in a project file without a comment.
 - Use conditional property groups for cross-cutting project categories rather than repeating settings per project — for example disabling `GenerateDocumentationFile` for test projects, and gating `IsPackable` so packaging is opt-in.
 
@@ -29,9 +33,10 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 ## Analyzers
 
 - Configure analyzer severities in `.editorconfig`, which is the single source of truth for style and analyzer rules; enable `EnforceCodeStyleInBuild` so style rules are enforced by the compiler and not only by the IDE.
-- Set `IDE0051`, `IDE0052`, `IDE0055`, and the shared naming rules to `warning`. With
-  `TreatWarningsAsErrors`, unused private members, unread fields, formatting drift, and naming
-  violations must fail builds rather than remain editor suggestions.
+- Use the canonical DotNet EditorConfig tranche for warning severities, including `IDE0051`,
+  `IDE0052`, `IDE0055`, explicit interface-member accessibility, safe syntax modernizations,
+  logging argument cost and the shared naming rules. With `TreatWarningsAsErrors`, promoted
+  violations fail builds rather than remaining editor suggestions.
 - Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members. Do not add them to `WarningsNotAsErrors`.
 - Promote other style preferences to warnings only through the `editorconfig-management` skill's
   measured tranches.

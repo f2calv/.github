@@ -142,11 +142,42 @@ Name the shape in the header comment when it is not `service`.
   Never read the host clock, host state or an unpinned download. Provenance and SBOM attestations
   record what the floating inputs resolved to.
 
+## .NET Artifact Identity
+
+- Start .NET service images from the canonical templates bundled with the `container-images` skill:
+  `templates/dotnet-service.dockerfile.tmpl` for published images and
+  `templates/dotnet-service-debug.dockerfile.tmpl` for sibling-project Debug images. Preserve their
+  argument order, stage order, restore/publish option order and line wrapping. Change only marked
+  placeholders and workload-required sections; explain every structural deviation beside it.
+- `WORKLOAD` always names the produced assembly without `.dll`; `PROJECT` independently names its
+  project file. The publish stage creates `/app/publish/entrypoint.dll` as a symlink to
+  `$WORKLOAD.dll`, and every runtime uses `ENTRYPOINT ["dotnet", "entrypoint.dll"]`. This keeps the
+  entrypoint identical on full, chiselled and Debug images without runtime shell expansion.
+- Retain the complete OCI label block in Debug images as well as published images. Debug profile
+  relaxation permits omission for nonstandard investigation images; it is not the default for .NET
+  sibling-project variants, which stay structurally aligned with their published counterpart.
+- Every .NET application image accepts `VERSION` and `GIT_COMMIT` build arguments with public-safe
+  local defaults. Pass them to `dotnet publish` as `-p:Version="$VERSION"` and
+  `-p:SourceRevisionId="$GIT_COMMIT"` so the entry assembly carries the same semantic version and
+  source revision as the image.
+- The workflow or script invoking the build derives `VERSION` from the repository's versioning
+  authority and supplies the same value to the image tag and OCI `version` label. It derives
+  `GIT_COMMIT` from the built commit and supplies the same value to `SourceRevisionId` and the OCI
+  `revision` label.
+- Assembly metadata is the running application's artifact identity; OCI labels are the container's
+  artifact identity. Do not redefine either through Helm values, Kubernetes annotations or runtime
+  environment variables. Runtime configuration carries deployment context only.
+- Keep repository-wide assembly metadata declarations in the root `Directory.Build.props`, not in
+  individual project files or Dockerfiles. Generate `GitRepository`, `GitBranch`, `GitCommit`,
+  `BuildWorkflow`, `BuildRunId` and `BuildRunNumber` from the corresponding MSBuild properties; the
+  Docker template passes those properties to `dotnet publish`.
+
 ## Provenance and Labels
 
 - A `published` image declares `GIT_REPOSITORY`, `GIT_BRANCH`, `GIT_COMMIT`, `GIT_TAG`,
   `GITHUB_WORKFLOW`, `GITHUB_RUN_ID` and `GITHUB_RUN_NUMBER` as build arguments with safe defaults
-  (`n/a`, `0`) so it builds by hand. Mirror them into `ENV` when the application reads them.
+  (`n/a`, `0`) so it builds by hand. Mirror only deployment context into `ENV` when the application
+  reads it; version and source revision belong in assembly metadata and OCI labels.
 - Set the OCI keys `title`, `description`, `source`, `licenses`, `version` and `revision` in one
   `LABEL`. Labels live in the image configuration; a registry that describes multi-architecture
   images from index annotations also needs `--annotation index:<key>=<value>` at build time.

@@ -18,13 +18,14 @@
 .PARAMETER Tag
 	Image tag override.
 .PARAMETER Version
-	Yamlizr assembly version override.
+    .NET assembly version override.
 .PARAMETER Platforms
 	Comma-separated Docker target platforms.
 .PARAMETER ImageName
 	Image repository name. Defaults to the repository directory name.
 .PARAMETER WorkloadName
-	Application profile WORKLOAD build argument.
+    Optional Application profile assembly name passed as the WORKLOAD build argument. When omitted,
+    the Dockerfile default selects the assembly.
 .PARAMETER Project
 	SignalCli profile PROJECT build argument.
 .PARAMETER SkipSmokeTest
@@ -55,7 +56,7 @@ param(
     [string]$Version,
     [string]$Platforms,
     [string]$ImageName,
-    [string]$WorkloadName = 'CasCap.App.Server',
+    [string]$WorkloadName,
     [string]$Project = 'samples/GenericHost/GenericHost.csproj',
     [switch]$SkipSmokeTest
 )
@@ -102,7 +103,7 @@ function Resolve-BuildTag {
     return "$(dotnet-gitversion $RepositoryRoot /showvariable FullSemVer)".Trim().ToLowerInvariant()
 }
 
-function Resolve-YamlizrVersion {
+function Resolve-DotNetVersion {
     [CmdletBinding()]
     [OutputType([string])]
     param(
@@ -279,8 +280,8 @@ function Invoke-YamlizrSmokeTest {
     Write-Host 'Running the image to prove it starts.' -ForegroundColor Cyan
     $reported = "$(docker run --rm $Image --version)".Trim()
     if ($LASTEXITCODE -ne 0) { throw 'docker run --version failed, so the image does not start.' }
-    if (-not $reported.StartsWith($ExpectedVersion)) {
-        throw "Expected a version starting with '$ExpectedVersion', got '$reported'."
+    if ($reported -ne $ExpectedVersion) {
+        throw "Expected version '$ExpectedVersion', got '$reported'."
     }
     docker run --rm $Image generate --help | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'docker run generate --help failed.' }
@@ -307,10 +308,7 @@ function Invoke-StandardBuild {
         throw 'A Debug image is built against unpublished local sources and must not be pushed.'
     }
 
-    $resolvedVersion = if ($BuildMode -eq 'Yamlizr') {
-        Resolve-YamlizrVersion -RequestedVersion $Version -Required:$Push -RepositoryRoot $RepositoryRoot
-    }
-    else { $null }
+    $resolvedVersion = Resolve-DotNetVersion -RequestedVersion $Version -Required:$Push -RepositoryRoot $RepositoryRoot
     $resolvedTag = Resolve-BuildTag -ExplicitTag $Tag -Push:$Push -RepositoryRoot $RepositoryRoot -ResolvedVersion $resolvedVersion
     $image = "ghcr.io/f2calv/$($Settings.ImageName):$resolvedTag"
     $dockerfile = if ($Settings.Configuration -eq 'Debug') { 'Dockerfile.Debug' } else { 'Dockerfile' }
@@ -336,9 +334,11 @@ function Invoke-StandardBuild {
         'buildx', 'build', '--tag', $image,
         '--file', (Join-Path $RepositoryRoot $dockerfile)
     )
-    if ($BuildMode -eq 'Application') { $arguments += @('--build-arg', "WORKLOAD=$WorkloadName") }
+    if ($BuildMode -eq 'Application' -and -not [string]::IsNullOrWhiteSpace($WorkloadName)) {
+        $arguments += @('--build-arg', "WORKLOAD=$WorkloadName")
+    }
     if ($BuildMode -eq 'SignalCli') { $arguments += @('--build-arg', "PROJECT=$Project") }
-    if ($BuildMode -eq 'Yamlizr') { $arguments += @('--build-arg', "VERSION=$resolvedVersion") }
+    $arguments += @('--build-arg', "VERSION=$resolvedVersion")
     $arguments += @(
         '--build-arg', "CONFIGURATION=$($Settings.Configuration)",
         '--build-arg', "GIT_REPOSITORY=$($Settings.RepositoryName)",

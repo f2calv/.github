@@ -17,7 +17,8 @@ param(
         (Join-Path $PSScriptRoot 'tests'),
         (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests'),
         (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests')
+        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests'),
+        (Join-Path $PSScriptRoot '../.github/skills/dotnet-cleanup/scripts/tests')
     )
 )
 
