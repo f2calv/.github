@@ -183,6 +183,19 @@ mapping rules.
 - Clone an Ingress into a temporary, distinctly named resource only when parallel host validation
   requires it; otherwise change `spec.ingressClassName` in one controlled Git step.
 - Preserve hosts, paths, `pathType`, backend Services/ports, TLS Secrets, and cert-manager ownership.
+- Make every ACME HTTP-01 certificate on an F5-served host solve in place. F5 NGINX gives a host to
+  its oldest resource, so cert-manager's separate solver Ingress is rejected and renewals fail
+  silently until expiry:
+  - Annotate a regular Ingress with `acme.cert-manager.io/http01-edit-in-place: "true"`.
+  - A mergeable master has no paths. Declare its `Certificate` explicitly with
+    `acme.cert-manager.io/http01-override-ingress-name` set to an always-present minion, and remove
+    the master's issuer annotation.
+  - Under Argo CD self-heal, add a global `resource.customizations.ignoreDifferences` rule for
+    Ingress paths whose backend starts with `cm-acme-http-solver-`, or self-heal removes the
+    transient path before validation.
+  - Remove chart-generated `Certificate`s that write the same Secret as an ingress-shim one.
+  - After cutover, confirm that every public certificate renews; do not rely on `Ready=True`, which
+    stays true until expiry.
 - Replace each source annotation only after its F5 OSS behavior and value syntax are verified.
 - Convert ingress-nginx TCP/UDP ConfigMap entries into explicitly allowed `GlobalConfiguration`
   listeners and one or more matching `TransportServer` resources. Expose the same ports on the
