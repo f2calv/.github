@@ -23,6 +23,15 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   private configuration when its repository-specific instructions define that tier.
 - Add a deployment secret store only after enough preceding configuration has been loaded to resolve
   its endpoint and authentication settings. Rebind affected options after adding it.
+- On Kubernetes, self-built applications read their secrets in-process through the Key Vault
+  configuration provider rather than through Kubernetes Secrets synchronised by an operator such as
+  External Secrets. This keeps one configuration path for local and cluster runs and avoids
+  duplicating secret names in deployment manifests. Reserve operator-synchronised Secrets for
+  third-party workloads that can only read Secrets or environment variables, and for the bootstrap
+  credential the provider itself needs to authenticate.
+- Several applications may load the same shared vault whole: a secret only takes effect when its
+  name maps onto a bound options property. Exclude any secret family whose names would bind into
+  another application's options, such as a per-application identity under a shared section name.
 
 ## Options Synchronisation
 
