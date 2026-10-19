@@ -57,6 +57,12 @@ reverts the hook on every edit:
 - Every repository's `.vscode/extensions.json` recommends `editorconfig.editorconfig` and
   `esbenp.prettier-vscode`. Never pin `[json]` or `[jsonc]` to `vscode.json-language-features`:
   it expands arrays that Prettier collapses.
+- When accepting an edit or saving a file reformats it unexpectedly, look for working copies whose
+  line endings differ from the index: `git ls-files --eol` lists them as `i/lf w/crlf`. Git hides
+  the difference but EditorConfig rewrites the file on save. Delete and re-check-out those files
+  when they have no uncommitted change, and format gitignored JSON such as `appsettings.Local*.json`
+  with Prettier using `--ignore-path ''`, because the CLI skips ignored files while the editor does
+  not.
 
 ## Current Shared Versions
 
