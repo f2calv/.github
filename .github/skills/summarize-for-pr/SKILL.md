@@ -1,8 +1,8 @@
 ---
-description: "Create a temporary markdown file summarising all branch changes vs. the default branch for PR review"
-agent: "agent"
+name: summarize-for-pr
+description: Create a temporary markdown file summarising all branch changes vs. the default branch for PR review
+disable-model-invocation: true
 ---
-
 # Summarize Branch Changes for PR
 
 Create a temporary markdown file in the repository root called `BRANCH_CHANGES.md` that summarises all changes on the current branch compared to the repository's default branch. This file is intended to aid PR review and should be deleted before merging.
