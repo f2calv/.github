@@ -568,7 +568,7 @@ function Get-RawFinding {
         if ($publishInstructions.Count -eq 0) {
             continue
         }
-            $dotNetPublishCount += $publishInstructions.Count
+        $dotNetPublishCount += $publishInstructions.Count
 
         $buildArgNames = @(foreach ($instruction in @($stage.Instructions | Where-Object Keyword -EQ 'ARG')) {
                 foreach ($pair in @(ConvertFrom-KeyValueArgument -Arguments $instruction.Arguments)) {
@@ -598,9 +598,9 @@ function Get-RawFinding {
                 }
                 $previousIndex = [Math]::Max($previousIndex, $index)
             }
-                if ($text -notmatch 'ln\s+-s\s+"\$WORKLOAD\.dll"\s+/app/publish/entrypoint\.dll') {
-                    ConvertTo-Finding $instruction.Line 'DF026' 'error' 'The .NET publish stage must create /app/publish/entrypoint.dll from $WORKLOAD.dll.'
-                }
+            if ($text -notmatch 'ln\s+-s\s+"\$WORKLOAD\.dll"\s+/app/publish/entrypoint\.dll') {
+                ConvertTo-Finding $instruction.Line 'DF026' 'error' 'The .NET publish stage must create /app/publish/entrypoint.dll from $WORKLOAD.dll.'
+            }
         }
     }
 
@@ -625,21 +625,21 @@ function Get-RawFinding {
         ConvertTo-Finding $final.Line 'DF015' 'error' "The final stage is missing OCI labels: $($missingKeys -join ', ')."
     }
 
-        if ($dotNetPublishCount -gt 0) {
-            if ('WORKLOAD' -notin $argNames) {
-                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime chain must redeclare WORKLOAD for the OCI title.'
-            }
-            if ($missingKeys.Count -gt 0) {
-                ConvertTo-Finding $final.Line 'DF026' 'error' "The .NET runtime chain is missing canonical OCI labels: $($missingKeys -join ', ')."
-            }
-            if ($labelText -notmatch 'org\.opencontainers\.image\.title\s*=\s*"?\$WORKLOAD"?') {
-                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET OCI title must use $WORKLOAD.'
-            }
-            $entrypoints = @($finalInstructions | Where-Object Keyword -EQ 'ENTRYPOINT')
-            if ($entrypoints.Count -ne 1 -or $entrypoints[0].Arguments -ne '["dotnet", "entrypoint.dll"]') {
-                ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime entrypoint must be ["dotnet", "entrypoint.dll"].'
-            }
+    if ($dotNetPublishCount -gt 0) {
+        if ('WORKLOAD' -notin $argNames) {
+            ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime chain must redeclare WORKLOAD for the OCI title.'
         }
+        if ($missingKeys.Count -gt 0) {
+            ConvertTo-Finding $final.Line 'DF026' 'error' "The .NET runtime chain is missing canonical OCI labels: $($missingKeys -join ', ')."
+        }
+        if ($labelText -notmatch 'org\.opencontainers\.image\.title\s*=\s*"?\$WORKLOAD"?') {
+            ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET OCI title must use $WORKLOAD.'
+        }
+        $entrypoints = @($finalInstructions | Where-Object Keyword -EQ 'ENTRYPOINT')
+        if ($entrypoints.Count -ne 1 -or $entrypoints[0].Arguments -ne '["dotnet", "entrypoint.dll"]') {
+            ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime entrypoint must be ["dotnet", "entrypoint.dll"].'
+        }
+    }
 
     if ($Shape -ne 'service') {
         foreach ($instruction in @($finalInstructions | Where-Object Keyword -EQ 'EXPOSE')) {
