@@ -168,7 +168,7 @@ function Get-LayoutFindings([pscustomobject] $File) {
     $regex = [regex]'(?m)^[ \t]*(?:(?:public|internal|file|protected|private|abstract|sealed|static|partial|readonly|ref|unsafe|new)\s+)*(?<Kind>record(?:\s+(?:class|struct))?|class|interface|struct|enum)\s+(?<Name>@?[A-Za-z_]\w*)'
     $types = @($regex.Matches($masked) | ForEach-Object {
             [pscustomobject]@{ Kind = $_.Groups['Kind'].Value; Name = $_.Groups['Name'].Value.TrimStart('@');
-                Line = Get-LineNumber $masked $_.Index; Depth = Get-BraceDepth $masked $_.Index 
+                Line = Get-LineNumber $masked $_.Index; Depth = Get-BraceDepth $masked $_.Index
             }
         })
     if ($types.Count -eq 0) { return @() }
