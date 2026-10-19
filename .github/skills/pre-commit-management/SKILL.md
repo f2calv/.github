@@ -44,6 +44,20 @@ Use the account-level [baseline configuration](../../../.pre-commit-config.yaml)
 shared precedent. Preserve local exclusions and hooks while aligning common hook sources and
 arguments.
 
+### JSON Formatting
+
+Prettier owns JSON layout fleet-wide, and the editor must use the same formatter or format-on-save
+reverts the hook on every edit:
+
+- The baseline `prettier` hook runs with `types_or: [json]` and reads indentation and line endings
+  from `.editorconfig`. Exclude only tool-written files: dev container lockfiles, npm lockfiles,
+  `.config/dotnet-tools.json`, and schemas written by a generator hook such as `helm-schema`.
+- `end-of-file-fixer` and the top-level `exclude` carry no editor-churn exemptions for
+  `appsettings*.json`, `launchSettings.json`, `.vscode/*.json` or `devcontainer.json`.
+- Every repository's `.vscode/extensions.json` recommends `editorconfig.editorconfig` and
+  `esbenp.prettier-vscode`. Never pin `[json]` or `[jsonc]` to `vscode.json-language-features`:
+  it expands arrays that Prettier collapses.
+
 ## Current Shared Versions
 
 Resolve latest versions live before changing these values. At the time this skill was last updated:
@@ -53,7 +67,10 @@ Resolve latest versions live before changing these values. At the time this skil
 | pre-commit runtime | `4.6.2` | PyPI `pre-commit` latest release |
 | `pre-commit/pre-commit-hooks` | `v6.0.0` | GitHub latest release |
 | `bmares/check-json5` | `v1.0.1` | GitLab latest stable tag |
+| `rbubley/mirrors-prettier` | `v3.9.10` | GitHub latest tag, matching npm `prettier` latest |
 | `igorshubovych/markdownlint-cli` | `v0.49.1` | GitHub latest release |
+
+`pre-commit/mirrors-prettier` is archived; use the maintained `rbubley/mirrors-prettier` mirror.
 
 The runtime pin must match the shared lint workflow and the bundled Docker fallback. Hook revisions
 live in each repository configuration and are normally maintained by Dependabot.

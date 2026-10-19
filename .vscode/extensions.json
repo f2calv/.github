@@ -1,5 +1,7 @@
 {
   "recommendations": [
+    "editorconfig.editorconfig",
+    "esbenp.prettier-vscode",
     "ms-vscode.powershell",
     "davidanson.vscode-markdownlint",
     "redhat.vscode-yaml",

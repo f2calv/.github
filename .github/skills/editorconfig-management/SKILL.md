@@ -123,8 +123,8 @@ does not pass its own drift check is a failure.
 ### 4. Apply Mechanical Cleanup
 
 1. Add one LF byte only to tracked text files missing a final newline.
-2. Use a structured formatter for JSON, JSONC, or JSON5; never reserialize comment-bearing files
-   through a strict JSON parser.
+2. Format JSON with the repository's pinned Prettier pre-commit hook, which preserves comments and
+   reads `.editorconfig`; never reserialize comment-bearing files through a strict JSON parser.
 3. Preserve Markdown trailing spaces because two spaces encode a hard line break.
 4. Use the language's native formatter where it owns syntax: `dotnet format`, `gofmt`, `rustfmt`,
    Terraform formatting, or the repository's pinned Python formatter.
