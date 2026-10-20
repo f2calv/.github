@@ -94,14 +94,31 @@ Read enough source to establish the current product, without turning the README 
 | Terraform module | Variables, outputs, providers, resources, version constraints and pinned documentation generator |
 | Container example | Compose or container configuration, published image, ports, mounts, health and platform support |
 | Documentation index | Existing guides, intended reading order and actual navigation targets |
+| Test project | Test source, project targets, fixtures, data providers, skip conditions and applicable testing instructions |
 
 Also inspect relevant release and analysis configuration to establish current installation references
 and badge destinations; this evidence does not imply the pipeline belongs in the resulting README.
+Packability or a build definition does not prove publication: verify the artifact and usable version
+in its registry. Give source-reference guidance for unpublished units, not speculative install commands.
 Reuse domain skills for their specialized procedures rather than duplicating them here.
 
 Inspect test source as evidence where appropriate, but ask before executing tests or examples.
 Separate facts established from source from behavior that still needs validation; omit unsupported
 claims rather than presenting assumptions as working features.
+
+Trace registration, provider factories and call sites before describing a capability. An enum member,
+interface, XML comment or test-class name is not proof of an implemented adapter, enforced policy or
+live coverage. Check who actually enforces a mode or limit: the library, a consuming host or an
+external backend. Distinguish current checkout behavior from availability in a published release.
+Follow actual assembly-scan boundaries and conditional dependencies in the documented build variant;
+runtime feature flags do not remove compile-time dependencies, and zero replicas need not disable
+other rendered resources.
+
+For service wrappers, verify current upstream access policy and token lifecycle as well as client
+methods. Cite the relevant policy and verification date when a changeable restriction affects usage;
+keep that verification separate from claims of successful live execution. Trace consumer-visible
+delivery behavior: deletion or acknowledgement timing, awaited versus synchronous callbacks, batching
+side effects, and the scope of retries, timeouts and rate limits.
 
 ### 3. Select the Outline
 
@@ -116,6 +133,12 @@ claims rather than presenting assumptions as working features.
 4. Treat a `docs/README.md` as a navigation entry point, not an application or package README.
    Other documentation under `docs/` keeps its own structure. Inspect those guides to avoid copying
    them, and edit them only when directly coupled references or facts must change.
+   A test-project README serves contributors, not package consumers: use the domain testing
+   instructions for its required content, and distinguish source-declared cases and skip conditions
+   from observed execution results. Handle combined attributes, expand data providers, resolve
+   constant-based traits and account for untagged cases. Follow every skip branch: providing
+   credentials may still leave live execution explicitly disabled. Identify where fixtures replace
+   real tool execution or service interaction, even when another part of the evaluation runs live.
 5. Verify where a README is rendered: GitHub, NuGet, Marketplace or a chart registry. Resolve images
    and essential links for that destination; GitHub-relative links may fail in package listings.
    Check current image-host restrictions before choosing badges for a NuGet package README.
@@ -128,9 +151,17 @@ claims rather than presenting assumptions as working features.
 
 1. Write the selected outline using current verified behavior and the Markdown content boundaries.
 2. Build one catalogue instead of separate repetitive package, badge and project tables.
-3. Put the shortest useful installation and usage path ahead of implementation detail.
+3. Put the shortest useful installation and usage path ahead of implementation detail. State the
+   example's host context, required namespaces and configuration source. Follow the path through
+   service resolution and startup; registration alone may not start a worker or receive stream.
+   Verify environment-dependent configuration such as Development-only User Secrets, launch-profile
+   overrides and shared secrets stores.
 4. Derive configuration names, defaults, required values and examples from their definitions.
-   Apply visibility and privacy rules before including operational context.
+   Separate library settings from prerequisites the host or provider must supply. Make optional
+   native tools and external backends conditional on the capability that needs them, rather than
+   implying every consumer needs every dependency. Distinguish application overrides from library
+   defaults, and label complete configurations versus merge fragments. Apply visibility and privacy
+   rules before including operational context.
 5. Verify badge sources and destinations under the Markdown badge rules. Use the template's badge
    patterns only after replacing placeholders with verified public metadata.
 6. Preserve generator-owned content and run the pinned generator when its inputs changed. Do not
@@ -141,13 +172,18 @@ claims rather than presenting assumptions as working features.
    forms, contribution policy or fleet-wide overrides are separate work unless explicitly requested.
 8. Update directly affected cross-links, catalogues, package README inclusion and diagram references
    together. Do not rename or relocate documentation unless needed by the requested change.
+9. For testing companion packages, document what the fake actually guarantees. Canned bytes may
+   not be playable media, and substituting a provider does not bypass the surrounding validation,
+   configuration or policy.
 
 ### 5. Verify and Iterate
 
 1. Check the result against the selected template conditions, not just heading presence. Confirm
    that commands, inputs, outputs, framework versions and dependency edges match source evidence.
 2. Resolve local links and anchors and check relevant external destinations. Never send private
-   paths or identifiers to external link checkers. Report inaccessible or unverified targets.
+   paths or identifiers to external link checkers. Retry an apparent `HEAD` failure with `GET`
+   before declaring a destination broken; some registries and badge endpoints reject `HEAD`.
+   Report inaccessible or unverified targets.
 3. Check badge alt text against its actual metric and link, not merely whether an image loads.
    Check diagram syntax and GitHub rendering when tooling is available; disclose unrendered diagrams.
 4. Follow the Markdown instructions for validation through the repository's pre-commit configuration.

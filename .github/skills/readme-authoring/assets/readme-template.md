@@ -13,9 +13,15 @@ empty sections, placeholder tables or template instructions in a reader-facing d
 | --- | --- |
 | Every README | Identity and summary; relevant usage or navigation; useful further-reading links |
 | Published product | Verified destination links and suitable badges; license when applicable |
+| Unpublished or source-only unit | Explicit availability and verified build/source-reference guidance; no speculative registry badge or install command |
 | Collection | One catalogue linking to child READMEs and published artifacts |
 | Application or CLI | Quick Start, Usage, Configuration; installation and platform requirements as needed |
 | .NET or NuGet library | Installation, Usage or API, supported target frameworks; registration and configuration when exposed |
+| Interchangeable providers or processing modes | Supported providers or modes, selection and enforcement boundaries; do not present declared-but-unimplemented options as capabilities |
+| Native tools or external backends | Conditional Runtime Requirements; identify which capability needs each dependency and what the consuming host must supply |
+| Testing companion package | Installation in consumer test projects, replacement example and limits of canned results; not the repository test-suite inventory |
+| Dependency-only package | Explain the dependencies it bundles and underlying SDK setup; explicitly state when it exposes no wrapper API |
+| Queue, event, stream or remote API client | Consumer-relevant delivery, failure, cancellation, timeout and rate-limit semantics; current upstream access restrictions |
 | GitHub Action | Usage, Inputs, Outputs when present, required permissions and secrets; verified Marketplace link when published |
 | Reusable workflows | Usage or Workflows catalogue, Inputs, Secrets, Permissions, Outputs when present; meaningful execution flow |
 | Helm chart | Installation or Usage, Configuration, dependency graph when dependencies exist; chart catalogue for a chart repository |
@@ -24,6 +30,7 @@ empty sections, placeholder tables or template instructions in a reader-facing d
 | Meaningful relationships | A Mermaid diagram under the appropriate standard heading |
 | Contributor setup differs from ordinary usage | Concise Development or Build and Test commands and prerequisites |
 | Documentation index | Purpose and guide navigation; no product scaffolding unless it actually documents a product |
+| Test project | Scope, prerequisites and execution; select required inventory and layout sections from the domain testing instructions, not package installation sections |
 
 For mixed repositories, combine these choices rather than repeating shared sections for every type.
 Retain specialized generator headings and consumer requirements from the domain's own authority.
@@ -63,11 +70,24 @@ not a paraphrase of the instructions. Optional sections are not a request to cre
 <!-- IF the unit has a consumer-facing invocation or API. -->
 ## Usage
 
-<A realistic minimal example, followed by common variations only where useful.>
-<.NET library: show public APIs and required dependency-injection registration.>
+<A realistic minimal example with host context, required imports, configuration source and startup or resolution steps; common variations only where useful.>
+<.NET library: show public APIs and required dependency-injection registration; apply the shared interface-source linking convention to contract descriptions.>
 <Action: show a workflow step with its supported uses reference and required inputs.>
 <Reusable workflow: show a caller job, required permissions and secret handoff.>
 <Terraform: show a module call with a supported immutable source reference and required inputs.>
+
+<!-- IF delivery guarantees, limits or remote-service policy materially affect correct usage. -->
+## Behavior and Limits
+
+<Explain acknowledgement/deletion timing, callback awaiting and batching side effects where relevant.>
+<State timeout, retry and limiter scope, and current upstream access or token-lifecycle constraints.>
+<Link to focused reference when the full contract is lengthy; do not invent delivery guarantees.>
+
+<!-- IF capabilities require native tools or external services. -->
+## Runtime Requirements
+
+<Map each capability to its required executable, service, credential or host registration.>
+<Keep optional dependencies conditional; distinguish what the package supplies from what the host installs or deploys.>
 
 <!-- IF a hand-authored action/workflow contract exists; omit irrelevant subsections. -->
 ## Inputs
@@ -86,12 +106,14 @@ not a paraphrase of the instructions. Optional sections are not a request to cre
 ## Configuration
 
 <Required and optional settings, meaningful defaults, constraints and where values are supplied.>
+<For multiple providers or modes, identify supported selections and who enforces the policy.>
 <Helm: explain common values and preserve generated values documentation if present.>
 
 <!-- IF strongly typed configuration is exposed. -->
 ## Configuration Examples
 
 <Minimal valid example, followed by more fully configured examples where useful.>
+<Label complete configurations versus merge fragments and identify required host settings supplied elsewhere.>
 
 <!-- IF a generator owns the public reference: insert its actual output and existing markers. -->
 <Generator-owned requirements, providers, resources, inputs, outputs or values reference.>

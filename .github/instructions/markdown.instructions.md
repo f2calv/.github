@@ -59,6 +59,11 @@ Apply to every file named `README.md`, wherever it lives — repository root, pr
 - A collection's root README provides orientation and one useful catalogue. Project READMEs explain
   their own contracts and usage. Keep each published package or chart README useful when rendered
   outside GitHub; link to deeper material without moving essential installation guidance away.
+- When describing a public API or surface, link each primary interface name directly to its defining
+  source file, not merely to a project folder or a generic API index. Link the contract at its first
+  explanatory mention or in the public-surface table; code samples need no embedded Markdown links.
+  Verify the definition and source reference. Use absolute repository links in packaged READMEs
+  where relative source links would not resolve in the registry.
 - Put extended tutorials, design explanations and runbooks under `docs/`. Do not move essential
   usage or configuration out of a README merely to make it shorter, and do not copy entire guides
   into multiple READMEs.
