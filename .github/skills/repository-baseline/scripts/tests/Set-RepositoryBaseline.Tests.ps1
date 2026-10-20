@@ -81,6 +81,10 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
 
     It 'Preserves non-Sonar checks for excluded public repository <Repository>' -TestCases @(
         @{
+            Repository = 'f2calv/agentizr'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'build / app-build-dotnet')
+        }
+        @{
             Repository = 'f2calv/.github'
             Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'test')
         }
@@ -151,6 +155,25 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
+    }
+
+    It 'Requires SonarCloud alongside Agentizr CI checks after its exclusion is removed' {
+        $Policy = $script:Policy | ConvertTo-Json -Depth 100 | ConvertFrom-Json -Depth 100
+        $Policy.publicRepository.sonarCloudGateExclusions = @(
+            $Policy.publicRepository.sonarCloudGateExclusions | Where-Object { $_ -ne 'f2calv/agentizr' }
+        )
+        $Ruleset = Get-DesiredRuleset -Policy $Policy -RepositoryName 'f2calv/agentizr' -Visibility public
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be 1
+        @($StatusChecks[0].parameters.required_status_checks.context) | Should -Be @(
+            'lint / lint',
+            'versioning / gha-release-versioning',
+            'build / app-build-dotnet',
+            'SonarCloud Code Analysis'
+        )
+        $StatusChecks[0].parameters.strict_required_status_checks_policy | Should -BeTrue
+        $StatusChecks[0].parameters.do_not_enforce_on_create | Should -BeFalse
     }
 
     It 'Adds the approved status checks for <Repository>' -TestCases @(

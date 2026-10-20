@@ -214,6 +214,12 @@ Use the repository helper from the central customization checkout:
 The helper creates or resumes the repository, invokes the bundled baseline reconciler, clones it, and
 can add it to the active VS Code workspace.
 
+After CI is established, verify its emitted check names against the policy overrides and rerun the
+baseline; the creation-time ruleset alone does not establish repository-specific validation checks.
+Verify SonarQube analysis history separately: an imported project with no analyses is not a working
+quality gate. For an approved zero-analysis exclusion, report scanner setup as pending and remove
+the exclusion after the first analysis. Agentizr currently has this exclusion pending scanner setup.
+
 ## Troubleshooting
 
 | Symptom | Response |

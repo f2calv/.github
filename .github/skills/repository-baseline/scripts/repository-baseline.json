@@ -16,6 +16,7 @@
     "requiredStatusChecks": ["SonarCloud Code Analysis"],
     "sonarCloudGateExclusions": [
       "f2calv/.github",
+      "f2calv/agentizr",
       "f2calv/CasCap.Api.Voice",
       "f2calv/doorbird-rs",
       "f2calv/gha-check-release-exists",
@@ -59,6 +60,29 @@
   },
   "historicalRulesetNames": ["default", "Protect default branch"],
   "rulesetOverrides": [
+    {
+      "repositoryPattern": "f2calv/agentizr",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build / app-build-dotnet"
+              }
+            ]
+          }
+        }
+      ]
+    },
     {
       "repositoryPattern": "f2calv/SmartHaus",
       "rules": [
