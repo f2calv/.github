@@ -1,7 +1,7 @@
 ---
 name: dotnet-release-train
-description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases beginning with CasCap.Common.'
-argument-hint: '[start=CasCap.Common] [packages={all|internal}]'
+description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases: CI tooling and Helm charts first, then CasCap.Common and its consumers.'
+argument-hint: '[start={tooling|CasCap.Common}] [packages={all|internal}]'
 user-invocable: true
 ---
 
@@ -13,7 +13,22 @@ release conventions rather than maintaining a separate release state machine.
 
 ## Repository Order
 
-- **CasCap.Common** — always start here when its packages need updating.
+- **Tooling wave** — release first whenever these repositories have unreleased commits, because every
+  later pull request runs on them.
+  - GitHub Action repositories, in dependency order: an Action consumed by another Action or by a
+    reusable workflow is released before its consumer (for example `gha-release-versioning` and
+    `gha-dotnet-nuget` before `gha-workflows`).
+    - Consumers pin floating majors (`@v1`, `@v2`), so a release takes effect fleet-wide when the
+      alias moves. Confirm that pending commits are non-breaking for that major; a breaking change
+      needs a new major and consumer updates instead.
+  - Helm chart repositories. Release a shared chart before any chart that bundles it, and bump the
+    bundled dependency in the same pull request. After publication, update every GitOps pin that
+    references the chart directly. Application charts that bundle it move in their own
+    repository's wave.
+  - The customization repository (`.github`) is merged **last of the whole train**, so lessons
+    learned while running the train land in its skills and instructions within the same pull
+    request.
+- **CasCap.Common** — the first package producer whenever its packages need updating.
   - Update external packages and the shared source.
   - Validate every packable `CasCap.Common.*` project.
   - Merge and release it.
@@ -38,6 +53,12 @@ release conventions rather than maintaining a separate release state machine.
 - **CasCap.GooglePhotosCli** — continue after `CasCap.Api.GooglePhotos` is available.
   - Update `CasCap.Api.GooglePhotos`.
   - Validate and release the CLI through its existing global-tool workflow.
+- **Platform packages** — continue after the Common, Azure, Voice and SignalCli packages they consume
+  are available.
+  - `agentizr` — releases the Agent Runtime contracts and client packages; the runtime host itself
+    ships as an image and chart.
+  - `signalizr` — releases its client, Comms and Comms AI packages together, after the Agent Runtime
+    packages are on NuGet.
 - **Application repositories** — do these last, after every package they consume is available.
   - Update all newly released internal packages together.
   - Validate the complete application rather than publishing another NuGet package unless that
@@ -55,6 +76,10 @@ unless the user explicitly asks for parallel sessions.
   - Read the repository instructions and documented package holds first.
   - Fetch the default branch and inspect the current branch, worktree, existing pull request, and
     open Dependabot pull requests.
+  - Before releasing a producer, confirm every consumer's Release graph is complete: a reference
+    that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
+    consumer's Release build after the producer ships. Fix the graph on the consumer's branch
+    before releasing the producer.
   - Preserve unrelated work. Do not create another branch or pull request when the current one is
     already the correct release branch.
   - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
@@ -93,11 +118,18 @@ unless the user explicitly asks for parallel sessions.
   - Treat missing expected build, test, or Sonar checks as a CI coverage gap, not a passing result.
   - Use a merge commit unless the repository explicitly requires another strategy. Do not squash a
     multi-commit release branch by default.
+  - When a ruleset requires branches to be up to date and the pull request is behind, update it with
+    `gh pr update-branch`, which merges the base server-side, then wait for the checks on the new
+    head. Never rebase or force-push a published release branch for this.
   - Merge only after the user authorizes it or an active auto-merge instruction covers it.
 - **Verify the release**
   - Switch the local checkout to the default branch, fast-forward from origin, and delete the merged
     local branch when no other worktree owns it.
-  - Wait for default-branch CI and the immutable GitHub release tag.
+  - Wait for default-branch CI and the immutable GitHub release tag. Select the run by the merge
+    commit SHA (`gh run list --commit <sha>`), not by the latest run on the branch, which may still
+    be the previous push.
+  - For an Action repository, confirm the floating major tag now dereferences to the release commit
+    (`git ls-remote --tags origin 'v1^{}'`).
   - Derive the released version from the tag; do not infer it from GitVersion output or a pull-request
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
@@ -105,6 +137,12 @@ unless the user explicitly asks for parallel sessions.
     - PowerShell: `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
   - If the repository publishes no packages, continue once its merge and release checks are complete.
+- **Update documentation downstream**
+  - In each consumer's pull request, remove README statements the release has made untrue, such as
+    "Debug-only", "Release build not supported", "not yet published" or adjacent-checkout
+    requirements, and add package badges or version rows for packages that now exist.
+  - Search for them before opening the pull request rather than relying on memory, for example
+    `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
 
 ## Interruptions And Resume
 
