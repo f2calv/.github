@@ -93,6 +93,7 @@ Read enough source to establish the current product, without turning the README 
 | Helm chart | Chart metadata, dependencies, values, schema, templates, OCI publication and existing generators |
 | Terraform module | Variables, outputs, providers, resources, version constraints and pinned documentation generator |
 | Container example | Compose or container configuration, published image, ports, mounts, health and platform support |
+| Shared tooling or agent customization | Tracked skills and scripts, supported discovery locations, activation scope, prerequisites and mutation boundaries |
 | Documentation index | Existing guides, intended reading order and actual navigation targets |
 | Test project | Test source, project targets, fixtures, data providers, skip conditions and applicable testing instructions |
 
@@ -100,6 +101,10 @@ Also inspect relevant release and analysis configuration to establish current in
 and badge destinations; this evidence does not imply the pipeline belongs in the resulting README.
 Packability or a build definition does not prove publication: verify the artifact and usable version
 in its registry. Give source-reference guidance for unpublished units, not speculative install commands.
+Verify that advertised resources are actually tracked and distributed; an empty local directory or
+an ignored resource does not establish what a fresh clone contains. For editor and agent setup,
+check the selected harness's current discovery rules rather than assuming every integration uses
+the same locations, precedence or Settings Sync behavior.
 Reuse domain skills for their specialized procedures rather than duplicating them here.
 
 Inspect test source as evidence where appropriate, but ask before executing tests or examples.
@@ -119,6 +124,15 @@ methods. Cite the relevant policy and verification date when a changeable restri
 keep that verification separate from claims of successful live execution. Trace consumer-visible
 delivery behavior: deletion or acknowledgement timing, awaited versus synchronous callbacks, batching
 side effects, and the scope of retries, timeouts and rate limits.
+
+Follow invoked scripts beneath command-line flags and workflow inputs. Compare help text with
+execution and packaged runtime requirements; neither a switch name nor a printed warning proves its
+effect. For reusable workflows, trace secrets actually consumed, including inherited-only values
+absent from the declared caller contract.
+
+For infrastructure, trace bootstrap automation separately from the desired manifest graph; existing
+manifests do not prove the documented installation path can create them. Distinguish an omitted or
+null optional object from a populated object whose attributes receive defaults.
 
 ### 3. Select the Outline
 
@@ -180,9 +194,15 @@ side effects, and the scope of retries, timeouts and rate limits.
 
 1. Check the result against the selected template conditions, not just heading presence. Confirm
    that commands, inputs, outputs, framework versions and dependency edges match source evidence.
+   Resolve command paths from the example's stated working directory, not merely by finding a
+   script with the same name. Distinguish read-only audits and previews from mutating invocations.
 2. Resolve local links and anchors and check relevant external destinations. Never send private
    paths or identifiers to external link checkers. Retry an apparent `HEAD` failure with `GET`
    before declaring a destination broken; some registries and badge endpoints reject `HEAD`.
+   For source links, verify that the remote reference contains the defining file and contract;
+   local existence does not prove availability on the default branch. Use a verified published
+   immutable commit when necessary, and distinguish new documentation awaiting publication from
+   broken links to existing published resources.
    Report inaccessible or unverified targets.
 3. Check badge alt text against its actual metric and link, not merely whether an image loads.
    Check diagram syntax and GitHub rendering when tooling is available; disclose unrendered diagrams.

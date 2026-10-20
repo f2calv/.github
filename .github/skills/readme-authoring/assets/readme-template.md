@@ -15,6 +15,7 @@ empty sections, placeholder tables or template instructions in a reader-facing d
 | Published product | Verified destination links and suitable badges; license when applicable |
 | Unpublished or source-only unit | Explicit availability and verified build/source-reference guidance; no speculative registry badge or install command |
 | Collection | One catalogue linking to child READMEs and published artifacts |
+| Shared tooling or agent customization | Quick Start, one capability catalogue, workspace or personal activation scope and prerequisites; separate local discovery from platform-inherited defaults |
 | Application or CLI | Quick Start, Usage, Configuration; installation and platform requirements as needed |
 | .NET or NuGet library | Installation, Usage or API, supported target frameworks; registration and configuration when exposed |
 | Interchangeable providers or processing modes | Supported providers or modes, selection and enforcement boundaries; do not present declared-but-unimplemented options as capabilities |
@@ -101,12 +102,14 @@ not a paraphrase of the instructions. Optional sections are not a request to cre
 ## Permissions and Secrets
 
 <Required permissions, credential acquisition and safe secret references; no real values.>
+<Include inherited-only secrets actually consumed, not just the declared caller contract.>
 
 <!-- IF configuration is exposed and is not already covered by Inputs or a generated reference. -->
 ## Configuration
 
 <Required and optional settings, meaningful defaults, constraints and where values are supplied.>
 <For multiple providers or modes, identify supported selections and who enforces the policy.>
+<Distinguish omitted or null optional objects from populated objects with defaulted attributes.>
 <Helm: explain common values and preserve generated values documentation if present.>
 
 <!-- IF strongly typed configuration is exposed. -->
