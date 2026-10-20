@@ -106,6 +106,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Skip bot-triggered runs conditionally, such as `if: github.actor != 'dependabot[bot]'`.
 - Pass tokens via stdin for registry logins, such as `echo "$TOKEN" | docker login --password-stdin`.
 - Force OCI registry, repository and tag values to lowercase, such as `${IMAGE_REGISTRY,,}`.
+- Never interpolate free-text context such as `github.ref`, `github.head_ref`, `github.workflow`, event titles or bodies, or caller-supplied strings directly into a `run` script. Map them to step `env:` variables and reference the quoted variable (`"$GIT_BRANCH"`), so a crafted branch or workflow name cannot change the command.
 
 ## Versioning
 
