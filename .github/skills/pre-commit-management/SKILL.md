@@ -141,6 +141,11 @@ pwsh ./.github/skills/pre-commit-management/scripts/Invoke-PreCommit.ps1 `
   -RepoRoot <repository> -Mode InstallPrePush
 ```
 
+For nested paths on Windows, pass Git-style repository-relative filenames, as returned by
+`git ls-files`, to `-Files`. Backslash-separated names can make hook type filtering skip existing
+files. A `no files to check` result does not validate the requested files; correct the selection
+and rerun.
+
 The script prefers an existing `pre-commit` executable or installed Python module. When neither is
 available it builds and launches `pre-commit-runner:4.6.2`, containing Python 3.12, Node 22, Git,
 and pre-commit 4.6.2. A named cache volume preserves hook environments between runs.
