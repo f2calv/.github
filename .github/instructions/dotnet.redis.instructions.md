@@ -5,6 +5,10 @@ applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*.lua,**/appsettings*.json'
 
 # Redis Key Naming
 
+Use the `leadership-election` skill when creating, changing or diagnosing Redlock-backed leader
+election, lease renewal, leader-only workers or failover. This file owns Redis naming; the skill
+owns the election lifecycle and validation workflow.
+
 When a project uses a feature enum (e.g. `AppFeature`) to gate services, derive the domain segment of every Redis key from the **lowercase enum member name** so that key prefixes stay tightly coupled to the feature taxonomy (e.g. `AppFeature.Billing` → `billing:`, `AppFeature.Notifications` → `notifications:`).
 
 - **All lowercase**, colon-separated segments: `{domain}:{type}:{detail}`.
