@@ -84,6 +84,12 @@ unless the user explicitly asks for parallel sessions.
     already the correct release branch.
   - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
     pull request. Keep major migrations and documented holds separate.
+  - For a repository's first package release, confirm that CI actually publishes. An application
+    repository may only build and test, so add a default-branch `package` job using
+    `f2calv/gha-dotnet-nuget@v2`, mirroring an existing app-plus-package repository, and gate
+    `release` on it. Ask the user to create the nuget.org Trusted Publishing policy (owner,
+    repository, `ci.yml`) before merging. Replace "no NuGet listing" README caveats with install
+    commands and badges in the same pull request.
 - **Update packages**
   - Update all active stable versions in `Directory.Packages.props`, not only internal packages,
     unless the user requests `packages=internal`.
