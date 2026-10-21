@@ -220,6 +220,12 @@ Verify SonarQube analysis history separately: an imported project with no analys
 quality gate. For an approved zero-analysis exclusion, report scanner setup as pending and remove
 the exclusion after the first analysis. Agentizr currently has this exclusion pending scanner setup.
 
+A public repository whose first pull request was opened before SonarCloud analysed it can be
+blocked by a required `SonarCloud Code Analysis` check that never reports. Before adding an
+exclusion, confirm the project has zero pull-request and branch analyses through the SonarCloud
+API. Analysis can start on a later pull request, so re-check on the next pull request and remove
+the exclusion as soon as the check reports.
+
 ## Troubleshooting
 
 | Symptom | Response |
@@ -232,6 +238,7 @@ the exclusion after the first analysis. Agentizr currently has this exclusion pe
 | Unexpected status checks | Compare the repository name with policy override patterns |
 | `WhatIf` changes fingerprints | Stop; treat as a script defect before any apply |
 | Fleet audit exits nonzero | Inspect `Drift` and `Failed`; `PlanGated` alone is non-blocking |
+| Pull request `BLOCKED` with no failing check | A required check never reported. For `SonarCloud Code Analysis`, list the project's analyses; with none, add a temporary exclusion and re-apply that repository only |
 
 ## Maintaining This Skill
 

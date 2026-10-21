@@ -155,6 +155,10 @@ conditional templates, invalid inputs, package contents, or migration equivalenc
   environment.
 * If Argo CD renders different resources than the CLI example, compare chart version, dependency
   lock, values precedence, namespace, and capabilities.
+* If the shared `helm-chart-package` workflow fails with "helm version is managed by the
+  devcontainer.json", the repository has no `.devcontainer/devcontainer.json`. The workflow reads
+  the Helm version from its `kubectl-helm-minikube` feature, so add a dev container that pins `helm`
+  (never `none`) and cover it with the `devcontainers` Dependabot ecosystem.
 
 ## Maintaining This Skill
 
