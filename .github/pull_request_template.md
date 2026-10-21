@@ -4,7 +4,7 @@
 
 Closes #
 
-<!-- Every manually opened pull request must link a corresponding issue. -->
+<!-- Link the issue this resolves, or write "None" with a one-line reason, such as a dependency or release update. -->
 
 ## Summary
 
@@ -16,8 +16,8 @@ Closes #
 
 ## Checklist
 
-- [ ] The linked issue describes and scopes this change.
-- [ ] The pull request contains no unrelated changes.
+- [ ] The linked issue, or the summary when there is none, describes and scopes this change.
+- [ ] Any small unrelated change is called out in the summary.
 - [ ] Tests and documentation are updated where behavior or public interfaces changed.
 - [ ] No credentials, personal data or private-system details are included.
 - [ ] Breaking changes, migrations and operational follow-up are called out.
