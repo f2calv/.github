@@ -185,6 +185,9 @@ analyzer errors otherwise surface one project-dependency layer at a time.
 EF migrations are generated code: exempt `CA1861` with a `[**/Migrations/*.cs]` override section
 rather than editing migration files.
 
+A relaxation silences the build only. SonarQube still imports the relaxed diagnostics, so code
+written after the relaxation must satisfy them or the Quality Gate fails on new issues.
+
 Keep other shared style preferences standardized as suggestions until their fleet fallout has been
 measured. Promote only a small related tranche at a time. Namespace, public API and architecture
 changes require their own reviewable tranche rather than being hidden inside formatting cleanup.

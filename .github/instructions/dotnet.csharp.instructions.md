@@ -81,6 +81,9 @@ preferences are suggestions, so apply both while writing:
   with several, name each after its options type (`commsConfig`, `azureAuthConfig`).
 - **Options access**: read `.Value` / `.CurrentValue` inline at the point of use; never cache it in a
   field or local.
+- **At most seven constructor or method parameters.** Move a cohesive group of dependencies into a
+  dedicated type, such as an `<Area>Metrics` class that owns its meter instruments, and pass a
+  small state object instead of a list of flags.
 - **Seal concrete classes** unless designed for inheritance (`virtual`/`abstract` members or a
   documented base). Services, background services, entities, converters and middleware default to
   `sealed`; unsealing later is non-breaking.
@@ -99,6 +102,12 @@ preferences are suggestions, so apply both while writing:
 - **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
   hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
   end-to-end flow when extraction would obscure it.
+- **Keep composition roots shallow.** Register each feature in its own method that returns early when
+  the feature is off, and carry feature-derived switches and run-once shared infrastructure in one
+  small state type rather than tuples or local functions, so no method exceeds a cognitive
+  complexity of 15.
+- **No hard-coded absolute URIs or file paths** in code. Read them from configuration, or omit
+  decorative metadata such as OpenAPI contact and licence links.
 - **Centralise environment access** through `Microsoft.Extensions.Configuration`; do not scatter
   `Environment.GetEnvironmentVariable`. Centralised reads of standard platform, CI and
   build-provenance variables are permitted.
@@ -139,7 +148,9 @@ preferences are suggestions, so apply both while writing:
 - **Cancellation**: pass the available `CancellationToken` to every cancellable call — database, HTTP,
   file, stream, queue, delay, lock, paging and nested services. Pass `CancellationToken.None`
   explicitly, and locally, when an operation must outlive the caller. Never convert a requested
-  `OperationCanceledException` into an error.
+  `OperationCanceledException` into an error. To wait for shutdown without a catch block, await
+  `Task.Delay(Timeout.Infinite, token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)`;
+  a `catch` that logs must pass the caught exception to the logger.
 
 ## Background Work and Shutdown
 
@@ -175,6 +186,10 @@ preferences are suggestions, so apply both while writing:
   `[LoggerMessage]`: `private static partial void` methods at the bottom of the partial class or in
   `{ClassName}.Logging.cs`, first parameter `ILogger logger`, called as `LogXxx(logger, ...)`. Leave
   dynamic-level `logger.Log(level, ...)` calls unconverted.
+- **Logging argument cost (CA1873)**: guard every non-generated `logger.LogXxx(...)` call with
+  `if (logger.IsEnabled(LogLevel.Xxx))`, because the `params object[]` allocation alone is costly.
+  Give `[LoggerMessage]` parameters the value's own type (`Symbol symbol`, an enum) rather than
+  calling `ToString()` at the call site; the generator formats lazily.
 - Never log secrets, tokens, authorisation headers, connection strings, signed-URL queries, full
   local paths or personal data.
 
@@ -211,6 +226,9 @@ preferences are suggestions, so apply both while writing:
   complexity; clarity wins in demonstration code.
 - Use `FrozenDictionary`/`FrozenSet`, stored as the concrete type, for collections built once at
   startup, and `System.Threading.Lock` rather than `object` for dedicated locks.
+- Pass metric tags as `new TagList([...])`: its span constructor builds the collection expression on
+  the stack, whereas `Counter.Add`'s `params` overload allocates an array beyond three tags.
+  SonarQube S3878 misreads the collection expression as an array; mark it false positive.
 
 ## Correctness and Security
 

@@ -28,6 +28,9 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
 - **Documentation**: thin controller methods use
   `/// <inheritdoc cref="ServiceType.Method(ParamTypes)"/>` rather than duplicating the service's
   XML documentation.
+- **API versioning registration**: do not restate Asp.Versioning defaults. Omit
+  `DefaultApiVersion = new ApiVersion(1.0)` (AV0011), and omit `AddEndpointsApiExplorer()` when
+  `AddApiExplorer()` is already registered (AV0020).
 
 ## Request and Response DTOs
 
