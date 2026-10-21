@@ -103,8 +103,8 @@ After creating a pull request, and again before merging it:
 3. Re-run affected analysis on the unchanged head. A result from a superseded commit is not evidence
    for the current pull request.
 4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Every pull
-   request must pass `lint / lint`, `versioning / gha-release-versioning`, the repository's own
-   validation check and the SonarQube Quality Gate.
+   request must pass the repository's required lint and versioning checks, its own validation check
+   and the SonarQube Quality Gate.
 
 ## Merge
 

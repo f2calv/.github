@@ -140,10 +140,11 @@ preferences are suggestions, so apply both while writing:
     `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
   - Protocol boundaries throw their own type: `JsonException` in converters, `RpcException` in gRPC
     services and `McpException` in MCP tools.
-  - Domain and runtime failures throw a type derived from `CasCap.Common.Exceptions.GenericException`.
-    Throw `GenericException` itself only for a one-off failure nobody would catch or query
-    separately; recurring failures in one area get a dedicated `<Area>Exception`. Contract and client
-    packages that deliberately avoid a CasCap.Common dependency derive from `Exception` instead.
+  - Domain and runtime failures throw a type derived from the solution's shared domain exception
+    base (for example `GenericException` in `CasCap.Common.Exceptions`). Throw the base itself only
+    for a one-off failure nobody would catch or query separately; recurring failures in one area get
+    a dedicated `<Area>Exception`. Contract and client packages that deliberately avoid the shared
+    library dependency derive from `Exception` instead.
   - The `dotnet-exceptions` skill audits a repository and introduces area exception types.
 - **Cancellation**: pass the available `CancellationToken` to every cancellable call — database, HTTP,
   file, stream, queue, delay, lock, paging and nested services. Pass `CancellationToken.None`

@@ -50,14 +50,14 @@ repository after a fragment change.
 
 ## .NET Reference Baseline
 
-Use the tracked root `.editorconfig` in the public CasCap.Common repository as the proven reference
-for future .NET audits and rollouts. It records the complete generated profile whose analyzer
-fallout has been fixed across a multi-target library and test suite.
+Designate one public .NET repository whose analyzer fallout has been fixed across a multi-target
+library and test suite, and use its tracked root `.editorconfig` as the proven reference for future
+audits and rollouts. For f2calv repositories this is `CasCap.Common`.
 
-The central fragments remain the source of truth: never hand-copy or edit the CasCap.Common file as
-policy. Before rolling out to another .NET repository, run the generator `-Check` against
-CasCap.Common and stop if it has drifted. Inspect its current generated file to understand the
-accepted rules and exclusions, then generate the target repository from the same central profile.
+The central fragments remain the source of truth: never hand-copy or edit the reference file as
+policy. Before rolling out to another .NET repository, run the generator `-Check` against the
+reference repository and stop if it has drifted. Inspect its current generated file to understand
+the accepted rules and exclusions, then generate the target repository from the same central profile.
 
 ## Profile Selection
 
@@ -91,7 +91,7 @@ entire central profile into an override.
 For each repository:
 
 1. Detect the language profile from tracked manifests and source files.
-2. For .NET, verify and inspect the CasCap.Common reference baseline first. Inspect the target root
+2. For .NET, verify and inspect the reference baseline repository first. Inspect the target root
    `.editorconfig`, if present, and compare effective sections with that generated profile.
 3. Inspect formatter configuration, `.gitattributes`, pre-commit hooks, and build properties for
    conflicting ownership.

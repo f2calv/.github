@@ -11,6 +11,11 @@ Use a distributed lease to coordinate leader-only work across replicas. Keep own
 reusable and application policy local. This skill describes an implementation and review procedure,
 not a claim that every existing worker already implements lease-loss protection.
 
+**Scope:** this skill is specific to solutions built on the `CasCap.Common.Caching` package and its
+RedLock.net integration (`RedlockConfig`, `IDistributedLockFactory`, `IRedLock`). The lease
+lifecycle, failover and validation guidance applies to any Redlock-style lease, but the type names,
+configuration and helper calls are that library's.
+
 The [Redis instructions](../../instructions/dotnet.redis.instructions.md) own key naming.
 The [workflow instructions](../../instructions/workflow.instructions.md) own reuse, portability,
 temporary duplication and deferred extraction. Follow the configuration, C# and testing instructions

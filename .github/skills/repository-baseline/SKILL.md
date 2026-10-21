@@ -39,9 +39,9 @@ skill. Use the scripts as the implementation authority and this document as the 
 
 ## Policy Conventions
 
-- The default-branch ruleset requires `lint / lint`, `versioning / gha-release-versioning`, the
-  repository's own validation check and the SonarQube Quality Gate for every public and private
-  repository.
+- The default-branch ruleset requires the shared lint and versioning checks named in
+  [repository-baseline.json](./scripts/repository-baseline.json), the repository's own validation
+  check and the SonarQube Quality Gate for every public and private repository.
 - Configure every public repository in SonarQube Cloud on the Free plan through its GitHub
   integration. Grant the SonarQube GitHub App access to all repositories, enable automatic import for
   new repositories and bulk-import existing repositories when establishing the integration.
@@ -218,7 +218,7 @@ After CI is established, verify its emitted check names against the policy overr
 baseline; the creation-time ruleset alone does not establish repository-specific validation checks.
 Verify SonarQube analysis history separately: an imported project with no analyses is not a working
 quality gate. For an approved zero-analysis exclusion, report scanner setup as pending and remove
-the exclusion after the first analysis. Agentizr currently has this exclusion pending scanner setup.
+the exclusion after the first analysis.
 
 A public repository whose first pull request was opened before SonarCloud analysed it can be
 blocked by a required `SonarCloud Code Analysis` check that never reports. Before adding an

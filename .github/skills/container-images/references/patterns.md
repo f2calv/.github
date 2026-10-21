@@ -1,8 +1,8 @@
 # Container Image Patterns
 
-Copy-ready fragments for the conventions in `docker.instructions.md`. The public
-`multi-arch-container-dotnet`, `-go`, `-rust` and `-python` repositories under the `f2calv` GitHub
-account are complete reference implementations that follow these patterns stage for stage.
+Copy-ready fragments for the conventions in `docker.instructions.md`. As reference implementations
+that follow these patterns stage for stage, see the public f2calv `multi-arch-container-dotnet`,
+`-go`, `-rust` and `-python` repositories.
 
 ## Header and Stage Banners
 
@@ -218,8 +218,8 @@ same image instead, and copy the published output into it.
 
 ## Optional Test Target (.NET)
 
-Place the stage between `build` and `final`. The public `f2calv/yamlizr` repository carries this
-stage in its Release `Dockerfile`.
+Place the stage between `build` and `final`. For a working example, see the Release `Dockerfile`
+in the public f2calv `yamlizr` repository.
 
 ```dockerfile
 # In the build stage, keep the tests out of the publish layer:
@@ -261,7 +261,7 @@ RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locke
   other `COPY` that would otherwise pick the tests up, including a `Dockerfile.Debug`.
 - Add `--progress=plain` to see the test output; a failing test fails the build.
 
-Verified in September 2026 on yamlizr with the .NET 10.0.401 SDK:
+Verified in September 2026 on a .NET 10.0.401 CLI-tool repository:
 
 - `--target test` ran all 28 credential-free cases with the network disabled.
 - A default three-platform build executed no `test` step.

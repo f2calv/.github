@@ -20,7 +20,7 @@
 .PARAMETER OutputPath
     Optional path for the complete JSON result.
 .EXAMPLE
-    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -Repository f2calv/example -Mode Apply
+    ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -Repository owner/example -Mode Apply
 .EXAMPLE
     ./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 -AllOwned -Mode Audit
 .EXAMPLE
@@ -375,8 +375,8 @@ function Get-DesiredRuleset {
 
     $RequiredStatusRules = @($Rules | Where-Object type -eq 'required_status_checks')
     $SonarCloudGateExcluded = $Visibility -eq 'public' -and
-        $Policy.publicRepository.PSObject.Properties.Name -contains 'sonarCloudGateExclusions' -and
-        $RepositoryName -in @($Policy.publicRepository.sonarCloudGateExclusions)
+    $Policy.publicRepository.PSObject.Properties.Name -contains 'sonarCloudGateExclusions' -and
+    $RepositoryName -in @($Policy.publicRepository.sonarCloudGateExclusions)
     $SonarCloudGateRequired = $Visibility -eq 'public' -and -not $SonarCloudGateExcluded
     if ($SonarCloudGateRequired -or $RequiredStatusRules.Count -gt 1) {
         $RequiredStatusChecks = [Collections.Generic.List[object]]::new()

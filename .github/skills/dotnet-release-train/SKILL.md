@@ -1,7 +1,7 @@
 ---
 name: dotnet-release-train
-description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases: CI tooling and Helm charts first, then CasCap.Common and its consumers.'
-argument-hint: '[start={tooling|CasCap.Common}] [packages={all|internal}]'
+description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases: CI tooling and Helm charts first, then the base library and its consumers in dependency order.'
+argument-hint: '[start={tooling|<first-producer>}] [packages={all|internal}]'
 user-invocable: true
 ---
 
@@ -13,11 +13,14 @@ release conventions rather than maintaining a separate release state machine.
 
 ## Repository Order
 
+Build the order from the actual package graph: a repository moves only after every package it
+consumes is published. The waves below are the general shape; the
+[real-world example](#real-world-example-f2calv-net-release-train) shows one concrete train.
+
 - **Tooling wave** — release first whenever these repositories have unreleased commits, because every
   later pull request runs on them.
   - GitHub Action repositories, in dependency order: an Action consumed by another Action or by a
-    reusable workflow is released before its consumer (for example `gha-release-versioning` and
-    `gha-dotnet-nuget` before `gha-workflows`).
+    reusable workflow is released before its consumer.
     - Consumers pin floating majors (`@v1`, `@v2`), so a release takes effect fleet-wide when the
       alias moves. Confirm that pending commits are non-breaking for that major; a breaking change
       needs a new major and consumer updates instead.
@@ -25,50 +28,28 @@ release conventions rather than maintaining a separate release state machine.
     bundled dependency in the same pull request. After publication, update every GitOps pin that
     references the chart directly. Application charts that bundle it move in their own
     repository's wave.
-  - The customization repository (`.github`) is merged **last of the whole train**, so lessons
-    learned while running the train land in its skills and instructions within the same pull
-    request.
-- **CasCap.Common** — the first package producer whenever its packages need updating.
+  - The customization repository is merged **last of the whole train**, so lessons learned while
+    running the train land in its skills and instructions within the same pull request.
+- **Base library** — the shared library every other package builds on, whenever its packages need
+  updating.
   - Update external packages and the shared source.
-  - Validate every packable `CasCap.Common.*` project.
+  - Validate every packable project.
   - Merge and release it.
   - Wait until every package from the release is restorable from NuGet.
-- **Direct CasCap.Common consumers** — continue only after the Common packages are available.
-  - `CasCap.Api.Azure`
-    - Update every consumed `CasCap.Common.*` package together.
-    - Release its `CasCap.Api.Azure.*` packages and wait for all of them on NuGet.
-  - `CasCap.Api.SignalCli`
-    - Update every consumed `CasCap.Common.*` package together.
-    - Release `CasCap.Api.SignalCli` and wait for it on NuGet.
-  - `CasCap.Api.GooglePhotos`
-    - Update its Common packages.
-    - Release `CasCap.Api.GooglePhotos` and wait for it on NuGet.
-  - `yamlizr`
-    - Update its Common packages and other dependencies.
-    - Release through its existing global-tool workflow.
-- **Voice API** — continue only after the CasCap.Api.Azure packages are available.
-  - `CasCap.Api.Voice`
-    - Update every consumed `CasCap.Common.*` and `CasCap.Api.Azure.*` package together.
-    - Release `CasCap.Api.Voice` and wait for the exact version on NuGet.
-- **CasCap.GooglePhotosCli** — continue after `CasCap.Api.GooglePhotos` is available.
-  - Update `CasCap.Api.GooglePhotos`.
-  - Validate and release the CLI through its existing global-tool workflow.
-- **Platform packages** — continue after the Common, Azure, Voice and SignalCli packages they consume
-  are available.
-  - `agentizr` — releases the Agent Runtime contracts and client packages; the runtime host itself
-    ships as an image and chart.
-  - `signalizr` — releases its client, Comms and Comms AI packages together, after the Agent Runtime
-    packages are on NuGet.
+- **Direct consumers** — libraries and tools that depend only on the base library.
+- **Second-level libraries** — packages that consume a direct consumer, such as a domain API built on
+  a shared cloud-integration library.
+- **Platform packages** — contracts and clients published by service repositories, in their own
+  dependency order.
 - **Application repositories** — do these last, after every package they consume is available.
   - Update all newly released internal packages together.
   - Validate the complete application rather than publishing another NuGet package unless that
     repository explicitly produces one.
-  - Process the public applications SmartHaus and tutorizr, and any private application consumers
-    discovered in the current workspace. Never publish private repository names or topology from
-    this public skill.
+  - Include private application consumers discovered in the current workspace, but never publish
+    private repository names or topology in a public skill, issue or pull request.
 
-Repositories at the same indentation level do not depend on one another. Process them sequentially
-unless the user explicitly asks for parallel sessions.
+Repositories at the same level do not depend on one another. Process them sequentially unless the
+user explicitly asks for parallel sessions.
 
 ## Repeat For Each Repository
 
@@ -85,11 +66,11 @@ unless the user explicitly asks for parallel sessions.
   - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
     pull request. Keep major migrations and documented holds separate.
   - For a repository's first package release, confirm that CI actually publishes. An application
-    repository may only build and test, so add a default-branch `package` job using
-    `f2calv/gha-dotnet-nuget@v2`, mirroring an existing app-plus-package repository, and gate
-    `release` on it. Ask the user to create the nuget.org Trusted Publishing policy (owner,
-    repository, `ci.yml`) before merging. Replace "no NuGet listing" README caveats with install
-    commands and badges in the same pull request.
+    repository may only build and test, so add a default-branch `package` job using the shared NuGet
+    publish action, mirroring an existing app-plus-package repository, and gate `release` on it. Ask
+    the user to create the nuget.org Trusted Publishing policy (owner, repository, `ci.yml`) before
+    merging. Replace "no NuGet listing" README caveats with install commands and badges in the same
+    pull request.
 - **Update packages**
   - Update all active stable versions in `Directory.Packages.props`, not only internal packages,
     unless the user requests `packages=internal`.
@@ -182,8 +163,34 @@ unless the user explicitly asks for parallel sessions.
 - Keep status updates short: current repository, latest verified package version, blocker, next
   repository.
 
+## Real-World Example: f2calv .NET Release Train
+
+The public f2calv repositories release in this order. Indented repositories within a wave do not
+depend on one another.
+
+- **Tooling wave**
+  - Actions: `gha-release-versioning` and `gha-dotnet-nuget` (the NuGet publish action) before the
+    `gha-workflows` reusable workflows that consume them.
+  - Charts: `helm-charts`, whose `workload` chart is bundled by every application chart.
+  - `.github`, merged last of the whole train.
+- **Base library**: `CasCap.Common` and its `CasCap.Common.*` packages.
+- **Direct consumers**, each updating every consumed `CasCap.Common.*` package together:
+  - `CasCap.Api.Azure`, releasing all `CasCap.Api.Azure.*` packages.
+  - `CasCap.Api.SignalCli`.
+  - `CasCap.Api.GooglePhotos`.
+  - `yamlizr`, released through its global-tool workflow.
+- **Second-level libraries**:
+  - `CasCap.Api.Voice`, after `CasCap.Api.Azure`.
+  - `CasCap.GooglePhotosCli`, after `CasCap.Api.GooglePhotos`, through its global-tool workflow.
+- **Platform packages**:
+  - `agentizr` releases the Agent Runtime contracts and client; its host ships as an image and chart.
+  - `signalizr` releases its client, Comms and Comms AI packages together, after the Agent Runtime
+    packages are on NuGet.
+- **Applications**: `SmartHaus` and `tutorizr`, plus private application consumers in the workspace.
+
 ## Maintaining This Skill
 
-- Repository order and package levels when a repository gains, loses or moves packages.
+- Repository order and package levels when a repository gains, loses or moves packages, in both the
+  generic waves and the real-world example.
 - Release-run, tag and NuGet verification commands, and the ruleset behaviours that block merges.
 - Downstream README caveats to remove once the release they wait for lands.

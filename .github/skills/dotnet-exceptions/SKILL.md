@@ -1,6 +1,6 @@
 ---
 name: dotnet-exceptions
-description: 'Audit and refactor C#/.NET exception throwing: replace raw or misused exception types, introduce area-specific GenericException subclasses for recurring failures, and keep messages free of secrets. Use when reviewing throw sites, consolidating GenericException usage, or adding a new failure area.'
+description: 'Audit and refactor C#/.NET exception throwing: replace raw or misused exception types, introduce area-specific subclasses of the shared domain exception base for recurring failures, and keep messages free of secrets. Use when reviewing throw sites, consolidating domain-exception usage, or adding a new failure area.'
 argument-hint: 'mode={audit|apply} [scope=repository|project|area]'
 user-invocable: true
 ---
@@ -10,6 +10,9 @@ user-invocable: true
 The shared C# instructions own the always-on rules: which type to throw, catch only to handle,
 translate or enrich, and one exception per file under `Exceptions/`. This skill is the procedure for
 auditing an existing codebase against them and introducing area exception types.
+
+The *domain exception base* is the solution's shared base type for domain and runtime failures, for
+example `GenericException` in `CasCap.Common.Exceptions`. Substitute the solution's own type below.
 
 ## Modes
 
@@ -33,7 +36,7 @@ auditing an existing codebase against them and introducing area exception types.
 
 2. Flag forbidden types: `Exception`, `SystemException`, `ApplicationException`,
    `NullReferenceException`, `IndexOutOfRangeException`.
-3. Flag misclassified `GenericException` sites. These are the common ones:
+3. Flag misclassified domain-exception-base sites. These are the common ones:
    - "not set", "not initialised", "please call X first" or "was not given" guards are object state,
      so use `InvalidOperationException`; so is a missing embedded resource;
    - a bad method argument, including an unusable path or a conflicting dictionary key, uses the
@@ -45,7 +48,7 @@ auditing an existing codebase against them and introducing area exception types.
      callers must tell it apart;
    - options checked imperatively belong in options validation (`IValidateOptions<T>`,
      `IValidatableObject` and `ValidateOnStart()`), which surfaces `OptionsValidationException`.
-4. Cluster the remaining `GenericException` sites by failure area: the subsystem plus the condition
+4. Cluster the remaining domain-exception-base sites by failure area: the subsystem plus the condition
    a caller, retry policy, health check or log query would want to distinguish. Read each message;
    the file name alone is not evidence.
 5. A cluster is a candidate for an area exception when it has about three or more sites, or fewer
@@ -57,12 +60,12 @@ auditing an existing codebase against them and introducing area exception types.
 ## Apply
 
 1. Reuse an existing area type before creating one. Check the repository's `Exceptions/` folders
-   first; for example, an area base such as `PAFException` may already have a fitting
-   `PAFConfigurationException`.
+   first; for example, an area base such as `PaymentException` may already have a fitting
+   `PaymentConfigurationException`.
 2. Place each new type in the lowest project that owns the failure area, under `Exceptions/`, with a
    namespace ending in `.Exceptions`.
 3. Shape:
-   - Derive from `GenericException`, or from an area base when the area has several distinct
+   - Derive from the domain exception base, or from an area base when the area has several distinct
      failures. Make the area base non-sealed and every leaf `sealed`.
    - Provide the parameterless, message, and message-plus-inner constructors, or a primary
      constructor that carries structured properties (identifiers, ordinals, counts) a caller can
@@ -79,8 +82,8 @@ auditing an existing codebase against them and introducing area exception types.
 
 ## Boundaries
 
-- Do not add a CasCap.Common reference to a contracts or client package only to reach
-  `GenericException`; derive from `Exception` there.
+- Do not add a shared-library reference to a contracts or client package only to reach the domain
+  exception base; derive from `Exception` there.
 - Do not convert BCL argument, state or protocol exceptions into area types, and never convert a
   requested `OperationCanceledException`.
 - Keep this refactor separate from behaviour changes so that review can confirm only the thrown type
