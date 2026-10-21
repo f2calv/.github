@@ -34,9 +34,13 @@ auditing an existing codebase against them and introducing area exception types.
 2. Flag forbidden types: `Exception`, `SystemException`, `ApplicationException`,
    `NullReferenceException`, `IndexOutOfRangeException`.
 3. Flag misclassified `GenericException` sites. These are the common ones:
-   - "not set", "not initialised" or "call X first" guards are object state, so use
-     `InvalidOperationException`;
-   - a bad method argument, including an unusable path, uses the `ArgumentException` family;
+   - "not set", "not initialised", "please call X first" or "was not given" guards are object state,
+     so use `InvalidOperationException`; so is a missing embedded resource;
+   - a bad method argument, including an unusable path or a conflicting dictionary key, uses the
+     `ArgumentException` family;
+   - a failed parse of a string uses `FormatException`;
+   - a `switch` default for an unhandled subtype uses `NotSupportedException`, or `UnreachableException`
+     when every subtype is handled;
    - bad data read from a file or export uses `InvalidDataException`, or an area exception when
      callers must tell it apart;
    - options checked imperatively belong in options validation (`IValidateOptions<T>`,
