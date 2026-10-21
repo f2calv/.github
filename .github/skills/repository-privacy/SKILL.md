@@ -103,3 +103,7 @@ published text again; do not rely on the request payload or a cached local draft
   Secrets belong in a secret store regardless of repository visibility.
 - Add `pii-report*.csv` to the scanned repository's `.gitignore`; the report contains the extracted
   values by design.
+
+## Maintaining This Skill
+
+- Scanner patterns, and each newly found leak category the scanner cannot see (Step 3).

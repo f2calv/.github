@@ -372,3 +372,9 @@ repository. Gather evidence before editing tracked files.
 * [Dev Container JSON reference](https://containers.dev/implementors/json_reference/)
 * [Dev Container Features](https://containers.dev/features)
 * [Images, Dockerfiles, and Docker Compose](https://containers.dev/guide/dockerfile)
+
+## Maintaining This Skill
+
+* Base image, Feature and tool versions, and the lockfile refresh in the Upgrade Procedure.
+* Lifecycle-script, mount and host/editor-sync behaviour whenever a container fails to start for a
+  new reason.

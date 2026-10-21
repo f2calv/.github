@@ -208,4 +208,11 @@ Pass several paths as a comma-separated list from PowerShell. From another shell
 | `/bin/sh: set: Illegal option -` | The Dockerfile has CRLF line endings; renormalise it under the shared `.gitattributes` (`* text=auto eol=lf`) |
 | DF018 on prose comments | Reword comments that begin with an uppercase instruction keyword |
 
+## Maintaining This Skill
+
+* Base-image tags, digests and distribution package pins in the examples and audit rules.
+* `docker buildx build --check` coverage: drop audit rules the checker now enforces and add the
+  ones it still misses.
+* Script parameters in the Script Reference whenever the scripts change.
+
 > Brought to you by f2calv/.github

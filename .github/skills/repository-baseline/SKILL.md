@@ -232,3 +232,8 @@ the exclusion after the first analysis. Agentizr currently has this exclusion pe
 | Unexpected status checks | Compare the repository name with policy override patterns |
 | `WhatIf` changes fingerprints | Stop; treat as a script defect before any apply |
 | Fleet audit exits nonzero | Inspect `Drift` and `Failed`; `PlanGated` alone is non-blocking |
+
+## Maintaining This Skill
+
+- GitHub ruleset and repository-settings API fields, and newly required checks.
+- Script parameters, and troubleshooting entries for new `PlanGated` or partial-run causes.

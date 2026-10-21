@@ -62,3 +62,7 @@ Create `BRANCH_CHANGES.md` in the repository root with the following sections:
 - Do not include the full diff content — summarise it.
 - Mark the file clearly as temporary (mention it should be deleted before merge).
 - Add `BRANCH_CHANGES.md` to the repository's `.gitignore`, or delete it before committing, so the summary never lands in the branch it describes.
+
+## Maintaining This Skill
+
+- Output format and steps whenever pull-request description conventions change.

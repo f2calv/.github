@@ -240,4 +240,9 @@ made read-only by archival.
 - [Dependabot alerts](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependabot-alerts)
 - [About code scanning](https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning)
 
+## Maintaining This Skill
+
+- GitHub archive, ruleset and repository-settings behaviour, and the `gh` commands that inspect them.
+- SonarQube project handling and the stop conditions used when a gate or API is unavailable.
+
 > Brought to you by f2calv/.github

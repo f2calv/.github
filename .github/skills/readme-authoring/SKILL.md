@@ -218,3 +218,8 @@ null optional object from a populated object whose attributes receive defaults.
 
 Completion means the requested batch is accounted for, not merely that the first root README looks
 better. Report remaining repositories explicitly when a fleet request spans several batches.
+
+## Maintaining This Skill
+
+- README section conventions, badge sources and SonarQube coverage badges.
+- External best-practice sources when they change.

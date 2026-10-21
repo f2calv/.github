@@ -86,12 +86,13 @@ project separately to avoid multi-target rewrite conflicts.
 - Regex-based audits are discovery aids. Use language-server references and compiler validation before
   renaming symbols or deleting code.
 
-## Continuous Improvement
+## Maintaining This Skill
 
-After each cleanup pass, update this skill when a recurring code-quality issue is not yet covered:
-add or expand the narrowest reusable audit/fix script, add a synthetic Pester regression for the
-new finding and its false-positive boundary, and update this workflow and coverage list in the same
-change. Keep repository-specific incidents and domain rules out of the central skill.
+- A recurring code-quality issue not yet covered: add or expand the narrowest audit or fix script,
+  a synthetic Pester regression for the finding and its false-positive boundary, and the workflow
+  and coverage list, in the same change.
+- Analyzer IDs and severities as the shared `.editorconfig` profile promotes diagnostics.
+- Keep repository-specific incidents and domain rules out of the central skill.
 
 ## Tests
 

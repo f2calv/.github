@@ -107,3 +107,9 @@ After creating a pull request, and again before merging it:
 
 Report the issue or pull request URL, applied type, labels and assignee, gate results on the
 current head, folded or closed Dependabot pull requests, and any check still pending or not run.
+
+## Maintaining This Skill
+
+- `gh` and GitHub API commands, including which refs code scanning and checks report against.
+- Ruleset behaviours that block merges, such as required review threads and up-to-date branches.
+- Issue types, labels and description conventions.

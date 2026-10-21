@@ -197,8 +197,14 @@ Keep implementation marked ongoing until the promised application evidence exist
 example or another session's unverified claim into a passed test or completed integration.
 
 Update the consuming application's configuration/developer documentation without private identities
-in public examples. Feed durable SDK/workflow corrections back into this skill and naming/description
-corrections into their linked authority only; do not create duplicate convention lists.
+in public examples.
+
+## Maintaining This Skill
+
+* ModelContextProtocol C# SDK version, transport options and attribute names, with their API
+  evidence links.
+* Route naming and description corrections to their linked authority, not here; do not create
+  duplicate convention lists.
 
 ## API evidence
 

@@ -81,4 +81,9 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 | Workstation is sluggish after a reboot | Docker restarts every idle per-repository builder the scripts created (`<image>1`, or the repository name for multi-arch samples). Stop them with `docker stop` on the `buildx_buildkit_*` containers; the scripts start them again when needed |
 | Laptop runs out of memory during builds | Run one scripted build at a time; each multi-platform build emulates arm under QEMU in its own builder |
 
+## Maintaining This Skill
+
+- Parameters and behaviour of the central build and deploy scripts, kept in step with their tests.
+- The repository-root shim contract whenever a consumer needs a new switch.
+
 > Brought to you by f2calv/.github

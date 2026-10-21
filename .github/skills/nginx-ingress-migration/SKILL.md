@@ -349,3 +349,8 @@ Report:
 - static, rendered, Argo, and live checks run with results;
 - tests and live operations not run, with the approval still required;
 - current rollout stage, remaining gates, rollback action, fallback expiry, and cleanup work.
+
+## Maintaining This Skill
+
+- Annotation and ConfigMap compatibility mappings as either controller releases new versions.
+- Rollout stages, gates and rollback actions proven during a cutover.

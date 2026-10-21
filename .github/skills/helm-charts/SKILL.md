@@ -155,3 +155,8 @@ conditional templates, invalid inputs, package contents, or migration equivalenc
   environment.
 * If Argo CD renders different resources than the CLI example, compare chart version, dependency
   lock, values precedence, namespace, and capabilities.
+
+## Maintaining This Skill
+
+* Helm, chart-testing and OCI publishing commands and versions.
+* Values-schema, dependency and dashboard ConfigMap conventions corrected during a chart change.

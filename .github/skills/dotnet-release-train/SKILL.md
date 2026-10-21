@@ -175,3 +175,9 @@ unless the user explicitly asks for parallel sessions.
 - Do not mix deployment or live-cluster debugging into the release train unless the user asks for it.
 - Keep status updates short: current repository, latest verified package version, blocker, next
   repository.
+
+## Maintaining This Skill
+
+- Repository order and package levels when a repository gains, loses or moves packages.
+- Release-run, tag and NuGet verification commands, and the ruleset behaviours that block merges.
+- Downstream README caveats to remove once the release they wait for lands.

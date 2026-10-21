@@ -198,3 +198,8 @@ Accept: application/json
 
 * [REST Client extension](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)
 * [REST Client variables](https://github.com/Huachao/vscode-restclient#variables)
+
+## Maintaining This Skill
+
+* REST Client variable, dotenv and authentication syntax as the extension changes.
+* Requests-folder layout conventions corrected during a migration.

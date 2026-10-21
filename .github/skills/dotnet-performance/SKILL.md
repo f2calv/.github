@@ -56,3 +56,8 @@ are not repeated here.
 
 Report the hot path, baseline and after figures with conditions, each pattern applied, and any
 pattern rejected because it did not measurably help.
+
+## Maintaining This Skill
+
+- Patterns a profile showed not to help; record the rejection beside the pattern.
+- New BCL APIs that replace a hand-rolled technique described here.

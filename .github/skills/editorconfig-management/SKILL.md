@@ -220,3 +220,8 @@ Report:
 
 Keep public reports free of private repository names, coordinates, paths, topology, and operational
 details.
+
+## Maintaining This Skill
+
+- The .NET reference baseline and profile contents whenever analyzer severities are promoted.
+- Formatting fallout and rollout steps learned in each cross-repository tranche.
