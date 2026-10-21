@@ -63,9 +63,9 @@ release conventions rather than maintaining a separate release state machine.
   - Update all newly released internal packages together.
   - Validate the complete application rather than publishing another NuGet package unless that
     repository explicitly produces one.
-  - Process public applications such as SmartHaus and any private application consumers discovered
-    in the current workspace. Never publish private repository names or topology from this public
-    skill.
+  - Process the public applications SmartHaus and tutorizr, and any private application consumers
+    discovered in the current workspace. Never publish private repository names or topology from
+    this public skill.
 
 Repositories at the same indentation level do not depend on one another. Process them sequentially
 unless the user explicitly asks for parallel sessions.

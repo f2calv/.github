@@ -175,6 +175,16 @@ Remove contradictory `NoWarn` or `WarningsNotAsErrors` entries. Fix dead code, f
 naming at the source; do not weaken severity to make a build pass. A documented wire-contract
 naming exception may remain narrowly suppressed when renaming would break the external schema.
 
+When the user explicitly defers a large cleanup, a temporary relaxation is permitted only in the
+repository's `-OverridePath` fragment. Lower the affected rules to `suggestion`, never `none`, and
+mark the section with a `TODO` naming the backlog and the restore order. Place a broad `[*.cs]`
+relaxation before narrower sections such as `[**/Migrations/*.cs]`, because the later matching
+EditorConfig section wins. Measure the full backlog first with `-p:TreatWarningsAsErrors=false`;
+analyzer errors otherwise surface one project-dependency layer at a time.
+
+EF migrations are generated code: exempt `CA1861` with a `[**/Migrations/*.cs]` override section
+rather than editing migration files.
+
 Keep other shared style preferences standardized as suggestions until their fleet fallout has been
 measured. Promote only a small related tranche at a time. Namespace, public API and architecture
 changes require their own reviewable tranche rather than being hidden inside formatting cleanup.
