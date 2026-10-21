@@ -107,6 +107,23 @@ Repositories follow a consistent layout, regardless of language:
 - Verify the resulting file inventory against the named exemplars and document intentional
   omissions rather than filling them with speculative placeholders.
 
+## Reuse and Portability
+
+- **Design all new code for generic reuse and portability.** Before implementing a feature or
+  copying a snippet, search for an existing shared implementation and consider whether another
+  application could reasonably benefit. Prefer extending or extracting into the appropriate
+  shared library, Helm chart or reusable workflow rather than maintaining parallel implementations.
+- **Evaluate extraction case by case.** Balance likely consumers and avoided duplication against
+  abstraction complexity, new dependencies, version bumps and release-train overhead. Keep
+  application-specific policy local; do not invent a general framework for a speculative consumer
+  or force an immediate cross-repository release for every small change.
+- **Make deliberate duplication temporary and traceable.** When copying is the pragmatic choice,
+  add a colocated `TODO` or an appropriately scoped issue naming what should move, its intended
+  shared owner, why extraction is deferred, and the trigger: for example, "Relocate this lease
+  lifecycle into the shared caching library when we next bump that package." Check these deferrals
+  when updating the corresponding dependency and replace copies with the shared implementation.
+  Follow the future-work and confidentiality rules below; do not expose private coordinates.
+
 ## Forward-Only Maintenance
 
 - Maintain only current supported behaviour. Remove deprecated, retired, legacy and no-op code instead of preserving compatibility aliases or shims.
