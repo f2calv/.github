@@ -50,6 +50,11 @@ discovery and narrowly scoped fixes.
 The layout audit distinguishes top-level declarations from nested declarations by masked brace depth;
 it does not flag nested test doubles.
 
+The script does not yet check folder placement, so review these by hand during a layout pass:
+interfaces under `Abstractions`, DI services suffixed `Service` under `Services`, DTOs, options and
+configuration records under `Models`, and interfaces with a single implementation that meet none
+of the exceptions in the shared C# instructions.
+
 ## Logging Fix
 
 Preview or gate before writing:

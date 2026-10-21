@@ -19,6 +19,16 @@ hot-path work.
     with its related config types.
 - **Generic type filenames** encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
 - **Interfaces** start with `I` and live in an `Abstractions` folder and namespace.
+- **Single-implementation interfaces**: do not declare an interface for a type with one
+  implementation. Add one when a second implementation exists, when it is a library contract or
+  extension point consumed by another assembly, or when it isolates an external dependency
+  (network, clock, file system, third-party SDK) that tests must replace. Otherwise tests use the
+  real type, which keeps the sealing rule below intact.
+- **Services** — types that perform application work and are registered in DI — use a `Service`
+  suffix (`OrderService`, `ReplayBgService`) and live in a `Services` folder. Other types keep their
+  role suffix (`Handler`, `Factory`, `Provider`, `Validator`, `Converter`).
+- **Models** — DTOs, request and response payloads, options and configuration records — live in a
+  `Models` folder and namespace. EF Core entities follow the EF Core instructions.
 - **Custom exceptions** use the `Exception` suffix, one per file under `Exceptions/` with a namespace
   ending in `.Exceptions`. Nested private test doubles stay with their owning test type.
 - **Wire constants** — request URIs, route templates, header names — go in a `static class` under a
@@ -58,7 +68,8 @@ preferences are suggestions, so apply both while writing:
   inheritors.
 - **Parameter order**: `ILogger`, then `IOptions<T>` / `IOptionsMonitor<T>`, then `TimeProvider`, then
   application services.
-- **Service names** use a `Svc` suffix (`orderSvc`, not `orderService`).
+- **Injected service names** use a `Svc` suffix on parameters and fields (`orderSvc`, not
+  `orderService`); the type itself keeps its `Service` suffix.
 - **Options access**: read `.Value` / `.CurrentValue` inline at the point of use; never cache it in a
   field or local.
 - **Seal concrete classes** unless designed for inheritance (`virtual`/`abstract` members or a
