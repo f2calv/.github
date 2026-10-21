@@ -18,14 +18,21 @@ hot-path work.
   - `_*Config.cs` (for example `_AppConfig.cs` for `record AppConfig`) groups a configuration root
     with its related config types.
 - **Generic type filenames** encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
-- **Interfaces** start with `I` and live in an `Abstractions` folder and namespace.
+- **Interfaces** start with `I`, live in an `Abstractions` folder and namespace, and are named for the
+  role or capability they define (`IMessageGateway`), not by prefixing an implementing class name with
+  `I`, and not ending in `Service`. Apply this to new interfaces; rename an existing one only when
+  already changing it, because renaming a published contract is breaking.
 - **Single-implementation interfaces** are bloat: remove an interface that has only one
   implementation. Keep it when tests substitute it with a fake or mock, when it is a library
   contract or extension point consumed by another assembly, or when a second implementation exists.
   Do not add one speculatively for a future implementation.
-- **Services** — types that perform application work and are registered in DI — use a `Service`
-  suffix (`OrderService`, `ReplayBgService`) and live in a `Services` folder. Other types keep their
-  role suffix (`Handler`, `Factory`, `Provider`, `Validator`, `Converter`).
+- **Services** — application types registered in DI — live in a `Services` folder. A service uses a
+  `Service` suffix (`OrderService`, `ReplayBgService`); a DI-registered type with a more specific role
+  keeps that suffix (`Handler`, `Factory`, `Manager`, `Coordinator`) and still lives in `Services`.
+  Group a service's supporting types in a `Services` sub-folder or as `ServiceName.SubCategory.cs`
+  partial files. Types outside DI keep their role suffix (`Validator`, `Converter`).
+- **Extension classes** live in an `Extensions` folder and namespace and are named after the type they
+  extend (`ServiceCollectionExtensions`).
 - **Models** — DTOs, request and response payloads, options and configuration records — live in a
   `Models` folder and namespace. EF Core entities follow the EF Core instructions.
 - **Custom exceptions** use the `Exception` suffix, one per file under `Exceptions/` with a namespace
@@ -33,8 +40,8 @@ hot-path work.
 - **Wire constants** — request URIs, route templates, header names — go in a `static class` under a
   `Constants` folder and namespace, grouped per API surface (`RequestUris`, `UploadHeaders`), not
   beside DTOs in `Models`. This applies to APIs the code calls and APIs it exposes.
-- **Namespaces** follow folders, except sub-folders under `Services`. Before creating a `Services`
-  sub-folder, ask the user (yes/no) whether it introduces a sub-namespace.
+- **Namespaces** follow folders, except sub-folders under `Services`, which keep the parent
+  `Services` namespace.
 - **`GlobalUsings.cs`** exists in every project root. Move a namespace imported by more than two files
   into it, delete the per-file duplicates, and re-check after refactors that add files.
 
@@ -67,8 +74,11 @@ preferences are suggestions, so apply both while writing:
   inheritors.
 - **Parameter order**: `ILogger`, then `IOptions<T>` / `IOptionsMonitor<T>`, then `TimeProvider`, then
   application services.
-- **Injected service names** use a `Svc` suffix on parameters and fields (`orderSvc`, not
-  `orderService`); the type itself keeps its `Service` suffix.
+- **Injected dependency names** follow the injected type without the leading `I`
+  (`IRealtimeConnectionHub realtimeConnectionHub`). Types ending in `Service` use a `Svc` suffix
+  instead (`orderSvc`, not `orderService`); the type itself keeps its `Service` suffix. `ILogger<T>`
+  is `logger` and `TimeProvider` is `timeProvider`. A single options dependency is named `config`;
+  with several, name each after its options type (`commsConfig`, `azureAuthConfig`).
 - **Options access**: read `.Value` / `.CurrentValue` inline at the point of use; never cache it in a
   field or local.
 - **Seal concrete classes** unless designed for inheritance (`virtual`/`abstract` members or a
