@@ -58,8 +58,10 @@ reverts the hook on every edit:
   `esbenp.prettier-vscode`. Never pin `[json]` or `[jsonc]` to `vscode.json-language-features`:
   it expands arrays that Prettier collapses.
 - The Prettier extension also formats Markdown, which markdownlint owns. With a global
-  `editor.formatOnSave`, set `"[markdown]": { "editor.formatOnSave": false }` in user settings, or
-  every edited Markdown file is rewritten wholesale and fails `MD004`/`MD007`.
+  `editor.formatOnSave`, set `"[markdown][instructions][prompt][skill][chatagent]":
+  { "editor.formatOnSave": false }` in user settings; Copilot customization files use those
+  language IDs, not `markdown`. Otherwise every edited file is rewritten wholesale and fails
+  `MD004`/`MD007`.
 - When accepting an edit or saving a file reformats it unexpectedly, look for working copies whose
   line endings differ from the index: `git ls-files --eol` lists them as `i/lf w/crlf`. Git hides
   the difference but EditorConfig rewrites the file on save. Delete and re-check-out those files
