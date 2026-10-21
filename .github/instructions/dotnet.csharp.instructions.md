@@ -19,11 +19,10 @@ hot-path work.
     with its related config types.
 - **Generic type filenames** encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
 - **Interfaces** start with `I` and live in an `Abstractions` folder and namespace.
-- **Single-implementation interfaces**: do not declare an interface for a type with one
-  implementation. Add one when a second implementation exists, when it is a library contract or
-  extension point consumed by another assembly, or when it isolates an external dependency
-  (network, clock, file system, third-party SDK) that tests must replace. Otherwise tests use the
-  real type, which keeps the sealing rule below intact.
+- **Single-implementation interfaces** are bloat: remove an interface that has only one
+  implementation. Keep it when tests substitute it with a fake or mock, when it is a library
+  contract or extension point consumed by another assembly, or when a second implementation exists.
+  Do not add one speculatively for a future implementation.
 - **Services** — types that perform application work and are registered in DI — use a `Service`
   suffix (`OrderService`, `ReplayBgService`) and live in a `Services` folder. Other types keep their
   role suffix (`Handler`, `Factory`, `Provider`, `Validator`, `Converter`).
