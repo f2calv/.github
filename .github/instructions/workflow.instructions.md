@@ -1,6 +1,6 @@
 ---
-description: 'Cross-cutting Copilot execution, commit, credential, confidentiality, repository structure and forward-only maintenance conventions.'
-applyTo: '**'
+description: "Cross-cutting Copilot execution, commit, credential, confidentiality, repository structure and forward-only maintenance conventions."
+applyTo: "**"
 ---
 
 # Workflow
@@ -87,11 +87,11 @@ Repositories follow a consistent layout, regardless of language:
 - **`GitVersion.yml`** in the root drives semantic-versioning rules.
 - **`.gitattributes`** standardises line endings across Windows and Linux:
 
-  ```gitattributes
-  * text=auto eol=lf
-  *.{cmd,[cC][mM][dD]} text eol=crlf
-  *.{bat,[bB][aA][tT]} text eol=crlf
-  ```
+    ```gitattributes
+    * text=auto eol=lf
+    *.{cmd,[cC][mM][dD]} text eol=crlf
+    *.{bat,[bB][aA][tT]} text eol=crlf
+    ```
 
 ## Bootstrapping New Repositories
 
@@ -142,11 +142,20 @@ Recording is only half the loop; the other half is reading it back.
 ## Maintaining Conventions
 
 - When detecting a new convention or pattern, add it to the appropriate scoped `*.instructions.md` file — or to this file when the rule is cross-cutting — and apply it retroactively where applicable.
-- **Close the customization feedback loop**: After executing a skill or applying instructions,
-  review what the work proved, corrected or clarified. Flow durable improvements back into the
-  owning skill or instruction file in the same change so future sessions do not repeat stale steps,
-  missing checks or superseded guidance. Update the existing authority rather than recording a
-  duplicate rule elsewhere; leave one-off incident details in memory or repository documentation.
+- **Close the customization feedback loop**: Skills and instructions are maintained through use.
+  Improve them while the evidence is fresh, not only when asked:
+  - **Capture at the moment of learning.** When a step proves wrong, incomplete, superseded or
+    surprising, immediately append a one-line note naming the owning file to session memory
+    (`/memories/session/customization-feedback.md`). Session memory survives conversation
+    compaction; an intention to update a skill later does not.
+  - **Apply at each phase boundary**, and always before the final report. Fold every durable lesson
+    into the owning skill or instruction file, in the section it affects. Condense while doing so:
+    delete superseded steps and merge near-duplicates rather than only appending.
+  - **Report it.** Every completion report for work that used a skill or applied instructions ends
+    with a customization-feedback line: the files updated, or "none, because …". Silence is not
+    an acceptable answer.
+  - Update the existing authority rather than recording a duplicate rule elsewhere; leave one-off
+    incident details in memory or repository documentation.
 - **Default to the central instruction files.** When asked to add or change a convention, assume it belongs in the shared set rather than in the current repository's `copilot-instructions.md`. Only keep a rule local when it genuinely cannot apply elsewhere — it names a specific file, service, domain term or deliberate deviation from a central rule. If it is not clear-cut, say which file you intend to change and why before editing.
 - **Edit requested conventions for durability.** When a user asks to add wording to instructions,
   preserve the complete intent but do not default to copying their sentence verbatim. Write the

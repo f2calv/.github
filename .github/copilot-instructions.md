@@ -42,12 +42,12 @@ Notes:
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `.github/instructions/` | Canonical `*.instructions.md` files |
-| `.github/skills/` | Reusable agent skills |
-| `.github/prompts/` | Shared slash-command prompts |
-| `.scripts/` | Repository management, baseline and privacy tooling |
+| Path                              | Purpose                                                        |
+| --------------------------------- | -------------------------------------------------------------- |
+| `.github/instructions/`           | Canonical `*.instructions.md` files                            |
+| `.github/skills/`                 | Reusable agent skills                                          |
+| `.github/prompts/`                | Shared slash-command prompts                                   |
+| `.scripts/`                       | Repository management, baseline and privacy tooling            |
 | `.github/copilot-instructions.md` | This repository's own instructions, not part of the shared set |
 
 ## Authoring Rules
@@ -57,6 +57,10 @@ Notes:
 - `applyTo` is matched relative to the workspace root. Prefer portable patterns such as `**/*.cs`. Avoid patterns anchored to one repository's folder layout.
 - One topic per file, named `<topic>.instructions.md`. Keep rules short and self-contained, and say why a rule exists where the reason is not obvious.
 - Prefer amending an existing file over adding a near-duplicate one.
+- Every `SKILL.md` has a `## Maintaining This Skill` section listing that skill's own drift triggers:
+  the versions, tool behaviours, external APIs or steps most likely to go stale. Keep the general
+  feedback-loop rule in `workflow.instructions.md`, not repeated per skill.
+  `.scripts/tests/Skills.Tests.ps1` enforces the section in CI.
 
 ## What Stays in Each Repository
 
