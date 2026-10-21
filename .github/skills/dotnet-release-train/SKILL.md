@@ -134,7 +134,8 @@ unless the user explicitly asks for parallel sessions.
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
     version before continuing downstream.
-    - PowerShell: `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`
+    - PowerShell: `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
+      Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
   - If the repository publishes no packages, continue once its merge and release checks are complete.
 - **Update documentation downstream**
