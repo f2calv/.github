@@ -80,6 +80,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
+| [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [.NET performance](.github/skills/dotnet-performance/SKILL.md) | Measured hot-path, allocation and parsing improvements |
 | [.NET release train](.github/skills/dotnet-release-train/SKILL.md) | Dependency-ordered NuGet updates, releases and consumer propagation |
