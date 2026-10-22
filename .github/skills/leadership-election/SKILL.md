@@ -65,6 +65,7 @@ The established shared integration uses:
 | --- | --- |
 | `AddCasCapCaching(...)` | Registers caching and, when configured, the distributed-lock factory. |
 | `IDistributedLockFactory` | Acquires a resource lease through `CreateLockAsync(...)`. |
+| `ILeadershipRunner` | Provisional .NET 8+ checkout API; owns acquisition, loss cancellation, awaited cleanup and reacquisition. |
 | `IRedLock` | Exposes ownership state and asynchronous disposal. |
 | `IOptions<RedlockConfig>` | Supplies lock configuration and named timing profiles. |
 | `RedlockConfig.GetTimings(profileName)` | Resolves timings for the selected use case. |
@@ -106,6 +107,22 @@ name when the caller overrides it.
   cache-miss timings or behavior.
 
 ### Integration Procedure
+
+The current checkout's runner accepts
+`RunAsync(string resource, Func<CancellationToken, Task> runAsync, CancellationToken cancellationToken)`.
+It uses the existing factory and options, observes `IsAcquired` every
+`Redlock.LeadershipCheckIntervalMs` (default `1000`), and backs off by the election retry interval
+after contention. Business faults and unexpected normal completion propagate. Cleanup is awaited
+without a runner timeout; the consuming host owns forced termination. The feature launcher must
+await children, and request host shutdown immediately on a child fault before joining siblings, so
+the host shutdown budget still applies when cleanup stalls.
+
+Treat this API as provisional until the remaining use cases prove the contract. Use the existing
+Debug project-reference/container dependency mirror and authorized deployment shim rather than
+publishing a package for each iteration. For every contract refinement, impact-check all previously
+migrated consumers and backfill their wiring, tests and documentation in the same change. Keep
+published-package availability distinct from checkout behavior; do not silently claim Release
+support against an older package that lacks the runner.
 
 1. Inspect the pinned `CasCap.Common.Caching` and RedLock.net versions and the actual overloads
    before writing calls. A local checkout may contain APIs not yet available in a published package.
@@ -166,6 +183,27 @@ Lease loss, failure and host shutdown must all leave the active path.
    retry only failures for which recovery is intended and observable.
 9. Guard late callbacks and cleanup by ownership-run identity so an old run cannot mark a new run
    inactive or publish stale state.
+
+### Coordinated Schedules and Delivery
+
+- For several independent long-lived schedules sharing one lease, defer starting them until the
+  ownership callback is invoked. `Task.WhenAll` alone does not cancel siblings when one faults.
+  Prefer existing framework supervision where it fits: `Parallel.ForEachAsync` with one execution
+  slot per schedule cancels siblings on an unhandled failure and awaits them. The default
+  CPU-bounded parallelism can starve long-lived schedules, so size the slots to the schedule count.
+- Preserve the application's deliberate per-job/per-message recovery policy separately from fatal
+  ownership-run failures. Cancellation must escape those recovery catches, not emit a failure
+  event, send an error notification or begin another side effect under the old token.
+- Pass the ownership token through success/failure sinks, enqueue wrappers and fallback delivery,
+  not just the main operation. Check cancellation before dispatching APIs without native
+  cancellation; await an already-dispatched operation rather than abandoning it with `WaitAsync`.
+- Do not infer exactly-once delivery from atomic dequeue. Destructive dequeue before processing
+  can lose work on cancellation or crash, while retrying an externally accepted operation can
+  duplicate it. Keep delivery/acknowledgement and idempotency changes explicit and separately
+  evaluated; document existing semantics rather than silently requeueing uncertain outcomes.
+- Use injected clocks and explicit startup/cleanup gates to test multi-loop cancellation. Keep
+  UTC test timestamps offset-aware across successive runs; converting an unspecified `DateTime`
+  to `DateTimeOffset` can accidentally introduce workstation-local offsets.
 
 In the inspected RedLock.net 2.3.2 API, `IRedLock` exposes `IsAcquired`, `Status`,
 `InstanceSummary` and `ExtendCount`; status values include `Unlocked`, `Acquired`, `NoQuorum`,
