@@ -73,6 +73,10 @@ with `TypedResults`. This provides compile-time checks and response metadata in 
 MVC request-body binding still uses MVC input formatters. Inspect both JSON option sets: changing
 result styles must not silently change casing, enum values, converters or null handling.
 `Produces`/`Consumes` are not substitutes for testing the actual content types.
+Avoid controller-wide `Produces("application/json")` on typed JSON APIs: it can override MVC's
+automatic validation response content type, turning `application/problem+json` into
+`application/json`. Let typed success results and the standard validation response choose their
+own content types; keep explicit metadata for binary or other non-JSON operations.
 
 Apply the shared string-enum convention to both pipelines, retaining other intentional options:
 
