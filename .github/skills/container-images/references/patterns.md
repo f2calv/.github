@@ -83,9 +83,9 @@ stage ordering; this reference records the rationale only.
   missing`.
 - The restore runs once for every platform and writes the cache, so it is `locked`. The publish only
   reads packages the restore already wrote, so its three legs can share the cache concurrently.
-- The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link
-  starts the right application. Use `ENTRYPOINT ["/app/entrypoint"]`; it works on chiselled images
-  because it needs no shell.
+- Publish creates `entrypoint.dll` as a relative link to `$WORKLOAD.dll`. Use
+  `ENTRYPOINT ["dotnet", "entrypoint.dll"]` on both full and chiselled runtimes; it needs no shell
+  or apphost. Keep `WORKLOAD` aligned with the project's output assembly name, not its directory.
 - The version, source revision, repository, branch and workflow/run identity are baked into assembly
   metadata. Keep the generated `AssemblyMetadata` declarations in the repository's root
   `Directory.Build.props`; runtime environment variables do not redefine build provenance.
@@ -197,7 +197,7 @@ WORKDIR /app
 COPY --link --from=build /out .
 # ...runtime ENV, provenance, LABEL...
 USER $APP_UID
-ENTRYPOINT ["/app/entrypoint"]
+ENTRYPOINT ["dotnet", "entrypoint.dll"]
 
 # Investigation tooling only; never published.
 FROM runtime AS debug

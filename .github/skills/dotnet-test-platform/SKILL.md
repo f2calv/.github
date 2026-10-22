@@ -17,6 +17,10 @@ or external services.
 
 ## Required Configuration
 
+Use the [minimal MTP worked example](./examples/minimal-mtp.md) to see the complete configuration,
+central packages, solution entry, three-case test and matching commands together. Merge its settings
+into the target repository rather than copying over existing policy.
+
 - Select MTP in the root `global.json` of every .NET repository, including repositories without
   tests yet, so the first test project is MTP-native rather than silently inheriting VSTest:
 
@@ -77,3 +81,5 @@ test evidence, listing any checks not run.
 
 - .NET SDK and Microsoft.Testing.Platform command syntax, filters and coverage flags.
 - xUnit v3 and runner package versions, and CI or VS Code task steps that drift from them.
+- Rebuild and run the worked example when its package snapshot or command syntax changes; verify
+  nonzero test counts and an actual coverage artifact rather than exit status alone.

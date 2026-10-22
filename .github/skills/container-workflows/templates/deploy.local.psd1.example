@@ -1,0 +1,20 @@
+@{
+    ManifestRepo = '/path/to/private-gitops'
+    ManifestPath = 'src/applications/example.yaml'
+    PodAnnotationName = 'example.com/deployed-at'
+    ImageRepository = 'ghcr.io/owner/example'
+    DeploymentName = 'example'
+    Tag = 'latest-dev'
+    Platforms = 'linux/arm64'
+    NoCommit = $true
+    SkipBuild = $false
+    SkipMigrationCheck = $false
+    Chart = $false
+    ChartPath = ''
+    ChartRegistry = 'ghcr.io'
+    ChartRepository = ''
+    ChartVersion = ''
+    MigrationProject = ''
+    MigrationContext = ''
+    MigrationConnectionStringEnvironmentVariable = ''
+}

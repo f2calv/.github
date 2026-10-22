@@ -21,6 +21,10 @@ implementations bundled here.
 
 ## Quick Start
 
+First follow [caller setup](./examples/caller-setup.md) for the shim templates, local configuration
+and side-effect table. The following commands run from this skill's directory; supply the absolute
+path of the application checkout:
+
 ```powershell
 ./scripts/Invoke-Build.ps1 -RepositoryRoot /src/example
 ./scripts/Invoke-Deploy.ps1 -RepositoryRoot /src/example -WhatIf
@@ -95,3 +99,5 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 - Parameters and behaviour of the central build and deploy scripts, kept in step with their tests.
 - The repository-root shim contract whenever a consumer needs a new switch.
 - The shared build-argument names every Dockerfile is expected to accept.
+- Keep caller templates and their argument/exit-code tests aligned with the implementations;
+  document preview, publication and commit/push effects separately.

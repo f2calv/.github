@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Forward arguments and exit status to the repository's PowerShell entry point.
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec pwsh -NoProfile -File "$script_dir/{{ENTRYPOINT}}.ps1" "$@"

@@ -71,6 +71,10 @@ Start .NET service images from the bundled
 repository. Preserve template ordering and formatting; explain workload-required deviations beside
 them. Update the `.dockerignore` allow-list for every file the build reads.
 
+Use the [template inputs and worked substitution](./examples/dotnet-service.md) to select the
+matching ignore file and resolve every placeholder. The example distinguishes assembly identity
+from project paths and shows how sibling-project Debug inputs map into the container.
+
 ### Step 4: Validate
 
 Run the audit, then BuildKit's checks:
@@ -214,3 +218,5 @@ Pass several paths as a comma-separated list from PowerShell. From another shell
 * `docker buildx build --check` coverage: drop audit rules the checker now enforces and add the
   ones it still misses.
 * Script parameters in the Script Reference whenever the scripts change.
+* Keep template substitutions, ignore-file inputs and entrypoint guidance aligned; exercise both
+  published and Debug templates through the existing Dockerfile audit regressions.

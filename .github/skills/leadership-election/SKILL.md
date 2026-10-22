@@ -108,6 +108,10 @@ name when the caller overrides it.
 
 ### Integration Procedure
 
+The [owned-worker example](./examples/owned-worker.md) shows the application callback, registration,
+required resource configuration and lifecycle expectations using the existing shared runner.
+It deliberately does not implement another acquisition loop or claim package availability.
+
 The current checkout's runner accepts
 `RunAsync(string resource, Func<CancellationToken, Task> runAsync, CancellationToken cancellationToken)`.
 It uses the existing factory and options, observes `IsAcquired` every
@@ -339,3 +343,5 @@ that can create concurrent owners and does not repair an uncooperative worker.
   section without importing private application details or promoting existing implementation gaps.
 - Revisit readiness, shutdown budgets and topology assumptions when host, chart or Redis
   architecture changes.
+- Keep the owned-worker example aligned with the verified runner contract; compile against the
+  real implementation and distinguish consumer fake tests from Redis/renewal evidence.
