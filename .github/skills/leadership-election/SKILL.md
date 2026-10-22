@@ -86,6 +86,27 @@ root timings rather than failing; check that the intended election profile actua
 `CachingConfig.DistributedLockingEnabled` controls registration. Do not assume the root section
 name when the caller overrides it.
 
+### Configuration Ownership for New Abstractions
+
+- Keep `CachingConfig.Redlock` as the single configuration source for both short-lived cache locks
+  and leadership leases. A leadership runner consumes the existing `IOptions<RedlockConfig>` and
+  registered `IDistributedLockFactory`; do not create a second Redis connection, factory, binding
+  section or independently configured copy of expiry, wait, retry, database or key format.
+- Preserve the existing distinction: `DistributedCacheService` currently calls `GetTimings()`
+  for root cache-miss timings, while election uses `GetTimings(RedlockProfiles.LeaderElection)`.
+  Do not move or rename the root configuration, make every lock use election timings, or route
+  one-shot cache locking through a perpetual election/reacquisition loop.
+- Add genuinely new lifecycle settings, such as loss-observation interval or cleanup budget, only
+  where needed under the existing Redlock configuration, scoped to leadership behavior. Keep these
+  separate from the Redis lease expiry and acquisition retry settings; do not duplicate equivalent
+  knobs in application options or an unrelated feature-host configuration.
+- Resolve the same configured Redlock options consistently through every `AddCasCapCaching`
+  overload. Validate binding, default/profile selection and factory key/database configuration,
+  and add regression coverage showing that changing leadership settings does not change
+  cache-miss timings or behavior.
+
+### Integration Procedure
+
 1. Inspect the pinned `CasCap.Common.Caching` and RedLock.net versions and the actual overloads
    before writing calls. A local checkout may contain APIs not yet available in a published package.
    Do not add an independent RedLock factory or direct package reference just to duplicate the
