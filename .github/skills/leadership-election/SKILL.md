@@ -249,6 +249,14 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Include every user of a leader-owned connection in the ownership lifetime, including outbound
   queue readers and command writers registered as separate background features. Cancel and join
   those users before disposing the connection; standbys must not consume commands they cannot send.
+- For separately registered commands or reconciliation, serialize operation admission with ownership
+  withdrawal, link the caller and ownership tokens, and await admitted users before logout. Keep an
+  auxiliary-user cancellation lifetime separate from a dispatcher that must drain on a still-owned
+  normal/fault exit; lease loss must cancel both. Ownership-only cancellation need not terminate an
+  otherwise healthy periodic feature or masquerade as request cancellation.
+- Classify recovery after cleanup and lease disposal. Retry only the intended business failure, not
+  an acquisition/release/teardown error with a similar exception type. Preserve a previously observed
+  child failure's identity when joining it again; do not relabel it as a new teardown failure.
 - Create fresh callback/reconnection buffers for each ownership run. Detach handlers and await
   asynchronous connection disposal on every exit, including partial startup. Fence late callbacks
   by their run and connection identity, not a mutable reference to the latest run.
