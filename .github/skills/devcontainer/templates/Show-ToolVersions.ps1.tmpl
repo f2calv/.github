@@ -1,0 +1,14 @@
+#!/usr/bin/env pwsh
+#Requires -Version 7.4
+<#
+.SYNOPSIS
+    Verifies the tooling supplied by the Dev Container Feature without installing or running tests.
+.EXAMPLE
+    pwsh -NoProfile -File ./.devcontainer/Show-ToolVersions.ps1
+#>
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version 3.0
+
+$pester = Import-Module Pester -RequiredVersion 5.7.1 -PassThru -ErrorAction Stop
+Write-Host "PowerShell $($PSVersionTable.PSVersion)"
+Write-Host "Pester $($pester.Version)"

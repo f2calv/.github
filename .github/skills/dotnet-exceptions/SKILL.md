@@ -59,6 +59,10 @@ example `GenericException` in `CasCap.Common.Exceptions`. Substitute the solutio
 
 ## Apply
 
+Use the [classification and translation example](./examples/classification-and-translation.md)
+to distinguish BCL/protocol failures from a justified area exception and its narrow caller catch.
+The template uses an existing shared base; do not add a dependency merely to reproduce it.
+
 1. Reuse an existing area type before creating one. Check the repository's `Exceptions/` folders
    first; for example, an area base such as `PaymentException` may already have a fitting
    `PaymentConfigurationException`.
@@ -94,3 +98,5 @@ example `GenericException` in `CasCap.Common.Exceptions`. Substitute the solutio
 - Add each newly found misclassification pattern to the audit's list of misclassified sites.
 - Refresh the audit command when repository layouts or test-project naming change.
 - Record area types that proved useful, or unnecessary, as reference examples here.
+- Compile the example against the real domain base when its contract changes; retain explicit
+  checks for inner exceptions, unrelated I/O failures and cancellation propagation.

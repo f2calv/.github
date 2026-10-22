@@ -1,0 +1,27 @@
+using CasCap.Common.Exceptions;
+
+namespace Example.Exceptions;
+
+/// <summary>Indicates that an import document cannot be accepted because its structure is invalid.</summary>
+public sealed class ImportDocumentException : GenericException
+{
+    /// <summary>Initializes an import document failure.</summary>
+    public ImportDocumentException()
+    {
+    }
+
+    /// <summary>Initializes an import document failure with a safe explanation.</summary>
+    /// <param name="message">A description without document content, identifiers or local paths.</param>
+    public ImportDocumentException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>Initializes an import document failure while preserving its underlying cause.</summary>
+    /// <param name="message">A description without document content, identifiers or local paths.</param>
+    /// <param name="inner">The underlying failure, retained for controlled diagnosis.</param>
+    public ImportDocumentException(string message, Exception? inner)
+        : base(message, inner)
+    {
+    }
+}

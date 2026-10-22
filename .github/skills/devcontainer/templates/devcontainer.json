@@ -1,0 +1,24 @@
+// PowerShell tooling example; adapt versions and capabilities to the consuming repository.
+{
+  "name": "PowerShell Tooling",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:2": {
+      "version": "7.4",
+      "modules": "Pester==5.7.1",
+      "preserveHistory": false
+    }
+  },
+  "postCreateCommand": "pwsh -NoProfile -File ./.devcontainer/Show-ToolVersions.ps1",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.powershell",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}

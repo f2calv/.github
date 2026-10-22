@@ -81,6 +81,10 @@ outside Copilot requires a repository script or CI job; do not install a local G
 
 ### 2. Choose the Container Model
 
+For a small tooling repository, use the [minimal tooling example](./examples/minimal-tooling.md)
+to see image/Feature ownership, host/container extension parity and a non-installing post-create
+script together. Select it only when its execution evidence matches the repository.
+
 | Model | Use when |
 | --- | --- |
 | Official image | A language or base image plus Features is sufficient |
@@ -378,3 +382,5 @@ repository. Gather evidence before editing tracked files.
 * Base image, Feature and tool versions, and the lockfile refresh in the Upgrade Procedure.
 * Lifecycle-script, mount and host/editor-sync behaviour whenever a container fails to start for a
   new reason.
+* Keep the minimal example's Feature options, Pester version, lifecycle script and extension lists
+  synchronized; distinguish static validation from an approved container rebuild.

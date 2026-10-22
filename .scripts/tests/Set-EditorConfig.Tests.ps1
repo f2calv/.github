@@ -110,4 +110,32 @@ Describe 'Set-EditorConfigFile' -Tag 'Unit' {
 
         Join-Path $RepositoryPath '.editorconfig' | Should -Not -Exist
     }
+
+    It 'applies the documented migration override after the shared profile and checks the same inputs' {
+        $RepositoryPath = New-TestRepository -Name 'migration-example'
+        $OverridePath = Join-Path $RepositoryPath '.config/editorconfig/overrides.editorconfig'
+        New-Item -ItemType Directory -Path (Split-Path $OverridePath -Parent) -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../.github/skills/editorconfig-management/templates/ef-migrations.editorconfig') `
+            -Destination $OverridePath
+        $Parameters = @{
+            RepositoryPath = $RepositoryPath
+            Profile = 'DotNet'
+            OverridePath = @($OverridePath)
+            FragmentRoot = $script:FragmentRoot
+        }
+        $TargetPath = Join-Path $RepositoryPath '.editorconfig'
+        Set-EditorConfigFile @Parameters -WhatIf | Should -Be 'Skipped'
+        $TargetPath | Should -Not -Exist
+        Set-EditorConfigFile @Parameters | Should -Be 'Updated'
+        $Content = [IO.File]::ReadAllText($TargetPath)
+        $Section = '[src/Example.Persistence/Migrations/*.cs]'
+        $Content.IndexOf($Section) | Should -BeGreaterThan $Content.IndexOf('dotnet_diagnostic.CA1861.severity = warning')
+        $Content | Should -Match '\[src/Example\.Persistence/Migrations/\*\.cs\]\ndotnet_diagnostic\.CA1861\.severity = none\n$'
+        Set-EditorConfigFile @Parameters -Check | Should -Be 'Unchanged'
+        Set-EditorConfigFile @Parameters | Should -Be 'Unchanged'
+        {
+            Set-EditorConfigFile -RepositoryPath $RepositoryPath -Profile DotNet -FragmentRoot $script:FragmentRoot -Check
+        } | Should -Throw '*EditorConfig drift detected*'
+        [IO.File]::ReadAllText($TargetPath) | Should -BeExactly $Content
+    }
 }

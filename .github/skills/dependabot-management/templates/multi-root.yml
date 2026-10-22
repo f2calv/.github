@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      extensions:
+        patterns:
+          - Microsoft.Extensions.*
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directories:
+      - /src/web
+      - /src/admin
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories:
+      - /.docker/web
+      - /.docker/worker
+    schedule:
+      interval: weekly

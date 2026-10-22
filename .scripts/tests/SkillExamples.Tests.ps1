@@ -4,7 +4,102 @@
 
 BeforeAll {
     $skillsRoot = Join-Path $PSScriptRoot '../../.github/skills'
-    $exampleSkills = @('container-images', 'container-workflows', 'dotnet-test-platform', 'dotnet-mcp', 'leadership-election')
+    $exampleSkills = @(Get-ChildItem -LiteralPath $skillsRoot -Directory |
+        Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'examples') } |
+        Select-Object -ExpandProperty Name)
+
+    function Read-YamlExample {
+        param([Parameter(Mandatory)][string]$Name)
+        $path = Join-Path $skillsRoot "dependabot-management/templates/$Name"
+        $json = & yq -o=json '.' $path
+        if ($LASTEXITCODE -ne 0) { throw "Could not parse Dependabot template '$Name'." }
+        return ($json -join "`n") | ConvertFrom-Json -AsHashtable
+    }
+}
+
+Describe 'Dependabot examples' -Tag 'Unit' {
+    It 'covers exactly the documented independent ecosystem roots without duplicate entries' {
+        $config = Read-YamlExample 'multi-root.yml'
+        $config.version | Should -Be 2
+        $pairs = @(
+            foreach ($entry in $config.updates) {
+                $entry.ContainsKey('directory') -xor $entry.ContainsKey('directories') | Should -BeTrue
+                $entry.schedule.interval | Should -Be 'weekly'
+                $roots = if ($entry.ContainsKey('directory')) { @($entry.directory) } else { @($entry.directories) }
+                foreach ($root in $roots) {
+                    $root | Should -Match '^/'
+                    "$($entry.'package-ecosystem')|$root"
+                }
+            }
+        )
+        @($pairs | Sort-Object) | Should -Be @(
+            'docker|/.docker/web', 'docker|/.docker/worker',
+            'github-actions|/', 'npm|/src/admin', 'npm|/src/web', 'nuget|/', 'pre-commit|/'
+        )
+        @($pairs | Sort-Object -Unique).Count | Should -Be $pairs.Count
+        $nuget = $config.updates | Where-Object { $_.'package-ecosystem' -eq 'nuget' }
+        $nuget.groups.extensions.patterns | Should -Be @('Microsoft.Extensions.*')
+        $nuget.groups.extensions.'update-types' | Should -Be @('minor', 'patch')
+        $nuget.ContainsKey('ignore') | Should -BeFalse
+    }
+
+    It 'connects the private feed to its consumer using only Dependabot secret references' {
+        $config = Read-YamlExample 'private-nuget.yml'
+        $config.version | Should -Be 2
+        $config.updates.Count | Should -Be 1
+        $config.updates[0].'package-ecosystem' | Should -Be 'nuget'
+        $config.updates[0].directory | Should -Be '/'
+        $config.updates[0].registries | Should -Be @('example-feed')
+        $feed = $config.registries['example-feed']
+        $feed.type | Should -Be 'nuget-feed'
+        ([uri]$feed.url).Host | Should -Be 'packages.example.com'
+        $feed.username | Should -Be '${{secrets.PRIVATE_NUGET_USERNAME}}'
+        $feed.password | Should -Be '${{secrets.PRIVATE_NUGET_PASSWORD}}'
+        $config.updates[0].ContainsKey('insecure-external-code-execution') | Should -BeFalse
+    }
+}
+
+Describe 'Dev Container tooling example' -Tag 'Unit' {
+    BeforeAll {
+        $devTemplates = Join-Path $skillsRoot 'devcontainer/templates'
+        $container = Get-Content -LiteralPath (Join-Path $devTemplates 'devcontainer.json') -Raw |
+            ConvertFrom-Json -AsHashtable
+        $extensions = Get-Content -LiteralPath (Join-Path $devTemplates 'extensions.json') -Raw |
+            ConvertFrom-Json -AsHashtable
+    }
+
+    It 'has one runtime owner and matching host/container extension sets without privileged access' {
+        $container.image | Should -Be 'mcr.microsoft.com/devcontainers/base:bookworm'
+        $container.remoteUser | Should -Be 'vscode'
+        @($container.features.Keys) | Should -Be @('ghcr.io/devcontainers/features/powershell:2')
+        $feature = $container.features['ghcr.io/devcontainers/features/powershell:2']
+        $feature.version | Should -Be '7.4'
+        $feature.modules | Should -Be 'Pester==5.7.1'
+        $feature.preserveHistory | Should -BeFalse
+        @($container.customizations.vscode.extensions | ForEach-Object { $_.ToLowerInvariant() } | Sort-Object) |
+            Should -Be @($extensions.recommendations | ForEach-Object { $_.ToLowerInvariant() } | Sort-Object)
+        foreach ($key in @('build', 'dockerComposeFile', 'mounts', 'runArgs', 'privileged',
+                'capAdd', 'securityOpt', 'initializeCommand', 'postStartCommand', 'postAttachCommand')) {
+            $container.ContainsKey($key) | Should -BeFalse
+        }
+        $container.postCreateCommand | Should -Be 'pwsh -NoProfile -File ./.devcontainer/Show-ToolVersions.ps1'
+    }
+
+    It 'renders a parseable post-create script that verifies installed tools without running tests' {
+        $target = Join-Path $TestDrive 'Show-ToolVersions.ps1'
+        Copy-Item -LiteralPath (Join-Path $devTemplates 'Show-ToolVersions.ps1.tmpl') -Destination $target
+        $tokens = $null
+        $errors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($target, [ref]$tokens, [ref]$errors)
+        $errors | Should -BeNullOrEmpty
+        $commands = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.CommandAst] }, $true) |
+            ForEach-Object { $_.GetCommandName() })
+        @($commands | Sort-Object -Unique) | Should -Be @('Import-Module', 'Set-StrictMode', 'Write-Host')
+        $output = & pwsh -NoProfile -File $target
+        $LASTEXITCODE | Should -Be 0
+        "$output" | Should -Match 'PowerShell 7\.'
+        "$output" | Should -Match 'Pester 5\.7\.1'
+    }
 }
 
 Describe 'Worked skill examples' -Tag 'Unit' {
