@@ -244,5 +244,3 @@ made read-only by archival.
 
 - GitHub archive, ruleset and repository-settings behaviour, and the `gh` commands that inspect them.
 - SonarQube project handling and the stop conditions used when a gate or API is unavailable.
-
-> Brought to you by f2calv/.github

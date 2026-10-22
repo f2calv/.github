@@ -214,5 +214,3 @@ Pass several paths as a comma-separated list from PowerShell. From another shell
 * `docker buildx build --check` coverage: drop audit rules the checker now enforces and add the
   ones it still misses.
 * Script parameters in the Script Reference whenever the scripts change.
-
-> Brought to you by f2calv/.github

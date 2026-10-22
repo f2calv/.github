@@ -357,5 +357,3 @@ Also verify:
 
 - Argo CD Application, AppProject and sync-option fields as Argo CD releases change them.
 - Structural invariants and migration steps proven or corrected during a repository migration.
-
-> Brought to you by f2calv/.github

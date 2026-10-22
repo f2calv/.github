@@ -55,6 +55,7 @@ Notes:
 - These files are public. They must contain no personally identifiable information, no credentials, no private repository names, and no project-specific examples. Write every rule so it reads sensibly in any repository.
 - Name repositories, packages and types generically (`owner/example`, "the shared library", "the domain exception base"). Where a concrete case genuinely helps, put it in a section headed as a real-world example, naming only public repositories, and keep the rule itself generic.
 - Every file carries YAML frontmatter with a `description` and an `applyTo` glob. Without `applyTo` the file is never applied automatically.
+- Add no attribution or "brought to you by" footer to a file or a `description`; it is noise in every agent's context.
 - `applyTo` is matched relative to the workspace root. Prefer portable patterns such as `**/*.cs`. Avoid patterns anchored to one repository's folder layout.
 - One topic per file, named `<topic>.instructions.md`. Keep rules short and self-contained, and say why a rule exists where the reason is not obvious.
 - Prefer amending an existing file over adding a near-duplicate one.
