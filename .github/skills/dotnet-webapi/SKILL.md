@@ -108,6 +108,12 @@ Use existing exception handlers and Problem Details. Do not map all `ArgumentExc
 specific domain failures and keep details safe. Account for .NET 10 handled-exception diagnostics
 suppression, avoiding both missing telemetry and duplicate logging.
 
+For JSON-only exception responses, test non-JSON `Accept` headers too.
+`IProblemDetailsService.WriteAsync` throws when no registered writer supports the request.
+Use `TypedResults.Problem(...).ExecuteAsync(httpContext)` when the contract always returns JSON
+Problem Details; it uses the configured writer where possible and supplies the framework's JSON
+fallback rather than allowing error serialization to rethrow the original failure.
+
 Pass cancellation through every asynchronous call. Return `IAsyncEnumerable<T>` without collecting
 it into a list. If acquisition can fail, acquire or prime before committing success headers.
 Once streaming starts, middleware cannot replace the status; preserve the protocol's cancellation,
