@@ -55,18 +55,25 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   infrastructure settings change; this keeps validation, caches and dependent resources coherent.
 - Use `IOptionsMonitor<T>` only when the application deliberately supports in-process reload and
   every dependent resource is updated atomically. A mounted ConfigMap changing on disk is not by
-  itself a reason to use monitor semantics.
+  itself a reason to use monitor semantics. Do not add configuration file watchers or a custom
+  `IOptionsMonitor<T>` implementation to a Kubernetes workload.
 - Keep mutable runtime data such as tenant definitions, user preferences, workflow state and
   versioned policy outside the deployment configuration pipeline. Put it behind a dedicated store
   interface with explicit validation, versioning, cache invalidation and authorization.
 
 ## Options Types
 
+- **Registration**: register each options type with
+  `AddOptionsWithValidateOnStart<T>().BindConfiguration(sectionName).ValidateDataAnnotations()`, so an
+  invalid value fails startup instead of surfacing at first use. An application that binds
+  configuration through its own loader still runs its registered `IValidateOptions<T>` validators.
 - **Validation attributes**: bindable properties carry `System.ComponentModel.DataAnnotations`
   attributes — `[Url]` on URIs, `[Range(1, 65535)]` on ports, `[MinLength(1)]` on secrets and
   identifiers, `[Range(1, int.MaxValue)]` on millisecond timings, `[Range(0.0, 1.0)]` on ratios,
-  `[Phone]` on phone numbers. Nested complex objects carry `[ValidateObjectMembers]`. Preserve
-  existing validation when changing an options model.
+  `[Phone]` on phone numbers. `ValidateDataAnnotations()` does not recurse into nested objects: nested
+  complex objects carry `[ValidateObjectMembers]` only when the options source generator
+  (`[OptionsValidator]`) is used; otherwise the root implements `IValidatableObject` and validates
+  its nested objects explicitly. Preserve existing validation when changing an options model.
 - **Attribute layout**: inline same-family attributes (`[Required, Range(1, 65535)]`); keep different
   families on separate lines (`[Required, Url]` above `[JsonPropertyName]`).
 - **Boolean naming**: describe state with a `{Feature}{State}` form (`DistributedLockingEnabled`),
