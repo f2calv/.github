@@ -147,7 +147,8 @@ Lease loss, failure and host shutdown must all leave the active path.
    guaranteed asynchronous disposal. Do not acquire in a helper that disposes before work starts.
 3. Start a distinct ownership run with a linked cancellation source. Pass its token through every
    timer, delay, I/O operation, connection attempt and child loop. Retain and await child tasks;
-   fire-and-forget work must not outlive its lease.
+   fire-and-forget work must not outlive its lease. Supervise only enabled, required loops: an
+   optional loop that immediately returns when disabled must not prematurely finish a healthy group.
 4. Check that ownership is still valid during long-lived work using the installed library's
    supported state/signals. A single `IsAcquired` check at entry is insufficient for an unbounded
    worker. Polling, if necessary, has a detection delay and is not a safety proof.
@@ -220,6 +221,12 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Withdraw readiness on cancellation before waiting for cleanup. Serialize that transition with
   callback/health updates so a late update cannot reactivate an old run. An empty connection set
   does not establish readiness.
+- Distinguish request-only disconnect APIs from awaited teardown. Retain producer and watchdog
+  tasks and join them before reusing a connection or draining persistent buffers; starting a new
+  subscription must not reactivate an old loop through a shared mutable subscribed flag.
+- Keep reusable transport ownership separate from a lease session. Logout stops owned streams;
+  final service disposal releases shared HTTP clients. Test resubscription with an uncancelled
+  host token as well as shutdown, because host cancellation can conceal missing per-session stops.
 
 ## 5. Preserve Deployment and Local-Development Semantics
 
