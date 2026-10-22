@@ -36,6 +36,8 @@ or external services.
 
 ## Command Syntax
 
+- Run from the repository containing the intended `global.json`; an absolute `--project` path does
+  not select that file for SDK/test-runner discovery when the current directory is elsewhere.
 - Use the .NET 10 native command: `dotnet test --project <path.csproj>` or
   `dotnet test --solution <path.slnx>`. Never pass a project or solution as a bare positional
   argument, and do not use `dotnet run` as the normal test command.
@@ -43,6 +45,9 @@ or external services.
   `--filter-method`, `--filter-trait`, `--filter-not-trait`, `--coverage` and
   `--coverage-output-format cobertura`. Never use VSTest `--filter`, `--collect`, `--logger` or
   coverlet MSBuild properties.
+- Use verified fully qualified class names or class-prefix filters such as
+  `--filter-class Example.Tests.Leadership*`. Do not assume interior wildcard or repeated-filter
+  semantics; verify a nonzero executed-test count before recording success.
 
 ## Workflows and Actions
 
