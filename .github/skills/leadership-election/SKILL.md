@@ -205,6 +205,22 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Ensure metrics, health endpoints, diagnostics and any leader-only command gateways use the same
   authoritative state rather than independent booleans that can disagree.
 
+### External Connections and Callbacks
+
+- Include every user of a leader-owned connection in the ownership lifetime, including outbound
+  queue readers and command writers registered as separate background features. Cancel and join
+  those users before disposing the connection; standbys must not consume commands they cannot send.
+- Create fresh callback/reconnection buffers for each ownership run. Detach handlers and await
+  asynchronous connection disposal on every exit, including partial startup. Fence late callbacks
+  by their run and connection identity, not a mutable reference to the latest run.
+- Replace untracked asynchronous event handlers with synchronous admission into an owned buffer and
+  an awaited publisher. Propagate publisher/decoding failures through supervision, pass the run token
+  to publication, and document buffering and non-replay semantics. SDK callbacks that cannot apply
+  backpressure need an explicit overflow policy before a bounded buffer can safely replace them.
+- Withdraw readiness on cancellation before waiting for cleanup. Serialize that transition with
+  callback/health updates so a late update cannot reactivate an old run. An empty connection set
+  does not establish readiness.
+
 ## 5. Preserve Deployment and Local-Development Semantics
 
 - Multiple replicas must share the intended Redis backend, database and effective election key.
