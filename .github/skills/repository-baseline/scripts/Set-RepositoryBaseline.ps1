@@ -16,7 +16,8 @@
 .PARAMETER Mode
     Audit reports drift without changing GitHub. Apply reconciles drift.
 .PARAMETER PolicyPath
-    Path to the JSON policy document.
+    Path to the JSON policy document. Defaults to policies/<owner>.json for the targets' owner when
+    that file exists, otherwise policies/default.json.
 .PARAMETER OutputPath
     Optional path for the complete JSON result.
 .EXAMPLE
@@ -43,7 +44,7 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
-    [string]$PolicyPath = (Join-Path $PSScriptRoot 'repository-baseline.json'),
+    [string]$PolicyPath,
 
     [Parameter(Mandatory = $false)]
     [string]$OutputPath
@@ -314,6 +315,40 @@ function Get-RepositoryTarget {
     } | Sort-Object -Unique
 }
 
+function Resolve-BaselinePolicyPath {
+    <#
+    .SYNOPSIS
+        Selects the owner-specific policy for the targets, falling back to the default policy.
+    .PARAMETER Targets
+        Repositories in owner/name format.
+    .PARAMETER PolicyDirectory
+        Directory containing <owner>.json and default.json policy files.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Targets,
+
+        [Parameter(Mandatory = $true)]
+        [string]$PolicyDirectory
+    )
+
+    $Owners = @($Targets | ForEach-Object { $_.Split('/', 2)[0].ToLowerInvariant() } | Sort-Object -Unique)
+    if ($Owners.Count -eq 0) {
+        throw 'No target repositories were resolved.'
+    }
+    if ($Owners.Count -ne 1) {
+        throw "Targets span several owners ($($Owners -join ', ')). Run each owner separately or pass -PolicyPath."
+    }
+
+    $OwnerPolicy = Join-Path $PolicyDirectory "$($Owners[0]).json"
+    if (Test-Path -LiteralPath $OwnerPolicy -PathType Leaf) {
+        return $OwnerPolicy
+    }
+    Join-Path $PolicyDirectory 'default.json'
+}
+
 function Copy-JsonObject {
     <#
     .SYNOPSIS
@@ -374,10 +409,12 @@ function Get-DesiredRuleset {
     }
 
     $RequiredStatusRules = @($Rules | Where-Object type -eq 'required_status_checks')
+    $PublicStatusChecks = @($Policy.publicRepository.requiredStatusChecks)
     $SonarCloudGateExcluded = $Visibility -eq 'public' -and
     $Policy.publicRepository.PSObject.Properties.Name -contains 'sonarCloudGateExclusions' -and
     $RepositoryName -in @($Policy.publicRepository.sonarCloudGateExclusions)
-    $SonarCloudGateRequired = $Visibility -eq 'public' -and -not $SonarCloudGateExcluded
+    $SonarCloudGateRequired = $Visibility -eq 'public' -and $PublicStatusChecks.Count -gt 0 -and
+    -not $SonarCloudGateExcluded
     if ($SonarCloudGateRequired -or $RequiredStatusRules.Count -gt 1) {
         $RequiredStatusChecks = [Collections.Generic.List[object]]::new()
         foreach ($Rule in $RequiredStatusRules) {
@@ -390,7 +427,7 @@ function Get-DesiredRuleset {
         }
 
         if ($SonarCloudGateRequired) {
-            foreach ($Context in @($Policy.publicRepository.requiredStatusChecks)) {
+            foreach ($Context in $PublicStatusChecks) {
                 $ExistingContexts = @($RequiredStatusChecks | ForEach-Object { $_.context })
                 if ($Context -notin $ExistingContexts) {
                     $RequiredStatusChecks.Add([pscustomobject]@{ context = $Context })
@@ -812,11 +849,15 @@ if ($MyInvocation.InvocationName -ne '.') {
         }
 
         $Owner = (ConvertFrom-GhResponse -Response $Authentication).login
-        $Policy = Get-Content -Raw -LiteralPath $PolicyPath | ConvertFrom-Json -Depth 100
         $Targets = Get-RepositoryTarget `
             -RepositoryNames $Repository `
             -IncludeAllOwned $AllOwned.IsPresent `
             -AuthenticatedOwner $Owner
+        if (-not $PolicyPath) {
+            $PolicyPath = Resolve-BaselinePolicyPath -Targets $Targets -PolicyDirectory (Join-Path $PSScriptRoot 'policies')
+        }
+        Write-Information "Policy: $PolicyPath" -InformationAction Continue
+        $Policy = Get-Content -Raw -LiteralPath $PolicyPath | ConvertFrom-Json -Depth 100
         $Results = [Collections.Generic.List[object]]::new()
 
         foreach ($FullName in $Targets) {

@@ -117,8 +117,9 @@ Preview changes for the same repository:
   -WhatIf
 ```
 
-The [baseline policy](.github/skills/repository-baseline/scripts/repository-baseline.json) defines
-the settings. Follow the [baseline workflow](.github/skills/repository-baseline/SKILL.md) before
+The [baseline policies](.github/skills/repository-baseline/scripts/policies/) define the settings:
+`<owner>.json` when present for the target owner, otherwise the generic `default.json`. Follow the
+[baseline workflow](.github/skills/repository-baseline/SKILL.md) before
 applying changes; unavailable plan-dependent capabilities are reported rather than bypassed.
 
 ### Create a Repository

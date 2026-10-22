@@ -2,9 +2,11 @@
 
 BeforeAll {
     $script:ScriptPath = Join-Path $PSScriptRoot '..\Set-RepositoryBaseline.ps1'
-    $script:PolicyPath = Join-Path $PSScriptRoot '..\repository-baseline.json'
+    $script:PolicyPath = Join-Path $PSScriptRoot '..\policies\f2calv.json'
+    $script:DefaultPolicyPath = Join-Path $PSScriptRoot '..\policies\default.json'
     . $script:ScriptPath
     $script:Policy = Get-Content -Raw -LiteralPath $script:PolicyPath | ConvertFrom-Json -Depth 100
+    $script:DefaultPolicy = Get-Content -Raw -LiteralPath $script:DefaultPolicyPath | ConvertFrom-Json -Depth 100
 
     function ConvertTo-TestGhResponse {
         param(
@@ -56,6 +58,39 @@ BeforeAll {
         $Ruleset | Add-Member -NotePropertyName source_type -NotePropertyValue 'Repository'
         $Ruleset | Add-Member -NotePropertyName source -NotePropertyValue $RepositoryName
         return $Ruleset
+    }
+}
+
+Describe 'Resolve-BaselinePolicyPath' -Tag 'Unit' {
+    BeforeAll {
+        $script:PolicyDirectory = Join-Path $PSScriptRoot '..\policies'
+    }
+
+    It 'Selects the owner policy when one exists' {
+        Resolve-BaselinePolicyPath -Targets @('F2calv/example') -PolicyDirectory $script:PolicyDirectory |
+            Should -Be (Join-Path $script:PolicyDirectory 'f2calv.json')
+    }
+
+    It 'Falls back to the default policy for another owner' {
+        Resolve-BaselinePolicyPath -Targets @('owner/example') -PolicyDirectory $script:PolicyDirectory |
+            Should -Be (Join-Path $script:PolicyDirectory 'default.json')
+    }
+
+    It 'Rejects targets that span several owners' {
+        { Resolve-BaselinePolicyPath -Targets @('owner/one', 'other/two') -PolicyDirectory $script:PolicyDirectory } |
+            Should -Throw '*several owners*'
+    }
+}
+
+Describe 'Default policy' -Tag 'Unit' {
+    It 'Names no repository' {
+        Get-Content -Raw -LiteralPath $script:DefaultPolicyPath | Should -Not -Match '"[^"/]+/[^"]+"'
+    }
+
+    It 'Adds no status-check rule for a public repository' {
+        $Ruleset = Get-DesiredRuleset -Policy $script:DefaultPolicy -RepositoryName 'owner/example' -Visibility public
+
+        @($Ruleset.rules.type) | Should -Be @('deletion', 'non_fast_forward', 'pull_request')
     }
 }
 
