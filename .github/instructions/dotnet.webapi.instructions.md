@@ -67,3 +67,6 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
 - Require non-nullable value-type request properties explicitly with `[JsonRequired]`, `required` or
   a validated nullable-input pattern. Never let an omitted member silently bind to `0`, `false` or a
   default enum value when the caller must choose it.
+  For required query parameters, including struct-backed value objects, use binding validation such
+  as `[BindRequired]`; test omission separately from empty and malformed values because omission
+  can otherwise supply `default(T)` without a model-state error.
