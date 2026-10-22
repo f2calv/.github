@@ -30,6 +30,8 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 Set-StrictMode -Version 3.0
 
+. (Join-Path $PSScriptRoot 'ContainerWorkflows.Common.ps1')
+
 #region Pure functions
 function ConvertTo-DeployBuildArguments {
     [CmdletBinding()][OutputType([string[]])]
@@ -93,9 +95,9 @@ function Initialize-DeploymentSettings {
     }
     $name = Split-Path $root -Leaf
     if (-not $DeploymentName) { Set-Variable DeploymentName $name.ToLowerInvariant() -Scope 1 -WhatIf:$false }
-    if (-not $ImageRepository) { Set-Variable ImageRepository "ghcr.io/f2calv/$($name.ToLowerInvariant())" -Scope 1 -WhatIf:$false }
     if (-not $PodAnnotationName) { throw "-PodAnnotationName is required. Supply it explicitly or in '$DeployConfigPath'." }
     if (-not $ManifestRepo) { throw "-ManifestRepo is required. Supply it explicitly or in '$DeployConfigPath'." }
+    if (-not $ImageRepository) { Set-Variable ImageRepository "ghcr.io/$(Get-GitHubOwner -RepositoryRoot $root)/$($name.ToLowerInvariant())" -Scope 1 -WhatIf:$false }
     $script:Rest = @(ConvertTo-DeployBuildArguments $Rest)
     $relative = Resolve-DeploymentManifestPath -ManifestPath $ManifestPath
     return [pscustomobject]@{ Root = $root; RelativePath = $relative; Manifest = Join-Path $ManifestRepo $relative }

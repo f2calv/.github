@@ -183,10 +183,12 @@ Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
         $configPath = Join-Path $repositoryRoot 'deploy.local.psd1'
         Set-Content $configPath "@{ ManifestRepo = '$repositoryRoot'; ManifestPath = 'app.yaml'; PodAnnotationName = 'example/deployed'; Tag = 'from-config' }"
         . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -DeployConfigPath $configPath -Tag 'explicit'
+        Mock Get-GitHubOwner { 'example' }
         $deployment = Initialize-DeploymentSettings @{ Tag = 'explicit' }
         $deployment.RelativePath | Should -Be 'app.yaml'
         $Tag | Should -Be 'explicit'
         $PodAnnotationName | Should -Be 'example/deployed'
+        $ImageRepository | Should -Be "ghcr.io/example/$((Split-Path $repositoryRoot -Leaf).ToLowerInvariant())"
     }
 
     It 'updates a clean manifest repository from its upstream' {

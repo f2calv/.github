@@ -35,7 +35,8 @@ $Configuration.Output.Verbosity = 'Detailed'
 $Configuration.CodeCoverage.Enabled = $true
 $Configuration.CodeCoverage.Path = @(
     (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Build.ps1'),
-    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Deploy.ps1')
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Deploy.ps1'),
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/ContainerWorkflows.Common.ps1')
 )
 $coverageOutputPath = Join-Path ([IO.Path]::GetTempPath()) "container-workflows-coverage-$PID.xml"
 $Configuration.CodeCoverage.OutputPath = $coverageOutputPath
