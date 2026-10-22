@@ -42,21 +42,27 @@ Notes:
 
 ## Layout
 
-| Path | Purpose |
-| --- | --- |
-| `.github/instructions/` | Canonical `*.instructions.md` files |
-| `.github/skills/` | Reusable agent skills |
-| `.github/prompts/` | Shared slash-command prompts |
-| `.scripts/` | Repository management, baseline and privacy tooling |
+| Path                              | Purpose                                                        |
+| --------------------------------- | -------------------------------------------------------------- |
+| `.github/instructions/`           | Canonical `*.instructions.md` files                            |
+| `.github/skills/`                 | Reusable agent skills                                          |
+| `.github/prompts/`                | Shared slash-command prompts                                   |
+| `.scripts/`                       | Repository management, baseline and privacy tooling            |
 | `.github/copilot-instructions.md` | This repository's own instructions, not part of the shared set |
 
 ## Authoring Rules
 
 - These files are public. They must contain no personally identifiable information, no credentials, no private repository names, and no project-specific examples. Write every rule so it reads sensibly in any repository.
+- Name repositories, packages and types generically (`owner/example`, "the shared library", "the domain exception base"). Where a concrete case genuinely helps, put it in a section headed as a real-world example, naming only public repositories, and keep the rule itself generic.
 - Every file carries YAML frontmatter with a `description` and an `applyTo` glob. Without `applyTo` the file is never applied automatically.
+- Add no attribution or "brought to you by" footer to a file or a `description`; it is noise in every agent's context.
 - `applyTo` is matched relative to the workspace root. Prefer portable patterns such as `**/*.cs`. Avoid patterns anchored to one repository's folder layout.
 - One topic per file, named `<topic>.instructions.md`. Keep rules short and self-contained, and say why a rule exists where the reason is not obvious.
 - Prefer amending an existing file over adding a near-duplicate one.
+- Every `SKILL.md` has a `## Maintaining This Skill` section listing that skill's own drift triggers:
+  the versions, tool behaviours, external APIs or steps most likely to go stale. Keep the general
+  feedback-loop rule in `workflow.instructions.md`, not repeated per skill.
+  `.scripts/tests/Skills.Tests.ps1` enforces the section in CI.
 
 ## What Stays in Each Repository
 
@@ -64,5 +70,22 @@ A repository keeps a single `.github/copilot-instructions.md` containing:
 
 1. A pointer to this repository for the shared instructions and skills.
 2. Rules genuinely specific to that repository — its purpose, architecture, domain terminology, and any deliberate deviation from a central rule.
+
+Every newly bootstrapped repository starts that file with this exact preamble, kept byte-identical
+through the final sentence so the shared boundary does not drift between repositories:
+
+```markdown
+# Copilot Instructions
+
+## Shared Instructions
+
+Shared Copilot instructions, skills and prompts are maintained centrally in the [.github](https://github.com/f2calv/.github) repository, under `.github/instructions/`, `.github/skills/` and `.github/prompts/`. They are deliberately not copied into this repository, so a change there takes effect everywhere without a pull request here.
+
+To load them, clone that repository and either add it to this VS Code workspace, or link its folders into `~/.copilot/`. Its README explains both.
+
+If those shared files are not visible, stop and tell the user rather than guessing the conventions — this repository depends on them.
+
+Everything below is specific to this repository.
+```
 
 It must not contain a `.github/instructions/` folder or a copy of any centrally maintained file.

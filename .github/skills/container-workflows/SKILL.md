@@ -22,20 +22,33 @@ implementations bundled here.
 ## Quick Start
 
 ```powershell
-./scripts/Invoke-Build.ps1 -RepositoryRoot /src/example -BuildMode Application
+./scripts/Invoke-Build.ps1 -RepositoryRoot /src/example
 ./scripts/Invoke-Deploy.ps1 -RepositoryRoot /src/example -WhatIf
 ```
 
 ## Parameters Reference
 
-`Invoke-Build.ps1` requires a repository root and one build profile:
+`Invoke-Build.ps1` builds every repository the same way, whatever its language. Each Dockerfile
+accepts the shared `VERSION`, `CONFIGURATION`, `WORKLOAD`, `GIT_*` and `GITHUB_*` build arguments
+and ignores any it does not declare.
 
-| Profile | Behavior |
+| Option | Behavior |
 | --- | --- |
-| `Application` | Debug and Release images with Dockerfile-discovered sibling dependencies |
-| `SignalCli` | Release-only Generic Host sample image |
-| `Yamlizr` | Versioned CLI image with startup smoke checks |
-| `MultiArch` | Interactive multi-architecture sample build |
+| (none) | Validates the build for `linux/amd64,linux/arm64,linux/arm/v7` into the build cache only |
+| `-Load` | Loads a single-platform image, the host platform by default, into the local image store |
+| `-Run` | Loads the image as `-Load` does, then runs it interactively |
+| `-Push` | Publishes the image to GHCR |
+| `-Configuration` | Defaults to `Debug` when the repository has a `Dockerfile.Debug`, otherwise `Release` |
+| `-Platforms` | Overrides the target platforms |
+| `-WorkloadName` | Selects the assembly through the `WORKLOAD` build argument |
+
+A Debug build mirrors the sibling repositories named by `COPY deps/<name>` lines in
+`Dockerfile.Debug` into `deps/`. The image is named `ghcr.io/<owner>/<repository>`, where the owner
+is read from the repository's GitHub `origin` remote.
+
+The build resolves a semantic version from an explicit `-Version` value or GitVersion and passes it
+as the image's `VERSION` build argument. Mutable local tags such as `latest-dev` select an image but
+never redefine the version.
 
 `Invoke-Deploy.ps1` reads deployment-specific defaults from the caller's gitignored
 `deploy.local.psd1`. Explicit command-line parameters take precedence.
@@ -44,13 +57,13 @@ The deployment script reads each Argo CD manifest's `kind` and supports both `Ap
 `ApplicationSet`. It patches `.spec.source` for an `Application` and
 `.spec.template.spec.source` for an `ApplicationSet`, failing on any other resource kind.
 
-During a normal deployment, the script also looks under `charts/` for one chart named `dashboards`
-or ending in `-dashboards`. When found, it derives the expected chart coordinate from the
-application manifest, locates the matching Argo CD manifest, publishes a timestamped development
-chart, and patches its `targetRevision`. Use `-SkipDashboards` to omit this step or `-OnlyCharts` to
-publish and patch only the discovered dashboard chart. `DashboardChartPath`,
-`DashboardChartRepository`, and `DashboardManifestPath` remain explicit overrides for repositories
-that do not follow the convention.
+The pushed tag is mutable, so the script resolves its registry digest and writes the image tag as
+`<tag>@sha256:<digest>` with `pullPolicy: IfNotPresent`. Every rollout is therefore traceable to
+one image, and a pod reschedule cannot silently pick up a later push of the same tag.
+
+Grafana dashboards ship inside the application chart as a `file://` subchart, so a `-Chart`
+deployment publishes and rolls them out with the application. There is no separate dashboard
+chart, manifest or deployment mode.
 
 ## Script Reference
 
@@ -73,7 +86,12 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 | Debug dependency is missing | Clone it beside the caller or use a Release build |
 | Manifest kind is rejected | Use an Argo CD `Application` or `ApplicationSet` |
 | Registry authentication fails | Refresh GitHub CLI authentication with `write:packages` scope |
-| Workstation is sluggish after a reboot | Docker restarts every idle per-repository builder the scripts created (`<image>1`, or the repository name for multi-arch samples). Stop them with `docker stop` on the `buildx_buildkit_*` containers; the scripts start them again when needed |
+| Workstation is sluggish after a reboot | Docker restarts every idle per-repository builder the scripts created (`<image>1`). Stop them with `docker stop` on the `buildx_buildkit_*` containers; the scripts start them again when needed |
+| GHCR owner cannot be derived | Add a GitHub `origin` remote; the image namespace is its owner |
 | Laptop runs out of memory during builds | Run one scripted build at a time; each multi-platform build emulates arm under QEMU in its own builder |
 
-> Brought to you by f2calv/.github
+## Maintaining This Skill
+
+- Parameters and behaviour of the central build and deploy scripts, kept in step with their tests.
+- The repository-root shim contract whenever a consumer needs a new switch.
+- The shared build-argument names every Dockerfile is expected to accept.

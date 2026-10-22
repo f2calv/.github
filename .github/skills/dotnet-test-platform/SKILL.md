@@ -67,3 +67,8 @@ or external services.
 
 Report the files changed, packages removed and added, command lines rewritten, and the recorded
 test evidence, listing any checks not run.
+
+## Maintaining This Skill
+
+- .NET SDK and Microsoft.Testing.Platform command syntax, filters and coverage flags.
+- xUnit v3 and runner package versions, and CI or VS Code task steps that drift from them.

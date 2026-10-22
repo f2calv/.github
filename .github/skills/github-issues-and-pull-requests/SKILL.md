@@ -22,15 +22,16 @@ GitHub permission.
 ## Issues
 
 1. Search existing open and closed issues before creating a new one.
-2. Inspect the repository's supported issue types. When types are enabled, assign the closest native
+2. Fill the matching issue form (see [Templates](#templates)).
+3. Inspect the repository's supported issue types. When types are enabled, assign the closest native
    type: `Bug` for unexpected behavior, `Feature` for a request or new capability, and `Task` for
    bounded investigation or implementation work.
-3. When native types are unavailable, apply the closest canonical type label: `bug`, `enhancement`
+4. When native types are unavailable, apply the closest canonical type label: `bug`, `enhancement`
    for a feature, or `task`. Create a missing canonical label only when label administration is in
    scope.
-4. Inspect available labels and apply every other label that accurately describes the issue. Native
+5. Inspect available labels and apply every other label that accurately describes the issue. Native
    types and labels are separate metadata; setting one does not replace the other.
-5. Verify the title, body, type and labels after creation.
+6. Verify the title, body, type and labels after creation.
 
 ### Issue Quality
 
@@ -57,6 +58,15 @@ someone arriving cold months later.
   remain Markdown because GitHub does not support YAML pull request forms.
 - A repository-local `ISSUE_TEMPLATE` configuration suppresses inherited templates. Keep local
   templates only for repository-specific fields; never copy the central templates.
+- Creating an issue or pull request through `gh` or the API bypasses the web forms, so fill the
+  template yourself. Resolve the effective template, a repository-local one first and then the
+  account-level `.github` one.
+  - Issues: use the matching form's `title` prefix and write one `###` section per field `label`, in
+    form order. Leave an optional field out only when it has nothing to say; answer submission
+    checks truthfully, and skip the issue rather than tick a false one.
+  - Pull requests: keep every `##` section of `pull_request_template.md` in order and tick only the
+    checklist items that are true. Put validation, compatibility notes and Dependabot folding under
+    the template's sections rather than adding parallel headings.
 
 ## Create a Pull Request
 
@@ -65,10 +75,11 @@ someone arriving cold months later.
    superseded Dependabot pull request. Keep major migrations, documented holds, incompatible updates
    and changes needing independent risk review separate.
 2. Generate the title and description from every change in the branch compared with `origin/main`,
-   not only the latest commit or the working tree. Include validation, compatibility notes and
-   operational follow-up, and mention small unrelated tweaks carried on the branch.
+   not only the latest commit or the working tree, filling the pull-request template (see
+   [Templates](#templates)). Include validation, compatibility notes and operational follow-up, and
+   mention small unrelated tweaks carried on the branch.
 3. Link an existing relevant issue with the same visibility. Never create an issue solely to satisfy
-   a pull-request template.
+   a pull-request template; write "None" and the reason under Related Issue instead.
 4. Apply every accurate label from the repository's available labels and assign the authenticated
    user.
 5. Verify the base branch, head branch, labels and assignee after creation.
@@ -84,14 +95,16 @@ compatibility note and follow-up, and remove claims made obsolete by later commi
 After creating a pull request, and again before merging it:
 
 1. Inspect the current-head GitHub Advanced Security and code-scanning alerts and the SonarQube
-   pull-request analysis.
+   pull-request analysis. Pull-request code scanning reports against `refs/pull/<n>/merge`, not
+   `refs/pull/<n>/head`; querying the head ref returns nothing. A code-scanning annotation also
+   opens a review thread, which blocks merge when the ruleset requires resolved threads.
 2. Resolve every open critical or high finding (SonarQube `BLOCKER`/`HIGH`, or the equivalent GitHub
    severity), plus any lower-severity finding that fails a required check or Quality Gate.
 3. Re-run affected analysis on the unchanged head. A result from a superseded commit is not evidence
    for the current pull request.
 4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Every pull
-   request must pass `lint / lint`, `versioning / gha-release-versioning`, the repository's own
-   validation check and the SonarQube Quality Gate.
+   request must pass the repository's required lint and versioning checks, its own validation check
+   and the SonarQube Quality Gate.
 
 ## Merge
 
@@ -105,3 +118,9 @@ After creating a pull request, and again before merging it:
 
 Report the issue or pull request URL, applied type, labels and assignee, gate results on the
 current head, folded or closed Dependabot pull requests, and any check still pending or not run.
+
+## Maintaining This Skill
+
+- `gh` and GitHub API commands, including which refs code scanning and checks report against.
+- Ruleset behaviours that block merges, such as required review threads and up-to-date branches.
+- Issue types, labels and description conventions.

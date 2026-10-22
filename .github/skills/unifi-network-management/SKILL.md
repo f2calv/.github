@@ -227,3 +227,8 @@ Report:
 - application checks;
 - cleanup confirmation;
 - remaining soak, firewall, DNS or failover work.
+
+## Maintaining This Skill
+
+- UniFi Network application behaviour and UI paths, which move between releases.
+- Safety-model steps and benchmark commands proven or corrected during a change or recovery.

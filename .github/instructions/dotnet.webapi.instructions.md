@@ -7,8 +7,18 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**
 
 ## Controllers and Endpoints
 
+- **Controllers are the default** for application Web APIs, including new projects. Use minimal
+  mappings only for small host/protocol endpoints, such as health checks, where a controller adds
+  ceremony without useful structure. Do not choose minimal APIs merely because an application is
+  new or its current endpoints use them. This repository convention takes precedence over a
+  generic Web API skill's minimal-API default.
+- **Keep migrations separate**: when standardizing an existing minimal application API, preserve
+  its routes, authentication, validation, streaming and response contracts. Convert it to controllers
+  in a focused change, not as incidental work during an unrelated behavior change.
 - **Thin pass-through**: delegate to a single service call and map the result to an HTTP response.
-  No business logic, LINQ projections, dictionary lookups or logging in the controller.
+  No business logic, LINQ projections, dictionary lookups or logging in the controller. The same
+  boundary applies to permitted minimal handlers: move substantial mapping and orchestration into
+  the application service rather than hiding a controller-sized implementation in a mapping extension.
 - **Logging lives in the service**: domain-specific, request-specific logging belongs in the service
   method. Remove `ILogger` from a controller whose methods only delegate; inject it only for work that
   cannot be delegated, such as a streaming loop with `LogTrace`.
@@ -28,6 +38,9 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
 - **Documentation**: thin controller methods use
   `/// <inheritdoc cref="ServiceType.Method(ParamTypes)"/>` rather than duplicating the service's
   XML documentation.
+- **API versioning registration**: do not restate Asp.Versioning defaults. Omit
+  `DefaultApiVersion = new ApiVersion(1.0)` (AV0011), and omit `AddEndpointsApiExplorer()` when
+  `AddApiExplorer()` is already registered (AV0020).
 
 ## Request and Response DTOs
 

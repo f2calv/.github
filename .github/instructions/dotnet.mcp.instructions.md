@@ -21,6 +21,10 @@ description rules; the skill references them rather than repeating them.
   For complex inputs, summarize the key fields and constraints.
 - Keep XML documentation for developers separate from model guidance; neither replaces the other.
   Avoid narrating an obvious return type or repeating identical descriptions across tools.
+- Because descriptions are explicit, the SDK analyzer `MCP002` (generate descriptions from XML docs
+  on `partial` methods) would only duplicate them. Set `dotnet_diagnostic.MCP002.severity = none` in
+  the repository's EditorConfig override fragment rather than making tool methods `partial`. The
+  SonarQube scanner build still reports it; accept those issues, citing this convention.
 
 ## Naming
 

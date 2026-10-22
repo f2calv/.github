@@ -2,39 +2,42 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-	Builds a repository container image through a shared build profile.
+	Builds a repository container image.
 .DESCRIPTION
-	Centralizes the container build workflows used by application, SignalCli, yamlizr, and
-	multi-architecture sample repositories. Repository-root build scripts pass their own root and
-	profile to this implementation so repository identity and Git metadata remain caller-derived.
+	Centralizes the container build used by every repository, whatever its language. Repository-root
+	build scripts pass their own root so repository identity and Git metadata remain caller-derived.
+	Without -Push, -Load or -Run the image is built for every target platform into the build cache
+	only, which validates the multi-architecture build.
 .PARAMETER RepositoryRoot
 	Root directory of the repository whose image is built.
-.PARAMETER BuildMode
-	Build behavior profile selected by the repository shim.
 .PARAMETER Push
 	Authenticates to GHCR and publishes the image.
+.PARAMETER Load
+	Loads a single-platform image into the local Docker image store. Defaults to the host platform.
+.PARAMETER Run
+	Loads the image as -Load does, then runs it interactively.
 .PARAMETER Configuration
-	Build configuration. Defaults to Debug for Application and Release for SignalCli and Yamlizr.
+	Build configuration. Defaults to Debug when the repository has a Dockerfile.Debug, else Release.
 .PARAMETER Tag
 	Image tag override.
 .PARAMETER Version
-	Yamlizr assembly version override.
+	Application version override, passed as the VERSION build argument.
 .PARAMETER Platforms
 	Comma-separated Docker target platforms.
 .PARAMETER ImageName
 	Image repository name. Defaults to the repository directory name.
 .PARAMETER WorkloadName
-	Application profile WORKLOAD build argument.
-.PARAMETER Project
-	SignalCli profile PROJECT build argument.
-.PARAMETER SkipSmokeTest
-	Skips the yamlizr post-build startup checks.
+	Optional assembly name passed as the WORKLOAD build argument. When omitted, the Dockerfile
+	default selects the assembly.
 .EXAMPLE
-	./Invoke-Build.ps1 -RepositoryRoot /src/example -BuildMode Application -Configuration Debug
+	./Invoke-Build.ps1 -RepositoryRoot /src/example
 .EXAMPLE
-	./Invoke-Build.ps1 -RepositoryRoot /src/yamlizr -BuildMode Yamlizr -Push
+	./Invoke-Build.ps1 -RepositoryRoot /src/example -Configuration Release -Run
+.EXAMPLE
+	./Invoke-Build.ps1 -RepositoryRoot /src/example -Push
 .NOTES
-	Requires Docker Buildx. Push builds require GitHub CLI package-write access.
+	Requires Docker Buildx and a GitHub origin remote. Push builds require GitHub CLI package-write
+	access.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -42,11 +45,9 @@ param(
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
     [string]$RepositoryRoot,
 
-    [Parameter(Mandatory)]
-    [ValidateSet('Application', 'SignalCli', 'Yamlizr', 'MultiArch')]
-    [string]$BuildMode,
-
     [switch]$Push,
+    [switch]$Load,
+    [switch]$Run,
 
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration,
@@ -55,14 +56,14 @@ param(
     [string]$Version,
     [string]$Platforms,
     [string]$ImageName,
-    [string]$WorkloadName = 'CasCap.App.Server',
-    [string]$Project = 'samples/GenericHost/GenericHost.csproj',
-    [switch]$SkipSmokeTest
+    [string]$WorkloadName
 )
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 Set-StrictMode -Version 3.0
+
+. (Join-Path $PSScriptRoot 'ContainerWorkflows.Common.ps1')
 
 #region Resolution
 function Install-GitVersion {
@@ -71,6 +72,7 @@ function Install-GitVersion {
     param()
 
     if (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue) { return $true }
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { return $false }
 
     Write-Host 'dotnet-gitversion not found. Installing GitVersion.Tool globally...' -ForegroundColor Cyan
     dotnet tool install -g GitVersion.Tool
@@ -102,7 +104,7 @@ function Resolve-BuildTag {
     return "$(dotnet-gitversion $RepositoryRoot /showvariable FullSemVer)".Trim().ToLowerInvariant()
 }
 
-function Resolve-YamlizrVersion {
+function Resolve-Version {
     [CmdletBinding()]
     [OutputType([string])]
     param(
@@ -139,30 +141,36 @@ function Resolve-BuildSettings {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [Parameter(Mandatory)][string]$BuildMode,
         [Parameter(Mandatory)][string]$RepositoryRoot,
         [string]$Configuration,
         [string]$Platforms,
         [string]$ImageName,
-        [switch]$Push
+        [switch]$Push,
+        [switch]$Load
     )
 
+    if ($Push -and $Load) { throw '-Push cannot be combined with -Load or -Run.' }
     $repositoryName = Split-Path $RepositoryRoot -Leaf
-    $resolvedConfiguration = if ($Configuration) { $Configuration } elseif ($BuildMode -eq 'Application') { 'Debug' } else { 'Release' }
+    $resolvedConfiguration = if ($Configuration) {
+        $Configuration
+    }
+    elseif (Test-Path -LiteralPath (Join-Path $RepositoryRoot 'Dockerfile.Debug') -PathType Leaf) {
+        'Debug'
+    }
+    else {
+        'Release'
+    }
     $resolvedPlatforms = if ($Platforms) {
         $Platforms
     }
-    elseif ($BuildMode -eq 'Yamlizr') {
-        if ($Push) { 'linux/amd64,linux/arm64,linux/arm/v7' } else { Resolve-HostPlatform }
-    }
-    elseif ($BuildMode -eq 'SignalCli') {
-        'linux/amd64,linux/arm64'
-    }
-    elseif ($BuildMode -eq 'MultiArch') {
-        if ($env:PLATFORM) { $env:PLATFORM } else { 'linux/amd64' }
+    elseif ($Load) {
+        Resolve-HostPlatform
     }
     else {
         'linux/amd64,linux/arm64,linux/arm/v7'
+    }
+    if ($Load -and $resolvedPlatforms.Contains(',')) {
+        throw 'A multi-platform image cannot be loaded into the local image store. Select one platform.'
     }
     $resolvedImageName = if ($ImageName) { $ImageName.ToLowerInvariant() } else { $repositoryName.ToLowerInvariant() }
     return [pscustomobject]@{
@@ -170,7 +178,7 @@ function Resolve-BuildSettings {
         Platforms      = $resolvedPlatforms
         ImageName      = $resolvedImageName
         RepositoryName = $repositoryName
-        BuilderName    = if ($BuildMode -eq 'MultiArch') { $repositoryName -replace '-', '' } else { "${resolvedImageName}1" }
+        BuilderName    = "${resolvedImageName}1"
     }
 }
 #endregion Resolution
@@ -253,75 +261,37 @@ function Connect-Ghcr {
 #region Docker
 function Initialize-BuildxBuilder {
     [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][string]$BuilderName,
-        [switch]$Bootstrap
-    )
+    param([Parameter(Mandatory)][string]$BuilderName)
 
     docker buildx inspect $BuilderName *> $null
     if ($LASTEXITCODE -ne 0) {
-        $createArguments = @('buildx', 'create', '--name', $BuilderName)
-        if ($Bootstrap) { $createArguments += '--bootstrap' }
-        docker @createArguments | Out-Null
+        docker buildx create --name $BuilderName | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "docker buildx create failed for '$BuilderName'." }
     }
     docker buildx use $BuilderName
     if ($LASTEXITCODE -ne 0) { throw "docker buildx use failed for '$BuilderName'." }
 }
 
-function Invoke-YamlizrSmokeTest {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][string]$Image,
-        [Parameter(Mandatory)][string]$ExpectedVersion
-    )
-
-    Write-Host 'Running the image to prove it starts.' -ForegroundColor Cyan
-    $reported = "$(docker run --rm $Image --version)".Trim()
-    if ($LASTEXITCODE -ne 0) { throw 'docker run --version failed, so the image does not start.' }
-    if (-not $reported.StartsWith($ExpectedVersion)) {
-        throw "Expected a version starting with '$ExpectedVersion', got '$reported'."
-    }
-    docker run --rm $Image generate --help | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'docker run generate --help failed.' }
-}
-
-function Invoke-StandardBuild {
+function Invoke-ImageBuild {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][pscustomobject]$Settings,
         [Parameter(Mandatory)][string]$RepositoryRoot,
-        [Parameter(Mandatory)][string]$BuildMode,
         [string]$Tag,
         [string]$Version,
         [string]$WorkloadName,
-        [string]$Project,
         [switch]$Push,
-        [switch]$SkipSmokeTest
+        [switch]$Load,
+        [switch]$Run
     )
 
-    if ($BuildMode -eq 'SignalCli' -and $Settings.Configuration -ne 'Release') {
-        throw 'SignalCli container builds support Release configuration only.'
-    }
-    if ($BuildMode -eq 'Yamlizr' -and $Push -and $Settings.Configuration -eq 'Debug') {
-        throw 'A Debug image is built against unpublished local sources and must not be pushed.'
-    }
-
-    $resolvedVersion = if ($BuildMode -eq 'Yamlizr') {
-        Resolve-YamlizrVersion -RequestedVersion $Version -Required:$Push -RepositoryRoot $RepositoryRoot
-    }
-    else { $null }
+    $resolvedVersion = Resolve-Version -RequestedVersion $Version -Required:$Push -RepositoryRoot $RepositoryRoot
     $resolvedTag = Resolve-BuildTag -ExplicitTag $Tag -Push:$Push -RepositoryRoot $RepositoryRoot -ResolvedVersion $resolvedVersion
-    $image = "ghcr.io/f2calv/$($Settings.ImageName):$resolvedTag"
+    $image = "ghcr.io/$(Get-GitHubOwner -RepositoryRoot $RepositoryRoot)/$($Settings.ImageName):$resolvedTag"
     $dockerfile = if ($Settings.Configuration -eq 'Debug') { 'Dockerfile.Debug' } else { 'Dockerfile' }
 
     if ($Settings.Configuration -eq 'Debug') {
-        $dependencies = if ($BuildMode -eq 'Yamlizr') {
-            @('CasCap.Common')
-        }
-        else {
-            Get-DependencyRepositories -DockerfilePath (Join-Path $RepositoryRoot 'Dockerfile.Debug')
-        }
+        $dependencies = Get-DependencyRepositories -DockerfilePath (Join-Path $RepositoryRoot 'Dockerfile.Debug')
         Sync-Dependencies -RepositoryRoot $RepositoryRoot -DependencyRepositories $dependencies
     }
     if ($Push) { Connect-Ghcr }
@@ -336,9 +306,10 @@ function Invoke-StandardBuild {
         'buildx', 'build', '--tag', $image,
         '--file', (Join-Path $RepositoryRoot $dockerfile)
     )
-    if ($BuildMode -eq 'Application') { $arguments += @('--build-arg', "WORKLOAD=$WorkloadName") }
-    if ($BuildMode -eq 'SignalCli') { $arguments += @('--build-arg', "PROJECT=$Project") }
-    if ($BuildMode -eq 'Yamlizr') { $arguments += @('--build-arg', "VERSION=$resolvedVersion") }
+    if (-not [string]::IsNullOrWhiteSpace($WorkloadName)) {
+        $arguments += @('--build-arg', "WORKLOAD=$WorkloadName")
+    }
+    $arguments += @('--build-arg', "VERSION=$resolvedVersion")
     $arguments += @(
         '--build-arg', "CONFIGURATION=$($Settings.Configuration)",
         '--build-arg', "GIT_REPOSITORY=$($Settings.RepositoryName)",
@@ -348,50 +319,18 @@ function Invoke-StandardBuild {
         '--build-arg', 'GITHUB_WORKFLOW=local',
         '--build-arg', 'GITHUB_RUN_ID=0',
         '--build-arg', 'GITHUB_RUN_NUMBER=0',
-        '--platform', $Settings.Platforms
+        '--platform', $Settings.Platforms,
+        '--pull'
     )
-    $outputArgument = if ($Push) { '--push' } elseif ($BuildMode -eq 'Yamlizr' -and -not $Settings.Platforms.Contains(',')) { '--load' } else { '--pull' }
-    $arguments += @($outputArgument, $RepositoryRoot)
+    if ($Push) { $arguments += '--push' }
+    elseif ($Load -or $Run) { $arguments += '--load' }
+    $arguments += $RepositoryRoot
     docker @arguments
     if ($LASTEXITCODE -ne 0) { throw "docker buildx build failed with exit code $LASTEXITCODE." }
 
-    if ($BuildMode -eq 'Yamlizr' -and $outputArgument -eq '--load' -and -not $SkipSmokeTest) {
-        Invoke-YamlizrSmokeTest -Image $image -ExpectedVersion $resolvedVersion
-    }
-    $verb = if ($Push) { 'Pushed' } else { 'Built (not pushed)' }
-    Write-Host "${verb}: $image" -ForegroundColor Green
-}
-
-function Invoke-MultiArchBuild {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][pscustomobject]$Settings,
-        [Parameter(Mandatory)][string]$RepositoryRoot
-    )
-
-    $tagValue = 'latest-dev'
-    $image = "$($Settings.RepositoryName):$tagValue"
-    $output = if ($env:OUTPUT) { $env:OUTPUT } else { '--load' }
-    $gitBranch = "$(git -C $RepositoryRoot branch --show-current)".Trim()
-    $gitCommit = "$(git -C $RepositoryRoot rev-parse HEAD)".Trim()
-    Initialize-BuildxBuilder -BuilderName $Settings.BuilderName -Bootstrap
-
-    docker buildx build --tag $image `
-        --label 'GITHUB_RUN_ID=0' --label "IMAGE_NAME=$image" `
-        --build-arg "GIT_REPOSITORY=$($Settings.RepositoryName)" `
-        --build-arg "GIT_BRANCH=$gitBranch" --build-arg "GIT_COMMIT=$gitCommit" `
-        --build-arg "GIT_TAG=$tagValue" --build-arg 'GITHUB_WORKFLOW=n/a' `
-        --build-arg 'GITHUB_RUN_ID=0' --build-arg 'GITHUB_RUN_NUMBER=0' `
-        --platform $Settings.Platforms --pull $output $RepositoryRoot
-    if ($LASTEXITCODE -ne 0) { throw "docker buildx build failed with exit code $LASTEXITCODE." }
-
-    if ($output -ne '--load') {
-        Write-Host "Build completed with '$output'; no local image was loaded."
-        return
-    }
-    docker images $Settings.RepositoryName
-    Read-Host "Hit ENTER to run the '$image' image (Ctrl-C to quit)"
-    docker run --rm -it --name $Settings.RepositoryName $image
+    $verb = if ($Push) { 'Pushed' } elseif ($Load -or $Run) { 'Loaded' } else { 'Built into the cache only' }
+    Write-Host "${verb}: $image ($($Settings.Platforms))" -ForegroundColor Green
+    if ($Run) { docker run --rm -it $image }
 }
 #endregion Docker
 
@@ -401,18 +340,13 @@ function Invoke-ContainerBuild {
     param()
 
     $resolvedRoot = [IO.Path]::GetFullPath($RepositoryRoot)
-    $settings = Resolve-BuildSettings -BuildMode $BuildMode -RepositoryRoot $resolvedRoot `
-        -Configuration $Configuration -Platforms $Platforms -ImageName $ImageName -Push:$Push
-    $target = "container image for $($settings.RepositoryName)"
-    if (-not $PSCmdlet.ShouldProcess($target, "Run the $BuildMode build profile")) { return }
+    $settings = Resolve-BuildSettings -RepositoryRoot $resolvedRoot -Configuration $Configuration `
+        -Platforms $Platforms -ImageName $ImageName -Push:$Push -Load:($Load -or $Run)
+    $target = "$($settings.Configuration) container image for $($settings.RepositoryName)"
+    if (-not $PSCmdlet.ShouldProcess($target, 'Build')) { return }
 
-    if ($BuildMode -eq 'MultiArch') {
-        Invoke-MultiArchBuild -Settings $settings -RepositoryRoot $resolvedRoot
-        return
-    }
-    Invoke-StandardBuild -Settings $settings -RepositoryRoot $resolvedRoot -BuildMode $BuildMode `
-        -Tag $Tag -Version $Version -WorkloadName $WorkloadName -Project $Project `
-        -Push:$Push -SkipSmokeTest:$SkipSmokeTest
+    Invoke-ImageBuild -Settings $settings -RepositoryRoot $resolvedRoot -Tag $Tag -Version $Version `
+        -WorkloadName $WorkloadName -Push:$Push -Load:$Load -Run:$Run
 }
 
 if ($MyInvocation.InvocationName -ne '.') {

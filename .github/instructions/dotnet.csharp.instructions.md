@@ -18,29 +18,50 @@ hot-path work.
   - `_*Config.cs` (for example `_AppConfig.cs` for `record AppConfig`) groups a configuration root
     with its related config types.
 - **Generic type filenames** encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
-- **Interfaces** start with `I` and live in an `Abstractions` folder and namespace.
+- **Interfaces** start with `I`, live in an `Abstractions` folder and namespace, and are named for the
+  role or capability they define (`IMessageGateway`), not by prefixing an implementing class name with
+  `I`, and not ending in `Service`. Apply this to new interfaces; rename an existing one only when
+  already changing it, because renaming a published contract is breaking.
+- **Single-implementation interfaces** are bloat: remove an interface that has only one
+  implementation. Keep it when tests substitute it with a fake or mock, when it is a library
+  contract or extension point consumed by another assembly, or when a second implementation exists.
+  Do not add one speculatively for a future implementation.
+- **Services** — application types registered in DI — live in a `Services` folder. A service uses a
+  `Service` suffix (`OrderService`, `ReplayBgService`); a DI-registered type with a more specific role
+  keeps that suffix (`Handler`, `Factory`, `Manager`, `Coordinator`) and still lives in `Services`.
+  Group a service's supporting types in a `Services` sub-folder or as `ServiceName.SubCategory.cs`
+  partial files. Types outside DI keep their role suffix (`Validator`, `Converter`).
+- **Extension classes** live in an `Extensions` folder and namespace and are named after the type they
+  extend (`ServiceCollectionExtensions`). This includes endpoint-mapping and host-registration
+  extensions; do not place them in `Endpoints/` or give application-owned extensions a framework
+  namespace such as `Microsoft.AspNetCore.Builder`. Keep extensions focused on wiring and delegate
+  substantial behavior to the owning service.
+- **Models** — DTOs, request and response payloads, options and configuration records — live in a
+  `Models` folder and namespace. EF Core entities follow the EF Core instructions.
 - **Custom exceptions** use the `Exception` suffix, one per file under `Exceptions/` with a namespace
   ending in `.Exceptions`. Nested private test doubles stay with their owning test type.
 - **Wire constants** — request URIs, route templates, header names — go in a `static class` under a
   `Constants` folder and namespace, grouped per API surface (`RequestUris`, `UploadHeaders`), not
   beside DTOs in `Models`. This applies to APIs the code calls and APIs it exposes.
-- **Namespaces** follow folders, except sub-folders under `Services`. Before creating a `Services`
-  sub-folder, ask the user (yes/no) whether it introduces a sub-namespace.
+- **Namespaces** follow folders, except sub-folders under `Services`, which keep the parent
+  `Services` namespace.
 - **`GlobalUsings.cs`** exists in every project root. Move a namespace imported by more than two files
   into it, delete the per-file duplicates, and re-check after refactors that add files.
 
 ## Style
 
-The repository `.editorconfig` is authoritative. Most preferences are suggestions the build does
-not enforce, so apply them while writing:
+The repository `.editorconfig` is authoritative. Its promoted tranche is build-enforced; remaining
+preferences are suggestions, so apply both while writing:
 
 - 4 spaces, LF, final newline; file-scoped namespaces with usings above; pure alphabetical usings
   with no `System.*` first and no blank-line groups, including in `GlobalUsings.cs`.
 - Allman braces. Omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using` bodies.
 - PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching (`is`, `not`, switch
   expressions); nullable reference types and implicit usings enabled; latest stable C# (currently 14.0).
-- Expression bodies for accessors, properties, indexers, lambdas and single-expression methods, not
-  for constructors, operators or local functions. Move `=>` to the next line when it would scroll.
+- Expression bodies for accessors, properties, indexers, lambdas, constructors and single-expression
+  methods, not operators or local functions. Move `=>` to the next line when it would scroll.
+- Declare interface members with explicit `public` accessibility; the build enforces accessibility
+  modifiers on interface members as well as implementations.
 - Explicit interface properties use accessor blocks (`{ get => …; }`), never `=>`, and carry
   `/// <inheritdoc/>`.
 - Wrap long parameter lists one per line, with the closing parenthesis and any `: base(...)` on its
@@ -56,9 +77,16 @@ not enforce, so apply them while writing:
   inheritors.
 - **Parameter order**: `ILogger`, then `IOptions<T>` / `IOptionsMonitor<T>`, then `TimeProvider`, then
   application services.
-- **Service names** use a `Svc` suffix (`orderSvc`, not `orderService`).
+- **Injected dependency names** follow the injected type without the leading `I`
+  (`IRealtimeConnectionHub realtimeConnectionHub`). Types ending in `Service` use a `Svc` suffix
+  instead (`orderSvc`, not `orderService`); the type itself keeps its `Service` suffix. `ILogger<T>`
+  is `logger` and `TimeProvider` is `timeProvider`. A single options dependency is named `config`;
+  with several, name each after its options type (`commsConfig`, `azureAuthConfig`).
 - **Options access**: read `.Value` / `.CurrentValue` inline at the point of use; never cache it in a
   field or local.
+- **At most seven constructor or method parameters.** Move a cohesive group of dependencies into a
+  dedicated type, such as an `<Area>Metrics` class that owns its meter instruments, and pass a
+  small state object instead of a list of flags.
 - **Seal concrete classes** unless designed for inheritance (`virtual`/`abstract` members or a
   documented base). Services, background services, entities, converters and middleware default to
   `sealed`; unsealing later is non-breaking.
@@ -77,6 +105,12 @@ not enforce, so apply them while writing:
 - **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
   hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
   end-to-end flow when extraction would obscure it.
+- **Keep composition roots shallow.** Register each feature in its own method that returns early when
+  the feature is off, and carry feature-derived switches and run-once shared infrastructure in one
+  small state type rather than tuples or local functions, so no method exceeds a cognitive
+  complexity of 15.
+- **No hard-coded absolute URIs or file paths** in code. Read them from configuration, or omit
+  decorative metadata such as OpenAPI contact and licence links.
 - **Centralise environment access** through `Microsoft.Extensions.Configuration`; do not scatter
   `Environment.GetEnvironmentVariable`. Centralised reads of standard platform, CI and
   build-provenance variables are permitted.
@@ -102,10 +136,25 @@ not enforce, so apply them while writing:
   types when callers must distinguish conditions, and keep context free of credentials, tokens,
   connection strings, full local paths and personal data.
 - Use result types, `Try*` methods or nullable returns for expected absence and validation outcomes.
+- **Choose the thrown type by who must act on it.** Never throw `Exception`, `SystemException`,
+  `ApplicationException`, `NullReferenceException` or `IndexOutOfRangeException`.
+  - Caller mistakes and object state use the BCL: the `ArgumentException` family through its
+    `ThrowIf*` helpers, `InvalidOperationException` (including "not initialised; call X first"),
+    `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
+  - Protocol boundaries throw their own type: `JsonException` in converters, `RpcException` in gRPC
+    services and `McpException` in MCP tools.
+  - Domain and runtime failures throw a type derived from the solution's shared domain exception
+    base (for example `GenericException` in `CasCap.Common.Exceptions`). Throw the base itself only
+    for a one-off failure nobody would catch or query separately; recurring failures in one area get
+    a dedicated `<Area>Exception`. Contract and client packages that deliberately avoid the shared
+    library dependency derive from `Exception` instead.
+  - The `dotnet-exceptions` skill audits a repository and introduces area exception types.
 - **Cancellation**: pass the available `CancellationToken` to every cancellable call — database, HTTP,
   file, stream, queue, delay, lock, paging and nested services. Pass `CancellationToken.None`
   explicitly, and locally, when an operation must outlive the caller. Never convert a requested
-  `OperationCanceledException` into an error.
+  `OperationCanceledException` into an error. To wait for shutdown without a catch block, await
+  `Task.Delay(Timeout.Infinite, token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)`;
+  a `catch` that logs must pass the caught exception to the logger.
 
 ## Background Work and Shutdown
 
@@ -141,6 +190,10 @@ not enforce, so apply them while writing:
   `[LoggerMessage]`: `private static partial void` methods at the bottom of the partial class or in
   `{ClassName}.Logging.cs`, first parameter `ILogger logger`, called as `LogXxx(logger, ...)`. Leave
   dynamic-level `logger.Log(level, ...)` calls unconverted.
+- **Logging argument cost (CA1873)**: guard every non-generated `logger.LogXxx(...)` call with
+  `if (logger.IsEnabled(LogLevel.Xxx))`, because the `params object[]` allocation alone is costly.
+  Give `[LoggerMessage]` parameters the value's own type (`Symbol symbol`, an enum) rather than
+  calling `ToString()` at the call site; the generator formats lazily.
 - Never log secrets, tokens, authorisation headers, connection strings, signed-URL queries, full
   local paths or personal data.
 
@@ -177,6 +230,9 @@ not enforce, so apply them while writing:
   complexity; clarity wins in demonstration code.
 - Use `FrozenDictionary`/`FrozenSet`, stored as the concrete type, for collections built once at
   startup, and `System.Threading.Lock` rather than `object` for dedicated locks.
+- Pass metric tags as `new TagList([...])`: its span constructor builds the collection expression on
+  the stack, whereas `Counter.Add`'s `params` overload allocates an array beyond three tags.
+  SonarQube S3878 misreads the collection expression as an array; mark it false positive.
 
 ## Correctness and Security
 

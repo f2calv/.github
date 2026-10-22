@@ -23,6 +23,15 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   private configuration when its repository-specific instructions define that tier.
 - Add a deployment secret store only after enough preceding configuration has been loaded to resolve
   its endpoint and authentication settings. Rebind affected options after adding it.
+- On Kubernetes, self-built applications read their secrets in-process through the Key Vault
+  configuration provider rather than through Kubernetes Secrets synchronised by an operator such as
+  External Secrets. This keeps one configuration path for local and cluster runs and avoids
+  duplicating secret names in deployment manifests. Reserve operator-synchronised Secrets for
+  third-party workloads that can only read Secrets or environment variables, and for the bootstrap
+  credential the provider itself needs to authenticate.
+- Several applications may load the same shared vault whole: a secret only takes effect when its
+  name maps onto a bound options property. Exclude any secret family whose names would bind into
+  another application's options, such as a per-application identity under a shared section name.
 
 ## Options Synchronisation
 
@@ -38,6 +47,18 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 - Add a key to an environment-specific file only when that environment genuinely needs to override the type's default.
 - Add a key to a local file only when it differs from the tracked defaults or contains private
   configuration that cannot be committed to a public repository.
+
+## Kubernetes Reload Semantics
+
+- Treat deployment configuration as an immutable startup snapshot in Kubernetes workloads. Bind
+  with `IOptions<T>` and roll pods when ConfigMaps, Secrets, environment variables, endpoints or
+  infrastructure settings change; this keeps validation, caches and dependent resources coherent.
+- Use `IOptionsMonitor<T>` only when the application deliberately supports in-process reload and
+  every dependent resource is updated atomically. A mounted ConfigMap changing on disk is not by
+  itself a reason to use monitor semantics.
+- Keep mutable runtime data such as tenant definitions, user preferences, workflow state and
+  versioned policy outside the deployment configuration pipeline. Put it behind a dedicated store
+  interface with explicit validation, versioning, cache invalidation and authorization.
 
 ## Options Types
 

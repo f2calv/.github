@@ -1,8 +1,8 @@
 # Container Image Patterns
 
-Copy-ready fragments for the conventions in `docker.instructions.md`. The public
-`multi-arch-container-dotnet`, `-go`, `-rust` and `-python` repositories under the `f2calv` GitHub
-account are complete reference implementations that follow these patterns stage for stage.
+Copy-ready fragments for the conventions in `docker.instructions.md`. As reference implementations
+that follow these patterns stage for stage, see the public f2calv `multi-arch-container-dotnet`,
+`-go`, `-rust` and `-python` repositories.
 
 ## Header and Stage Banners
 
@@ -67,32 +67,10 @@ EOF
 
 ## .NET
 
-Restore every runtime identifier once, before `TARGETARCH`, then publish offline per platform. A
-RID-specific publish otherwise restores again in every platform leg. Pass the list with escaped
-quotes: MSBuild reads `%3B` as a literal semicolon, which yields one invalid identifier.
-
-```dockerfile
-COPY --parents Directory.Build.props Directory.Packages.props src/**/*.csproj ./
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "src/$APP_NAME/$APP_NAME.csproj" -p:Configuration=Release \
-        "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
-
-COPY . .
-ARG TARGETARCH
-ARG TARGETVARIANT
-RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
-set -eux
-case "${TARGETARCH}${TARGETVARIANT}" in
-    amd64) RID=linux-x64   ;;
-    arm64) RID=linux-arm64 ;;
-    armv7) RID=linux-arm   ;;
-    *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
-esac
-dotnet publish "src/$APP_NAME/$APP_NAME.csproj" --configuration Release --runtime "$RID" \
-    --self-contained false --no-restore --output /out
-ln -s "$APP_NAME" /out/entrypoint
-EOF
-```
+Use the canonical [published](../templates/dotnet-service.dockerfile.tmpl) or
+[Debug](../templates/dotnet-service-debug.dockerfile.tmpl) template. Those files are the copy-ready
+authority for argument order, manifest copy, restore/publish formatting, assembly provenance and
+stage ordering; this reference records the rationale only.
 
 - `--network=none` proves the publish step no longer reaches NuGet.
 - Pass the same configuration to restore and publish. A project whose references depend on
@@ -108,6 +86,9 @@ EOF
 - The SDK writes the target assembly name into the apphost, so the fixed-name `entrypoint` link
   starts the right application. Use `ENTRYPOINT ["/app/entrypoint"]`; it works on chiselled images
   because it needs no shell.
+- The version, source revision, repository, branch and workflow/run identity are baked into assembly
+  metadata. Keep the generated `AssemblyMetadata` declarations in the repository's root
+  `Directory.Build.props`; runtime environment variables do not redefine build provenance.
 - Add `packages.lock.json` (`RestorePackagesWithLockFile`) and restore with `--locked-mode` to make
   dependency drift fail the build.
 - House defaults for .NET services: HTTP on 8080, the .NET 8+ image default, and gRPC on 5001.
@@ -237,8 +218,8 @@ same image instead, and copy the published output into it.
 
 ## Optional Test Target (.NET)
 
-Place the stage between `build` and `final`. The public `f2calv/yamlizr` repository carries this
-stage in its Release `Dockerfile`.
+Place the stage between `build` and `final`. For a working example, see the Release `Dockerfile`
+in the public f2calv `yamlizr` repository.
 
 ```dockerfile
 # In the build stage, keep the tests out of the publish layer:
@@ -280,7 +261,7 @@ RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=locke
   other `COPY` that would otherwise pick the tests up, including a `Dockerfile.Debug`.
 - Add `--progress=plain` to see the test output; a failing test fails the build.
 
-Verified in September 2026 on yamlizr with the .NET 10.0.401 SDK:
+Verified in September 2026 on a .NET 10.0.401 CLI-tool repository:
 
 - `--target test` ran all 28 credential-free cases with the network disabled.
 - A default three-platform build executed no `test` step.

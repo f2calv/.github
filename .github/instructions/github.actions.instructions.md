@@ -91,7 +91,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Prefer `secrets: inherit` unless there is a specific reason to restrict the secrets passed to the called workflow.
 - Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
 - Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
-- For the shared Helm packaging workflow, pass the full final OCI coordinate as `chart-repository`, such as `${{ github.repository_owner }}/charts/signalizr`. The workflow pushes to `dirname(chart-repository)` and derives the package name from the `chart-path` directory basename, so that basename, `Chart.yaml` `name`, and the coordinate's final segment must match. Never insert the source repository name into the artifact path; that produces nested coordinates such as `<owner>/<source-repository>/<chart-name>`.
+- For the shared Helm packaging workflow, pass the full final OCI coordinate as `chart-repository`, such as `${{ github.repository_owner }}/charts/example`. The workflow pushes to `dirname(chart-repository)` and derives the package name from the `chart-path` directory basename, so that basename, `Chart.yaml` `name`, and the coordinate's final segment must match. Never insert the source repository name into the artifact path; that produces nested coordinates such as `<owner>/<source-repository>/<chart-name>`.
 
 ## Composite Actions
 
@@ -106,6 +106,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Skip bot-triggered runs conditionally, such as `if: github.actor != 'dependabot[bot]'`.
 - Pass tokens via stdin for registry logins, such as `echo "$TOKEN" | docker login --password-stdin`.
 - Force OCI registry, repository and tag values to lowercase, such as `${IMAGE_REGISTRY,,}`.
+- Never interpolate free-text context such as `github.ref`, `github.head_ref`, `github.workflow`, event titles or bodies, or caller-supplied strings directly into a `run` script. Map them to step `env:` variables and reference the quoted variable (`"$GIT_BRANCH"`), so a crafted branch or workflow name cannot change the command.
 
 ## Versioning
 
@@ -113,4 +114,4 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - The default configuration file is `GitVersion.yml` in the repository root.
 - Prefer `semVer` for tags and releases; use `fullSemVer`, via the `version` output, for build versioning and pre-release identifiers.
 - Action and reusable-workflow repositories must validate before release that their README consumer examples reference the exact floating major tag computed by GitVersion, such as `owner/action@v2` or `owner/workflows/.github/workflows/build.yml@v1`; `@v2.1` must not satisfy an `@v2` check. Include that validation job in the release job's `needs`, and pass its validated `major.minor.patch` values to the release step rather than a `FullSemVer` value that may contain build metadata.
-- Action repositories are the one place the `v` prefix and the floating major alias apply. Consumers reference `owner/action@v1`, so the alias must move to each new release, and only after the immutable tag succeeds. See `github.instructions.md` for the rule and for what every other repository does instead.
+- Action repositories are the one place the `v` prefix and the floating `vMAJOR` and `vMAJOR.MINOR` aliases apply. Consumers reference `owner/action@v1`, so the aliases must move to each new release, and only after the immutable tag succeeds. See `github.instructions.md` for the rule and for what every other repository does instead.

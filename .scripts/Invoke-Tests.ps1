@@ -17,7 +17,8 @@ param(
         (Join-Path $PSScriptRoot 'tests'),
         (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests'),
         (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests')
+        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests'),
+        (Join-Path $PSScriptRoot '../.github/skills/dotnet-cleanup/scripts/tests')
     )
 )
 
@@ -34,7 +35,8 @@ $Configuration.Output.Verbosity = 'Detailed'
 $Configuration.CodeCoverage.Enabled = $true
 $Configuration.CodeCoverage.Path = @(
     (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Build.ps1'),
-    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Deploy.ps1')
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/Invoke-Deploy.ps1'),
+    (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/ContainerWorkflows.Common.ps1')
 )
 $coverageOutputPath = Join-Path ([IO.Path]::GetTempPath()) "container-workflows-coverage-$PID.xml"
 $Configuration.CodeCoverage.OutputPath = $coverageOutputPath

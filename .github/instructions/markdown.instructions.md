@@ -1,5 +1,5 @@
 ---
-description: 'README structure and consistency, generated reference documentation and Markdown linting conventions.'
+description: 'Markdown conventions, README content boundaries and consistency, generated reference documentation and linting.'
 applyTo: '**/*.md'
 ---
 
@@ -7,9 +7,21 @@ applyTo: '**/*.md'
 
 Where these rules refer to a *project*, read it as the repository's primary unit of delivery — a project, library, module, chart, reusable workflow, action or deployment layer, whichever that repository publishes.
 
+## Scope and Ownership
+
+Use the `readme-authoring` skill to create, restructure, update or audit READMEs. Its conditional
+master template owns section selection and ordering; this file owns documentation conventions.
+The Mermaid instructions own diagram selection, styling and synchronization. Domain instructions
+and skills own technical contracts; reference them rather than copying their rules.
+
+README-specific rules below apply to every file named `README.md`, including project and `docs/`
+index files. Other Markdown under `docs/` serves its own audience and purpose: tutorials, reference,
+design explanations and runbooks need not follow the README template. Generated-reference and
+linting rules apply wherever their stated conditions hold.
+
 ## README Consistency
 
-- **Every project has a `README.md`**: when adding a new project, module, package, chart or sample, create its `README.md` in the same commit. Follow the established pattern: Purpose → Public surface → Configuration → Dependencies.
+- **Every project has a `README.md`**: when adding a new project, module, package, chart or sample, create its `README.md` in the same commit. Select relevant sections from the skill's master template.
 - Keep every `README.md` in sync with its implementation. During any refactoring — and **always** before opening a pull request — scan each affected `README.md` for outdated type, input or output names, missing or removed configuration options, stale dependency tables and inaccurate diagrams. Update it in the same change, never as a follow-up.
 - **Major refactorings** (renames, moves, dependency-injection restructuring, type splits): update every `README.md` that mentions the old names in the same commit. Do not leave stale references behind.
 - For changes spanning several projects, review all impacted `README.md` files before opening the pull request.
@@ -29,34 +41,64 @@ Apply to every file named `README.md`, wherever it lives — repository root, pr
 - **Descriptive link text**: never `click here`, and never a bare URL where a phrase reads better.
 - **Alt text on every image** describing the content rather than the file (`![Service dependency graph](…)`, not `![diagram](…)`).
 - **Unique headings within a file** so generated anchors resolve predictably.
-- **No YAML front matter**: front matter belongs only to Copilot customisation files (`*.instructions.md`, `*.prompt.md`, `*.agent.md`) and to GitHub issue and pull request templates, which require it. Never add a `title:`, `description:` or `author:` block to a `README.md` or to any other documentation Markdown; GitHub renders it as a table above the content rather than as a heading, leaving the page with no `<h1>`. The `# H1` and the summary sentence beneath it already carry the title and the description.
+- **No YAML front matter in documentation**: reserve it for customization files (`SKILL.md`, `*.instructions.md`, `*.prompt.md`, `*.agent.md`) and templates whose format requires it. Never add a `title:`, `description:` or `author:` block to ordinary documentation; use the H1 and summary instead.
 
-### Root README Content
+### Content Boundaries
 
-Organize a repository's primary `README.md` around the reader journey rather than forcing every
-repository type into one identical outline:
+- Describe the current supported product, not its relocation, rename or refactoring history.
+  Remove retrospective explanations rather than accumulating a narrative of past changes. Retain
+  only actionable notices needed by current consumers, such as a breaking-change migration or
+  retirement warning; link to focused guidance instead of reproducing release history.
+- Lead with consumer needs. Omit generic key-file inventories, suppressed-warning lists, coding
+  rules and maintainer checklists. Include concise development commands and unusual prerequisites
+  when useful; keep detailed contributor and operational guidance in its appropriate document.
+- Do not narrate a repository's internal CI jobs or release plumbing. Explain workflow inputs,
+  outputs, permissions and execution flow when the workflow or action is itself the product.
+- Reuse dedicated or inherited contribution, support and security guidance rather than duplicating
+  it. A short link is sufficient where discovery needs help; do not create empty boilerplate sections.
+- A collection's root README provides orientation and one useful catalogue. Project READMEs explain
+  their own contracts and usage. Keep each published package or chart README useful when rendered
+  outside GitHub; link to deeper material without moving essential installation guidance away.
+- When describing a public API or surface, link each primary interface name directly to its defining
+  source file, not merely to a project folder or a generic API index. Link the contract at its first
+  explanatory mention or in the public-surface table; code samples need no embedded Markdown links.
+  Verify the definition and source reference. Use absolute repository links in packaged READMEs
+  where relative source links would not resolve in the registry.
+- Put extended tutorials, design explanations and runbooks under `docs/`. Do not move essential
+  usage or configuration out of a README merely to make it shorter, and do not copy entire guides
+  into multiple READMEs.
 
-1. Name the project and summarize what it does, why it is useful and who it serves.
-2. Put installation or a quick start before architecture and implementation detail.
-3. Document normal usage, then configuration and public interfaces where they exist.
-4. Explain how to build, test and validate changes when contributors can work on the project.
-5. Point readers to support, contribution, security and license information. Link to dedicated or
-  inherited community-health files instead of duplicating them in the README.
+### Public Primary README Discoverability
 
-Use headings appropriate to the delivery type:
+Apply these principles to a public repository's primary README, not as an SEO checklist for private
+repositories or every internal guide:
 
-| Delivery type | Expected primary sections |
-| --- | --- |
-| Application or CLI | Quick Start, Installation, Usage, Configuration, Development |
-| Library or package collection | Installation or Quick Start, Packages or API, Configuration, Build and Test |
-| GitHub Action | Usage, Inputs, Outputs when present, Testing or Development |
-| Reusable workflows | Usage, Workflows, Deployment Flow, Development |
-| Terraform module | Dependency Graph, Usage, generated Requirements/Providers/Resources/Inputs/Outputs, Development |
-| Helm chart repository | Overview, Chart Catalogue, Usage, Versioning, Development |
-| Container example | Quick Start or Run, Platform Support, Configuration, Build and Test |
+- Keep the actual product identity in the H1. In the opening summary, naturally name the product
+  category, important platform or ecosystem, problem solved and intended users. Explain unfamiliar
+  names and acronyms instead of assuming readers already know the project.
+- Use terms potential users would search for in useful prose, descriptive headings, examples and
+  link text. Prefer a concrete capability description over vague marketing claims.
+- Keep essential explanations as searchable text, not only in badges, screenshots or diagrams.
+  Link relevant public package listings and documentation with meaningful text.
+- Keep the README's description consistent with current repository and registry metadata. Flag
+  inaccurate descriptions, topics or website links, but do not change GitHub settings without
+  authorization.
+- Do not add keyword lists, repeated synonyms, hidden text, frontmatter or HTML metadata as an SEO
+  workaround. GitHub controls the page metadata; README edits cannot guarantee indexing or ranking.
 
-Treat these as content requirements, not mandatory spelling. Omit irrelevant sections, combine
-closely related material, and keep detailed tutorials or operational documentation under `docs/`.
+### Badges and External Destinations
+
+- Use a small set of useful live badges, not manually maintained version or coverage graphics.
+  Put repository-wide badges after the summary and per-package versions in the collection catalogue.
+- Make badges clickable: package versions lead to the matching package, Marketplace badges to the
+  verified listing, CI status to its workflow, and analysis metrics to the matching project or metric.
+- Match alt text, metric, destination and branch. Code smells are not coverage, and a Quality Gate
+  is not a test result. Do not imply analysis or Marketplace publication exists without evidence.
+- Resolve package IDs, listings, workflow paths and analysis keys from authoritative configuration
+  or verified service metadata, not guessed naming conventions. Verify both image and link targets.
+- For private repositories, check whether a badge is accessible to its audience and whether its URL
+  or image request discloses identifiers to an external service. Do not add credentials, proxy
+  tokens or private coordinates to public badge services; omit an unsuitable badge.
 
 ## Generated Reference Documentation
 

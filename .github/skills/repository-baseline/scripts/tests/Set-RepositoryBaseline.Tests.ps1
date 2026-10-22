@@ -2,9 +2,11 @@
 
 BeforeAll {
     $script:ScriptPath = Join-Path $PSScriptRoot '..\Set-RepositoryBaseline.ps1'
-    $script:PolicyPath = Join-Path $PSScriptRoot '..\repository-baseline.json'
+    $script:PolicyPath = Join-Path $PSScriptRoot '..\policies\f2calv.json'
+    $script:DefaultPolicyPath = Join-Path $PSScriptRoot '..\policies\default.json'
     . $script:ScriptPath
     $script:Policy = Get-Content -Raw -LiteralPath $script:PolicyPath | ConvertFrom-Json -Depth 100
+    $script:DefaultPolicy = Get-Content -Raw -LiteralPath $script:DefaultPolicyPath | ConvertFrom-Json -Depth 100
 
     function ConvertTo-TestGhResponse {
         param(
@@ -59,6 +61,39 @@ BeforeAll {
     }
 }
 
+Describe 'Resolve-BaselinePolicyPath' -Tag 'Unit' {
+    BeforeAll {
+        $script:PolicyDirectory = Join-Path $PSScriptRoot '..\policies'
+    }
+
+    It 'Selects the owner policy when one exists' {
+        Resolve-BaselinePolicyPath -Targets @('F2calv/example') -PolicyDirectory $script:PolicyDirectory |
+            Should -Be (Join-Path $script:PolicyDirectory 'f2calv.json')
+    }
+
+    It 'Falls back to the default policy for another owner' {
+        Resolve-BaselinePolicyPath -Targets @('owner/example') -PolicyDirectory $script:PolicyDirectory |
+            Should -Be (Join-Path $script:PolicyDirectory 'default.json')
+    }
+
+    It 'Rejects targets that span several owners' {
+        { Resolve-BaselinePolicyPath -Targets @('owner/one', 'other/two') -PolicyDirectory $script:PolicyDirectory } |
+            Should -Throw '*several owners*'
+    }
+}
+
+Describe 'Default policy' -Tag 'Unit' {
+    It 'Names no repository' {
+        Get-Content -Raw -LiteralPath $script:DefaultPolicyPath | Should -Not -Match '"[^"/]+/[^"]+"'
+    }
+
+    It 'Adds no status-check rule for a public repository' {
+        $Ruleset = Get-DesiredRuleset -Policy $script:DefaultPolicy -RepositoryName 'owner/example' -Visibility public
+
+        @($Ruleset.rules.type) | Should -Be @('deletion', 'non_fast_forward', 'pull_request')
+    }
+}
+
 Describe 'Get-DesiredRuleset' -Tag 'Unit' {
     It 'Builds the shared ruleset without status checks for a private repository' {
         $Ruleset = Get-DesiredRuleset -Policy $script:Policy -RepositoryName 'f2calv/example'
@@ -80,6 +115,10 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
     }
 
     It 'Preserves non-Sonar checks for excluded public repository <Repository>' -TestCases @(
+        @{
+            Repository = 'f2calv/agentizr'
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'build / app-build-dotnet')
+        }
         @{
             Repository = 'f2calv/.github'
             Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'test')
@@ -151,6 +190,25 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         )
         $StatusChecks.parameters.strict_required_status_checks_policy | Should -BeTrue
         $StatusChecks.parameters.do_not_enforce_on_create | Should -BeFalse
+    }
+
+    It 'Requires SonarCloud alongside Agentizr CI checks after its exclusion is removed' {
+        $Policy = $script:Policy | ConvertTo-Json -Depth 100 | ConvertFrom-Json -Depth 100
+        $Policy.publicRepository.sonarCloudGateExclusions = @(
+            $Policy.publicRepository.sonarCloudGateExclusions | Where-Object { $_ -ne 'f2calv/agentizr' }
+        )
+        $Ruleset = Get-DesiredRuleset -Policy $Policy -RepositoryName 'f2calv/agentizr' -Visibility public
+        $StatusChecks = @($Ruleset.rules | Where-Object type -eq 'required_status_checks')
+
+        $StatusChecks.Count | Should -Be 1
+        @($StatusChecks[0].parameters.required_status_checks.context) | Should -Be @(
+            'lint / lint',
+            'versioning / gha-release-versioning',
+            'build / app-build-dotnet',
+            'SonarCloud Code Analysis'
+        )
+        $StatusChecks[0].parameters.strict_required_status_checks_policy | Should -BeTrue
+        $StatusChecks[0].parameters.do_not_enforce_on_create | Should -BeFalse
     }
 
     It 'Adds the approved status checks for <Repository>' -TestCases @(

@@ -9,6 +9,7 @@ user-invocable: true
 
 Standardize GitHub repository settings through the policy and PowerShell tools bundled with this
 skill. Use the scripts as the implementation authority and this document as the operational runbook.
+The tools work for any GitHub account or organization; only the policy file is owner-specific.
 
 ## Prerequisites
 
@@ -30,33 +31,37 @@ skill. Use the scripts as the implementation authority and this document as the 
 - Never delete classic branch protection until the replacement ruleset has been fetched and verified.
 - Treat `PlanGated` as an expected capability result, not as permission to bypass the unavailable
   protection.
-- Public repositories with a completed SonarCloud analysis require the `SonarCloud Code Analysis`
-  check before their default branch can be updated through a pull request. Repositories whose
-  imported SonarCloud project has never produced an analysis remain explicit policy exclusions;
-  private repositories do not inherit this cloud check.
+- A policy's `publicRepository.requiredStatusChecks` are added to every public repository not listed
+  in `sonarCloudGateExclusions`. Exclude a repository only while the check cannot yet report;
+  private repositories never inherit these checks.
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
 
-## Policy Conventions
+## Policy Selection
 
-- The default-branch ruleset requires `lint / lint`, `versioning / gha-release-versioning`, the
-  repository's own validation check and the SonarQube Quality Gate for every public and private
-  repository.
-- Configure every public repository in SonarQube Cloud on the Free plan through its GitHub
-  integration. Grant the SonarQube GitHub App access to all repositories, enable automatic import for
-  new repositories and bulk-import existing repositories when establishing the integration.
-- Use SonarQube Cloud automatic analysis where the repository is eligible. Use CI-based analysis where
-  the language, project structure or required build context is not supported, and never run
-  automatic and CI-based analysis together for the same SonarQube project.
-- Configure every private repository against a self-hosted SonarQube Community Build instance and run
-  its scanner in continuous integration.
+The reconciler reads one JSON policy per run from [policies](./scripts/policies/):
+
+1. An explicit `-PolicyPath`.
+2. Otherwise `policies/<owner>.json` for the targets' owner, when that file exists.
+3. Otherwise [default.json](./scripts/policies/default.json): the shared repository, Actions and
+   security settings and a default-branch ruleset with no status checks or repository overrides.
+
+One run targets one owner. To adopt the skill for another account, start from `default.json`, add
+the owner's required checks and per-repository `rulesetOverrides`, and either keep the file outside
+this repository and pass `-PolicyPath`, or add it as `policies/<owner>.json` in a fork. A policy
+names repositories, so publish it only when every repository it names is public.
+
+A policy owns its ruleset by `ruleset.name`. When adopting a policy for repositories that already
+have a baseline ruleset under another name, list that name in `historicalRulesetNames` so it is
+migrated rather than duplicated.
 
 ## Assets
 
 | Asset | Purpose |
 | --- | --- |
 | [Set-RepositoryBaseline.ps1](./scripts/Set-RepositoryBaseline.ps1) | Audit and reconcile one, several, or all owned repositories |
-| [repository-baseline.json](./scripts/repository-baseline.json) | Declarative repository and ruleset policy |
+| [policies/default.json](./scripts/policies/default.json) | Generic repository and ruleset policy for any owner |
+| [policies/f2calv.json](./scripts/policies/f2calv.json) | Real-world owner policy; see the example below |
 | [Invoke-Tests.ps1](./scripts/Invoke-Tests.ps1) | Run the Pester regression suite after policy or script changes |
 
 ## Parameters
@@ -70,7 +75,7 @@ skill. Use the scripts as the implementation authority and this document as the 
 | `-Mode Audit` | Report drift without mutation |
 | `-Mode Apply -WhatIf` | Preview reconciliation without mutation |
 | `-Mode Apply` | Reconcile remote settings |
-| `-PolicyPath <path>` | Override the bundled JSON policy |
+| `-PolicyPath <path>` | Use this policy instead of the owner or default policy |
 | `-OutputPath <path>` | Write detailed structured results locally |
 
 Use exactly one of `-Repository` and `-AllOwned`.
@@ -185,7 +190,8 @@ Do not publish private repository identities or infrastructure details in a publ
 
 ## Changing the Policy or Scripts
 
-1. Update [repository-baseline.json](./scripts/repository-baseline.json) as the source of truth.
+1. Update the owner's policy file as the source of truth; change `default.json` only for settings
+   every owner should share.
 2. Add Pester coverage in the bundled `scripts/tests/` directory alongside every behavior change.
 3. Cover compliant, drifted, plan-gated, failed, `WhatIf`, idempotent, and missing-property cases.
 4. Preserve repository-specific required checks and merge visibility-wide checks into the same
@@ -214,6 +220,18 @@ Use the repository helper from the central customization checkout:
 The helper creates or resumes the repository, invokes the bundled baseline reconciler, clones it, and
 can add it to the active VS Code workspace.
 
+After CI is established, verify its emitted check names against the policy overrides and rerun the
+baseline; the creation-time ruleset alone does not establish repository-specific validation checks.
+Verify SonarQube analysis history separately: an imported project with no analyses is not a working
+quality gate. For an approved zero-analysis exclusion, report scanner setup as pending and remove
+the exclusion after the first analysis.
+
+A public repository whose first pull request was opened before SonarCloud analysed it can be
+blocked by a required `SonarCloud Code Analysis` check that never reports. Before adding an
+exclusion, confirm the project has zero pull-request and branch analyses through the SonarCloud
+API. Analysis can start on a later pull request, so re-check on the next pull request and remove
+the exclusion as soon as the check reports.
+
 ## Troubleshooting
 
 | Symptom | Response |
@@ -226,3 +244,23 @@ can add it to the active VS Code workspace.
 | Unexpected status checks | Compare the repository name with policy override patterns |
 | `WhatIf` changes fingerprints | Stop; treat as a script defect before any apply |
 | Fleet audit exits nonzero | Inspect `Drift` and `Failed`; `PlanGated` alone is non-blocking |
+| Pull request `BLOCKED` with no failing check | A required check never reported. For `SonarCloud Code Analysis`, list the project's analyses; with none, add a temporary exclusion and re-apply that repository only |
+
+## Real-World Example: f2calv Policy
+
+[policies/f2calv.json](./scripts/policies/f2calv.json) is the live policy for the f2calv account,
+selected automatically for its repositories. It names public repositories only.
+
+- Every repository's ruleset requires the shared `lint / lint` and
+  `versioning / gha-release-versioning` checks plus its own validation check, through per-repository
+  `rulesetOverrides`.
+- Public repositories also require `SonarCloud Code Analysis`. Every public repository is imported
+  into SonarQube Cloud on the Free plan through its GitHub integration, with the SonarQube GitHub App
+  granted access to all repositories and automatic import enabled. Automatic analysis is used where
+  eligible, CI-based analysis otherwise, never both for one project.
+- Private repositories are analysed by a self-hosted SonarQube Community Build instance from CI.
+
+## Maintaining This Skill
+
+- GitHub ruleset and repository-settings API fields, and newly required checks.
+- Script parameters, and troubleshooting entries for new `PlanGated` or partial-run causes.

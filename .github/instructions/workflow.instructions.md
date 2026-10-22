@@ -1,6 +1,6 @@
 ---
-description: 'Cross-cutting Copilot execution, commit, credential, confidentiality, repository structure and forward-only maintenance conventions.'
-applyTo: '**'
+description: "Cross-cutting Copilot execution, commit, credential, confidentiality, repository structure and forward-only maintenance conventions."
+applyTo: "**"
 ---
 
 # Workflow
@@ -16,12 +16,12 @@ pull-request lifecycle belongs in the `github-issues-and-pull-requests` skill.
 - **Auto-commit and auto-push are independent session switches**: Both default to off. Enable or disable either switch only when the user explicitly asks to change its ongoing status. A one-shot request such as "commit this" or "push this branch" authorizes that operation only; it does not enable the corresponding switch. Auto-commit never implies auto-push.
 - **Surface enabled automation periodically**: When either switch is on, pause at a natural phase boundary after a substantial batch and ask: "We are currently auto-committing changes and auto-pushing. Would you like to change this status?" Adapt the sentence when only one switch is enabled. Do not interrupt every individual commit or push.
 - **Respect switch changes immediately**: Before each automatic commit or push, apply the latest user instruction. Never push when auto-push is off unless the user gives explicit one-shot approval, even when auto-commit is on or prior work in the session was pushed.
-- **Never commit directly on the default branch**: Before creating any user-requested or automatic
-  commit, resolve the repository's default branch and compare it with the current branch. When they
-  match, automatically create and switch to a new branch first, following the branch-history
-  inference rules in `github.instructions.md`. Do not treat a request to commit as authorization to
-  commit on the default branch; changes reach it through a pull request. A repository-specific
-  instruction may define an explicit exception.
+- **Never commit directly on the default branch unless repository-specific instructions explicitly
+  override this rule**: Before creating any user-requested or automatic commit, resolve the
+  repository's default branch and compare it with the current branch. When they match, automatically
+  create and switch to a new branch first, following the branch-history inference rules in
+  `github.instructions.md`. Do not treat a request to commit as authorization to commit on the
+  default branch; changes reach it through a pull request.
 - **Small unrelated tweaks may ride on the current feature branch**: A small ad hoc change, such as
   a Copilot instruction or skill tweak or a Markdown update, may be committed to the current
   non-default branch even when it is unrelated to that branch's feature. Do not create a separate
@@ -87,11 +87,42 @@ Repositories follow a consistent layout, regardless of language:
 - **`GitVersion.yml`** in the root drives semantic-versioning rules.
 - **`.gitattributes`** standardises line endings across Windows and Linux:
 
-  ```gitattributes
-  * text=auto eol=lf
-  *.{cmd,[cC][mM][dD]} text eol=crlf
-  *.{bat,[bB][aA][tT]} text eol=crlf
-  ```
+    ```gitattributes
+    * text=auto eol=lf
+    *.{cmd,[cC][mM][dD]} text eol=crlf
+    *.{bat,[bB][aA][tT]} text eol=crlf
+    ```
+
+## Bootstrapping New Repositories
+
+- When the user says a new repository is similar to named repositories and identifies the
+  conventions or files to carry over, treat those exemplars and the request as the approved design.
+  Inspect their current files and reproduce the applicable conventions directly, changing only the
+  new repository's identity and genuinely different behavior.
+- Do not create `.azure/requirements.json`, `project-plan.md`, questionnaires, manifests or another
+  fixed planning receipt unless the user explicitly asks for a requirements or planning artifact.
+  Bootstrap instructions in the conversation remain the source of truth.
+- Copy conventions, structure and public-safe defaults, never repository-specific identifiers,
+  credentials, deployment coordinates or behavior the new repository does not yet implement.
+- Verify the resulting file inventory against the named exemplars and document intentional
+  omissions rather than filling them with speculative placeholders.
+
+## Reuse and Portability
+
+- **Design all new code for generic reuse and portability.** Before implementing a feature or
+  copying a snippet, search for an existing shared implementation and consider whether another
+  application could reasonably benefit. Prefer extending or extracting into the appropriate
+  shared library, Helm chart or reusable workflow rather than maintaining parallel implementations.
+- **Evaluate extraction case by case.** Balance likely consumers and avoided duplication against
+  abstraction complexity, new dependencies, version bumps and release-train overhead. Keep
+  application-specific policy local; do not invent a general framework for a speculative consumer
+  or force an immediate cross-repository release for every small change.
+- **Make deliberate duplication temporary and traceable.** When copying is the pragmatic choice,
+  add a colocated `TODO` or an appropriately scoped issue naming what should move, its intended
+  shared owner, why extraction is deferred, and the trigger: for example, "Relocate this lease
+  lifecycle into the shared caching library when we next bump that package." Check these deferrals
+  when updating the corresponding dependency and replace copies with the shared implementation.
+  Follow the future-work and confidentiality rules below; do not expose private coordinates.
 
 ## Forward-Only Maintenance
 
@@ -128,11 +159,20 @@ Recording is only half the loop; the other half is reading it back.
 ## Maintaining Conventions
 
 - When detecting a new convention or pattern, add it to the appropriate scoped `*.instructions.md` file — or to this file when the rule is cross-cutting — and apply it retroactively where applicable.
-- **Close the customization feedback loop**: After executing a skill or applying instructions,
-  review what the work proved, corrected or clarified. Flow durable improvements back into the
-  owning skill or instruction file in the same change so future sessions do not repeat stale steps,
-  missing checks or superseded guidance. Update the existing authority rather than recording a
-  duplicate rule elsewhere; leave one-off incident details in memory or repository documentation.
+- **Close the customization feedback loop**: Skills and instructions are maintained through use.
+  Improve them while the evidence is fresh, not only when asked:
+  - **Capture at the moment of learning.** When a step proves wrong, incomplete, superseded or
+    surprising, immediately append a one-line note naming the owning file to session memory
+    (`/memories/session/customization-feedback.md`). Session memory survives conversation
+    compaction; an intention to update a skill later does not.
+  - **Apply at each phase boundary**, and always before the final report. Fold every durable lesson
+    into the owning skill or instruction file, in the section it affects. Condense while doing so:
+    delete superseded steps and merge near-duplicates rather than only appending.
+  - **Report it.** Every completion report for work that used a skill or applied instructions ends
+    with a customization-feedback line: the files updated, or "none, because …". Silence is not
+    an acceptable answer.
+  - Update the existing authority rather than recording a duplicate rule elsewhere; leave one-off
+    incident details in memory or repository documentation.
 - **Default to the central instruction files.** When asked to add or change a convention, assume it belongs in the shared set rather than in the current repository's `copilot-instructions.md`. Only keep a rule local when it genuinely cannot apply elsewhere — it names a specific file, service, domain term or deliberate deviation from a central rule. If it is not clear-cut, say which file you intend to change and why before editing.
 - **Edit requested conventions for durability.** When a user asks to add wording to instructions,
   preserve the complete intent but do not default to copying their sentence verbatim. Write the

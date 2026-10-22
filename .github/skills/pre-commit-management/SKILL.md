@@ -44,6 +44,31 @@ Use the account-level [baseline configuration](../../../.pre-commit-config.yaml)
 shared precedent. Preserve local exclusions and hooks while aligning common hook sources and
 arguments.
 
+### JSON Formatting
+
+Prettier owns JSON layout fleet-wide, and the editor must use the same formatter or format-on-save
+reverts the hook on every edit:
+
+- The baseline `prettier` hook runs with `types_or: [json]` and reads indentation and line endings
+  from `.editorconfig`. Exclude only tool-written files: dev container lockfiles, npm lockfiles,
+  `.config/dotnet-tools.json`, and schemas written by a generator hook such as `helm-schema`.
+- `end-of-file-fixer` and the top-level `exclude` carry no editor-churn exemptions for
+  `appsettings*.json`, `launchSettings.json`, `.vscode/*.json` or `devcontainer.json`.
+- Every repository's `.vscode/extensions.json` recommends `editorconfig.editorconfig` and
+  `esbenp.prettier-vscode`. Never pin `[json]` or `[jsonc]` to `vscode.json-language-features`:
+  it expands arrays that Prettier collapses.
+- The Prettier extension also formats Markdown, which markdownlint owns. With a global
+  `editor.formatOnSave`, set `"[markdown][instructions][prompt][skill][chatagent]":
+  { "editor.formatOnSave": false }` in user settings; Copilot customization files use those
+  language IDs, not `markdown`. Otherwise every edited file is rewritten wholesale and fails
+  `MD004`/`MD007`.
+- When accepting an edit or saving a file reformats it unexpectedly, look for working copies whose
+  line endings differ from the index: `git ls-files --eol` lists them as `i/lf w/crlf`. Git hides
+  the difference but EditorConfig rewrites the file on save. Delete and re-check-out those files
+  when they have no uncommitted change, and format gitignored JSON such as `appsettings.Local*.json`
+  with Prettier using `--ignore-path ''`, because the CLI skips ignored files while the editor does
+  not.
+
 ## Current Shared Versions
 
 Resolve latest versions live before changing these values. At the time this skill was last updated:
@@ -53,7 +78,10 @@ Resolve latest versions live before changing these values. At the time this skil
 | pre-commit runtime | `4.6.2` | PyPI `pre-commit` latest release |
 | `pre-commit/pre-commit-hooks` | `v6.0.0` | GitHub latest release |
 | `bmares/check-json5` | `v1.0.1` | GitLab latest stable tag |
+| `rbubley/mirrors-prettier` | `v3.9.10` | GitHub latest tag, matching npm `prettier` latest |
 | `igorshubovych/markdownlint-cli` | `v0.49.1` | GitHub latest release |
+
+`pre-commit/mirrors-prettier` is archived; use the maintained `rbubley/mirrors-prettier` mirror.
 
 The runtime pin must match the shared lint workflow and the bundled Docker fallback. Hook revisions
 live in each repository configuration and are normally maintained by Dependabot.
@@ -118,6 +146,11 @@ pwsh ./.github/skills/pre-commit-management/scripts/Invoke-PreCommit.ps1 `
   -RepoRoot <repository> -Mode InstallPrePush
 ```
 
+For nested paths on Windows, pass Git-style repository-relative filenames, as returned by
+`git ls-files`, to `-Files`. Backslash-separated names can make hook type filtering skip existing
+files. A `no files to check` result does not validate the requested files; correct the selection
+and rerun.
+
 The script prefers an existing `pre-commit` executable or installed Python module. When neither is
 available it builds and launches `pre-commit-runner:4.6.2`, containing Python 3.12, Node 22, Git,
 and pre-commit 4.6.2. A named cache volume preserves hook environments between runs.
@@ -165,3 +198,8 @@ Report:
 - validation not run and why.
 
 Keep public reports free of private repository names, paths, topology, identifiers, and credentials.
+
+## Maintaining This Skill
+
+- Hook revisions and runtime versions in Current Shared Versions.
+- Docker fallback behaviour, and troubleshooting entries for new hook failures.

@@ -41,11 +41,23 @@ The central repository owns:
 | `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
 | `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
 | `.scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
+| `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
 | `.scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
 Change policy in the fragments, not in generated consumer files. Regenerate every affected
 repository after a fragment change.
+
+## .NET Reference Baseline
+
+Designate one public .NET repository whose analyzer fallout has been fixed across a multi-target
+library and test suite, and use its tracked root `.editorconfig` as the proven reference for future
+audits and rollouts. For f2calv repositories this is `CasCap.Common`.
+
+The central fragments remain the source of truth: never hand-copy or edit the reference file as
+policy. Before rolling out to another .NET repository, run the generator `-Check` against the
+reference repository and stop if it has drifted. Inspect its current generated file to understand
+the accepted rules and exclusions, then generate the target repository from the same central profile.
 
 ## Profile Selection
 
@@ -79,8 +91,8 @@ entire central profile into an override.
 For each repository:
 
 1. Detect the language profile from tracked manifests and source files.
-2. Inspect the root `.editorconfig`, if present, and compare effective sections with the generated
-   profile.
+2. For .NET, verify and inspect the reference baseline repository first. Inspect the target root
+   `.editorconfig`, if present, and compare effective sections with that generated profile.
 3. Inspect formatter configuration, `.gitattributes`, pre-commit hooks, and build properties for
    conflicting ownership.
 4. For .NET, inspect `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, analyzer severities,
@@ -111,22 +123,46 @@ does not pass its own drift check is a failure.
 ### 4. Apply Mechanical Cleanup
 
 1. Add one LF byte only to tracked text files missing a final newline.
-2. Use a structured formatter for JSON, JSONC, or JSON5; never reserialize comment-bearing files
-   through a strict JSON parser.
+2. Format JSON with the repository's pinned Prettier pre-commit hook, which preserves comments and
+   reads `.editorconfig`; never reserialize comment-bearing files through a strict JSON parser.
 3. Preserve Markdown trailing spaces because two spaces encode a hard line break.
 4. Use the language's native formatter where it owns syntax: `dotnet format`, `gofmt`, `rustfmt`,
    Terraform formatting, or the repository's pinned Python formatter.
-5. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
-6. Run `git diff --check` and parse every changed structured file.
+5. In multi-target .NET repositories, never apply fixes solution-wide. Run `dotnet format` once per
+   project and diagnostic family, then verify at solution scope. Roslyn can otherwise merge
+   target-specific edits into literal conflict markers or duplicate expressions.
+6. Route `IDE*` diagnostics through `dotnet format <project> style --diagnostics ...` and `CA*`
+   diagnostics through `dotnet format <project> analyzers --diagnostics ...`. Verify with the same
+   subcommand plus `--verify-no-changes`; the wrong subcommand can exit successfully while silently
+   skipping the requested diagnostics. Prefer the central helper for repeatable repository passes:
+
+   ```powershell
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040 `
+      -Check
+   ```
+
+7. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
+8. Run `git diff --check` and parse every changed structured file.
 
 ### 5. Tighten .NET Enforcement
 
-The current build-breaking tranche is:
+The current build-breaking tranche covers:
 
-- `IDE0051`: unused private members
-- `IDE0052`: unread private fields
-- `IDE0055`: formatting
-- shared interface, type, and non-field-member naming rules
+- unused private members and unread private fields;
+- formatting and explicit interface-member accessibility;
+- interface/type and method/event naming;
+- safe expression, pattern, collection, deconstruction, inference and primary-constructor
+   modernizations;
+- guard clauses, avoidable allocations, logging argument cost and xUnit assertion-result reuse.
+
+The canonical DotNet fragment is the exact rule list. Keep `IDE0058` and `IDE0130` disabled, and do
+not promote `IDE0056` or `IDE0057` while supported libraries target `netstandard2.0`. Property
+naming remains a suggestion until legacy published contracts have versioned migrations.
 
 Require both build properties in the root `Directory.Build.props`:
 
@@ -139,8 +175,21 @@ Remove contradictory `NoWarn` or `WarningsNotAsErrors` entries. Fix dead code, f
 naming at the source; do not weaken severity to make a build pass. A documented wire-contract
 naming exception may remain narrowly suppressed when renaming would break the external schema.
 
+When the user explicitly defers a large cleanup, a temporary relaxation is permitted only in the
+repository's `-OverridePath` fragment. Lower the affected rules to `suggestion`, never `none`, and
+mark the section with a `TODO` naming the backlog and the restore order. Place a broad `[*.cs]`
+relaxation before narrower sections such as `[**/Migrations/*.cs]`, because the later matching
+EditorConfig section wins. Measure the full backlog first with `-p:TreatWarningsAsErrors=false`;
+analyzer errors otherwise surface one project-dependency layer at a time.
+
+EF migrations are generated code: exempt `CA1861` with a `[**/Migrations/*.cs]` override section
+rather than editing migration files.
+
+A relaxation silences the build only. SonarQube still imports the relaxed diagnostics, so code
+written after the relaxation must satisfy them or the Quality Gate fails on new issues.
+
 Keep other shared style preferences standardized as suggestions until their fleet fallout has been
-measured. Promote only a small related tranche at a time. Namespace, public API, and architecture
+measured. Promote only a small related tranche at a time. Namespace, public API and architecture
 changes require their own reviewable tranche rather than being hidden inside formatting cleanup.
 
 ### 6. Validate
@@ -184,3 +233,8 @@ Report:
 
 Keep public reports free of private repository names, coordinates, paths, topology, and operational
 details.
+
+## Maintaining This Skill
+
+- The .NET reference baseline and profile contents whenever analyzer severities are promoted.
+- Formatting fallout and rollout steps learned in each cross-repository tranche.

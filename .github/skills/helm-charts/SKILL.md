@@ -50,12 +50,19 @@ topology, dashboard queries, and release automation details in the consuming rep
 
 1. Identify every chart affected by the change, including leaf charts, umbrella charts, dependency
    aliases, dashboard bundles, and repository catalogue entries.
-2. Classify each chart as reusable, application-specific, umbrella, or dashboard-only.
-3. Record its version authority, publication path, dependency boundary, supported workload modes,
+2. Before adding a standalone Kubernetes manifest, inspect the pinned chart version's values and
+  templates for an equivalent resource and render the relevant conditional path. Prefer one
+  chart-owned resource configured through values over a parallel raw Ingress, Service, ConfigMap,
+  Certificate, persistence, RBAC or monitoring object.
+3. Keep a standalone resource only when the chart cannot preserve the required behavior, or when
+  sharing, lifecycle or sync-order ownership deliberately sits outside the release; document that
+  exception at the resource.
+4. Classify each chart as reusable, application-specific, umbrella, or dashboard-only.
+5. Record its version authority, publication path, dependency boundary, supported workload modes,
    and downstream consumers.
-4. Separate shared Helm mechanics from repository-specific behavior. Do not move consumer-visible
+6. Separate shared Helm mechanics from repository-specific behavior. Do not move consumer-visible
    installation or configuration guidance out of a published chart README.
-5. Preserve unrelated working-tree changes and existing resource identity unless the request
+7. Preserve unrelated working-tree changes and existing resource identity unless the request
    explicitly changes it.
 
 ### 2. Design or Update the Contract
@@ -148,3 +155,12 @@ conditional templates, invalid inputs, package contents, or migration equivalenc
   environment.
 * If Argo CD renders different resources than the CLI example, compare chart version, dependency
   lock, values precedence, namespace, and capabilities.
+* If the shared `helm-chart-package` workflow fails with "helm version is managed by the
+  devcontainer.json", the repository has no `.devcontainer/devcontainer.json`. The workflow reads
+  the Helm version from its `kubectl-helm-minikube` feature, so add a dev container that pins `helm`
+  (never `none`) and cover it with the `devcontainers` Dependabot ecosystem.
+
+## Maintaining This Skill
+
+* Helm, chart-testing and OCI publishing commands and versions.
+* Values-schema, dependency and dashboard ConfigMap conventions corrected during a chart change.

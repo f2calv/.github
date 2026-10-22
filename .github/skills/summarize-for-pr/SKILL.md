@@ -1,8 +1,8 @@
 ---
-description: "Create a temporary markdown file summarising all branch changes vs. the default branch for PR review"
-agent: "agent"
+name: summarize-for-pr
+description: Create a temporary markdown file summarising all branch changes vs. the default branch for PR review
+disable-model-invocation: true
 ---
-
 # Summarize Branch Changes for PR
 
 Create a temporary markdown file in the repository root called `BRANCH_CHANGES.md` that summarises all changes on the current branch compared to the repository's default branch. This file is intended to aid PR review and should be deleted before merging.
@@ -62,3 +62,7 @@ Create `BRANCH_CHANGES.md` in the repository root with the following sections:
 - Do not include the full diff content — summarise it.
 - Mark the file clearly as temporary (mention it should be deleted before merge).
 - Add `BRANCH_CHANGES.md` to the repository's `.gitignore`, or delete it before committing, so the summary never lands in the branch it describes.
+
+## Maintaining This Skill
+
+- Output format and steps whenever pull-request description conventions change.

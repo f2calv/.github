@@ -353,4 +353,7 @@ Also verify:
 | Stateful pod remains Pending after placement change | Check PV node affinity and storage replicas before changing selectors |
 | Earlier sync wave is stuck | Inspect child Application health and CRD/controller readiness; do not bypass ordering blindly |
 
-> Brought to you by f2calv/.github
+## Maintaining This Skill
+
+- Argo CD Application, AppProject and sync-option fields as Argo CD releases change them.
+- Structural invariants and migration steps proven or corrected during a repository migration.

@@ -205,3 +205,9 @@ infrastructure details, and credentials.
 
 - [Dependabot options reference](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference)
 - [Dependabot supported ecosystems](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)
+
+## Maintaining This Skill
+
+- Supported package ecosystems and their manifest and lockfile names.
+- Grouping, schedule and ignore options as Dependabot changes them, and troubleshooting entries for
+  new failure modes.
