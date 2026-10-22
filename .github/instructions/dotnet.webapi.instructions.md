@@ -19,6 +19,16 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**
   No business logic, LINQ projections, dictionary lookups or logging in the controller. The same
   boundary applies to permitted minimal handlers: move substantial mapping and orchestration into
   the application service rather than hiding a controller-sized implementation in a mapping extension.
+- **HTTP results belong in controllers**: services return DTOs, nullable values or typed operation
+  outcomes, not `IResult` or `HttpResults`. Use `TypedResults` and concrete return types such as
+  `Results<Ok<WidgetResponse>, NotFound>` for JSON APIs. Use `ActionResult<T>` when MVC output
+  formatters or content negotiation are required; `HttpResults` bypass them.
+- **Avoid duplicate response metadata**: concrete typed results and their unions infer status codes
+  and body types in controllers. Add `ProducesResponseType` only for responses the signature cannot
+  describe, such as automatic validation, exception-handler responses or dynamic status codes.
+  Share genuinely common metadata at controller scope. Keep stable route/operation names and existing
+  summaries; XML comments supply OpenAPI text only when the generator is configured to consume them.
+  Use the [Web API skill](../skills/dotnet-webapi/SKILL.md) for the workflow and worked example.
 - **Logging lives in the service**: domain-specific, request-specific logging belongs in the service
   method. Remove `ILogger` from a controller whose methods only delegate; inject it only for work that
   cannot be delegated, such as a streaming loop with `LogTrace`.
