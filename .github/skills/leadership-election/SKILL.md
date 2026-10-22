@@ -254,6 +254,13 @@ but do not present a check immediately before a write as atomic ownership enforc
   auxiliary-user cancellation lifetime separate from a dispatcher that must drain on a still-owned
   normal/fault exit; lease loss must cancel both. Ownership-only cancellation need not terminate an
   otherwise healthy periodic feature or masquerade as request cancellation.
+- Fail closed before ownership state is initialized and throughout startup. A default "election
+  inactive" flag is not permission for live commands. Restrict replay bypass to the actual isolated
+  execution adapter, without granting live auxiliary-operation admission. Reject unsupported mixed
+  live/replay configurations before registering transports or starting side effects.
+- Capture the authoritative partition identity atomically with operation admission. Resolve owned
+  connections from that identity, not an unrelated worker's default connection or request parameters;
+  host registration, execution and auxiliary workers must agree on runtime selection.
 - Classify recovery after cleanup and lease disposal. Retry only the intended business failure, not
   an acquisition/release/teardown error with a similar exception type. Preserve a previously observed
   child failure's identity when joining it again; do not relabel it as a new teardown failure.
