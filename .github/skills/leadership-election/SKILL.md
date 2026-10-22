@@ -263,7 +263,10 @@ but do not present a check immediately before a write as atomic ownership enforc
   host registration, execution and auxiliary workers must agree on runtime selection.
 - Classify recovery after cleanup and lease disposal. Retry only the intended business failure, not
   an acquisition/release/teardown error with a similar exception type. Preserve a previously observed
-  child failure's identity when joining it again; do not relabel it as a new teardown failure.
+  child failure's identity when joining it again; do not relabel it as a new teardown failure. Reuse
+  business-fault classification across consumers without merging their recovery budgets. Known
+  permanent causal failures must override transport-shaped wrappers; retry an aggregate only when
+  every constituent fault is recoverable, and propagate unknown failures rather than assuming recovery.
 - Create fresh callback/reconnection buffers for each ownership run. Detach handlers and await
   asynchronous connection disposal on every exit, including partial startup. Fence late callbacks
   by their run and connection identity, not a mutable reference to the latest run.
