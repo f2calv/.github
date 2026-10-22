@@ -5,9 +5,10 @@ description: 'Create, migrate and validate ASP.NET Core controller Web APIs, Typ
 
 # ASP.NET Core Web API
 
-Build thin controller APIs with explicit HTTP semantics and verified documentation. There is no
-universal best return type: choose typed HTTP results for JSON-only APIs and MVC `ActionResult<T>`
-when content negotiation or output formatters are required.
+Build thin controller APIs with explicit HTTP semantics and verified documentation. Standardize
+team-owned JSON APIs on `TypedResults`, string enum values and validation Problem Details.
+Controllers remain the application default rather than following the minimal-API template trend.
+MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negotiation requirement.
 
 ## Authorities
 
@@ -73,6 +74,21 @@ MVC request-body binding still uses MVC input formatters. Inspect both JSON opti
 result styles must not silently change casing, enum values, converters or null handling.
 `Produces`/`Consumes` are not substitutes for testing the actual content types.
 
+Apply the shared string-enum convention to both pipelines, retaining other intentional options:
+
+```csharp
+services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+```
+
+The sample requires `System.Text.Json.Serialization`. Register each converter once.
+Capture actual enum-bearing response bodies, request binding and OpenAPI enum schemas in focused
+tests. During an authorized standardization of team-owned APIs, update consumers to string values
+and `ValidationProblemDetails`; do not preserve superseded formats with compatibility shims.
+Do not independently disable numeric input acceptance unless that stricter validation is requested.
+
 `[ApiController]` validates controller-bound DTOs without minimal API `AddValidation()`. Keep
 explicit request constraints, missing-body behavior and intentional nullable-input semantics.
 Do not harden an existing serializer or change published DTO types incidentally.
@@ -132,6 +148,7 @@ rankings or older templates:
 ## Maintaining This Skill
 
 - Recheck controller typed-result metadata inference, API Explorer and generator behavior on framework upgrades.
+- Recheck HTTP/MVC string-enum option alignment and generated schemas when serializer registration changes.
 - Recheck first-party OpenAPI package requirements, XML source-generator support and named-route APIs.
 - Recheck handled-exception telemetry defaults and streaming serialization/cancellation semantics.
 - Keep the worked example aligned with shared controller and service-boundary instructions.
