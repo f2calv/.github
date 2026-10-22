@@ -68,6 +68,10 @@ form as `.dockerignore`:
   from the IDE against it.
 - Anything that builds from source, needs a GPU, pulls a large model or exists only for a demo goes
   behind a profile named for what it delivers (`demo`, `harness`), documented in the header.
+- Prefer an existing Compose file's test profile for reusable local integration-test services rather
+  than launching ad hoc containers. Isolate tests from development data with separate service ports,
+  named volumes and per-run databases or key namespaces; tests must never reset a shared database
+  or flush a development Redis instance. Document startup and cleanup explicitly.
 
 ## Secrets
 
