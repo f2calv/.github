@@ -9,6 +9,11 @@ Use the `leadership-election` skill when creating, changing or diagnosing Redloc
 election, lease renewal, leader-only workers or failover. This file owns Redis naming; the skill
 owns the election lifecycle and validation workflow.
 
+<!-- TODO: Centralize a Redis caching skill covering read-through/cache-aside lookup (also called
+look-ahead caching), population, write-through ordering, invalidation, stale-refill races and cache
+outages. Deferred until an implementation and its concurrency tests establish reusable patterns;
+keep the storage authority explicit rather than adding interchangeable database/cache roles. -->
+
 When a project uses a feature enum (e.g. `AppFeature`) to gate services, derive the domain segment of every Redis key from the **lowercase enum member name** so that key prefixes stay tightly coupled to the feature taxonomy (e.g. `AppFeature.Billing` → `billing:`, `AppFeature.Notifications` → `notifications:`).
 
 - **All lowercase**, colon-separated segments: `{domain}:{type}:{detail}`.

@@ -32,7 +32,10 @@ hot-path work.
   Group a service's supporting types in a `Services` sub-folder or as `ServiceName.SubCategory.cs`
   partial files. Types outside DI keep their role suffix (`Validator`, `Converter`).
 - **Extension classes** live in an `Extensions` folder and namespace and are named after the type they
-  extend (`ServiceCollectionExtensions`).
+  extend (`ServiceCollectionExtensions`). This includes endpoint-mapping and host-registration
+  extensions; do not place them in `Endpoints/` or give application-owned extensions a framework
+  namespace such as `Microsoft.AspNetCore.Builder`. Keep extensions focused on wiring and delegate
+  substantial behavior to the owning service.
 - **Models** — DTOs, request and response payloads, options and configuration records — live in a
   `Models` folder and namespace. EF Core entities follow the EF Core instructions.
 - **Custom exceptions** use the `Exception` suffix, one per file under `Exceptions/` with a namespace
