@@ -87,6 +87,10 @@ tests. Refresh them when a later supported SDK changes the contract.
 
 ## Design the boundary
 
+Use the [read-only runtime example](./examples/read-only-runtime.md) for a connected adapter,
+DTO, tool facade, feature gate, permission policy and Origin guard. It is a host-integration example,
+not a replacement identity stack or a history-query implementation.
+
 Write down the intended tool inventory, each tool's data source and lifetime, required host role,
 authorization scope, output fields, bounds, and privacy behavior before changing registrations.
 
@@ -205,6 +209,8 @@ in public examples.
   evidence links.
 * Route naming and description corrections to their linked authority, not here; do not create
   duplicate convention lists.
+* Compile the worked example against its stated SDK version and repeat the fixture-backed wire
+  checks when registration, transport, serialization or error behavior changes.
 
 ## API evidence
 

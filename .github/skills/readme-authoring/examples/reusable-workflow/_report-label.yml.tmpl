@@ -1,0 +1,46 @@
+name: report-label
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: Label mode, summary or detailed
+        type: string
+        required: false
+        default: summary
+      runs-on:
+        description: Runner label
+        type: string
+        required: false
+        default: ubuntu-24.04
+    outputs:
+      label:
+        description: Validated report label
+        value: ${{ jobs.label.outputs.label }}
+
+permissions: {}
+
+jobs:
+  label:
+    runs-on: ${{ inputs.runs-on }}
+    permissions: {}
+    outputs:
+      label: ${{ steps.compose.outputs.label }}
+    steps:
+      - name: select report label
+        id: compose
+        shell: bash
+        env:
+          REPORT_MODE: ${{ inputs.mode }}
+        run: |
+          if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+            echo "::error::GITHUB_OUTPUT is required."
+            exit 1
+          fi
+          set -euo pipefail
+          case "${REPORT_MODE:-}" in
+            summary) label=Summary ;;
+            detailed) label=Detailed ;;
+            *) echo "::error::Unsupported mode. Use summary or detailed."; exit 1 ;;
+          esac
+          printf 'label=%s\n' "$label" >> "$GITHUB_OUTPUT"

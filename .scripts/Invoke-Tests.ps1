@@ -5,26 +5,31 @@
 .SYNOPSIS
     Runs the central repository PowerShell tests.
 .PARAMETER TestPath
-    Optional Pester test paths. Defaults to root script, repository-baseline, container-workflows
-    and container-images tests.
+    Optional Pester test paths. Defaults to root script tests and every skill's scripts/tests directory.
 .EXAMPLE
     ./.scripts/Invoke-Tests.ps1 -TestPath ./.scripts/tests
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string[]]$TestPath = @(
-        (Join-Path $PSScriptRoot 'tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/repository-baseline/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/container-workflows/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/container-images/scripts/tests'),
-        (Join-Path $PSScriptRoot '../.github/skills/dotnet-cleanup/scripts/tests')
-    )
+    [string[]]$TestPath = @()
 )
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 Set-StrictMode -Version 3.0
+
+if ($TestPath.Count -eq 0) {
+    $TestPath = @(
+        Join-Path $PSScriptRoot 'tests'
+        Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot '../.github/skills') -Directory |
+        Sort-Object Name |
+        ForEach-Object {
+            $tests = Join-Path $_.FullName 'scripts/tests'
+            if (Test-Path -LiteralPath $tests -PathType Container) { $tests }
+        }
+    )
+}
 
 Import-Module Pester -RequiredVersion 5.7.1 -Force
 

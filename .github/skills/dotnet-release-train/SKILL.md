@@ -13,6 +13,10 @@ release conventions rather than maintaining a separate release state machine.
 
 ## Repository Order
 
+The [producer/consumer worked example](./examples/producer-consumer.md) connects Debug project
+references, Release package references, a local partial-publication failure and the existing
+availability gate. It is a synthetic laboratory, not permission to publish or start a train.
+
 Build the order from the actual package graph: a repository moves only after every package it
 consumes is published. The waves below are the general shape; the
 [real-world example](#real-world-example-f2calv-net-release-train) shows one concrete train.
@@ -103,8 +107,8 @@ user explicitly asks for parallel sessions.
   - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
     required check or quality gate.
   - Treat missing expected build, test, or Sonar checks as a CI coverage gap, not a passing result.
-  - Use a merge commit unless the repository explicitly requires another strategy. Do not squash a
-    multi-commit release branch by default.
+  - Use the merge method and blocked-merge procedure in the shared workflow instructions; do not
+    silently switch to squash or rebase when regular merge is unavailable.
   - When a ruleset requires branches to be up to date and the pull request is behind, update it with
     `gh pr update-branch`, which merges the base server-side, then wait for the checks on the new
     head. Never rebase or force-push a published release branch for this.
@@ -121,7 +125,8 @@ user explicitly asks for parallel sessions.
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
     version before continuing downstream.
-    - PowerShell: `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
+    - From this skill's directory, PowerShell:
+      `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
       Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
   - If the repository publishes no packages, continue once its merge and release checks are complete.
@@ -194,3 +199,5 @@ depend on one another.
   generic waves and the real-world example.
 - Release-run, tag and NuGet verification commands, and the ruleset behaviours that block merges.
 - Downstream README caveats to remove once the release they wait for lands.
+- Keep the worked example's reference conditions, central package versions and availability-helper
+  invocation aligned; validate with isolated local feeds without querying synthetic IDs remotely.

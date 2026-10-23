@@ -98,7 +98,7 @@ function Initialize-DeploymentSettings {
     if (-not $PodAnnotationName) { throw "-PodAnnotationName is required. Supply it explicitly or in '$DeployConfigPath'." }
     if (-not $ManifestRepo) { throw "-ManifestRepo is required. Supply it explicitly or in '$DeployConfigPath'." }
     if (-not $ImageRepository) { Set-Variable ImageRepository "ghcr.io/$(Get-GitHubOwner -RepositoryRoot $root)/$($name.ToLowerInvariant())" -Scope 1 -WhatIf:$false }
-    $script:Rest = @(ConvertTo-DeployBuildArguments $Rest)
+    Set-Variable Rest @(ConvertTo-DeployBuildArguments $Rest) -Scope 1 -WhatIf:$false
     $relative = Resolve-DeploymentManifestPath -ManifestPath $ManifestPath
     return [pscustomobject]@{ Root = $root; RelativePath = $relative; Manifest = Join-Path $ManifestRepo $relative }
 }

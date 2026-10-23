@@ -39,6 +39,10 @@ The tools work for any GitHub account or organization; only the policy file is o
 
 ## Policy Selection
 
+The [policy and partial-results example](./examples/policy-and-results.md) shows how to compose a
+narrow override from the existing default and interpret mixed setting-level outcomes without
+claiming fleet success. Its JSON result is synthetic, not an API response to replay.
+
 The reconciler reads one JSON policy per run from [policies](./scripts/policies/):
 
 1. An explicit `-PolicyPath`.
@@ -98,7 +102,7 @@ Use exactly one of `-Repository` and `-AllOwned`.
 Run an explicit repository audit:
 
 ```powershell
-./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+./.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
   -Repository owner/example `
   -Mode Audit
 ```
@@ -106,7 +110,7 @@ Run an explicit repository audit:
 Or audit the fleet:
 
 ```powershell
-./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+./.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
   -AllOwned `
   -Mode Audit
 ```
@@ -125,7 +129,7 @@ Do not proceed from an unexplained `Failed` result.
 Preview exactly the intended scope:
 
 ```powershell
-./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+./.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
   -Repository owner/example,owner/example-module `
   -Mode Apply `
   -WhatIf
@@ -139,7 +143,7 @@ confirm the fingerprints are identical.
 After explicit approval, apply only to the representative repositories:
 
 ```powershell
-./skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
+./.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1 `
   -Repository owner/example,owner/example-module `
   -Mode Apply
 ```
@@ -264,3 +268,5 @@ selected automatically for its repositories. It names public repositories only.
 
 - GitHub ruleset and repository-settings API fields, and newly required checks.
 - Script parameters, and troubleshooting entries for new `PlanGated` or partial-run causes.
+- Keep example overrides and result fields aligned with the reconciler; distinguish local report
+  writes, remote reads, proposed mutations and verified post-state in every invocation example.

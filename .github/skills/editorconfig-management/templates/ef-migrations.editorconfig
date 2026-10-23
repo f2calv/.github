@@ -1,0 +1,4 @@
+# Generated EF migration arrays are kept in the form emitted by the migration tool.
+# Limit the exception to this project's migrations; application source retains CA1861.
+[src/Example.Persistence/Migrations/*.cs]
+dotnet_diagnostic.CA1861.severity = none

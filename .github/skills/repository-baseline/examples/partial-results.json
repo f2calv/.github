@@ -1,0 +1,32 @@
+[
+  {
+    "Repository": "owner/example",
+    "Setting": "delete_branch_on_merge",
+    "Status": "Compliant",
+    "Detail": ""
+  },
+  {
+    "Repository": "owner/example",
+    "Setting": "actions_permissions",
+    "Status": "Changed",
+    "Detail": ""
+  },
+  {
+    "Repository": "owner/example",
+    "Setting": "default_branch_ruleset",
+    "Status": "Failed",
+    "Detail": "Synthetic API failure while fetching the ruleset; post-state requires verification."
+  },
+  {
+    "Repository": "owner/example-two",
+    "Setting": "secret_protection",
+    "Status": "PlanGated",
+    "Detail": "Synthetic plan limitation; this control is not enforced."
+  },
+  {
+    "Repository": "owner/example-two",
+    "Setting": "default_branch_ruleset",
+    "Status": "Compliant",
+    "Detail": ""
+  }
+]

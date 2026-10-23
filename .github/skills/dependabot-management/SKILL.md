@@ -108,6 +108,10 @@ ecosystem-directory pairs for every gap.
 
 ### 4. Align The Configuration
 
+Use the [coverage and registry examples](./examples/coverage-and-registries.md) when independent
+manifest roots or private feeds are involved. The paired templates are separate scenarios; merge
+matching entries rather than introducing overlapping update jobs.
+
 Use this baseline unless repository-specific instructions establish another policy:
 
 ```yaml
@@ -211,3 +215,5 @@ infrastructure details, and credentials.
 - Supported package ecosystems and their manifest and lockfile names.
 - Grouping, schedule and ignore options as Dependabot changes them, and troubleshooting entries for
   new failure modes.
+- Keep example coverage matrices, directory selections and registry references aligned with their
+  templates; local parsing does not replace GitHub resolver/access verification.

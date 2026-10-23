@@ -52,6 +52,10 @@ someone arriving cold months later.
 
 ## Templates
 
+See the [completed submission guide](./examples/completed-submissions.md),
+[bug draft](./examples/bug-report.md) and [PR draft](./examples/pull-request.md) for form-aligned
+examples with explicit evidence and unchecked publication gates. They are not real submissions.
+
 - Keep generic issue forms and the pull request template in the public account-level `.github`
   repository so repositories inherit one contribution workflow.
 - Prefer YAML issue forms for structured bug, feature and support reports. Pull request templates
@@ -74,7 +78,7 @@ someone arriving cold months later.
    it is small, compatible and safe to validate in the same pull request, then document and close the
    superseded Dependabot pull request. Keep major migrations, documented holds, incompatible updates
    and changes needing independent risk review separate.
-2. Generate the title and description from every change in the branch compared with `origin/main`,
+2. Generate the title and description from every change in the branch compared with its resolved base,
    not only the latest commit or the working tree, filling the pull-request template (see
    [Templates](#templates)). Include validation, compatibility notes and operational follow-up, and
    mention small unrelated tweaks carried on the branch.
@@ -102,9 +106,10 @@ After creating a pull request, and again before merging it:
    severity), plus any lower-severity finding that fails a required check or Quality Gate.
 3. Re-run affected analysis on the unchanged head. A result from a superseded commit is not evidence
    for the current pull request.
-4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Every pull
-   request must pass the repository's required lint and versioning checks, its own validation check
-   and the SonarQube Quality Gate.
+4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Apply the
+   [GitHub merge gates and analysis-capability boundary](../../instructions/github.instructions.md):
+   require current-head checks and supported PR analysis; report an edition/visibility limitation
+   explicitly rather than treating unavailable analysis as either a passing gate or an executable check.
 
 ## Merge
 
@@ -124,3 +129,5 @@ current head, folded or closed Dependabot pull requests, and any check still pen
 - `gh` and GitHub API commands, including which refs code scanning and checks report against.
 - Ruleset behaviours that block merges, such as required review threads and up-to-date branches.
 - Issue types, labels and description conventions.
+- Keep example headings and checklist wording aligned with the effective forms; never promote
+  synthetic evidence or unchecked submission requirements into claims about a real issue or PR.

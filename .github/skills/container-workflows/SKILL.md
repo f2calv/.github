@@ -21,6 +21,10 @@ implementations bundled here.
 
 ## Quick Start
 
+First follow [caller setup](./examples/caller-setup.md) for the shim templates, local configuration
+and side-effect table. The following commands run from this skill's directory; supply the absolute
+path of the application checkout:
+
 ```powershell
 ./scripts/Invoke-Build.ps1 -RepositoryRoot /src/example
 ./scripts/Invoke-Deploy.ps1 -RepositoryRoot /src/example -WhatIf
@@ -52,6 +56,12 @@ never redefine the version.
 
 `Invoke-Deploy.ps1` reads deployment-specific defaults from the caller's gitignored
 `deploy.local.psd1`. Explicit command-line parameters take precedence.
+
+Deployment builds are Debug-only. Both `-Configuration Debug` and `-Configuration:Debug` are
+accepted; Release is rejected before side effects. Normalize forwarded arguments in the invoking
+deployment scope so a caller-bound `Rest` parameter cannot shadow the normalized value and bind
+`Debug` accidentally as a positional build version. Cover this through the deployment entry point
+and an actual build shim, not only by testing the normalization helper.
 
 The deployment script reads each Argo CD manifest's `kind` and supports both `Application` and
 `ApplicationSet`. It patches `.spec.source` for an `Application` and
@@ -95,3 +105,5 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 - Parameters and behaviour of the central build and deploy scripts, kept in step with their tests.
 - The repository-root shim contract whenever a consumer needs a new switch.
 - The shared build-argument names every Dockerfile is expected to accept.
+- Keep caller templates and their argument/exit-code tests aligned with the implementations;
+  document preview, publication and commit/push effects separately.

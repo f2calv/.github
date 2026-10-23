@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-settings
+  namespace: example
+data:
+  message: Hello from the GitOps example

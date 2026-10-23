@@ -112,7 +112,8 @@ Dockerfile. When a registry takes a multi-architecture image's description from 
 | Case | Pattern |
 | --- | --- |
 | Fixed command (default) | `ENTRYPOINT ["/app/<binary>"]` or `ENTRYPOINT ["dotnet", "<assembly>.dll"]` |
-| Command chosen by a build argument | Resolve it in the build stage into a fixed-name link, then `ENTRYPOINT ["/app/entrypoint"]` |
+| .NET assembly chosen by a build argument | Link `$WORKLOAD.dll` to `entrypoint.dll` during publish; `ENTRYPOINT ["dotnet", "entrypoint.dll"]` |
+| Native binary chosen by a build argument | Resolve it in the build stage into a fixed-name link, then `ENTRYPOINT ["/app/entrypoint"]` |
 | Command needs start-up expansion | `ENTRYPOINT ["sh", "-c", "exec <command> ${VAR}"]`; the image needs a shell |
 
 ## Debug Variants

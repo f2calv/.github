@@ -24,6 +24,8 @@ repos:
   - id: check-xml
   - id: check-yaml
     args: [--allow-multiple-documents]
+    # Helm renders this fixture before its manifests are parsed in the regression suite.
+    exclude: ^\.github/skills/helm-charts/examples/example-message/templates/
   - id: check-toml
   - id: check-merge-conflict
   - id: check-case-conflict

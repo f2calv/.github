@@ -125,6 +125,10 @@ EXAMPLE_TOKEN=replace-me
 
 ## Request File Conventions
 
+The [read-and-mutate collection example](./examples/read-and-mutate.md) shows separate approval
+boundaries, named requests and an explicit authentication precondition without adding a second
+secret-handling scheme.
+
 Start with a short title, optional documentation link, and file variables. Separate executable
 requests with `###` and give important requests stable names with `# @name`.
 
@@ -203,3 +207,5 @@ Accept: application/json
 
 * REST Client variable, dotenv and authentication syntax as the extension changes.
 * Requests-folder layout conventions corrected during a migration.
+* Keep named collection requests, mutation notes and dotenv keys synchronized; static validation
+  does not authorize request execution or establish live response behavior.

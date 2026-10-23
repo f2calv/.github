@@ -77,15 +77,18 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Pre-commit management](.github/skills/pre-commit-management/SKILL.md) | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](.github/skills/editorconfig-management/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
 | [Dev Containers](.github/skills/devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
+| [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
 | [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
+| [.NET Web API](.github/skills/dotnet-webapi/SKILL.md) | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [.NET performance](.github/skills/dotnet-performance/SKILL.md) | Measured hot-path, allocation and parsing improvements |
 | [.NET release train](.github/skills/dotnet-release-train/SKILL.md) | Dependency-ordered NuGet updates, releases and consumer propagation |
 | [.NET test platform](.github/skills/dotnet-test-platform/SKILL.md) | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Leadership election](.github/skills/leadership-election/SKILL.md) | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
+| [Redis data access](.github/skills/redis-data-access/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [REST Client requests](.github/skills/rest-client-requests/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
 | [Helm charts](.github/skills/helm-charts/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [GitOps repository structure](.github/skills/gitops-repository-structure/SKILL.md) | Argo CD Application discovery, ownership and stateful migrations |
@@ -156,8 +159,9 @@ before adding local overrides.
 
 ## Development
 
-The repository management and release-train helpers have Pester regression suites. With
-PowerShell, npm and Pester 5.7.1 installed, run the relevant suite from the repository root:
+The central Pester runner discovers root script tests and every skill's `scripts/tests` directory,
+including pre-commit management and release-train checks. With PowerShell 7.4+, Pester 5.7.1,
+Git, Bash, Helm, Mike Farah yq v4 and npm available, run from the repository root after test approval:
 
 ```powershell
 npm run test:ps
@@ -166,3 +170,49 @@ npm run test:release-train
 
 Other skill-specific validation commands and dependencies are documented with the corresponding
 skill; invoking a skill does not require running every suite in this repository.
+The release-train command is a focused alternative, not a suite omitted by `test:ps`.
+CI checks its local tool prerequisites before running the central suite.
+
+The separate `dotnet-examples` CI job builds the self-contained parsing solution in Release,
+including its benchmark project, and runs at least the 16 expected parsing tests under .NET 10.
+It does not execute benchmarks. From the
+[fixture directory](.github/skills/dotnet-performance/examples/utf8-count/), the equivalent local
+commands (with build/test approval) are:
+
+```powershell
+dotnet build Example.CountParsing.slnx --configuration Release
+dotnet test --project src/Example.CountParsing.Tests/Example.CountParsing.Tests.csproj --configuration Release --no-build --filter-trait "Category=Parsing" --minimum-expected-tests 16
+```
+
+### Validation Boundaries
+
+| Evidence | Persistent coverage | Still requires separate execution or approval |
+| --- | --- | --- |
+| Skill discovery, maintenance sections and local links | Central Pester checks | Editor activation and external links |
+| Container and caller templates | Static audit and synthetic argument/exit tests | Image builds, registry publication and deployment |
+| Helm/GitOps/ingress examples | Real local Helm render/lint/schema/package checks and structural ownership assertions | Cluster bootstrap, admission, routing, certificates and rollback |
+| Forms, policy overrides and cleanup examples | Form comparisons, pure policy composition, mocked APIs and synthetic source edits | Actual GitHub operations and consumer compatibility |
+| REST collections and network-change evidence | Static structure, variable and approval-boundary checks | Requests, live network measurements and fault recovery |
+| Self-contained parsing fixture | Separate CI job builds all three projects and runs xUnit tests; Dependabot maintains its packages | Benchmark execution remains explicitly requested |
+| Other .NET integration examples | Structural Pester checks | Consumer-bound compile/HTTP fixtures and published-package consumption are not continuously executed |
+
+The other .NET compile, loopback HTTP and benchmark checks performed while authoring examples remain
+point-in-time evidence. Repeat them after relevant SDK/API changes.
+
+<!-- TODO: Extend dotnet-examples with persistent synthetic integration fixtures:
+1. Extract the MCP/controller snippets into isolated hosts, using fake authentication and source
+services; assert actual wire shapes and API Explorer without claiming production OAuth coverage.
+2. Turn the release-consumer laboratory into an isolated local-feed test with fresh caches and
+negative partial-publication checks; never query synthetic IDs on a public registry.
+3. Pin published shared-library contracts before adding leadership/exception compilation; do not
+require adjacent workstation checkouts or replace real API validation with invented stubs.
+These remain deferred because the earlier temporary harnesses were not retained as maintainable
+fixtures and some shared APIs are provisional. Prefer an explicit snippet-to-fixture build step
+over copied source that drifts. Revisit when the contracts are published and fixtures have their own
+cleanup, timeout and failure-path tests. Benchmarks and live infrastructure stay opt-in. -->
+
+<!-- TODO: After an authorized push, verify dotnet-examples reports successfully on the current
+PR head and inspect Dependabot's resolver log for the nested NuGet root. Only then add the actual
+emitted check context to this repository's required-check policy if it should independently block
+merges. Deferred because local validation cannot prove GitHub scheduling or resolver behavior;
+the release job already depends on dotnet-examples, without modifying remote rulesets here. -->

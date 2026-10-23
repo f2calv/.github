@@ -120,6 +120,10 @@ Preview a write with `-WhatIf`. Pass one or more `-OverridePath` values only for
 durable repository exceptions. After generation, immediately run `-Check`; a generated file that
 does not pass its own drift check is a failure.
 
+The [scoped override example](./examples/scoped-override.md) pairs a narrow migration fragment with
+identical preview/generate/check inputs and expected effective severities. Keep the override list
+and its order consistent; a more specific section does not beat a later matching broad section.
+
 ### 4. Apply Mechanical Cleanup
 
 1. Add one LF byte only to tracked text files missing a final newline.
@@ -238,3 +242,5 @@ details.
 
 - The .NET reference baseline and profile contents whenever analyzer severities are promoted.
 - Formatting fallout and rollout steps learned in each cross-repository tranche.
+- Keep the scoped example and its generator regression aligned; verify effective analyzer scope
+  separately from generated-file equality.

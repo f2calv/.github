@@ -24,6 +24,10 @@ Use the [master template](./assets/readme-template.md) for section selection. It
 authoring aid, not a document to copy unchanged. Keep documentation rules in their owning
 instructions; improve this skill for procedural gaps and the template for section-selection gaps.
 
+Use the [completed README examples](./examples/completed-readmes.md) to compare that outline with a
+source-backed library README and local reusable-workflow README. They demonstrate deliberate
+omissions as well as complete usage, output and permission contracts.
+
 ## Using External Best Practice
 
 Use public guidance as evidence, not a checklist to copy. Prefer current platform documentation
@@ -223,3 +227,5 @@ better. Report remaining repositories explicitly when a fleet request spans seve
 
 - README section conventions, badge sources and SonarQube coverage badges.
 - External best-practice sources when they change.
+- Keep the completed examples synchronized with their actual source and validation; never copy
+  their synthetic identities or infer publication/remote execution from local fixture results.

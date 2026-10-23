@@ -17,6 +17,10 @@ or external services.
 
 ## Required Configuration
 
+Use the [minimal MTP worked example](./examples/minimal-mtp.md) to see the complete configuration,
+central packages, solution entry, three-case test and matching commands together. Merge its settings
+into the target repository rather than copying over existing policy.
+
 - Select MTP in the root `global.json` of every .NET repository, including repositories without
   tests yet, so the first test project is MTP-native rather than silently inheriting VSTest:
 
@@ -36,6 +40,8 @@ or external services.
 
 ## Command Syntax
 
+- Run from the repository containing the intended `global.json`; an absolute `--project` path does
+  not select that file for SDK/test-runner discovery when the current directory is elsewhere.
 - Use the .NET 10 native command: `dotnet test --project <path.csproj>` or
   `dotnet test --solution <path.slnx>`. Never pass a project or solution as a bare positional
   argument, and do not use `dotnet run` as the normal test command.
@@ -43,6 +49,9 @@ or external services.
   `--filter-method`, `--filter-trait`, `--filter-not-trait`, `--coverage` and
   `--coverage-output-format cobertura`. Never use VSTest `--filter`, `--collect`, `--logger` or
   coverlet MSBuild properties.
+- Use verified fully qualified class names or class-prefix filters such as
+  `--filter-class Example.Tests.Leadership*`. Do not assume interior wildcard or repeated-filter
+  semantics; verify a nonzero executed-test count before recording success.
 
 ## Workflows and Actions
 
@@ -72,3 +81,5 @@ test evidence, listing any checks not run.
 
 - .NET SDK and Microsoft.Testing.Platform command syntax, filters and coverage flags.
 - xUnit v3 and runner package versions, and CI or VS Code task steps that drift from them.
+- Rebuild and run the worked example when its package snapshot or command syntax changes; verify
+  nonzero test counts and an actual coverage artifact rather than exit status alone.

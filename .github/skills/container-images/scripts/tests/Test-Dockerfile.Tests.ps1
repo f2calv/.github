@@ -122,6 +122,48 @@ Describe 'Read-DockerfileModel' {
     }
 }
 
+Describe 'Bundled .NET template pairs' {
+    It 'renders and audits the <Name> template with its matching ignore file' -TestCases @(
+        @{ Name = 'dotnet-service'; Dockerfile = 'Dockerfile' }
+        @{ Name = 'dotnet-service-debug'; Dockerfile = 'Dockerfile.Debug' }
+    ) {
+        param($Name, $Dockerfile)
+        $templates = Join-Path $PSScriptRoot '../../templates'
+        $content = Get-Content -LiteralPath (Join-Path $templates "$Name.dockerfile.tmpl") -Raw
+        $ignore = Get-Content -LiteralPath (Join-Path $templates "$Name.dockerignore.tmpl") -Raw
+        $values = @{
+            WORKLOAD = 'Example.Service'
+            PROJECT = 'src/Example.Host/Example.Host.csproj'
+            SOURCE_MANIFESTS = 'src/**/*.csproj'
+            IMAGE_DESCRIPTION = 'Example background service'
+            IMAGE_SOURCE = 'https://example.com/source'
+            SPDX_LICENSE = 'MIT'
+            DEPENDENCY_COPIES = 'COPY deps/Example.Shared /Example.Shared'
+            DEPENDENCY_DIRECTORY = 'Example.Shared'
+        }
+        foreach ($entry in $values.GetEnumerator()) {
+            $content = $content.Replace("{{$($entry.Key)}}", $entry.Value)
+            $ignore = $ignore.Replace("{{$($entry.Key)}}", $entry.Value)
+        }
+        $content | Should -Not -Match '\{\{.+?\}\}'
+        $ignore | Should -Not -Match '\{\{.+?\}\}'
+        $content | Should -Match '# Stage 1 of 3: build'
+        $content | Should -Match 'ENTRYPOINT \["dotnet", "entrypoint.dll"\]'
+        $file = New-Fixture -Content $content -Name $Dockerfile -DockerIgnore $ignore
+        @(Get-DockerfileFinding -FilePath $file) | Should -BeNullOrEmpty
+        foreach ($pattern in @('!Directory.Build.props', '!Directory.Packages.props', '!global.json',
+                '!src/**', '**/bin/**', '**/obj/**', '**/appsettings.Local*.json', '**/*.pfx')) {
+            $ignore.Split("`n").Trim() | Should -Contain $pattern
+        }
+        if ($Name -eq 'dotnet-service-debug') {
+            $ignore | Should -Match '!deps/Example.Shared/\*\*'
+        }
+        else {
+            $ignore | Should -Not -Match '!deps/'
+        }
+    }
+}
+
 Describe 'Get-DockerfileFinding' {
     It 'reports nothing for a compliant published Dockerfile' {
         Get-Rule -Content $script:Compliant | Should -BeNullOrEmpty

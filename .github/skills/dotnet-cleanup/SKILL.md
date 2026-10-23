@@ -22,6 +22,9 @@ discovery and narrowly scoped fixes.
 
 ## Audit Workflow
 
+Use the [findings and fixes example](./examples/findings-and-fixes.md) for a real audit finding,
+valid layout exceptions, an exact logging repair and a deliberately unhandled interpolation case.
+
 1. Resolve the explicit Git repository root. Never infer a repository by scanning parent folders.
 2. Read its repository instructions and dirty-worktree state. Preserve unrelated changes.
 3. Run a read-only audit first:
@@ -100,6 +103,8 @@ project separately to avoid multi-target rewrite conflicts.
   and coverage list, in the same change.
 - Analyzer IDs and severities as the shared `.editorconfig` profile promotes diagnostics.
 - Keep repository-specific incidents and domain rules out of the central skill.
+- Exercise the documented snippets through the existing audit/fixer functions; a skipped source
+  shape or clean regex report is not proof of compilation or logging-contract correctness.
 
 ## Tests
 

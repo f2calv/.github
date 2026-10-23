@@ -65,6 +65,7 @@ The established shared integration uses:
 | --- | --- |
 | `AddCasCapCaching(...)` | Registers caching and, when configured, the distributed-lock factory. |
 | `IDistributedLockFactory` | Acquires a resource lease through `CreateLockAsync(...)`. |
+| `ILeadershipRunner` | Provisional .NET 8+ checkout API; owns acquisition, loss cancellation, awaited cleanup and reacquisition. |
 | `IRedLock` | Exposes ownership state and asynchronous disposal. |
 | `IOptions<RedlockConfig>` | Supplies lock configuration and named timing profiles. |
 | `RedlockConfig.GetTimings(profileName)` | Resolves timings for the selected use case. |
@@ -107,6 +108,26 @@ name when the caller overrides it.
 
 ### Integration Procedure
 
+The [owned-worker example](./examples/owned-worker.md) shows the application callback, registration,
+required resource configuration and lifecycle expectations using the existing shared runner.
+It deliberately does not implement another acquisition loop or claim package availability.
+
+The current checkout's runner accepts
+`RunAsync(string resource, Func<CancellationToken, Task> runAsync, CancellationToken cancellationToken)`.
+It uses the existing factory and options, observes `IsAcquired` every
+`Redlock.LeadershipCheckIntervalMs` (default `1000`), and backs off by the election retry interval
+after contention. Business faults and unexpected normal completion propagate. Cleanup is awaited
+without a runner timeout; the consuming host owns forced termination. The feature launcher must
+await children, and request host shutdown immediately on a child fault before joining siblings, so
+the host shutdown budget still applies when cleanup stalls.
+
+Treat this API as provisional until the remaining use cases prove the contract. Use the existing
+Debug project-reference/container dependency mirror and authorized deployment shim rather than
+publishing a package for each iteration. For every contract refinement, impact-check all previously
+migrated consumers and backfill their wiring, tests and documentation in the same change. Keep
+published-package availability distinct from checkout behavior; do not silently claim Release
+support against an older package that lacks the runner.
+
 1. Inspect the pinned `CasCap.Common.Caching` and RedLock.net versions and the actual overloads
    before writing calls. A local checkout may contain APIs not yet available in a published package.
    Do not add an independent RedLock factory or direct package reference just to duplicate the
@@ -147,7 +168,8 @@ Lease loss, failure and host shutdown must all leave the active path.
    guaranteed asynchronous disposal. Do not acquire in a helper that disposes before work starts.
 3. Start a distinct ownership run with a linked cancellation source. Pass its token through every
    timer, delay, I/O operation, connection attempt and child loop. Retain and await child tasks;
-   fire-and-forget work must not outlive its lease.
+   fire-and-forget work must not outlive its lease. Supervise only enabled, required loops: an
+   optional loop that immediately returns when disabled must not prematurely finish a healthy group.
 4. Check that ownership is still valid during long-lived work using the installed library's
    supported state/signals. A single `IsAcquired` check at entry is insufficient for an unbounded
    worker. Polling, if necessary, has a detection delay and is not a safety proof.
@@ -165,6 +187,27 @@ Lease loss, failure and host shutdown must all leave the active path.
    retry only failures for which recovery is intended and observable.
 9. Guard late callbacks and cleanup by ownership-run identity so an old run cannot mark a new run
    inactive or publish stale state.
+
+### Coordinated Schedules and Delivery
+
+- For several independent long-lived schedules sharing one lease, defer starting them until the
+  ownership callback is invoked. `Task.WhenAll` alone does not cancel siblings when one faults.
+  Prefer existing framework supervision where it fits: `Parallel.ForEachAsync` with one execution
+  slot per schedule cancels siblings on an unhandled failure and awaits them. The default
+  CPU-bounded parallelism can starve long-lived schedules, so size the slots to the schedule count.
+- Preserve the application's deliberate per-job/per-message recovery policy separately from fatal
+  ownership-run failures. Cancellation must escape those recovery catches, not emit a failure
+  event, send an error notification or begin another side effect under the old token.
+- Pass the ownership token through success/failure sinks, enqueue wrappers and fallback delivery,
+  not just the main operation. Check cancellation before dispatching APIs without native
+  cancellation; await an already-dispatched operation rather than abandoning it with `WaitAsync`.
+- Do not infer exactly-once delivery from atomic dequeue. Destructive dequeue before processing
+  can lose work on cancellation or crash, while retrying an externally accepted operation can
+  duplicate it. Keep delivery/acknowledgement and idempotency changes explicit and separately
+  evaluated; document existing semantics rather than silently requeueing uncertain outcomes.
+- Use injected clocks and explicit startup/cleanup gates to test multi-loop cancellation. Keep
+  UTC test timestamps offset-aware across successive runs; converting an unspecified `DateTime`
+  to `DateTimeOffset` can accidentally introduce workstation-local offsets.
 
 In the inspected RedLock.net 2.3.2 API, `IRedLock` exposes `IsAcquired`, `Status`,
 `InstanceSummary` and `ExtendCount`; status values include `Unlocked`, `Acquired`, `NoQuorum`,
@@ -205,6 +248,71 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Ensure metrics, health endpoints, diagnostics and any leader-only command gateways use the same
   authoritative state rather than independent booleans that can disagree.
 
+### External Connections and Callbacks
+
+- Include every user of a leader-owned connection in the ownership lifetime, including outbound
+  queue readers and command writers registered as separate background features. Cancel and join
+  those users before disposing the connection; standbys must not consume commands they cannot send.
+- For separately registered commands or reconciliation, serialize operation admission with ownership
+  withdrawal, link the caller and ownership tokens, and await admitted users before logout. Keep an
+  auxiliary-user cancellation lifetime separate from a dispatcher that must drain on a still-owned
+  normal/fault exit; lease loss must cancel both. Ownership-only cancellation need not terminate an
+  otherwise healthy periodic feature or masquerade as request cancellation.
+- Fail closed before ownership state is initialized and throughout startup. A default "election
+  inactive" flag is not permission for live commands. Restrict replay bypass to the actual isolated
+  execution adapter, without granting live auxiliary-operation admission. Reject unsupported mixed
+  live/replay configurations before registering transports or starting side effects.
+- Capture the authoritative partition identity atomically with operation admission. Resolve owned
+  connections from that identity, not an unrelated worker's default connection or request parameters;
+  host registration, execution and auxiliary workers must agree on runtime selection.
+- Classify recovery after cleanup and lease disposal. Retry only the intended business failure, not
+  an acquisition/release/teardown error with a similar exception type. Preserve a previously observed
+  child failure's identity when joining it again; do not relabel it as a new teardown failure. Reuse
+  business-fault classification across consumers without merging their recovery budgets. Known
+  permanent causal failures must override transport-shaped wrappers; retry an aggregate only when
+  every constituent fault is recoverable, and propagate unknown failures rather than assuming recovery.
+- Treat explicit external authentication rejection separately from transient transport failure. Check
+  exception paths as well as false login results; an exception must not bypass the intended backoff
+  or cause credential submission on every re-election. Transient cached-session validation must not
+  silently fall back to password login. Preserve the authentication cause alongside teardown failures.
+- Decide terminal authentication recovery with the operator. When restart itself would retry rejected
+  credentials, stop owned work, finish cleanup/release, withdraw command admission and readiness, and
+  park until explicit restart rather than failing liveness/startup into a restart storm. Keep probe
+  registration names scoped and test the stopped state after the supervisor transition, not merely
+  lease release. Document whether the stop is client/process-local or durable across replicas and
+  rollouts; a local latch is not an account-wide circuit breaker.
+- Emit sanitized terminal-stop notifications through the application's existing operator channel,
+  after owned cleanup/release and with the host token rather than a cancelled ownership token.
+  Notify once per stopped process/run, not on every contention or recoverable retry. Do not include
+  credentials, response bodies, account/resource identifiers or arbitrary exception messages.
+  Expected notification-transport failures must be explicit without undoing authentication containment.
+  Distinguish queue acceptance from actual delivery, including existing throttling/stale-event rules.
+- Verify an independent sustained-Unready alert for parked workers: inspect the deployed readiness
+  expression (including Running-but-not-Ready pods), rule selector, active receiver route and adapter
+  health. Healthy liveness does not imply readiness or suppress readiness alerts. Record the actual
+  hold/repeat timing and that zero replicas cannot generate pod-readiness alerts. Do not claim
+  end-to-end paging without an authorized delivery check.
+- Create fresh callback/reconnection buffers for each ownership run. Detach handlers and await
+  asynchronous connection disposal on every exit, including partial startup. Fence late callbacks
+  by their run and connection identity, not a mutable reference to the latest run.
+- Replace untracked asynchronous event handlers with synchronous admission into an owned buffer and
+  an awaited publisher. Propagate publisher/decoding failures through supervision, pass the run token
+  to publication, and document buffering and non-replay semantics. SDK callbacks that cannot apply
+  backpressure need an explicit overflow policy before a bounded buffer can safely replace them.
+- Withdraw readiness on cancellation before waiting for cleanup. Serialize that transition with
+  callback/health updates so a late update cannot reactivate an old run. An empty connection set
+  does not establish readiness.
+- Distinguish request-only disconnect APIs from awaited teardown. Retain producer and watchdog
+  tasks and join them before reusing a connection or draining persistent buffers; starting a new
+  subscription must not reactivate an old loop through a shared mutable subscribed flag.
+- Keep reusable transport ownership separate from a lease session. Logout stops owned streams;
+  final service disposal releases shared HTTP clients. Test resubscription with an uncancelled
+  host token as well as shutdown, because host cancellation can conceal missing per-session stops.
+- Validate streaming HTTP status and declared media type before JSON decoding. Test rejected
+  HTTP/HTML responses through an injected transport alongside normal stream records, and report
+  safe status/type diagnostics without response bodies or account identifiers. A leading '<' in
+  historical parser errors suggests a non-JSON response but does not establish its HTTP status.
+
 ## 5. Preserve Deployment and Local-Development Semantics
 
 - Multiple replicas must share the intended Redis backend, database and effective election key.
@@ -212,6 +320,10 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Confirm the factory's actual Redis topology. Multiple connections to one backend are not
   independent Redlock voters; do not claim quorum fault tolerance from a single Redis container
   or an ordinary replicated Redis endpoint.
+- Never place leases on a Sentinel-managed or otherwise failover-managed primary. Replication is
+  asynchronous, so a failover can lose a just-granted lease and the promoted replica grants it to a
+  second owner. Use an endpoint that never fails over; the `redis-data-access` skill's topology
+  reference covers placement and persistence for lock endpoints.
 - Make local/mock/replay bypass explicit and restricted to work that cannot produce duplicate live
   side effects. Development mode alone is not a safe reason to bypass leadership.
 - Use isolated development namespaces. Isolated Redis instances cannot validate cross-process
@@ -260,3 +372,5 @@ that can create concurrent owners and does not repair an uncooperative worker.
   section without importing private application details or promoting existing implementation gaps.
 - Revisit readiness, shutdown budgets and topology assumptions when host, chart or Redis
   architecture changes.
+- Keep the owned-worker example aligned with the verified runner contract; compile against the
+  real implementation and distinguish consumer fake tests from Redis/renewal evidence.

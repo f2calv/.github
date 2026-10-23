@@ -67,6 +67,10 @@ topology, dashboard queries, and release automation details in the consuming rep
 
 ### 2. Design or Update the Contract
 
+Use the [executable chart contract example](./examples/chart-contract.md) for a complete small
+values/schema/template fixture, expected resource shapes and invalid inputs. It is not a workload
+scaffold or a published chart dependency.
+
 Use [the chart authoring reference](references/chart-authoring.md) for metadata, values schemas,
 dependencies, templates, documentation, fixtures, and release boundaries.
 
@@ -164,3 +168,5 @@ conditional templates, invalid inputs, package contents, or migration equivalenc
 
 * Helm, chart-testing and OCI publishing commands and versions.
 * Values-schema, dependency and dashboard ConfigMap conventions corrected during a chart change.
+* Keep the example's values, schema, README, success/failure fixtures and package assertions in
+  sync; validate rendered Go templates rather than treating their source as ordinary YAML.

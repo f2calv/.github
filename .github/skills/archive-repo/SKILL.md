@@ -208,6 +208,9 @@ Continue processing independent repositories only when doing so cannot obscure t
 
 ## Reporting
 
+Use the [partial retirement handoff](./examples/partial-retirement.md) to distinguish verified
+archival, blocked targets and uncertain post-mutation state without implying deletion or remediation.
+
 Report:
 
 - repositories requested, archived, skipped, and failed;
@@ -244,3 +247,5 @@ made read-only by archival.
 
 - GitHub archive, ruleset and repository-settings behaviour, and the `gh` commands that inspect them.
 - SonarQube project handling and the stop conditions used when a gate or API is unavailable.
+- Keep reporting examples explicit about verification uncertainty, retained artifacts and separately
+  authorized local cleanup; an accepted mutation is not a verified final state.

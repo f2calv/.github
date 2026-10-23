@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="../../../producer/src/Example.Core/Example.Core.csproj" />
+    <ProjectReference Include="../../../producer/src/Example.Json/Example.Json.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <PackageReference Include="Example.Core" />
+    <PackageReference Include="Example.Json" />
+  </ItemGroup>
+</Project>
