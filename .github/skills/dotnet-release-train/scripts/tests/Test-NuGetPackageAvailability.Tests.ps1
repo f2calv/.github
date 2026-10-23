@@ -71,4 +71,23 @@ Describe 'Test-NuGetPackageAvailability' -Tag 'Unit' {
     It 'Does not expose a package source override' {
         (Get-Command Test-NuGetPackageAvailability).Parameters.Keys | Should -Not -Contain 'BaseUri'
     }
+
+    It 'Keeps the example consumer blocked when only one producer package is available' {
+        Mock Invoke-RestMethod {
+            if ($Uri.AbsolutePath -match '/example.core/') {
+                return [pscustomobject]@{ versions = @('1.2.3') }
+            }
+            return [pscustomobject]@{ versions = @('1.2.2') }
+        }
+        Mock Start-Sleep { [Threading.Thread]::Sleep(1100) }
+        $packages = [xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../templates/Directory.Packages.props') -Raw)
+        $ids = @($packages.Project.ItemGroup.PackageVersion.Include)
+        $results = @(Test-NuGetPackageAvailability -PackageId $ids -Version 1.2.3 `
+                -TimeoutSeconds 1 -InitialDelaySeconds 1 -MaximumDelaySeconds 1)
+        $results.Count | Should -Be 2
+        ($results | Where-Object PackageId -eq 'Example.Core').Available | Should -BeTrue
+        ($results | Where-Object PackageId -eq 'Example.Json').Available | Should -BeFalse
+        @($results | Where-Object { -not $_.Available }).Count | Should -Be 1
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly
+    }
 }

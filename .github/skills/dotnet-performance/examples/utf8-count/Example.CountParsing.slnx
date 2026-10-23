@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Example.CountParsing/Example.CountParsing.csproj" />
+    <Project Path="src/Example.CountParsing.Benchmarks/Example.CountParsing.Benchmarks.csproj" />
+    <Project Path="src/Example.CountParsing.Tests/Example.CountParsing.Tests.csproj" />
+  </Folder>
+</Solution>

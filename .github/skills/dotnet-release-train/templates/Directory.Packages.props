@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Example.Core" Version="1.2.3" />
+    <PackageVersion Include="Example.Json" Version="1.2.3" />
+  </ItemGroup>
+</Project>

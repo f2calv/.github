@@ -13,6 +13,10 @@ release conventions rather than maintaining a separate release state machine.
 
 ## Repository Order
 
+The [producer/consumer worked example](./examples/producer-consumer.md) connects Debug project
+references, Release package references, a local partial-publication failure and the existing
+availability gate. It is a synthetic laboratory, not permission to publish or start a train.
+
 Build the order from the actual package graph: a repository moves only after every package it
 consumes is published. The waves below are the general shape; the
 [real-world example](#real-world-example-f2calv-net-release-train) shows one concrete train.
@@ -194,3 +198,5 @@ depend on one another.
   generic waves and the real-world example.
 - Release-run, tag and NuGet verification commands, and the ruleset behaviours that block merges.
 - Downstream README caveats to remove once the release they wait for lands.
+- Keep the worked example's reference conditions, central package versions and availability-helper
+  invocation aligned; validate with isolated local feeds without querying synthetic IDs remotely.

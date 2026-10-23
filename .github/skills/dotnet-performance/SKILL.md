@@ -14,6 +14,9 @@ are not repeated here.
 
 ## Workflow
 
+Use the [measured UTF-8 parsing example](./examples/measured-utf8-parsing.md) for a runnable baseline,
+equivalent candidate, unnecessary-copy comparison and correctness-first measurement procedure.
+
 1. Identify the hot path from evidence: BenchmarkDotNet, `dotnet-counters`, `dotnet-trace`, or a
    representative load test. Record the baseline and the measurement conditions.
 2. Change one pattern at a time and re-measure. Keep a change only when it produces a meaningful,
@@ -61,3 +64,5 @@ pattern rejected because it did not measurably help.
 
 - Patterns a profile showed not to help; record the rejection beside the pattern.
 - New BCL APIs that replace a hand-rolled technique described here.
+- Re-run the worked fixture's correctness tests and benchmark when its SDK, package snapshot or
+  input contract changes; publish reviewed measurements, not raw machine-identifying reports.
