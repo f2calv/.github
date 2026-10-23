@@ -52,6 +52,8 @@ those result signatures; all actions in this example have bound input.
 
 For a service with expected invalid/conflict/unsupported outcomes, switch on its typed outcome in
 the controller and return the matching declared result. Do not turn normal absence into an exception.
+The [typed outcome extension](../examples/typed-outcomes.md) supplies a concrete create-action
+replacement and explains its 400/409 body and media-type distinctions.
 Add an explicit response attribute for a middleware-generated 409 or a dynamic status only when
 the application actually implements it. Authentication/authorization responses and descriptions
 should likewise match the real scheme and configured documentation pipeline.

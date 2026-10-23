@@ -56,6 +56,10 @@ Use the [controller example](./references/controller-example.md). For JSON-only 
 `Ok<T>`, `CreatedAtRoute<T>`, `NoContent` or an explicit `Results<T1, T2, ...>` union, constructed
 with `TypedResults`. This provides compile-time checks and response metadata in MVC too.
 
+For a multi-branch mutation, the [typed outcome extension](./examples/typed-outcomes.md) shows
+business invalid/conflict results without duplicating the controller scaffold or confusing a
+ProblemDetails-shaped body with its response media type.
+
 | Concern | Default |
 | --- | --- |
 | Success and declared alternatives | Infer from concrete results/unions; do not repeat `ProducesResponseType` |
@@ -167,3 +171,5 @@ rankings or older templates:
 - Recheck first-party OpenAPI package requirements, XML source-generator support and named-route APIs.
 - Recheck handled-exception telemetry defaults and streaming serialization/cancellation semantics.
 - Keep the worked example aligned with shared controller and service-boundary instructions.
+- Verify the outcome extension's actual media types, named Location and inferred response metadata
+  when framework behavior changes; do not infer wire behavior from DTO names.
