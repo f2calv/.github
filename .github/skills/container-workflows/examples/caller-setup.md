@@ -80,3 +80,11 @@ Before real execution, parse the rendered shims, import the data example with
 After authorized deployment, verify the exact changed manifest, digest-qualified image tag,
 chart revision when selected, and separate commit/push state. Static tests do not establish that
 Argo CD reconciled the change or that the application became ready.
+
+Wait for the expected digest in each workload before trusting rollout status. Probe the configured
+health endpoints using their actual plain-text or JSON response contract, and check restart counts
+and sustained application errors as well as readiness. Strip ANSI formatting before classifying log
+severity; summarize failures without exposing dynamic service-user data. When network policy blocks
+the API-server HTTP proxy, use a localhost-only port-forward rather than weakening isolation or
+assuming a minimal runtime image contains a shell or HTTP client. A healthy probe is not proof that
+event persistence or other business operations succeeded; verify representative progress separately.
