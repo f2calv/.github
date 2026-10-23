@@ -105,6 +105,9 @@ name when the caller overrides it.
   overload. Validate binding, default/profile selection and factory key/database configuration,
   and add regression coverage showing that changing leadership settings does not change
   cache-miss timings or behavior.
+- Build the service provider with `ValidateOnBuild` enabled for local-only caching and disabled
+  locking, without an elected worker. Optional runner registration must not make ordinary caching
+  require a lock factory; an elected consumer must still fail explicitly when prerequisites are absent.
 
 ### Integration Procedure
 

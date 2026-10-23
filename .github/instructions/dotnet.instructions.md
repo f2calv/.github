@@ -71,4 +71,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 - After any refactoring, build the **entire solution** rather than only the affected project, so compilation errors in dependent projects surface immediately.
 - Where Debug and Release solutions both exist, build the Debug solution locally; it is the one wired to local project references.
+- Serialize builds and test builds whose project-reference graphs share output directories, including
+  sibling dependencies used by different Debug solutions. Separate solution roots do not prevent
+  concurrent compilers from contending for the same dependency outputs.
 - Ask before running a build.
