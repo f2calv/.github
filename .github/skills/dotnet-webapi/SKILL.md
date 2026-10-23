@@ -150,7 +150,16 @@ Build the smallest affected project, then run approved focused tests. Verify:
 - If a generator is configured, inspect its generated document as well; API Explorer assertions
   alone do not prove generated OpenAPI correctness.
 
-Update affected READMEs and request examples. Do not commit, push, deploy, run live requests or
+Update affected READMEs and request examples. Inventory the repository's collections and apply the
+[REST Client skill](../rest-client-requests/SKILL.md): reconcile methods/routes, authentication,
+binding types, required fields, string enum tokens and domain validation with the current contract.
+Document expected status/content types, including empty, binary, streaming and Problem Details
+responses, plus creation Location behavior where relevant. Separate successful examples from
+intentional failures and describe actual side effects regardless of HTTP verb. If an affected
+surface has no collection, add a small representative one or explicitly record why it is deferred.
+Static collection checks do not establish live responses and do not authorize sending requests.
+
+Do not commit, push, deploy, run live requests or
 execute tests without the applicable authorization.
 
 ## Sources
