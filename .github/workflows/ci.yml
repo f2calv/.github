@@ -41,6 +41,22 @@ jobs:
         shell: pwsh
         run: Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1 -Force
 
+      - name: verify local fixture tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw 'PowerShell 7.4 or later is required.' }
+          foreach ($tool in 'git', 'bash', 'helm', 'yq', 'node', 'npm') {
+            Get-Command $tool -ErrorAction Stop | Select-Object Name, Source
+          }
+          helm version --short
+          if ($LASTEXITCODE -ne 0) { throw 'Helm is unavailable.' }
+          $yqVersion = yq --version
+          if ($LASTEXITCODE -ne 0 -or "$yqVersion" -notmatch 'mikefarah/yq.*version v4\.') {
+            throw 'The fixture suite requires Mike Farah yq v4.'
+          }
+          Write-Host $yqVersion
+
       - name: npm run test:ps
         run: npm run test:ps
 

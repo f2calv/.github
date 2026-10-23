@@ -106,9 +106,10 @@ After creating a pull request, and again before merging it:
    severity), plus any lower-severity finding that fails a required check or Quality Gate.
 3. Re-run affected analysis on the unchanged head. A result from a superseded commit is not evidence
    for the current pull request.
-4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Every pull
-   request must pass the repository's required lint and versioning checks, its own validation check
-   and the SonarQube Quality Gate.
+4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Apply the
+   [GitHub merge gates and analysis-capability boundary](../../instructions/github.instructions.md):
+   require current-head checks and supported PR analysis; report an edition/visibility limitation
+   explicitly rather than treating unavailable analysis as either a passing gate or an executable check.
 
 ## Merge
 

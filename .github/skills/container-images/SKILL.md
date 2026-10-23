@@ -79,6 +79,9 @@ from project paths and shows how sibling-project Debug inputs map into the conta
 
 Run the audit, then BuildKit's checks:
 
+The script path below is relative to this skill's directory, not the application's repository.
+Supply absolute Dockerfile/context paths when invoking BuildKit from that location.
+
 ```powershell
 ./scripts/Test-Dockerfile.ps1 -Path <repository>
 docker buildx build --check -f <Dockerfile> <context>
@@ -187,6 +190,9 @@ The audit reads Dockerfiles and `.dockerignore` files only. Review Compose files
 `docker.compose.instructions.md`.
 
 ## Script Reference
+
+Run these commands from this skill's directory, substituting the target repository's absolute
+Dockerfile path for the illustrative relative input paths.
 
 ```powershell
 ./scripts/Test-Dockerfile.ps1 -Path ./Dockerfile

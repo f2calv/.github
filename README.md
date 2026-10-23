@@ -77,6 +77,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Pre-commit management](.github/skills/pre-commit-management/SKILL.md) | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](.github/skills/editorconfig-management/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
 | [Dev Containers](.github/skills/devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
+| [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
@@ -158,8 +159,9 @@ before adding local overrides.
 
 ## Development
 
-The repository management and release-train helpers have Pester regression suites. With
-PowerShell, npm and Pester 5.7.1 installed, run the relevant suite from the repository root:
+The central Pester runner discovers root script tests and every skill's `scripts/tests` directory,
+including pre-commit management and release-train checks. With PowerShell 7.4+, Pester 5.7.1,
+Git, Bash, Helm, Mike Farah yq v4 and npm available, run from the repository root after test approval:
 
 ```powershell
 npm run test:ps
@@ -168,3 +170,24 @@ npm run test:release-train
 
 Other skill-specific validation commands and dependencies are documented with the corresponding
 skill; invoking a skill does not require running every suite in this repository.
+The release-train command is a focused alternative, not a suite omitted by `test:ps`.
+CI checks its local tool prerequisites before running the central suite.
+
+### Validation Boundaries
+
+| Evidence | Persistent coverage | Still requires separate execution or approval |
+| --- | --- | --- |
+| Skill discovery, maintenance sections and local links | Central Pester checks | Editor activation and external links |
+| Container and caller templates | Static audit and synthetic argument/exit tests | Image builds, registry publication and deployment |
+| Helm/GitOps/ingress examples | Real local Helm render/lint/schema/package checks and structural ownership assertions | Cluster bootstrap, admission, routing, certificates and rollback |
+| Forms, policy overrides and cleanup examples | Form comparisons, pure policy composition, mocked APIs and synthetic source edits | Actual GitHub operations and consumer compatibility |
+| REST collections and network-change evidence | Static structure, variable and approval-boundary checks | Requests, live network measurements and fault recovery |
+| .NET examples and benchmarks | Structural checks; the parsing fixture also contains runnable xUnit tests | Compile/HTTP fixtures, published-package consumption and benchmark execution are not run by the central Pester job |
+
+The .NET compile, loopback HTTP and benchmark checks performed while authoring examples are
+point-in-time evidence, not continuous CI coverage. Repeat them after relevant SDK/API changes.
+<!-- TODO: Persist the MCP, controller, leadership, exception and release-consumer integration
+fixtures and wire an opt-in .NET validation job. Deferred because several examples depend on
+consumer authentication or provisional shared-library APIs; select reproducible published
+contracts before adding remote restores or live consumers to default CI. The self-contained
+parsing tests are the first candidate for that job; benchmarks should remain explicitly requested. -->

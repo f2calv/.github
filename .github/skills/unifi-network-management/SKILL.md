@@ -20,6 +20,10 @@ the owning private infrastructure repository. This skill carries only the reusab
 Use [the storage-network reference](references/storage-network.md) for dual-NIC NAS and benchmark
 patterns.
 
+Use the [worked change-evidence record](./examples/change-evidence.md) to distinguish controller,
+port, endpoint and application observations, compare measurements, and withhold acceptance when
+one required client path fails. Its numbers are explicitly synthetic, not measured results.
+
 ## Safety Model
 
 - `audit` and `plan` are read-only.
@@ -232,3 +236,5 @@ Report:
 
 - UniFi Network application behaviour and UI paths, which move between releases.
 - Safety-model steps and benchmark commands proven or corrected during a change or recovery.
+- Keep the evidence example's layer boundaries, measurement conditions and rollback gates aligned;
+  static fixture validation never proves live connectivity or performance.

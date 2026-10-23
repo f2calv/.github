@@ -21,6 +21,31 @@ Describe 'Skill <Name>' -Tag 'Unit' -ForEach $script:Skills {
         $script:HeadingIndex.Count | Should -Be 1
     }
 
+    It 'declares a matching name and a nonempty discovery description' {
+        $text = $script:Lines -join "`n"
+        $frontmatter = [regex]::Match($text, '\A---\n(.*?)\n---(?:\n|$)', 'Singleline')
+        $frontmatter.Success | Should -BeTrue
+        $frontmatter.Groups[1].Value | Should -Match "(?m)^name: ['`"]?$([regex]::Escape($Name))['`"]?$"
+        $frontmatter.Groups[1].Value | Should -Match '(?m)^description: .*\S'
+        $frontmatter.Groups[1].Value | Should -Not -Match '(?m)^applyTo:'
+    }
+
+    It 'resolves local Markdown links in the skill and its supporting guides' {
+        $root = Split-Path $Path -Parent
+        foreach ($document in Get-ChildItem -LiteralPath $root -Filter '*.md' -Recurse) {
+            $text = [IO.File]::ReadAllText($document.FullName)
+            $text = [regex]::Replace($text, '(?ms)^(`{3,}|~{3,})[^\n]*\n.*?^\1\s*$', '')
+            foreach ($match in [regex]::Matches($text, '\]\(([^)\s]+)(?:\s+"[^"]*")?\)')) {
+                $link = $match.Groups[1].Value
+                if ($link -match '^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|/)') { continue }
+                $relative = ($link -split '#', 2)[0]
+                if (-not $relative -or $relative -match '[<>]') { continue }
+                $target = Join-Path $document.DirectoryName ([uri]::UnescapeDataString($relative))
+                Test-Path -LiteralPath $target | Should -BeTrue -Because "$($document.Name) links to $relative"
+            }
+        }
+    }
+
     It 'lists at least one drift trigger in that section' {
         $Section = $script:Lines | Select-Object -Skip ($script:HeadingIndex[0] + 1) |
         ForEach-Object -Begin { $Stop = $false } -Process {
