@@ -1,18 +1,15 @@
 ---
 description: 'Redis key-naming, consumer-group, TTL and key-migration conventions for feature-scoped keys.'
-applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*.lua,**/appsettings*.json'
+applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*Cache*.cs,**/*.lua,**/appsettings*.json'
 ---
 
 # Redis Key Naming
 
-Use the `leadership-election` skill when creating, changing or diagnosing Redlock-backed leader
-election, lease renewal, leader-only workers or failover. This file owns Redis naming; the skill
-owns the election lifecycle and validation workflow.
-
-<!-- TODO: Centralize a Redis caching skill covering read-through/cache-aside lookup (also called
-look-ahead caching), population, write-through ordering, invalidation, stale-refill races and cache
-outages. Deferred until an implementation and its concurrency tests establish reusable patterns;
-keep the storage authority explicit rather than adding interchangeable database/cache roles. -->
+Use the `redis-data-access` skill when classifying keys by role, caching reads, choosing
+expirations, invalidating on write, consuming streams or placing keys on a Redis endpoint. Use the
+`leadership-election` skill when creating, changing or diagnosing Redlock-backed leader election,
+lease renewal, leader-only workers or failover. This file owns Redis naming; the skills own those
+workflows.
 
 When a project uses a feature enum (e.g. `AppFeature`) to gate services, derive the domain segment of every Redis key from the **lowercase enum member name** so that key prefixes stay tightly coupled to the feature taxonomy (e.g. `AppFeature.Billing` → `billing:`, `AppFeature.Notifications` → `notifications:`).
 

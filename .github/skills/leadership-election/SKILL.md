@@ -295,6 +295,10 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Confirm the factory's actual Redis topology. Multiple connections to one backend are not
   independent Redlock voters; do not claim quorum fault tolerance from a single Redis container
   or an ordinary replicated Redis endpoint.
+- Never place leases on a Sentinel-managed or otherwise failover-managed primary. Replication is
+  asynchronous, so a failover can lose a just-granted lease and the promoted replica grants it to a
+  second owner. Use an endpoint that never fails over; the `redis-data-access` skill's topology
+  reference covers placement and persistence for lock endpoints.
 - Make local/mock/replay bypass explicit and restricted to work that cannot produce duplicate live
   side effects. Development mode alone is not a safe reason to bypass leadership.
 - Use isolated development namespaces. Isolated Redis instances cannot validate cross-process
