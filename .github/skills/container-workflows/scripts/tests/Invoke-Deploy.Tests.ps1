@@ -109,6 +109,37 @@ spec:
 
 
 Describe 'Invoke-Deploy validation and safety' -Tag 'Unit' {
+    It 'normalizes Debug forwarding in the invocation scope before calling the build shim' -TestCases @(
+        @{ Forwarded = @('-Configuration', 'Debug') }
+        @{ Forwarded = @('-Configuration:Debug') }
+        @{ Forwarded = @() }
+    ) {
+        param($Forwarded)
+        $configPath = Join-Path $TestDrive 'forwarding.psd1'
+        Set-Content $configPath "@{ ManifestRepo = '$repositoryRoot'; ManifestPath = 'app.yaml'; PodAnnotationName = 'example/deployed'; ImageRepository = 'ghcr.io/example/app' }"
+        $captured = Join-Path $TestDrive 'build-parameters.json'
+        $buildScript = Join-Path $repositoryRoot 'build.ps1'
+        Set-Content $buildScript @'
+param([switch]$Push, [string]$Configuration, [string]$Platforms, [string]$Tag, [string]$Version)
+$PSBoundParameters | ConvertTo-Json -Compress
+exit 0
+'@
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot -DeployConfigPath $configPath
+        Mock Assert-DeploymentPrerequisites
+        Mock Update-ManifestRepository
+        Mock Assert-NoModelDrift
+        Mock Publish-ConfiguredDeploymentChart { $null }
+        Mock Update-DeploymentManifest
+
+        Invoke-Deployment -CallerBoundParameters @{ Rest = $Forwarded; Tag = 'test' } | Set-Content $captured
+
+        $actual = Get-Content -LiteralPath $captured -Raw | ConvertFrom-Json
+        $actual.Configuration | Should -Be 'Debug'
+        $actual.Tag | Should -Be 'test'
+        $actual.Push | Should -BeTrue
+        $actual.PSObject.Properties.Name | Should -Not -Contain 'Version'
+    }
+
     It 'rejects Release build forwarding' {
         { ConvertTo-DeployBuildArguments @('-Configuration', 'Release') } | Should -Throw '*Debug builds*'
     }
