@@ -173,6 +173,17 @@ skill; invoking a skill does not require running every suite in this repository.
 The release-train command is a focused alternative, not a suite omitted by `test:ps`.
 CI checks its local tool prerequisites before running the central suite.
 
+The separate `dotnet-examples` CI job builds the self-contained parsing solution in Release,
+including its benchmark project, and runs at least the 16 expected parsing tests under .NET 10.
+It does not execute benchmarks. From the
+[fixture directory](.github/skills/dotnet-performance/examples/utf8-count/), the equivalent local
+commands (with build/test approval) are:
+
+```powershell
+dotnet build Example.CountParsing.slnx --configuration Release
+dotnet test --project src/Example.CountParsing.Tests/Example.CountParsing.Tests.csproj --configuration Release --no-build --filter-trait "Category=Parsing" --minimum-expected-tests 16
+```
+
 ### Validation Boundaries
 
 | Evidence | Persistent coverage | Still requires separate execution or approval |
@@ -182,12 +193,26 @@ CI checks its local tool prerequisites before running the central suite.
 | Helm/GitOps/ingress examples | Real local Helm render/lint/schema/package checks and structural ownership assertions | Cluster bootstrap, admission, routing, certificates and rollback |
 | Forms, policy overrides and cleanup examples | Form comparisons, pure policy composition, mocked APIs and synthetic source edits | Actual GitHub operations and consumer compatibility |
 | REST collections and network-change evidence | Static structure, variable and approval-boundary checks | Requests, live network measurements and fault recovery |
-| .NET examples and benchmarks | Structural checks; the parsing fixture also contains runnable xUnit tests | Compile/HTTP fixtures, published-package consumption and benchmark execution are not run by the central Pester job |
+| Self-contained parsing fixture | Separate CI job builds all three projects and runs xUnit tests; Dependabot maintains its packages | Benchmark execution remains explicitly requested |
+| Other .NET integration examples | Structural Pester checks | Consumer-bound compile/HTTP fixtures and published-package consumption are not continuously executed |
 
-The .NET compile, loopback HTTP and benchmark checks performed while authoring examples are
-point-in-time evidence, not continuous CI coverage. Repeat them after relevant SDK/API changes.
-<!-- TODO: Persist the MCP, controller, leadership, exception and release-consumer integration
-fixtures and wire an opt-in .NET validation job. Deferred because several examples depend on
-consumer authentication or provisional shared-library APIs; select reproducible published
-contracts before adding remote restores or live consumers to default CI. The self-contained
-parsing tests are the first candidate for that job; benchmarks should remain explicitly requested. -->
+The other .NET compile, loopback HTTP and benchmark checks performed while authoring examples remain
+point-in-time evidence. Repeat them after relevant SDK/API changes.
+
+<!-- TODO: Extend dotnet-examples with persistent synthetic integration fixtures:
+1. Extract the MCP/controller snippets into isolated hosts, using fake authentication and source
+services; assert actual wire shapes and API Explorer without claiming production OAuth coverage.
+2. Turn the release-consumer laboratory into an isolated local-feed test with fresh caches and
+negative partial-publication checks; never query synthetic IDs on a public registry.
+3. Pin published shared-library contracts before adding leadership/exception compilation; do not
+require adjacent workstation checkouts or replace real API validation with invented stubs.
+These remain deferred because the earlier temporary harnesses were not retained as maintainable
+fixtures and some shared APIs are provisional. Prefer an explicit snippet-to-fixture build step
+over copied source that drifts. Revisit when the contracts are published and fixtures have their own
+cleanup, timeout and failure-path tests. Benchmarks and live infrastructure stay opt-in. -->
+
+<!-- TODO: After an authorized push, verify dotnet-examples reports successfully on the current
+PR head and inspect Dependabot's resolver log for the nested NuGet root. Only then add the actual
+emitted check context to this repository's required-check policy if it should independently block
+merges. Deferred because local validation cannot prove GitHub scheduling or resolver behavior;
+the release job already depends on dotnet-examples, without modifying remote rulesets here. -->

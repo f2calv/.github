@@ -30,6 +30,10 @@ Tests run before measurement. The benchmark input is the already-buffered UTF-8 
 its allocation is excluded from timing. No network service, credential or production data is used.
 Dependency restoration may access the configured NuGet sources.
 
+The central repository's `dotnet-examples` CI job builds this solution in Release and runs the
+parsing tests with `--minimum-expected-tests 16`. Benchmark execution is deliberately not part of
+CI. When adding test cases, keep the expected-count documentation and CI lower bound synchronized.
+
 The single target framework is intentional for this runtime-specific experiment, not a default
 target-framework policy for published libraries. Keep generated benchmark reports and build output
 out of source control.
