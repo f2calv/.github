@@ -275,8 +275,15 @@ but do not present a check immediately before a write as atomic ownership enforc
   exception paths as well as false login results; an exception must not bypass the intended backoff
   or cause credential submission on every re-election. Transient cached-session validation must not
   silently fall back to password login. Preserve the authentication cause alongside teardown failures.
-- Decide terminal authentication recovery with the operator. When restart itself would retry rejected
-  credentials, stop owned work, finish cleanup/release, withdraw command admission and readiness, and
+- Treat explicit provider quota rejection as backpressure, not evidence of an expired session.
+  Coordinate admission and cooldown across concurrent owned callers, and dispatch only after a
+  limiter grants admission. Retry explicit rejections on the same session with a bounded,
+  cancellation-aware budget and respect longer provider retry delays; never replay an ambiguous
+  write as quota recovery. Quota during cached-session validation must not trigger password-login
+  fallback. Re-election and process restart do not replenish an external allowance.
+- Decide terminal external-service recovery with the operator, including authentication rejection
+  and exhausted quota recovery. When restart itself would repeat rejected credentials or requests,
+  stop owned work, finish cleanup/release, withdraw command admission and readiness, and
   park until explicit restart rather than failing liveness/startup into a restart storm. Keep probe
   registration names scoped and test the stopped state after the supervisor transition, not merely
   lease release. Document whether the stop is client/process-local or durable across replicas and
@@ -285,7 +292,7 @@ but do not present a check immediately before a write as atomic ownership enforc
   after owned cleanup/release and with the host token rather than a cancelled ownership token.
   Notify once per stopped process/run, not on every contention or recoverable retry. Do not include
   credentials, response bodies, account/resource identifiers or arbitrary exception messages.
-  Expected notification-transport failures must be explicit without undoing authentication containment.
+  Expected notification-transport failures must be explicit without undoing operator-stop containment.
   Distinguish queue acceptance from actual delivery, including existing throttling/stale-event rules.
 - Verify an independent sustained-Unready alert for parked workers: inspect the deployed readiness
   expression (including Running-but-not-Ready pods), rule selector, active receiver route and adapter
@@ -345,6 +352,7 @@ for lifecycle tests, with approved shared-Redis integration tests for actual con
 | Independent partitions | Different intended resources can run concurrently; identical dimensions contend. |
 | Cancellation during acquisition | Prompt exit without starting work or leaking a lease. |
 | Startup or child-task failure | Observable failure, awaited cleanup, released state and bounded recovery. |
+| Explicit provider quota rejection | Shared pacing, same-session bounded recovery, no password fallback, and operator-approved exhaustion/health policy. |
 | Work longer than expiry | Actual library renewal retains ownership, not merely a local heartbeat. |
 | Renewal failure or lease loss | Active state is withdrawn, worker cancellation occurs and stale side effects are rejected where required. |
 | Graceful handover | Protected tasks finish before release; a subsequent owner starts cleanly. |
