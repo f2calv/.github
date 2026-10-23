@@ -1,0 +1,6 @@
+apiVersion: v2
+name: example-message
+description: A synthetic chart for validating a conditional ConfigMap contract.
+type: application
+version: 0.1.0
+appVersion: "1"

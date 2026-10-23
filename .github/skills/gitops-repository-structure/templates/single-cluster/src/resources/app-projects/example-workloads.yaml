@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: example-workloads
+  namespace: argocd
+spec:
+  sourceRepos:
+    - https://example.com/gitops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: example
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap

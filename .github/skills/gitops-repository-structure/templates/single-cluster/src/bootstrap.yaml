@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-root
+  namespace: argocd
+  labels:
+    example.com/role: root
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: example-root
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  source:
+    repoURL: https://example.com/gitops.git
+    targetRevision: main
+    path: src/applications
+    directory:
+      recurse: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

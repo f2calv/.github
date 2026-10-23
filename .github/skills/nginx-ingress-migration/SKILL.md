@@ -108,6 +108,10 @@ names, not dependency aliases or guessed release prefixes.
 
 ### 2. Build a Compatibility Ledger
 
+Use the [parallel route example](./examples/parallel-route.md) for a concrete old/new Ingress pair,
+expected class identities, intentional-difference ledger and measurable rollback gates. It maps a
+small verified surface; it does not imply that controller defaults or certificate renewal match.
+
 Create one row per route or L4 listener:
 
 | Source | Source behavior | F5 OSS target | Evidence | Validation | Cutover | Rollback |
@@ -354,3 +358,5 @@ Report:
 
 - Annotation and ConfigMap compatibility mappings as either controller releases new versions.
 - Rollout stages, gates and rollback actions proven during a cutover.
+- Keep the route pair, expected class identities and exact-diff assertions aligned with the
+  selected controller contracts; never promote offline fixture success into live cutover evidence.

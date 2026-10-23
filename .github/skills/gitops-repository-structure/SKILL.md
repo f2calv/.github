@@ -47,6 +47,10 @@ Application, ApplicationSet, Helm release name, namespace, StatefulSet, or PVC.
 
 ## Repository Models
 
+Use the [single-cluster worked example](./examples/single-cluster.md) for a concrete discovery tree,
+seed projects, direct leaf Applications and an ownership/permission map. Its bootstrap prerequisites
+and live migration gates are explicit; the steady-state manifests are not a handoff procedure.
+
 Use one seeded root Application for one cluster when access and lifecycle boundaries permit it:
 
 ```text
@@ -357,3 +361,5 @@ Also verify:
 
 - Argo CD Application, AppProject and sync-option fields as Argo CD releases change them.
 - Structural invariants and migration steps proven or corrected during a repository migration.
+- Keep example discovery paths, source ownership, project grants and bootstrap prerequisites aligned;
+  static fixture checks do not prove Application health ordering or live authorization.
