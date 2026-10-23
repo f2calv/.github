@@ -108,6 +108,11 @@ Use existing exception handlers and Problem Details. Do not map all `ArgumentExc
 specific domain failures and keep details safe. Account for .NET 10 handled-exception diagnostics
 suppression, avoiding both missing telemetry and duplicate logging.
 
+When an exception handler is scoped by endpoint/controller metadata, inspect
+`IExceptionHandlerFeature.Endpoint`: exception middleware clears the active endpoint before
+invoking handlers, so `HttpContext.GetEndpoint()` alone can silently bypass the intended mapping.
+Verify the scope through actual failing HTTP requests, not only direct handler calls.
+
 For JSON-only exception responses, test non-JSON `Accept` headers too.
 `IProblemDetailsService.WriteAsync` throws when no registered writer supports the request.
 Use `TypedResults.Problem(...).ExecuteAsync(httpContext)` when the contract always returns JSON
