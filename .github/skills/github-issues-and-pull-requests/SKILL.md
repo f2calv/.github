@@ -52,6 +52,10 @@ someone arriving cold months later.
 
 ## Templates
 
+See the [completed submission guide](./examples/completed-submissions.md),
+[bug draft](./examples/bug-report.md) and [PR draft](./examples/pull-request.md) for form-aligned
+examples with explicit evidence and unchecked publication gates. They are not real submissions.
+
 - Keep generic issue forms and the pull request template in the public account-level `.github`
   repository so repositories inherit one contribution workflow.
 - Prefer YAML issue forms for structured bug, feature and support reports. Pull request templates
@@ -74,7 +78,7 @@ someone arriving cold months later.
    it is small, compatible and safe to validate in the same pull request, then document and close the
    superseded Dependabot pull request. Keep major migrations, documented holds, incompatible updates
    and changes needing independent risk review separate.
-2. Generate the title and description from every change in the branch compared with `origin/main`,
+2. Generate the title and description from every change in the branch compared with its resolved base,
    not only the latest commit or the working tree, filling the pull-request template (see
    [Templates](#templates)). Include validation, compatibility notes and operational follow-up, and
    mention small unrelated tweaks carried on the branch.
@@ -124,3 +128,5 @@ current head, folded or closed Dependabot pull requests, and any check still pen
 - `gh` and GitHub API commands, including which refs code scanning and checks report against.
 - Ruleset behaviours that block merges, such as required review threads and up-to-date branches.
 - Issue types, labels and description conventions.
+- Keep example headings and checklist wording aligned with the effective forms; never promote
+  synthetic evidence or unchecked submission requirements into claims about a real issue or PR.
