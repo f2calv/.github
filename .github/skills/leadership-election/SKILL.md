@@ -271,6 +271,27 @@ but do not present a check immediately before a write as atomic ownership enforc
   business-fault classification across consumers without merging their recovery budgets. Known
   permanent causal failures must override transport-shaped wrappers; retry an aggregate only when
   every constituent fault is recoverable, and propagate unknown failures rather than assuming recovery.
+- Treat explicit external authentication rejection separately from transient transport failure. Check
+  exception paths as well as false login results; an exception must not bypass the intended backoff
+  or cause credential submission on every re-election. Transient cached-session validation must not
+  silently fall back to password login. Preserve the authentication cause alongside teardown failures.
+- Decide terminal authentication recovery with the operator. When restart itself would retry rejected
+  credentials, stop owned work, finish cleanup/release, withdraw command admission and readiness, and
+  park until explicit restart rather than failing liveness/startup into a restart storm. Keep probe
+  registration names scoped and test the stopped state after the supervisor transition, not merely
+  lease release. Document whether the stop is client/process-local or durable across replicas and
+  rollouts; a local latch is not an account-wide circuit breaker.
+- Emit sanitized terminal-stop notifications through the application's existing operator channel,
+  after owned cleanup/release and with the host token rather than a cancelled ownership token.
+  Notify once per stopped process/run, not on every contention or recoverable retry. Do not include
+  credentials, response bodies, account/resource identifiers or arbitrary exception messages.
+  Expected notification-transport failures must be explicit without undoing authentication containment.
+  Distinguish queue acceptance from actual delivery, including existing throttling/stale-event rules.
+- Verify an independent sustained-Unready alert for parked workers: inspect the deployed readiness
+  expression (including Running-but-not-Ready pods), rule selector, active receiver route and adapter
+  health. Healthy liveness does not imply readiness or suppress readiness alerts. Record the actual
+  hold/repeat timing and that zero replicas cannot generate pod-readiness alerts. Do not claim
+  end-to-end paging without an authorized delivery check.
 - Create fresh callback/reconnection buffers for each ownership run. Detach handlers and await
   asynchronous connection disposal on every exit, including partial startup. Fence late callbacks
   by their run and connection identity, not a mutable reference to the latest run.
@@ -287,6 +308,10 @@ but do not present a check immediately before a write as atomic ownership enforc
 - Keep reusable transport ownership separate from a lease session. Logout stops owned streams;
   final service disposal releases shared HTTP clients. Test resubscription with an uncancelled
   host token as well as shutdown, because host cancellation can conceal missing per-session stops.
+- Validate streaming HTTP status and declared media type before JSON decoding. Test rejected
+  HTTP/HTML responses through an injected transport alongside normal stream records, and report
+  safe status/type diagnostics without response bodies or account identifiers. A leading '<' in
+  historical parser errors suggests a non-JSON response but does not establish its HTTP status.
 
 ## 5. Preserve Deployment and Local-Development Semantics
 
