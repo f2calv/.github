@@ -26,7 +26,7 @@ Do not restate rules from those files here; link to them.
 | --- | --- |
 | `design` | Classify the data, choose the type, expiry, invalidation and endpoint, and record the decision. No edits. |
 | `apply` | Implement the agreed design, wire configuration, update documentation and add deterministic tests. |
-| `audit` | Inventory Redis access and report role, expiry, invalidation and placement gaps without edits. |
+| `audit` | Inventory Redis access and uncached repeated reads, and report role, expiry, invalidation and placement gaps without edits. |
 | `diagnose` | Trace one symptom (stale, missing, evicted or duplicated data) to its cause. |
 
 - Never write, delete, flush, expire or rename live Redis keys, create or destroy consumer groups, or
@@ -34,6 +34,9 @@ Do not restate rules from those files here; link to them.
 - Ask before running tests, including Redis-backed integration tests.
 - Keep real hostnames, addresses, database numbers and private key layouts out of public files. Use
   synthetic domains such as `catalog` or `orders` in examples.
+- In an audit, confirm every finding against the code before reporting it. Pattern searches
+  routinely misreport immutable versioned keys as stale, miss a TTL set on a separate line, and
+  treat consumer names built from the pod hostname as shared across replicas.
 
 ## 1. Classify Every Key by Role
 
@@ -65,7 +68,10 @@ Do not restate rules from those files here; link to them.
 
 - Bound every collection: partition by date or entity and expire partitions, or trim streams.
   Unbounded hashes, sets and streams become large keys that block the server when read or deleted.
-- Never use `KEYS` in application code. Use `SCAN` with a pattern and page size for maintenance only.
+- Never use `KEYS` in application code. StackExchange.Redis `IServer.Keys`/`KeysAsync` pages with
+  `SCAN`, so it does not block the server, but it still walks every key in the database, including
+  other applications' keys on a shared database. To list entities, add each key to an index set on
+  write and read the set, then fetch the members in one batch.
 - Fetch only what the caller needs (`HMGET`, `ZRANGE ... BYSCORE LIMIT`, `XREADGROUP COUNT`), not
   whole collections.
 
@@ -85,11 +91,31 @@ The shared implementation:
   explicit empty value with a short TTL when absence is frequent and expensive.
 - Publishes an invalidation over pub/sub on `Set` and `Delete` so other instances drop their local
   copy when `LocalCacheInvalidationEnabled` is on.
+- Counts each local entry as size 1 against `MemoryCacheSizeLimit`. Once the limit is reached, new
+  entries are not stored locally and reads fall through to Redis, so size the limit above the
+  working set of keys rather than in bytes.
 
 On writes, update the authority first and then `Delete` the cache key. Do not `Set` a value computed
 before the write committed; a concurrent reader can repopulate a stale value. Load
 [cache patterns](./references/cache-patterns.md) before implementing read-through, write-through,
 write-behind or refresh-ahead behaviour, or a cache that is not cache-aside.
+
+### Find Uncached Reads
+
+In `audit` mode, look for reads that should go through the cache but do not:
+
+1. List repeated reads of a database, table store or external API: per request, per message, per
+   agent turn, per tick, or inside timers and loops. One-off startup and warm-up reads do not count.
+2. Classify the data. Reference data, definitions, configuration and derived summaries that change
+   rarely are candidates. Transactional state, such as balances, orders, positions and session
+   state, stays uncached unless every write path invalidates it.
+3. For each candidate, record the call site, how often it runs, the tolerable staleness, and the
+   write paths that would need to delete the key.
+4. Check that existing cached reads use `Get<T>(key, createItem, ...)`. A hand-rolled get, then load,
+   then `Set` sequence loses the per-key stampede protection.
+
+Query shape (N+1 queries, missing indexes, projections, paging) is database tuning, not caching.
+Report it separately rather than hiding a slow query behind a cache.
 
 ## 4. Set Expiry Deliberately
 
@@ -105,8 +131,11 @@ write-behind or refresh-ahead behaviour, or a cache that is not cache-aside.
 - State keys follow the Redis instructions: `stats` keys carry a 7-day TTL, `series` partitions
   expire at the end of their retention, and `snapshot` hashes have no TTL because they are
   overwritten in place.
-- Trim streams with `MAXLEN ~` or `MINID` on `XADD`. Never put a TTL on a stream that has active
-  consumer groups; expiry deletes the groups and their pending entries.
+- Trim single long-lived streams with `MAXLEN ~` or `MINID` on `XADD`. Never put a TTL on such a
+  stream; expiry deletes its consumer groups and pending entries.
+- A date-partitioned stream key (`{domain}:stream:{yyMMdd}`) may instead expire as a whole once its
+  retention exceeds the longest consumer lag. Set that TTL once per key, for example with
+  `ExpireWhen.HasNoExpiry`, rather than issuing an extra awaited command on every append.
 - Lock TTLs come from the Redlock profile; see the `leadership-election` skill.
 
 ## 5. Produce and Consume Streams
@@ -136,6 +165,10 @@ changing `maxmemory-policy` or moving a role between endpoints.
   cache entries go first and state, streams and locks without a TTL are kept.
 - Connect to Sentinel-managed Redis through its `serviceName=` connection string, never through a
   load-balanced address that can reach a replica.
+- Give each application sharing an instance its own `RemoteCache.DatabaseId`. A shared database
+  mixes key scans, keyspace notifications and any `FLUSHDB` or `DeleteAll` across applications.
+  Pub/sub channels ignore the database number, so the library's local-invalidation channel is
+  shared by every application on the instance regardless.
 
 `CasCap.Common.Caching` currently opens one connection for the cache, Redlock and any consumer that
 reuses it. Named connections are tracked in

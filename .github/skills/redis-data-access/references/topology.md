@@ -60,6 +60,9 @@ copy-on-write growth of an AOF rewrite or snapshot fork.
 Under `volatile-lru`, an instance full of keys without a TTL behaves like `noeviction`. Alert on
 `used_memory` approaching `maxmemory` and on `evicted_keys` rising.
 
+Without `maxmemory`, no eviction policy ever applies: Redis grows until the container's memory
+limit and is then killed, which loses every role on the instance at once. Always set it explicitly.
+
 ## Persistence
 
 - Enable AOF with `appendfsync everysec` for state and streams. At most about one second of writes
