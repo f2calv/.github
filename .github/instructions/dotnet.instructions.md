@@ -74,4 +74,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 - Serialize builds and test builds whose project-reference graphs share output directories, including
   sibling dependencies used by different Debug solutions. Separate solution roots do not prevent
   concurrent compilers from contending for the same dependency outputs.
+- After assembly renames, investigate loader failures against the current runtime assets and
+  `deps.json`. Assembly discovery can find retired DLLs left in existing output folders; remove only
+  confirmed orphan build artifacts rather than restoring obsolete compatibility dependencies.
 - Ask before running a build.
