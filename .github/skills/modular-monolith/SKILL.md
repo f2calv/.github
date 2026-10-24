@@ -1,6 +1,6 @@
 ---
 name: modular-monolith
-description: 'Design, implement, audit or troubleshoot .NET modular monoliths with one Dockerfile and release image serving multiple configured roles. Use for feature-selected modules, background workers running singly or together, shared composition roots, controller/OpenAPI gating, run-once jobs, worker lifecycle, per-replica versus leader-only execution, and role-aware health and deployment contracts.'
+description: 'Design, implement, audit or troubleshoot .NET modular monoliths with one Dockerfile and release image serving multiple configured roles. Use for layered module boundaries, dependency direction, feature-selected modules, workers running singly or together, composition roots, controller/OpenAPI gating, run-once jobs, worker lifecycle, replica ownership, and role-aware health and deployment contracts.'
 argument-hint: '[design|apply|audit|diagnose] [module or runtime role]'
 user-invocable: true
 ---
@@ -32,6 +32,8 @@ finite job with concrete startup selections and acceptance cases. It is syntheti
 a production manifest or a new hosting framework.
 The [shared-hosting wiring example](./examples/shared-hosting-wiring.md) shows verified DI and
 controller APIs with explicit package/fixture limitations.
+The [layered module example](./examples/layered-module-boundaries.md) shows project references,
+application-owned ports, cross-module calls and boundary checks without adding deployment tiers.
 
 ## Modes and Boundaries
 
@@ -65,6 +67,9 @@ controller APIs with explicit package/fixture limitations.
 4. Follow the existing shared hosting helpers before adding a custom dispatcher or feature flag
    abstraction. Record their empty/unknown selection, overlap, duplicates, completion, cancellation
    and exception semantics; do not assume every application uses the same mechanism.
+5. Map compile-time references and actual cross-module calls using the composition reference's
+   layered-boundary procedure. Distinguish logical layers, physical tiers and ports/adapters;
+   do not infer architectural enforcement from folders or interface names.
 
 ### 2. Define the Module and Runtime Role Matrix
 
@@ -138,6 +143,9 @@ With approval, run the smallest checks proving the affected role contract:
 6. If container validation is authorized, verify the same immutable image digest in each role;
    check startup/progress/shutdown as well as health. Use fake external dependencies or isolated
    fixtures unless live access is separately approved.
+7. Verify affected dependency rules, including transitive package leakage and forbidden internal
+   access. Project/assembly checks prove only their level of enforcement; a single assembly also
+   needs symbol/namespace checks or explicit review of cross-module calls.
 
 Report implementation, selected/supported roles, boundary enforcement, exact validation and
 unverified live behavior. “One image builds” is not proof that all role combinations work.
@@ -151,5 +159,7 @@ Record intentionally deferred architectural work where its owner will find it.
   orchestrator job behavior changes. Preserve role-specific choices rather than universal defaults.
 - Keep examples synchronized with the supported configuration contract and marked as illustrative
   until execution is verified; add a focused example only for a genuinely different useful pattern.
+- Revisit dependency examples when module ownership, project references or packaging changes;
+  keep intended dependency rules distinct from checks actually enforced by the repository.
 - Move durable general lessons into the owning reference, while container, leadership, persistence,
   API and configuration procedures remain in their existing authorities.

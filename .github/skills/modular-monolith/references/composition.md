@@ -77,9 +77,58 @@ not advertise a route that fails at activation. Merely returning 403, hiding a U
 an OpenAPI entry is not proof the route is disabled. Keep authorization in place for enabled
 surfaces; role gating is not a replacement for it.
 
-## Boundary Review
+## Layered Boundaries and Dependency Direction
 
-Check dependency direction and data ownership, not only folders:
+### Classify What Is Actually Separated
+
+Logical presentation, application, domain and infrastructure layers can coexist inside one process
+and one release image. A physical tier is an independently running boundary, not a namespace or
+project. Do not describe a controller/service/store call chain as a three-tier deployment without
+evidence of separate processes. Modular-monolith and layered designs are compatible.
+
+Ports/adapters describes a different axis: the application owns the contract it needs, while an
+external-system adapter implements it. A provider interface alone does not prove inward dependency
+direction. Verify who defines the contract, which assemblies reference which, and where concrete
+implementations are selected.
+
+### Trace and Improve the Boundary
+
+1. Identify the capability owner and the public operation it exposes. Trace caller to service,
+   domain behavior and persistence/integration, including background and administrative paths.
+2. Inspect actual project/package references, public method signatures, constructors and direct
+   namespace/type usage. An infrastructure entity returned by an application API can leak EF or
+   provider dependencies even when project names look clean.
+3. Record allowed dependencies at the application's current granularity. A typical direction is
+   transport to application, application to domain/contracts, and adapters to the contracts they
+   implement; the composition root knows the concrete registrations. Do not mandate four projects
+   per module or relocate existing working boundaries merely to match these labels.
+4. For a cross-module operation, call the owning module's deliberate contract instead of reaching
+   into its store, context or mutable internal objects. Keep validation/authorization and invariant
+   ownership with the application boundary; a shared database does not imply shared write ownership.
+5. Choose a synchronous in-process call when the caller needs an immediate outcome. Introduce
+   events only when independent reactions or asynchronous delivery are required, and define
+   ordering, delivery and failure semantics. An in-process event does not provide durable delivery
+   across independently configured roles.
+6. Remove cycles at the real responsibility boundary, not by hiding dependencies behind
+   `IServiceProvider`, reflection, a global event bus or an indiscriminate shared-contracts project.
+   Keep application policy in its module; extract only contracts with real consumers.
+7. Prefer a local extraction of a cohesive service/contract when sufficient. Moving a capability
+   across assemblies can alter DI discovery, controller parts, serialization and packaging;
+   validate those affected surfaces using the main workflow.
+
+### Enforce Only What Can Be Proven
+
+Use existing architecture tests/analyzers when present; do not add a test framework by default.
+For multiple assemblies, assert allowed project and assembly references and inspect public API
+dependency leakage. For a single assembly, use namespace/type-level checks or targeted review,
+because project-reference tests cannot detect forbidden internal calls. Check runtime scanning
+and dynamic resolution separately.
+
+The [layered module example](../examples/layered-module-boundaries.md) supplies a concrete allowed
+reference graph and negative cases. Keep these rules scoped to the application, not a fleet-wide
+requirement for identical project layouts.
+
+Check data ownership as well as dependency direction:
 
 - Modules expose deliberate contracts rather than another module's internals.
 - Public contracts do not force server/execution dependencies into frontend clients.
