@@ -1,6 +1,6 @@
 ---
 name: dotnet-efcore
-description: 'Design, implement, audit and troubleshoot Entity Framework Core data access, DbContext lifetimes and factories, entity mappings, PostgreSQL/Npgsql, LINQ query performance, tracking, tenant isolation, transactions, concurrency, raw SQL, seeding, migrations and rolling schema deployments. Use for EF Core work beyond package bumps, including model drift, provider-backed tests and database/cache consistency.'
+description: 'Design, implement, audit and troubleshoot Entity Framework Core data access, DbContext lifetimes and factories, mappings, PostgreSQL/Npgsql, LINQ performance, read/write separation, projection consistency, tracking, tenant isolation, transactions, concurrency, SQL, seeding, migrations and rolling schema deployments. Use beyond package bumps, including model drift, provider-backed tests and database/cache consistency.'
 argument-hint: '[audit|model|query|migration|diagnose] [path or context]'
 user-invocable: true
 ---
@@ -31,6 +31,8 @@ This skill owns EF-specific procedures, not a second copy of those rules.
 The [bootstrap example](./examples/bootstrap-without-hasdata.md) demonstrates separating a
 large dataset from the model, PostgreSQL insert-if-missing semantics, preservation of operator
 edits and the checks required when replacing existing `HasData`.
+The [read/write projection example](./examples/read-write-projections.md) contrasts transactional
+read-your-write behavior with a deliberately eventual projection, including races and replay tests.
 
 ## Modes and Safety Boundaries
 
@@ -78,12 +80,16 @@ edits and the checks required when replacing existing `HasData`.
 | New read | Authorized scope, required fields, stable ordering, bounds, consistency and whether entities must be tracked |
 | Slow query | Actual SQL shape, round trips, returned rows/columns, existing indexes and a representative baseline |
 | Write or race | Database-enforced invariant, expected competing writers, atomicity, conflict result and retry/idempotency policy |
+| Separate read model | Authority, required freshness, transaction or delivery boundary, version/order handling, replay and read-your-write contract |
 | Schema change | Current snapshot, deployed migration state, old/new application overlap, data volume, locks, backfill and recovery plan |
 | Test | Behavior that needs the production provider, isolation/cleanup ownership, credentials and execution approval |
 
 Explain material alternatives before implementing them. Prefer a normal scoped context for a
 request-sized unit of work; use a factory for independently scoped operations or long-lived
 services. Neither pooling, no-tracking, split queries nor compiled queries is a blanket upgrade.
+Separate read projections from mutation logic where useful without requiring a mediator, separate
+database or event sourcing. Load the read/write section of the queries reference before adding a
+persisted projection or changing the consistency contract.
 
 ### 3. Implement Through the Existing Boundaries
 
@@ -118,6 +124,8 @@ With approval, select only the checks required by the change:
   conditions; verify result correctness as well as latency, allocations, query count or row volume.
 - Exercise authorization, duplicate writes, stale revisions, cancellation and failure paths when
   touched. Prove all mutating paths maintain the same invariant, including bulk SQL.
+- For a persisted read model, verify transaction visibility or the explicit eventual-consistency
+  contract, including duplicate/out-of-order delivery, recovery and tenant-scoped rebuilds.
 
 Report concrete files/symbols, the invariant or query shape changed, validation performed and
 remaining deployment/backfill/operator steps. Separate code verification from checks declined or
@@ -140,3 +148,5 @@ mocked provider test as proof of production correctness.
   authority rather than duplicating migration, query, cache or test guidance across skills.
 - Keep the bootstrap example consistent with the supported seeding runners and provider semantics;
   illustrative SQL and acceptance cases must not be presented as executed migration evidence.
+- Revisit projection examples when persistence, delivery or recovery semantics change; preserve the
+  distinction between read/write separation, derived state, audit history and actual event sourcing.

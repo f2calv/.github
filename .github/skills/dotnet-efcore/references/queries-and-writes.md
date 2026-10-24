@@ -71,6 +71,62 @@ Official guidance:
 [connection resiliency](https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency),
 [bulk updates/deletes](https://learn.microsoft.com/en-us/ef/core/saving/execute-insert-update-delete).
 
+## Read/Write Separation and Projection Consistency
+
+### Choose the Simplest Read Model
+
+Separate query contracts (bounded DTO/scalar results) from commands (validated, authorized state
+changes) where that clarifies behavior. Both can use one application service, one EF model and one
+database. Do not introduce a mediator, generic repository, handler hierarchy or second datastore
+merely to call this CQRS.
+
+A LINQ `Select` projection is computed by the query; it does not introduce synchronization lag
+on its own. A persisted read model is derived state that must stay consistent with its authority.
+Identify the command owner, every writer, read consumers and required freshness before adding one.
+Immutable snapshots, audit records and read/write separation do not establish event sourcing.
+That term requires an authoritative event stream and a defined state-reconstruction contract.
+
+### Define the Commit and Visibility Contract
+
+| Requirement | Candidate approach | What must be proved |
+| --- | --- | --- |
+| Current authorized data with no extra write model | Query the authority using a bounded DTO projection | Actual isolation/replica/cache behavior meets freshness needs |
+| Derived table must change atomically with the command | Update authority and projection within one database transaction | All writes enlist; failure rolls back both; success follows commit |
+| Independent asynchronous projection is acceptable | Durable change delivery and idempotent projection processing | Defined lag, order/version policy, checkpoint atomicity and recovery |
+
+An endpoint querying a lagging replica or cached result is not made strongly consistent merely by
+using the same EF entity model. State read-your-write requirements explicitly: returning a committed
+version/result, reading the authority or waiting for a projection checkpoint are distinct policies.
+Do not promise immediate visibility without wiring the selected policy.
+
+For the transactional approach, stage the authoritative change and derived rows before one save
+when possible. If several saves/commands are necessary, use the transaction rules above; a shared
+context alone is insufficient. Treat projection failure as command failure, not a warning followed
+by success. Translate constraints/concurrency failures through the existing application boundary.
+
+For an eventual projection:
+
+- Use the existing durable outbox/change-capture/transport when delivery must survive a crash
+  after commit. An in-memory channel or publish-after-save call leaves a loss window.
+- Define event identity, tenant/aggregate identity, schema version and source ordering. A stable
+  event ID deduplicates a delivery; it does not establish ordering or solve missed deltas.
+- Apply projection changes and the deduplication/checkpoint record atomically. Acknowledge only
+  after that commit. Retry within the established delivery policy; do not silently discard errors.
+- Choose an ordering policy appropriate to the payload. A newer full snapshot may supersede an
+  older one; incremental deltas may require contiguous versions and gap recovery. A universal
+  “ignore any lower version” rule can lose valid updates.
+- Define delete/tombstone and projection rebuild behavior, including concurrent writers,
+  authorization, retention, schema evolution and cutover. Never rebuild from incomplete audit
+  records while claiming full recoverability, or run a live rebuild without authorization.
+- Expose freshness/failure where the consumer contract needs it; an empty result is not proof that
+  processing has caught up. Bound retries and preserve actionable failed-work diagnostics without
+  logging row content.
+
+Keep transport/outbox implementation in its existing owner rather than adding a speculative
+framework here. The [worked example](../examples/read-write-projections.md) shows the transaction
+and delivery boundaries with concrete failure/replay cases. Test required semantics against the
+real provider with approval.
+
 ## PostgreSQL Locks and Raw SQL
 
 - Use provider-native locks only when a proven invariant needs serialization beyond the selected
