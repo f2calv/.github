@@ -82,6 +82,11 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [Modular monolith](.github/skills/modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
+| [Ports and adapters](.github/skills/ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
+| [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
+| [.NET background pipelines](.github/skills/dotnet-background-pipelines/SKILL.md) | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
+| [.NET HTTP integrations](.github/skills/dotnet-http-integrations/SKILL.md) | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
+| [.NET CLI](.github/skills/dotnet-cli/SKILL.md) | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
 | [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
 | [EF Core data access](.github/skills/dotnet-efcore/SKILL.md) | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |

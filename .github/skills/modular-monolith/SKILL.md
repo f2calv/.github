@@ -17,6 +17,10 @@ entrypoint, Dockerfile, image or microservice.
 | Concern | Authority |
 | --- | --- |
 | Feature selection, module composition, worker/API boundaries and role contracts | This skill and [composition reference](./references/composition.md) |
+| Integration contracts, provider substitution and adapter semantics | [Ports and adapters](../ports-and-adapters/SKILL.md) |
+| Service lifetimes, factories, aliases and scoped operations | [.NET dependency injection](../dotnet-dependency-injection/SKILL.md) |
+| Bounded queues, backpressure, delivery and drain protocols | [.NET background pipelines](../dotnet-background-pipelines/SKILL.md) |
+| Finite-command dispatch, help/version and process exit status | [.NET CLI](../dotnet-cli/SKILL.md) |
 | Worker lifetime, completion, failure, readiness and role validation | [Lifecycle and operations](./references/lifecycle-and-operations.md) |
 | C# wiring, async work and shutdown | [C# instructions](../../instructions/dotnet.csharp.instructions.md) |
 | Startup configuration, secrets and reload policy | [Configuration instructions](../../instructions/dotnet.configuration.instructions.md) |
