@@ -92,6 +92,9 @@ user explicitly asks for parallel sessions.
     repository while that scope remains unchanged.
   - Restore and build the repository's Debug solution when it uses local `ProjectReference` paths.
   - Restore and build its Release solution to prove the published `PackageReference` path.
+  - Audit the Release dependency graph too. For `dotnet list package --vulnerable --include-transitive`,
+    set the process environment's `Configuration=Release`; the solution filename does not select
+    conditional references, and default Debug evaluation can disagree with restored Release assets.
   - Run the repository's lint command and all relevant unit tests.
   - Run integration tests when authorized and their dependencies are available.
     - Classify failures caused by unavailable external services, credentials, market hours, or local
