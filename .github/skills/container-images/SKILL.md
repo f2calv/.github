@@ -105,6 +105,9 @@ docker buildx build --pull --platform linux/amd64,linux/arm64,linux/arm/v7 -f Do
   a bare `docker run`. That still proves the image starts and reads its configuration; confirm the
   failure names the missing input.
 * `--pull` stops a stale local base image masking a broken build.
+* A `--version` smoke test must compare exactly with the effective `VERSION` build argument.
+  If CI lowercases image tags and uses that tag as `VERSION`, normalize the expected prerelease
+  label too; raw GitVersion output can differ in case. Exercise both preview and clean versions.
 * Without the containerd image store, `--load` accepts one platform; use
   `--output type=oci,dest=image.tar` or a push to keep every platform.
 * Chiselled and distroless images have no shell, so `docker exec` cannot inspect them. Inspect a
