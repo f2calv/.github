@@ -83,6 +83,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
 | [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
 | [.NET Web API](.github/skills/dotnet-webapi/SKILL.md) | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [Blazor frontend](.github/skills/blazor-frontend/SKILL.md) | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [.NET performance](.github/skills/dotnet-performance/SKILL.md) | Measured hot-path, allocation and parsing improvements |
 | [.NET release train](.github/skills/dotnet-release-train/SKILL.md) | Dependency-ordered NuGet updates, releases and consumer propagation |
