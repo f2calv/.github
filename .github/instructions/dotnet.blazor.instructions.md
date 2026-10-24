@@ -23,6 +23,9 @@ invariants. C#, Web API, configuration and testing rules stay in their own instr
   values computed at runtime; use the component library's own parameters for its styling.
 - Use one component library per application. Do not mix its primitives with a second library's.
 - Split a component once it owns more than one screen concern, such as a list and an editor dialog.
+- Check the paired Razor markup before removing a code-behind member flagged as unread. If markup
+  uses it, record that evidence and triage the analyzer finding as a false positive rather than
+  deleting render state or suppressing the rule globally.
 
 ## Browser-Public Code
 
