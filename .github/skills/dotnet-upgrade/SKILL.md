@@ -44,6 +44,38 @@ reference in this central skill during an authorized upgrade, not a speculative 
 
 ## Workflow
 
+The [worked assessment](./examples/release-assessment.md) shows a mixed-target application,
+required bumps, source-backed opportunity ranking, user choices and an honest validation report.
+It is synthetic guidance, not an executed upgrade or a fixed package-version recipe.
+
+### Customization Review Is Part of Every Upgrade
+
+Review the applicable .NET-related Copilot instructions **and skills**, including central sources
+and repository-specific overrides, alongside the application. Do not wait until a compiler error
+or a user request exposes stale guidance.
+
+1. Inventory the authorities actually loaded/referenced: SDK/build, C#, NuGet, analyzers,
+   configuration, tests/runner, EF/provider, Web API/Blazor, MCP, performance, containers and release
+   workflows where relevant. Include their examples/templates/scripts when the change affects them.
+2. Search those authorities for source-version assumptions: fixed language/runtime versions,
+   deprecated API advice, retired workarounds, preview flags, package holds, runner/CLI syntax,
+   image defaults and newly available conventions. Verify each candidate against official
+   target-release guidance and actual consumers rather than replacing version strings wholesale.
+3. Add affected customization paths and proposed edits to the decision brief. Classify corrections
+   to obsolete guidance separately from optional new conventions; identify retained TFMs and
+   consumers that would make a blanket central change unsafe.
+4. In an audit, report without editing. During an approved upgrade, update the owning central
+   file or genuinely repository-specific override at the justified scope; obtain approval for
+   material new conventions just as for optional source modernization. Inspect existing user
+   changes first. Never copy central rules into each consumer to make the upgrade self-contained.
+5. Validate edited customization frontmatter, local links and affected examples through existing
+   repository checks with execution approval. Include updated, deferred and unchanged authorities
+   with reasons in the completion report; do not mark the review complete just because application
+   builds pass.
+
+Use `agent-customization` for customization authoring. Keep one authority per rule and fold accepted
+lessons back into that authority, not only into this skill's version-reference file.
+
 ### 1. Establish the Baseline
 
 1. Inspect the worktree and inventory solutions, projects, imported build props/targets,
@@ -165,8 +197,12 @@ changes need explicit scope. New syntax alone is not a reason for a repository-w
   Retain prior references while they are needed for supported or skipped-major upgrade paths.
 - Recheck the .NET 11 RC2 reference at GA: remove withdrawn/renamed features, distinguish features
   still experimental, and update status and source links instead of appending contradictory notes.
+- Reassess the customization-review inventory when new .NET domains/skills are added, and ensure
+  release-specific guidance updates reach the relevant instructions, examples and templates.
 - Refresh references when servicing releases change compatibility, provider/tool support catches
   up, support policy changes, or official documentation moves. Reverify on every use regardless
   of the recorded date; never infer .NET 12 features or URLs from .NET 11.
 - Keep the workflow version-neutral and references concise. Amend existing highlights rather than
   accumulating copied release notes, benchmark claims or a second package/container/test workflow.
+- Refresh the worked assessment when release status, API guidance or repository validation
+  conventions change; keep its hypothetical results distinct from executed evidence.
