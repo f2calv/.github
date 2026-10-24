@@ -92,6 +92,7 @@ Clean recent reconciliation windows do not explain earlier divergences: trace th
 through its authoritative source and durable journal before accepting it. Distinguish restore-only
 consumers from session-owning publishers; rolling a publisher can require normal authentication even
 when a consumer must never initiate login.
-For expiring session/cache handoffs, observe dependent progress beyond the configured TTL, including
-idle workloads. Initial post-login success does not prove renewal; verify that the authorized owner
-maintains the handoff without relying on unrelated traffic or repeated reauthentication.
+For expiring session/cache handoffs, observe dependent progress beyond the configured TTL within
+one uninterrupted ownership run, including idle workloads. Restart or reauthentication resets the
+measurement window. Initial post-login success does not prove renewal; verify that the authorized
+owner maintains the handoff without relying on unrelated traffic or repeated reauthentication.
