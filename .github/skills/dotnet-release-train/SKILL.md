@@ -68,7 +68,8 @@ user explicitly asks for parallel sessions.
   - Before releasing a producer, confirm every consumer's Release graph is complete: a reference
     that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
     consumer's Release build after the producer ships. Fix the graph on the consumer's branch
-    before releasing the producer.
+    before releasing the producer. Identify producer references by evaluated project paths within
+    its repository, not name prefixes that can include unrelated, similarly named projects.
   - Preserve unrelated work. Do not create another branch or pull request when the current one is
     already the correct release branch.
   - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
@@ -154,7 +155,7 @@ user explicitly asks for parallel sessions.
 
 Development deployments through `deploy.ps1` may still be running Debug images after a successful
 pull-request merge and release. After verifying a .NET Kubernetes application's release, use a UI
-question: "Do you wish to roll out a new version of <application> (<released X.Y.Z>) from the GitHub
+question: "Do you wish to roll out a new version of `<application>` (`<released X.Y.Z>`) from the GitHub
 workflows?" Offer rollout now, defer to the next agreed batch, hold until the end of the train, or
 decline this rollout. Respect existing publication and deployment holds.
 
