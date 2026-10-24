@@ -98,11 +98,17 @@ user explicitly asks for parallel sessions.
   - Follow the normal auto-commit and auto-push switches; the skill grants no extra Git permission.
   - For public repositories, run the privacy scan before committing.
   - Use conventional commits and keep unrelated changes separate.
+  - Before every authorized push, automatically perform the
+    [unpushed attribution cleanup](#unpushed-attribution-cleanup), including on resume and after
+    adding commits. Do not wait for a separate cleanup request.
   - Push the branch and create or update one pull request covering the full branch diff.
   - Link an existing issue when relevant. Never create an issue solely because a pull-request
     template asks for one.
   - Apply accurate labels and assign the authenticated user.
 - **Review and merge**
+  - For a large or breaking pull request, complete the
+    [release-version decision](#release-version-decision) before merging, even when auto-merge is
+    enabled. Do not silently accept the default patch increment.
   - Wait for every required check on the current head SHA.
   - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
     required check or quality gate.
@@ -136,6 +142,62 @@ user explicitly asks for parallel sessions.
     requirements, and add package badges or version rows for packages that now exist.
   - Search for them before opening the pull request rather than relying on memory, for example
     `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
+
+## Release-Version Decision
+
+- Review the full branch diff and commits for consumer impact, not only the pull-request title.
+  Prompt for a substantial feature, architectural migration, or broad refactor, and always for
+  removed or renamed public contracts, incompatible configuration, or other breaking behaviour.
+  Diff size alone does not determine a semantic version.
+- Inspect the repository's `GitVersion.yml`, release workflow and scoped versioning instructions,
+  the latest immutable release tag, and any existing version directives on the branch. Do not
+  assume that conventional-commit wording or `BREAKING CHANGE` automatically controls GitVersion.
+- Before merging, use a UI choice to ask whether to deliberately bump **major**, bump **minor**, or
+  retain the **patch/default increment**. Show the current version, expected outcome of each
+  choice, and relevant compatibility impact. Recommend major for breaking changes, minor for
+  compatible new functionality, and patch for compatible fixes or internal-only refactoring.
+  For pre-1.0 packages, explain the repository's established breaking-change policy.
+- Wait for an explicit decision for that pull request; general merge approval or an active
+  auto-merge instruction does not select a version. Reconfirm if subsequent changes materially
+  alter the compatibility assessment.
+- Apply the selected increment using the repository's established mechanism. When it uses
+  `+semver:` commit directives, inspect every commit since the merge base, reuse or correct the
+  existing directive rather than stacking conflicting requests, and verify which directive maps
+  to the chosen increment under that repository's configuration. Do not hardcode a directive
+  mapping or change the global increment policy to release one pull request.
+- Preserve published history: use a normal authorized follow-up commit or the supported
+  release-workflow input instead of amending or force-pushing published commits. If an existing
+  directive prevents the selected result without rewriting history, stop and ask for direction.
+- Verify the resulting numeric version with the repository's GitVersion configuration and release
+  path; do not mistake a pull-request prerelease version for the eventual release. Record the
+  selected increment and rationale in the pull request, update affected consumer examples or
+  major-tag references, and wait for required checks on the final head before merging. If the
+  requested result cannot be verified, stop rather than silently falling back to patch.
+- Keep the post-merge immutable-tag and package-availability checks: the version decision is not
+  proof that the intended release was published.
+
+## Unpushed Attribution Cleanup
+
+- Refresh every configured remote before identifying candidates. Stop if a fetch fails.
+- Inspect commits reachable from the release branch but not from any remote branch or published
+  tag, not just `@{u}..HEAD`; a commit already published on another ref must remain unchanged.
+- Remove every `Co-authored-by:` trailer, case-insensitively, from those unpushed commits,
+  regardless of the named co-author. Leave the rest of each message unchanged except for the
+  trailing blank lines left by removal. If none match, make no changes.
+- Rewrite affected commits and their unpushed descendants, preserving trees, author and committer
+  identities and timestamps, merge topology, and all other commit metadata. Do not rebase or replay
+  patches. Stop for signed commits or signature-bearing metadata that cannot remain valid.
+- Keep local recovery refs to the original branch tips. Update branch refs with expected-old-SHA
+  guards; preserve the index, working-tree edits, untracked files and active checkout. Do not move a
+  branch checked out in another worktree or rewrite the default branch.
+- Verify every rewritten tree and metadata field, confirm that only the trailers and necessary
+  parent IDs changed, and rescan the candidate range for remaining attribution. Surface failures
+  and stop before pushing; do not silently skip a failed cleanup.
+- This step authorizes only local unpushed attribution rewrites within the train's repositories,
+  not a workspace-wide sweep, a push, a timestamp change or a published-history rewrite.
+  Follow the shared privacy and timestamp checks. Never force-push merely for this cleanup; if
+  published attribution is found, report it and request separate authorization to rewrite it.
+- Report the repositories and footer counts cleaned, or state that none were found.
 
 ## Interruptions And Resume
 
