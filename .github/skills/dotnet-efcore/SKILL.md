@@ -28,6 +28,10 @@ Load only the relevant references. Keep MCP/HTTP authorization and output contra
 orchestration, general C# style and test-runner mechanics in their owning instructions/skills.
 This skill owns EF-specific procedures, not a second copy of those rules.
 
+The [bootstrap example](./examples/bootstrap-without-hasdata.md) demonstrates separating a
+large dataset from the model, PostgreSQL insert-if-missing semantics, preservation of operator
+edits and the checks required when replacing existing `HasData`.
+
 ## Modes and Safety Boundaries
 
 - `audit`: inspect and report without edits or database execution.
@@ -134,3 +138,5 @@ mocked provider test as proof of production correctness.
   not a reason to mandate its factory, lock or cache architecture everywhere.
 - Keep invariants in the scoped instruction file and procedures here. Amend or move the existing
   authority rather than duplicating migration, query, cache or test guidance across skills.
+- Keep the bootstrap example consistent with the supported seeding runners and provider semantics;
+  illustrative SQL and acceptance cases must not be presented as executed migration evidence.
