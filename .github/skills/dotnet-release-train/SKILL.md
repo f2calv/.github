@@ -1,6 +1,6 @@
 ---
 name: dotnet-release-train
-description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases: CI tooling and Helm charts first, then the base library and its consumers in dependency order.'
+description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for dependency sweeps and chained releases, from CI tooling and Helm charts through the base library and its consumers, and user-approved clean-semver Kubernetes rollouts through GitHub workflows.'
 argument-hint: '[start={tooling|<first-producer>}] [packages={all|internal}]'
 user-invocable: true
 ---
@@ -61,6 +61,10 @@ user explicitly asks for parallel sessions.
   - Read the repository instructions and documented package holds first.
   - Fetch the default branch and inspect the current branch, worktree, existing pull request, and
     open Dependabot pull requests.
+    - If an Action repository's tag fetch rejects a moved floating alias, inspect the remote target,
+      then refresh only that exact local `vMAJOR` or `vMAJOR.MINOR` ref with an explicit `+` fetch
+      refspec and retry the full fetch. Never force-refresh immutable version tags or use a broad
+      tag wildcard.
   - Before releasing a producer, confirm every consumer's Release graph is complete: a reference
     that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
     consumer's Release build after the producer ships. Fix the graph on the consumer's branch
@@ -136,12 +140,46 @@ user explicitly asks for parallel sessions.
       Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
   - If the repository publishes no packages, continue once its merge and release checks are complete.
+  - For a .NET Kubernetes application, offer a
+    [clean-semver workload rollout](#clean-semver-workload-rollouts) after verifying its release.
+    Publication alone does not establish that the released version has been deployed.
 - **Update documentation downstream**
   - In each consumer's pull request, remove README statements the release has made untrue, such as
     "Debug-only", "Release build not supported", "not yet published" or adjacent-checkout
     requirements, and add package badges or version rows for packages that now exist.
   - Search for them before opening the pull request rather than relying on memory, for example
     `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
+
+## Clean-SemVer Workload Rollouts
+
+Development deployments through `deploy.ps1` may still be running Debug images after a successful
+pull-request merge and release. After verifying a .NET Kubernetes application's release, use a UI
+question: "Do you wish to roll out a new version of <application> (<released X.Y.Z>) from the GitHub
+workflows?" Offer rollout now, defer to the next agreed batch, hold until the end of the train, or
+decline this rollout. Respect existing publication and deployment holds.
+
+- Let the user choose end-of-train rollouts or batches at useful milestones. Keep deferred
+  applications and their verified versions in the existing task list, not a separate release state
+  machine, and revisit them at the selected milestone and before the final report.
+- Obtain explicit dispatch approval for the named application/version/environment, individually or
+  as a clearly identified batch. Deferral is not approval to dispatch later; confirm the pending
+  batch when it is due. Merge, release, auto-push and prior Debug-deployment permissions do not
+  authorize these workflow runs.
+- Inspect the repository's existing GitHub deployment workflow and declared inputs. Use its
+  release path to build or select the published Release artifact with a clean `X.Y.Z` version,
+  such as `1.2.3`, tied to the verified release commit. Do not invent workflow inputs, substitute
+  `latest-dev` or a prerelease, merely retag a Debug image, or rerun `deploy.ps1` instead.
+- Follow the dispatched run through build, publication and deployment. Verify the exact released
+  artifact and actual workload rollout using the
+  [container deployment verification guidance](../container-workflows/examples/caller-setup.md#check-the-result);
+  a successful merge, tag or workflow dispatch alone is insufficient. Report the workflow URL,
+  deployed version and verification result.
+- Treat workflow failures as blockers for the affected rollout and investigate them while the
+  train is in progress. Fix introduced CI/build/deployment bugs through the normal validation,
+  pull-request and merge gates before retrying; do not silently fall back to a local Debug deploy.
+  If a correction changes the published artifact, release a new immutable version rather than
+  replacing it or moving a published version tag. Mark a rollout complete only after verification,
+  and report declined or deferred deployments separately.
 
 ## Release-Version Decision
 
