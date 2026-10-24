@@ -139,6 +139,10 @@ user explicitly asks for parallel sessions.
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
     version before continuing downstream.
+    - Check the publication action's branch gates before choosing a workflow-dispatch ref.
+      `gha-dotnet-nuget` publishes stable packages from the default branch, not a tag dispatch.
+      Recover missing packages using the exact release source without rebuilding or replacing
+      an already-published image or chart; skipped publication steps are not success.
     - From this skill's directory, PowerShell:
       `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
       Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
