@@ -204,6 +204,10 @@ dotnet test --project src/Example.CountParsing.Tests/Example.CountParsing.Tests.
 The other .NET compile, loopback HTTP and benchmark checks performed while authoring examples remain
 point-in-time evidence. Repeat them after relevant SDK/API changes.
 
+## License
+
+This repository is available under the [MIT License](LICENSE).
+
 <!-- TODO: Extend dotnet-examples with persistent synthetic integration fixtures:
 1. Extract the MCP/controller snippets into isolated hosts, using fake authentication and source
 services; assert actual wire shapes and API Explorer without claiming production OAuth coverage.
