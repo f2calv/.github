@@ -88,3 +88,7 @@ severity; summarize failures without exposing dynamic service-user data. When ne
 the API-server HTTP proxy, use a localhost-only port-forward rather than weakening isolation or
 assuming a minimal runtime image contains a shell or HTTP client. A healthy probe is not proof that
 event persistence or other business operations succeeded; verify representative progress separately.
+Clean recent reconciliation windows do not explain earlier divergences: trace the affected lifecycle
+through its authoritative source and durable journal before accepting it. Distinguish restore-only
+consumers from session-owning publishers; rolling a publisher can require normal authentication even
+when a consumer must never initiate login.
