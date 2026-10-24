@@ -15,6 +15,10 @@ invariants. C#, Web API, configuration and testing rules stay in their own instr
   whose `@code` block only declares parameters or forwards one event may keep it inline.
 - Inject dependencies through the code-behind primary constructor, following the C# naming rules.
   Use `@inject` only in markup-only components.
+- When the code-behind derives from a shared component base class, also declare it with `@inherits`
+  in the markup; the generated partial otherwise declares `ComponentBase` and the two conflict.
+- Share cross-cutting component behaviour, such as owning cancellation, through a small abstract
+  base component rather than repeating it in every page.
 - Put component styles in an isolated `.razor.css` file. Avoid inline `style` attributes except for
   values computed at runtime; use the component library's own parameters for its styling.
 - Use one component library per application. Do not mix its primitives with a second library's.

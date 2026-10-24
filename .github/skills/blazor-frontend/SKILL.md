@@ -65,7 +65,18 @@ For a co-hosted WebAssembly frontend:
   `NotFoundPage` and `ResourcePreloader`, then reconcile them with the repository's central package
   management, analyzers and `GlobalUsings.cs` conventions.
 - Keep existing API, health and protocol routes ahead of the component fallback, and confirm that an
-  unknown `/api` path still returns a JSON 404 rather than the HTML shell.
+  unknown `/api` path still returns a JSON 404 rather than the HTML shell. Do not copy the template's
+  `UseStatusCodePagesWithReExecute`, which re-executes API 404s into the HTML shell.
+- `MapStaticAssets` adds a GET-only `{**path:file}` fallback. Method matching runs before the file
+  constraint, so any unmatched non-GET request answers 405 instead of 404. Assert route absence from
+  the endpoint data source rather than a 404 status.
+- Make the client project keep its own runtime identifier, or a host publish for a Linux runtime
+  (`-r linux-x64`, or a multi-RID restore) flows into it and fails with `NU1102` for Mono runtime
+  packs. Declare `TreatAsLocalProperty="RuntimeIdentifier;RuntimeIdentifiers;SelfContained"` on the
+  client's `<Project>` and set `RuntimeIdentifier` to `browser-wasm`, `RuntimeIdentifiers` empty and
+  `SelfContained` to `true`.
+- Add `*.razor` and `*.razor.css` to an allow-list `.dockerignore`, then build the image and confirm
+  the published `wwwroot/_framework` contains the client assemblies.
 
 ### 4. Add the Component Library
 
@@ -74,6 +85,9 @@ register its services in the client, add its providers to the root layout and re
 through `@Assets[...]` so fingerprinting applies. Self-host fonts or use the system font stack
 instead of a third-party font CDN, which leaks visitor addresses and complicates a content security
 policy. For MudBlazor follow the [installation guide](https://mudblazor.com/getting-started/installation).
+Keep its analyzer warnings as errors: `MUD0002` catches parameters renamed between major versions,
+such as `MudText` using `HtmlTag` rather than `Component`. Recent versions use `IMudDialogInstance`
+and `ShowMessageBoxAsync`.
 
 ### 5. Build the API Boundary
 
@@ -93,11 +107,22 @@ policy. For MudBlazor follow the [installation guide](https://mudblazor.com/gett
 - Keep machine bearer-token policies separate. Select the cookie scheme explicitly on browser
   endpoints instead of changing the default scheme the machine APIs rely on.
 - Make browser API endpoints return 401 and 403 instead of redirecting to the identity provider; only
-  navigational login and logout endpoints redirect.
-- Flow authentication state to WebAssembly with `AddAuthenticationStateSerialization` on the host and
-  `AddAuthenticationStateDeserialization` in the client, and authorize again on every API call.
+  navigational login and logout endpoints redirect. Register an `IAuthorizationMiddlewareResultHandler`
+  that writes Problem Details for those endpoints: without it a failed policy redirects, or throws when
+  no authentication scheme is registered in an open Development mode.
+- If a Development-only convention makes controllers anonymous, exclude the browser endpoints from
+  it, or it silently bypasses their policy.
+- Prefer a small same-origin session endpoint that describes the signed-in user and issues the
+  antiforgery token. `AddAuthenticationStateSerialization` depends on persisted component state, so
+  verify it with the chosen render mode before relying on it. Authorize again on every API call.
 - Enforce antiforgery on every cookie-authenticated mutation, including logout. With a co-hosted
-  WebAssembly client, issue a request token from a same-origin endpoint and send it in a header.
+  WebAssembly client, issue a request token from that session endpoint and send it in a header.
+  Tokens are bound to the principal: when the cookie is not the default scheme, authenticate it
+  before issuing or validating a token. Controllers registered with `AddControllers` lack MVC's
+  view-feature antiforgery filters, so `[AutoValidateAntiforgeryToken]` fails at runtime; validate
+  with `IAntiforgery` in a small authorization filter instead.
+- Sign-in and sign-out are full page loads to host routes that the client router does not own:
+  navigate with `forceLoad: true`, and post sign-out as a plain form carrying the token field.
 - Derive audit actors from the validated principal, never from a request body.
 
 ### 7. Prepare for Several Replicas
@@ -117,6 +142,15 @@ policy. For MudBlazor follow the [installation guide](https://mudblazor.com/gett
 Ask before running tests. Cover API authorization, cross-tenant access, antiforgery, 401/403 and
 validation with host tests; render-state and form logic with a small bUnit suite; and one or two
 end-to-end browser journeys with Playwright. Keep credentials out of tests.
+
+- Swap the cookie handler for a header-driven test handler by setting the scheme's `HandlerType` in
+  `ConfigureTestServices`, so authorization runs unchanged without an identity provider.
+- Settings the host reads eagerly in `Program`, such as whether to register a scheme, are not visible
+  through `ConfigureAppConfiguration`; set them as environment variables around `CreateHost`.
+- Prove shared Data Protection keys by issuing an antiforgery token from one test host and
+  validating it on a second host that uses the same key store.
+- When driving forms with browser automation, type into one field at a time; parallel input lands in
+  whichever field has focus.
 
 ### 9. Validate and Document
 

@@ -43,6 +43,9 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   can drift. Keep base-file keys only for required values without a safe code default, deliberate
   overrides, placeholders that make a tracked example runnable, or collection content that cannot
   be expressed as an empty/default object.
+- The binder appends configured array elements to a non-empty array default instead of replacing
+  it, so repeating such a default duplicates its entries and an override cannot remove one. Keep
+  collection defaults empty when configuration should own the list.
 - When adding, renaming or removing a bindable property on an options type — or on any nested type reachable from it — review the base file, each applicable tracked environment override, each existing local tier used by the repository, and every documentation example in the same change. Add or retain a key only where that provider intentionally differs from the code default.
 - Add a key to an environment-specific file only when that environment genuinely needs to override the type's default.
 - Add a key to a local file only when it differs from the tracked defaults or contains private
