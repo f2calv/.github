@@ -68,6 +68,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | Skill | Use it for |
 | --- | --- |
 | [README authoring](.github/skills/readme-authoring/SKILL.md) | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
+| [ADR authoring](.github/skills/adr-authoring/SKILL.md) | Evidence-backed local architecture decisions, source deep links, proposal refinement and optional GitHub issues labelled adr |
 | [Repository baseline](.github/skills/repository-baseline/SKILL.md) | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](.github/skills/repository-privacy/SKILL.md) | Checking public changes for personal data, credentials and private-system details |
 | [Issues and pull requests](.github/skills/github-issues-and-pull-requests/SKILL.md) | Issue quality, pull request descriptions, review findings and merge readiness |
