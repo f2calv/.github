@@ -11,6 +11,9 @@ applyTo: '**/*Tests/**/*.cs,**/*Tests/**/README.md,**/*Tests*.csproj'
   command lines. Use the `dotnet-test-platform` skill for project setup, migration, `dotnet test`
   syntax, filters, coverage and CI steps.
 - **Do not run tests without explicit user approval.**
+- Start `dotnet test` from the target repository so its `global.json` selects the runner. An
+  absolute `--project` path alone does not select that file; set the working directory explicitly
+  in the same command invocation when the terminal starts elsewhere.
 
 ## Folder Structure
 
