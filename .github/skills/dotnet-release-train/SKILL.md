@@ -260,6 +260,8 @@ decline this rollout. Respect existing publication and deployment holds.
 - A successful package push is not proof that NuGet clients can restore it. Verify every expected
   package ID at the exact version through the package source's restore endpoint, and stop the chain
   when any package from a multi-package producer is absent.
+- Availability polling retries network failures and request timeouts within its deadline, without
+  treating them as successful checks. Permanent HTTP and unexpected failures stop verification.
 - The availability helpers support public nuget.org only; authenticated feeds need a separate
   credential-safe implementation. Never put a NuGet API key in source, configuration or logs.
 - Use `--skip-duplicate` only to make an idempotent publication retry safe; it never permits

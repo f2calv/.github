@@ -72,6 +72,76 @@ Describe 'Test-NuGetPackageAvailability' -Tag 'Unit' {
         (Get-Command Test-NuGetPackageAvailability).Parameters.Keys | Should -Not -Contain 'BaseUri'
     }
 
+    It 'Retries <FailureKind> without treating it as package availability' -TestCases @(
+        @{ FailureKind = 'Dns' }
+        @{ FailureKind = 'Timeout' }
+        @{ FailureKind = 'NotFound' }
+        @{ FailureKind = 'Throttled' }
+    ) {
+        param($FailureKind)
+        $script:FailureKind = $FailureKind
+        $script:Attempt = 0
+        Mock Invoke-RestMethod {
+            $script:Attempt++
+            if ($script:Attempt -eq 1) {
+                switch ($script:FailureKind) {
+                    'Dns' { throw [System.Net.Http.HttpRequestException]::new('Synthetic DNS failure.') }
+                    'Timeout' { throw [System.Threading.Tasks.TaskCanceledException]::new('Synthetic timeout.') }
+                    'NotFound' {
+                        $Response = [System.Net.Http.HttpResponseMessage]::new([System.Net.HttpStatusCode]::NotFound)
+                        throw [Microsoft.PowerShell.Commands.HttpResponseException]::new('Synthetic 404.', $Response)
+                    }
+                    'Throttled' {
+                        throw [System.Net.Http.HttpRequestException]::new(
+                            'Synthetic throttling.', $null, [System.Net.HttpStatusCode]::TooManyRequests)
+                    }
+                }
+            }
+            [pscustomobject]@{ versions = @('1.2.3') }
+        }
+
+        $Result = @(Test-NuGetPackageAvailability -PackageId Example.Package -Version 1.2.3 `
+                -TimeoutSeconds 10 -InitialDelaySeconds 1 -MaximumDelaySeconds 2)
+
+        $Result[0].Available | Should -BeTrue
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly
+        Should -Invoke Start-Sleep -Times 1 -Exactly
+    }
+
+    It 'Leaves a package unavailable when network failures exhaust the deadline' {
+        Mock Invoke-RestMethod {
+            throw [System.Net.Http.HttpRequestException]::new('Synthetic DNS failure.')
+        }
+        Mock Start-Sleep { [Threading.Thread]::Sleep(1100) }
+
+        $Result = @(Test-NuGetPackageAvailability -PackageId Example.Package -Version 1.2.3 `
+                -TimeoutSeconds 1 -InitialDelaySeconds 1 -MaximumDelaySeconds 1)
+
+        $Result[0].Available | Should -BeFalse
+        Should -Invoke Invoke-RestMethod -Times 1 -Exactly
+    }
+
+    It 'Stops immediately on a permanent HTTP failure' {
+        Mock Invoke-RestMethod {
+            throw [System.Net.Http.HttpRequestException]::new(
+                'Synthetic forbidden response.', $null, [System.Net.HttpStatusCode]::Forbidden)
+        }
+
+        { Test-NuGetPackageAvailability -PackageId Example.Package -Version 1.2.3 `
+                -TimeoutSeconds 10 -InitialDelaySeconds 1 -MaximumDelaySeconds 2 } |
+            Should -Throw '*HTTP 403*'
+        Should -Invoke Start-Sleep -Times 0 -Exactly
+    }
+
+    It 'Propagates unexpected failures without retrying' {
+        Mock Invoke-RestMethod { throw [InvalidOperationException]::new('Synthetic unexpected failure.') }
+
+        { Test-NuGetPackageAvailability -PackageId Example.Package -Version 1.2.3 `
+                -TimeoutSeconds 10 -InitialDelaySeconds 1 -MaximumDelaySeconds 2 } |
+            Should -Throw '*Synthetic unexpected failure*'
+        Should -Invoke Start-Sleep -Times 0 -Exactly
+    }
+
     It 'Keeps the example consumer blocked when only one producer package is available' {
         Mock Invoke-RestMethod {
             if ($Uri.AbsolutePath -match '/example.core/') {
