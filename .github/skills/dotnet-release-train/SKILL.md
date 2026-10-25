@@ -147,7 +147,11 @@ user explicitly asks for parallel sessions.
       `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
       Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
-  - If the repository publishes no packages, continue once its merge and release checks are complete.
+  - For application images and charts, verify every expected platform's version/revision and the
+    published chart's effective image selection, not only its metadata. An umbrella `appVersion`
+    does not supply a dependency's image tag; honor documented explicit-tag requirements.
+    Use authorized registry access for restricted artifacts without changing their visibility.
+  - If the repository publishes no packages, continue once its merge and artifact checks are complete.
   - For a .NET Kubernetes application, offer a
     [clean-semver workload rollout](#clean-semver-workload-rollouts) after verifying its release.
     Publication alone does not establish that the released version has been deployed.
