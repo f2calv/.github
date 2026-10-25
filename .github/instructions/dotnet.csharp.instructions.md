@@ -7,7 +7,8 @@ applyTo: '**/*.cs'
 
 Scoped companions carry the rest: configuration types in `dotnet.configuration`, controllers and
 DTOs in `dotnet.webapi`, tests in `dotnet.testing`. Use the `dotnet-performance` skill for measured
-hot-path work.
+hot-path work and the [gRPC skill](../skills/dotnet-grpc/SKILL.md) for RPC contracts, clients,
+streaming and Kubernetes transport reliability.
 
 ## Files and Types
 

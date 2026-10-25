@@ -93,6 +93,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
 | [EF Core data access](.github/skills/dotnet-efcore/SKILL.md) | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [.NET Web API](.github/skills/dotnet-webapi/SKILL.md) | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [.NET gRPC](.github/skills/dotnet-grpc/SKILL.md) | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [Blazor frontend](.github/skills/blazor-frontend/SKILL.md) | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [OIDC app registration](.github/skills/oidc-app-registration/SKILL.md) | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |

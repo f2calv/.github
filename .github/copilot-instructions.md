@@ -68,6 +68,8 @@ Notes:
 - For targeted structural checks, pass `SkillName` through `New-PesterContainer -Data` to that
   suite. Its data-driven Describe names are not expanded when Pester applies name filters;
   always check the executed test count instead of accepting a zero-test success.
+  Import the repository-pinned Pester version before creating the container; auto-loading another
+  installed version can conflict with the suite's `#Requires` and fail discovery.
 
 ## What Stays in Each Repository
 

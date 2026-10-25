@@ -1,6 +1,6 @@
 ---
 name: dotnet-http-integrations
-description: 'Create, refactor, audit or troubleshoot outbound .NET HTTP integrations: IHttpClientFactory, typed/named clients, delegating handlers, authentication, token refresh, resilience, retries, idempotency, timeouts, streaming, pagination and fake-handler tests. Use for external API clients, not inbound controller/OpenAPI design.'
+description: 'Create, refactor, audit or troubleshoot outbound .NET HTTP integrations: IHttpClientFactory, typed/named clients, delegating handlers, authentication, token refresh, resilience, retries, idempotency, timeouts, streaming, pagination and fake-handler tests. Use for external REST/HTTP clients, not gRPC or inbound controller/OpenAPI design.'
 argument-hint: '[apply|audit|diagnose] [client or integration]'
 user-invocable: true
 ---
@@ -21,6 +21,7 @@ HTTP calls or wrapping every failure in an unbounded retry.
   fake-handler acceptance cases.
 - Use [ports/adapters](../ports-and-adapters/SKILL.md) for external contract boundaries,
   [.NET Web API](../dotnet-webapi/SKILL.md) for inbound endpoints,
+  [.NET gRPC](../dotnet-grpc/SKILL.md) for HTTP/2 RPC clients and streaming recovery,
   [REST Client requests](../rest-client-requests/SKILL.md) for manual request files and
   [performance](../dotnet-performance/SKILL.md) for measured transport hot paths.
 - Official [factory documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory)

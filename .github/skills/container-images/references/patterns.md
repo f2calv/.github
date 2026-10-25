@@ -67,6 +67,9 @@ EOF
 
 ## .NET
 
+For HTTP/2 listener behavior, gRPC health and Kubernetes stream recovery, use the
+[gRPC skill](../../dotnet-grpc/SKILL.md). Image ports alone do not establish a working RPC endpoint.
+
 Use the canonical [published](../templates/dotnet-service.dockerfile.tmpl) or
 [Debug](../templates/dotnet-service-debug.dockerfile.tmpl) template. Those files are the copy-ready
 authority for argument order, manifest copy, restore/publish formatting, assembly provenance and

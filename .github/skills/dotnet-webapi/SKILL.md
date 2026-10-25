@@ -19,6 +19,8 @@ MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negot
 - [Testing instructions](../../instructions/dotnet.testing.instructions.md) own test approval and
   fixtures. Use the test-platform skill for the repository's runner.
 - [REST Client skill](../rest-client-requests/SKILL.md) owns request-file layout and secret handling.
+- [gRPC skill](../dotnet-grpc/SKILL.md) owns RPC contracts, HTTP/2 transport and stream recovery;
+  HTTP result and OpenAPI conventions here do not apply to gRPC services.
 
 These repository-owned authorities take precedence over conflicting generic/plugin defaults.
 Do not edit a generated plugin installation to store shared conventions.
