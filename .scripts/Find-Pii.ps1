@@ -176,7 +176,7 @@ function Invoke-PiiScan {
 
         # Public apex domains that must NOT be treated as private when extracting domain seeds.
         $publicApex = @(
-            'windows.net', 'core.windows.net', 'microsoft.com', 'azure.com', 'visualstudio.com',
+            'windows.net', 'core.windows.net', 'microsoft.com', 'microsoftonline.com', 'azure.com', 'visualstudio.com',
             'github.com', 'githubusercontent.com', 'nuget.org', 'w3.org', 'schemas.microsoft.com',
             'cluster.local', 'svc.cluster.local', 'localhost', 'shelly.cloud', 'thingscloud.it',
             'gravatar.com', 'googleapis.com', 'gstatic.com', 'miele.com', 'example.com', 'example.net', 'example.org'

@@ -49,6 +49,10 @@ first kind of hit is decisive; the second needs judgement.
 - **Heuristic hits need review.** A mandated placeholder such as a documentation IP address or an
   example phone number will match the shape while being entirely correct. Confirm it is a placeholder
   rather than silencing the rule.
+- A shared public identity-provider hostname is not a private domain merely because local settings
+  use it. If seed extraction misclassifies one, verify the public authority and update the scanner's
+  existing public-domain list with regression coverage; tenant/account identifiers must remain
+  detectable. Never bypass a seeded finding without resolving its classification.
 - `-IncludeHistory` is the only way to find a value that was committed and later deleted. Removing it
   from the working tree does not remove it from the history a clone carries.
 

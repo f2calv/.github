@@ -52,6 +52,25 @@ BeforeAll {
 }
 
 Describe 'Invoke-PiiScan' -Tag 'Unit' {
+    It 'Allows the shared Microsoft authority domain while retaining private-domain and tenant seeds' {
+        $RepositoryPath = Join-Path $TestDrive 'public-identity-authority'
+        Initialize-TestRepository -Path $RepositoryPath
+        @{
+            Authority       = 'https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555'
+            PrivateEndpoint = 'https://api.private.invalid'
+            TenantId        = '11111111-2222-3333-4444-555555555555'
+        } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $RepositoryPath 'appsettings.Local.json')
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath `
+            -Content 'https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555 private.invalid'
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @('appsettings.Local.json')
+
+        $Result.Seeds | Should -Not -Contain 'microsoftonline.com'
+        $Result.Seeds | Should -Contain 'private.invalid'
+        $Result.Seeds | Should -Contain '11111111-2222-3333-4444-555555555555'
+        $Result.HighConfidenceHits | Should -Be 2
+    }
+
     It 'Extracts exact synthetic seeds from a local configuration file' {
         $RepositoryPath = Join-Path $TestDrive 'seed-extraction'
         Initialize-TestRepository -Path $RepositoryPath -IncludeSeedFile
