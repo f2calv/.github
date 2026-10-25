@@ -116,6 +116,9 @@ Keep the outcome understandable without opening every supporting link.
   optional and give them a trigger/acceptance gate instead of speculative implementations.
   For substantial proposals, use stable requirement/decision identifiers to connect constraints,
   implementation steps and validation evidence without creating a separate tracking receipt.
+- During implementation, update the canonical ADR checklist at each phase boundary. Check off only
+  verified outcomes and link their evidence; split partially delivered criteria rather than marking
+  a whole phase complete. Keep local validation, remote CI execution and live rollout distinct.
 - Keep the ADR focused on one decision. Put substantial design exploration, schemas, detailed
   test matrices or runbooks in supporting `docs/` material only when useful/requested, and link it.
   Do not grow every ADR into a tutorial or reproduce application implementation details.
