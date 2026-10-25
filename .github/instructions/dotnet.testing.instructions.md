@@ -47,6 +47,9 @@ Additional subfolders are permitted where a project has a genuinely distinct tes
   copy the settings to the test output, and preserve CI environment-variable precedence. An absent
   test file is allowed; required values must still be supplied by another provider. Tracked files
   may contain only synthetic disposable-local-service defaults, never real credentials.
+- Check for an existing deployment environment before choosing the test overlay name. Preserve
+  explicitly agreed repository-specific environment/file names; never repurpose deployed
+  configuration to satisfy the default test naming convention.
 - Expose commonly-used services as `protected` fields on `TestBase` rather than resolving them again in each test class.
 - Expose `protected ITestOutputHelper _output` on `TestBase`. Subclasses use that field directly; capturing the constructor parameter in a primary constructor while also passing it to the base is compile error **CS9107**.
 - Dispose any `ServiceProvider` the fixture creates through `IDisposable` or `IAsyncDisposable`.
