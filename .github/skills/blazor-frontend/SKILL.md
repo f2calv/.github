@@ -79,6 +79,14 @@ For a co-hosted WebAssembly frontend:
   `SelfContained` to `true`.
 - Add `*.razor` and `*.razor.css` to an allow-list `.dockerignore`, then build the image and confirm
   the published `wwwroot/_framework` contains the client assemblies.
+- Set `<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>` in the host project. The SDK otherwise
+  infers it from `.razor` content items, and a container restore that copies only project files sees
+  none, so the published image silently lacks `blazor.web.js` while local publishes include it. Add
+  `test -f /app/publish/wwwroot/_framework/blazor.web.js` after publish so the image build fails
+  instead.
+- When the frontend is disabled by configuration, answer page navigations with a short setup page
+  that names the missing settings, not their values, rather than a bare 404 or a shell that only
+  receives 401s. Keep API paths and non-GET requests on a plain 404.
 
 ### 4. Add the Component Library
 
@@ -158,6 +166,9 @@ end-to-end browser journeys with Playwright. Keep credentials out of tests.
 
 - Build and publish through every supported path and confirm the published output contains the
   client's `_framework` assets.
+- Smoke-test the built image by fetching every `src` and `href` the served HTML references and
+  requiring 200 for each, or by loading the page in a browser. Matching a script name with a loose
+  pattern can confuse `blazor.web.js` with `blazor.webassembly.js`.
 - Inspect downloaded assemblies, `wwwroot` configuration, API payloads and browser storage for
   secrets, tokens and private identifiers.
 - Check keyboard operation, focus, labels, contrast and narrow viewports.
