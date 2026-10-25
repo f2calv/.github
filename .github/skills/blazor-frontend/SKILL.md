@@ -19,6 +19,8 @@ package behavior while implementing; do not rely on remembered template output.
   and secret placement. [Testing instructions](../../instructions/dotnet.testing.instructions.md) own
   test approval and layout.
 - [Container images](../container-images/SKILL.md) owns Dockerfiles that publish the host.
+- [OIDC app registration](../oidc-app-registration/SKILL.md) owns identity-provider registrations,
+  client secrets and reverse-proxy callback setup.
 
 Keep application-specific choices, such as one application's render mode or tenant model, in that
 repository's own instructions rather than in these shared files.
