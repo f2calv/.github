@@ -70,6 +70,10 @@ types, private deployment coordinates or incident payloads.
 An outstanding-message limit bounds memory and admission. It is not an acknowledgement deadline
 unless a timer independently expires the oldest outstanding delivery. A timer checked only when
 the next write exhausts capacity cannot detect an unacknowledged final message on an idle stream.
+Keep capacity-admission wait budgets separate from delivery age. Define whether age starts before
+or after a write, including blocked writes. Retain each reservation's monotonic timestamp: later
+deliveries, invalid acknowledgements and removal of the head must not restart the next deadline.
+Test the exact expiry threshold independently of accelerated wall-clock transport tests.
 
 Validate delivery identities, ordering and monotonic cursor movement. Do not advance past
 unprocessed work; account for messages intentionally excluded by server-side routing. Coordinate
