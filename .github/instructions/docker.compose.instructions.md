@@ -5,6 +5,9 @@ applyTo: '**/docker-compose*.yml,**/docker-compose*.yaml,**/compose*.yml,**/comp
 
 # Docker Compose
 
+Use the `docker-compose` skill for creation, workspace audits, troubleshooting and validation
+procedures; this file remains the authority for Compose conventions.
+
 Compose describes the **local development and demo environment**; it is never the deployment
 target. Optimise it for "clone and run", not for production fidelity.
 
@@ -83,8 +86,9 @@ form as `.dockerignore`:
 
 ## Validation
 
-- Validate every profile after an edit with `docker compose --profile '*' config --quiet`; without
-  `--profile '*'` services behind a profile are never parsed.
+- Validate all profiles after an edit with `docker compose --profile '*' config --quiet`, and check
+  default and individually supported profile selections separately. Inactive services can still
+  be parsed; all-profile validation alone does not prove each selection's dependency graph works.
 - When a repository keeps a second Compose file for a variant topology, such as a replication
   cluster, fold it into the main file behind a profile, and update every script, solution file and
   README that referenced the old file in the same change.

@@ -80,6 +80,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Dev Containers](.github/skills/devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Docker Compose](.github/skills/docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [Modular monolith](.github/skills/modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
 | [Ports and adapters](.github/skills/ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
