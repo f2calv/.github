@@ -143,6 +143,25 @@ source = "git::https://github.com/owner/tf_module_example.git//src?ref=1.2.3"
 Git source strings are literals. Use the Terraform instructions' local override workflow for
 adjacent-checkout integration; do not replace tracked immutable refs with working branches.
 
+### Offer Local-First Integration Before Publication
+
+When evolving a shared child module, offer the user a choice before proposing its remote PR or
+release: validate and deploy the consuming root with adjacent local module files first, or use
+the remote PR/release path first. Recommend local-first when the checkouts are available so missing
+inputs, outputs, permissions and provider behavior can be found before publication. Do not make
+publishing a module a prerequisite for testing it in its real caller.
+
+- Use the root repository's gitignored source-override workflow, preserve tracked immutable refs,
+  and verify the resolved module source before planning. Record the local module revision and
+  uncommitted-change status alongside the deployment evidence.
+- Local integration is not blanket authorization for tests or cloud access. Obtain those approvals
+  separately, review a saved plan and apply that exact artifact under the normal deployment gates.
+  Verify the intended resources and consumer access; empty collections do not prove the lifecycle
+  of resource types that were never exercised.
+- Keep commits, pushes, PRs and releases behind their own authorization. After local verification,
+  publish the tested module through its normal process, pin the resulting immutable release in the
+  caller, remove the override and check the released source converges before declaring it portable.
+
 ## 4. Wire Every Consumer Surface
 
 - Root inputs and deployment-variable sources must expose the intended policy. Forward new
@@ -150,6 +169,9 @@ adjacent-checkout integration; do not replace tracked immutable refs with workin
   A child default hidden behind a conflicting root default is not an effective default.
 - Keep required identity/naming inputs distinct from optional operational settings. Do not grow
   a generic module with application-specific flags for every caller.
+- Verify the deployment provider's data-plane authentication separately from portal OAuth
+  defaults and runtime identity grants. A keyless account also needs provider Entra configuration,
+  endpoint connectivity and permissions for every lifecycle operation, including ACL reads/writes.
 - Verify SKU/feature combinations against the pinned provider and actual cloud API. Omit
   unsupported arguments/blocks, reject incompatible explicit settings, and document nullable
   outputs when a feature has no identity or endpoint. A cheaper tier may require replacement,
@@ -165,6 +187,8 @@ adjacent-checkout integration; do not replace tracked immutable refs with workin
 
 1. Run formatting, backend-free initialization where needed and validation with the pinned tools.
    Use existing tests after approval; distinguish static validation, mocked plans and live checks.
+   Verify that the intended cases actually ran: an unknown test-file filter can exit zero with
+   no tests. Match platform-native test paths and reject zero-case success or filter warnings.
 2. Obtain permission for the exact cloud/state scope. Confirm the account and existing backend,
    then generate a saved plan for the smallest affected root.
 3. Review creates, updates, replacements and destroys individually, including nested modules and

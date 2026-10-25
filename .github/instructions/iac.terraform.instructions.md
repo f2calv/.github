@@ -18,7 +18,10 @@ Two role-specific sections follow the universal rules. Apply exactly one of them
 
 ## Running Terraform
 
-- `terraform fmt`, `terraform validate` and a backend-free `terraform init` are safe to run unprompted; none of them authenticate or touch state.
+- `terraform fmt` and `terraform validate` are safe to run unprompted. For static initialization
+  of a deployment root, use `terraform init -backend=false` with a fresh, isolated `TF_DATA_DIR`.
+  Reusing deployment backend metadata can still trigger remote-state lookups during module
+  initialization even with `-backend=false`; that requires cloud/state approval.
 - Always ask before any command that authenticates to the cloud provider, reads remote state or mutates infrastructure — `plan`, `apply`, `destroy`, `import` and `state` subcommands included.
 - For an approved apply, save the plan to a file, inspect its exact create/update/replace/destroy actions, and apply that same plan artifact. Do not review one plan and then apply a newly calculated plan.
 - After an address migration, provider transition or other state-sensitive refactor, run a second plan and require a no-change result before removing migration scaffolding.
