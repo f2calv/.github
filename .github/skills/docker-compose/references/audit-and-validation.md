@@ -48,14 +48,20 @@ state and preserve them during later synchronization.
 
 Named volumes survive ordinary container recreation. Explicit external or globally named resources
 can be shared across projects; a different `--project-name` alone does not isolate them.
-Do not change database image majors or data-directory layout without a deliberate migration plan.
+Local runtime state is disposable by default; correct image/data-directory layouts without
+migrating disposable contents. A migration plan is needed only for explicitly non-disposable data,
+not every existing local mount. Protect configuration, account registrations and production data.
+When consolidating projects or renaming volumes containing account registrations, preserve their
+effective Docker volume identity explicitly; let users select the existing volume when former
+projects had separate registrations. A new empty volume is not a migration.
 Health checks can report readiness without proving credentials, schema or application queries work.
 
 Compare each stateful image's effective storage path with the mount target, including its
 major-version-specific `VOLUME`/data-directory layout. A named volume at an obsolete path does not
 protect the real data. When overriding `command`/`entrypoint`, check which publisher defaults are
-lost, especially explicit storage-location flags. Preserve data already written to container layers
-or anonymous volumes before recreation; do not simply change the mount and declare migration done.
+lost, especially explicit storage-location flags. Treat local data already written to container
+layers or anonymous volumes as disposable unless the repository explicitly says otherwise; never
+claim a definition change migrated that data.
 
 Inspect bind-source existence and whether required non-secret configuration is tracked. Short bind
 syntax can create a missing source as a directory at runtime; successful `config --quiet` is not
@@ -78,6 +84,8 @@ database is not proof that the application selected its database adapter instead
 Check a health probe's executable in the selected final image/stage, not in a Debug stage or build
 toolchain. Startup dependencies should gate the selected provider and required model/seed
 initializer, without introducing references to services in inactive profiles.
+Bound readiness retries and each individual network attempt; a retry count alone does not bound
+startup when a probe can wait indefinitely.
 
 Review bootstrap commands as full process invocations. `docker compose run service command`
 replaces the command but normally preserves the service entrypoint; appending `sh -c` to a

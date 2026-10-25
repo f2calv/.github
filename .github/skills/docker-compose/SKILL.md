@@ -87,7 +87,9 @@ tags and record a version-specific exception only where the publisher provides n
 
 For moves/consolidation, update every caller and preserve effective relative paths, project
 identity and volume ownership. Changing a project/service/volume name can select a new empty
-database instead of migrating the old one. Do not remove existing data to make startup pass.
+database. Local runtime state is disposable under the central default, so do not build migration
+machinery for it. Preserve explicitly non-disposable state and account registrations; do not remove
+data or credentials merely to make startup pass.
 Keep troubleshooting evidence bounded and redacted; avoid dumping full container environments/logs.
 
 ### 4. Validate and Report

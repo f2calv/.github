@@ -34,6 +34,11 @@ Getting mounts wrong silently pollutes the working tree with runtime state.
   `./.docker/service.conf:/etc/service/service.conf:ro`.
 - **Volatile or regenerable data** — databases, caches, emulator state, downloads — uses a named
   volume, never a bind mount: `database_data:/var/lib/database`.
+- Local Compose runtime data, including existing writable Docker bind mounts, is disposable by
+  default. Correct the storage definition without building a migration or preserving that state;
+  only an explicit repository requirement makes local state non-disposable. This does not extend
+  to tracked configuration, host fixtures, credentials/account registrations or production data,
+  and does not itself authorize running destructive cleanup commands.
 - **Host fixtures** the application only reads come from a gitignored directory, mounted `:ro`.
 - Every bind mount is `:ro`. A writable bind mount needs a comment beside it giving the reason.
 - Scope variable defaults to a subdirectory; `${SOME_DIR:-.}` mounts the whole repository.
