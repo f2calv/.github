@@ -105,6 +105,11 @@ preferences are suggestions, so apply both while writing:
 - **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
   hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
   end-to-end flow when extraction would obscure it.
+- **Use modern hosting composition**, including samples and test hosts: initialize configuration and
+  register services in `Program.cs` or an `AppHost` composition root. ASP.NET Core hosts use
+  `WebApplication.CreateBuilder`; do not introduce `Startup`/`UseStartup` or separate
+  `ConfigureServices`/`Configure` lifecycle classes. For `WebApplicationFactory`, expose a public
+  partial `Program` marker instead of reverting to the older hosting model.
 - **Keep composition roots shallow.** Register each feature in its own method that returns early when
   the feature is off, and carry feature-derived switches and run-once shared infrastructure in one
   small state type rather than tuples or local functions, so no method exceeds a cognitive

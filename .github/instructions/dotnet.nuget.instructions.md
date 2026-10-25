@@ -39,6 +39,9 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
   must resolve to the corresponding package in Release.
 - Build the Debug solution to validate source-level integration. Build the Release solution after an
   upstream publication to prove the exact package version restores and compiles.
+- A private build/design dependency must not be the only reference selecting a runtime version.
+  Reference the runtime package explicitly when public code needs that version, and build a consumer
+  to verify transitive resolution rather than checking only the producing library.
 
 ## Dependency Updates
 
