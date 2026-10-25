@@ -1,14 +1,14 @@
 # Default: docker compose up -d starts the IDE cache only.
-# Test: docker compose --profile test up -d cache_test starts isolated test infrastructure.
-# Probe: docker compose --profile test run --rm probe_test checks test-cache connectivity.
-# Endpoints: IDE cache localhost:16379; test cache localhost:16380 (override via variables below).
+# Probe: docker compose --profile test run --rm probe_test checks cache connectivity without writes.
+# Endpoint: IDE cache localhost:6379; container callers use cache:6379.
+# One local stack at a time; tests must scope writes/cleanup to their own keys, never flush this cache.
 services:
   cache:
-    image: redis:8.2-alpine
+    image: redis:8
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "127.0.0.1:${CACHE_PORT:-16379}:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - cache_data:/data
     healthcheck:
@@ -18,30 +18,14 @@ services:
       retries: 10
       start_period: 5s
 
-  cache_test:
-    image: redis:8.2-alpine
-    profiles: [test]
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${CACHE_TEST_PORT:-16380}:6379"
-    volumes:
-      - cache_test_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
-
   probe_test:
-    image: redis:8.2-alpine
+    image: redis:8
     profiles: [test]
     restart: "no"
     depends_on:
-      cache_test:
+      cache:
         condition: service_healthy
-    command: ["redis-cli", "-h", "cache_test", "ping"]
+    command: ["redis-cli", "-h", "cache", "ping"]
 
 volumes:
   cache_data:
-  cache_test_data:

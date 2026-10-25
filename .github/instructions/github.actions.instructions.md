@@ -9,6 +9,10 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 
 - Leave one blank line between steps within a job.
 - Pin actions to the major version tag by default, such as `actions/checkout@v6`. Do not pin to a commit SHA and do not include minor or patch versions.
+- For CI job and service container images, follow the local/test image-tag policy in
+  `docker.compose.instructions.md`: supported major tags by default, verified version-specific
+  exceptions when no major alias exists, and no routine digest requirement. This is distinct from
+  action `uses:` references and production Dockerfile base-image pinning.
 - Pin GitHub-hosted Linux jobs to `ubuntu-24.04`; never use the moving `ubuntu-latest` label.
 - Expose a kebab-case `runs-on` string input with a default of `ubuntu-24.04` in reusable workflows, and use it for each Linux job that is not intentionally platform-specific. Callers override the input only when they need another runner.
 - Keep composite actions runner-agnostic. The workflow job that calls a composite action owns `runs-on`.

@@ -8,18 +8,18 @@ user-invocable: true
 # Docker Compose
 
 Build a predictable local stack and review its effective behavior, not just valid YAML.
-Keep default IDE dependencies, optional applications/demos and isolated test services deliberate.
+Keep default IDE dependencies, optional applications/demos and test-data boundaries deliberate.
 
 ## Authorities and Resources
 
 - Read the target repository's notes and the central
   [Compose instructions](../../instructions/docker.compose.instructions.md). They own conventions;
-  this skill owns the procedure. Read [image pinning](../../instructions/docker.instructions.md#base-images-and-pinning)
-  when choosing image versions.
+  this skill owns the procedure. Its local/test image-tag policy is distinct from
+  [Dockerfile base-image pinning](../../instructions/docker.instructions.md#base-images-and-pinning).
 - Load [audit and validation](./references/audit-and-validation.md) for review criteria, safe commands,
   profile checks and troubleshooting.
 - The [worked local stack](./examples/local-stack.md) explains the
-  [Compose template](./assets/compose.yaml.tmpl), isolated test services and acceptance cases.
+  [Compose template](./assets/compose.yaml.tmpl), safe test targeting and acceptance cases.
   The template is illustrative; select supported image versions before adopting it.
 - Use [container images](../container-images/SKILL.md) for Dockerfiles/ignore files,
   [container workflows](../container-workflows/SKILL.md) for shared build/deploy scripts,
@@ -51,6 +51,9 @@ Keep private workspace identities and resolved secret values out of public artif
 2. Find both `.yml`/`.yaml` variants of `compose*` and `docker-compose*`, including hidden tooling
    directories. Exclude generated/dependency outputs, but record excluded vendored/nested checkouts
    so omissions are visible. Also trace nonstandard filenames referenced by scripts or Dev Containers.
+   Inventory application/service Dockerfiles alongside Compose coverage; classify tool-only,
+   tooling-runner and Dev Container exceptions under the central instructions. Record non-Git
+   workspace folders separately rather than assuming every root can be committed or has a remote.
 3. Inspect Git status and repository instructions before edits. Read every in-scope file and its
    callers: README commands, tasks, scripts, CI, Dev Containers, environment-file references and
    Dockerfile build inputs. Preserve unrelated edits.
@@ -65,6 +68,11 @@ health/completion, restart policy, host/container endpoints, mounts and required
 Trace application settings to the actual dependency addresses; a declared port or profile name is
 not proof the application can connect.
 
+Use standard/established ports under the central one-stack-at-a-time default. Compare cross-stack
+ports only when concurrent operation is actually required; a repeated standard port across
+independently run repositories is not a defect. A project name isolates generated resource names,
+not host ports or tests targeting the wrong database/key namespace.
+
 Apply the reference's review matrix against the central instructions. Distinguish a convention
 deviation from a demonstrated defect and an unverified runtime assumption.
 Ask before changing topology, versions, port defaults, state locations or credential requirements.
@@ -72,8 +80,10 @@ Ask before changing topology, versions, port defaults, state locations or creden
 ### 3. Implement or Diagnose Precisely
 
 Reuse existing stack/build helpers. Put optional heavy/source-built services behind deliberate
-profiles; keep default dependencies usable from the IDE. Give test services independent data and
-ports, including explicit host overrides where simultaneous workspace stacks could collide.
+profiles; keep default dependencies usable from the IDE. Trace test mutations and cleanup before
+choosing per-run databases/key namespaces or a dedicated disposable service. Do not add another
+service or alternate port solely for hypothetical concurrent stacks. Verify supported major image
+tags and record a version-specific exception only where the publisher provides no usable major alias.
 
 For moves/consolidation, update every caller and preserve effective relative paths, project
 identity and volume ownership. Changing a project/service/volume name can select a new empty
@@ -87,8 +97,9 @@ profile/combination and explicitly targeted one-shot paths; all-profile validati
 that the default or an individual profile works. Check the expected service set as well as exit code.
 Do not treat missing inputs, skipped checks or zero selected services as success.
 
-When authorized, perform a bounded startup/readiness/connectivity check using an isolated project
-and approved resources. Preserve existing workloads and data during cleanup.
+When authorized, perform a bounded startup/readiness/connectivity check using approved project
+identity, standard ports and safe test data. Additional project/port isolation is conditional on
+the actual runtime requirement. Preserve existing workloads and data during cleanup.
 
 For an audit report, include repository/file, line, finding category, impact, evidence, recommended
 change and validation status. Summarize reviewed files, roots without files, exclusions and blockers.
