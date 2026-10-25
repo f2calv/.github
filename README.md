@@ -104,6 +104,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Redis data access](.github/skills/redis-data-access/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [REST Client requests](.github/skills/rest-client-requests/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
 | [Helm charts](.github/skills/helm-charts/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
+| [Terraform IaC](.github/skills/terraform-iac/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [GitOps repository structure](.github/skills/gitops-repository-structure/SKILL.md) | Argo CD Application discovery, ownership and stateful migrations |
 | [NGINX ingress migration](.github/skills/nginx-ingress-migration/SKILL.md) | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [UniFi network management](.github/skills/unifi-network-management/SKILL.md) | Network discovery, VLANs, host networking and performance diagnostics |

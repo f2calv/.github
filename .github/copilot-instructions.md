@@ -65,6 +65,9 @@ Notes:
   the versions, tool behaviours, external APIs or steps most likely to go stale. Keep the general
   feedback-loop rule in `workflow.instructions.md`, not repeated per skill.
   `.scripts/tests/Skills.Tests.ps1` enforces the section in CI.
+- For targeted structural checks, pass `SkillName` through `New-PesterContainer -Data` to that
+  suite. Its data-driven Describe names are not expanded when Pester applies name filters;
+  always check the executed test count instead of accepting a zero-test success.
 
 ## What Stays in Each Repository
 
