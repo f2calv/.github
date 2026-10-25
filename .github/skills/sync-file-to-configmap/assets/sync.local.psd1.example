@@ -1,0 +1,10 @@
+@{
+    SourcePath         = 'config\example.jsonc'
+    TargetRoot         = 'C:\work\example-gitops'
+    TargetPath         = 'src\resources\example\configmap.yaml'
+    ConfigMapName      = 'example-config'
+    ConfigMapNamespace = 'example'
+    DataKey            = 'example.jsonc'
+    Format             = 'Json'
+    XmlRoot            = ''
+}

@@ -41,6 +41,10 @@ jobs:
         shell: pwsh
         run: Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1 -Force
 
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
       - name: verify local fixture tools
         shell: pwsh
         run: |

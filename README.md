@@ -82,6 +82,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](.github/skills/docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
+| [File to ConfigMap](.github/skills/sync-file-to-configmap/SKILL.md) | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [Modular monolith](.github/skills/modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
 | [Ports and adapters](.github/skills/ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
 | [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
@@ -173,7 +174,8 @@ before adding local overrides.
 
 The central Pester runner discovers root script tests and every skill's `scripts/tests` directory,
 including pre-commit management and release-train checks. With PowerShell 7.4+, Pester 5.7.1,
-Git, Bash, Helm, Mike Farah yq v4 and npm available, run from the repository root after test approval:
+Git, Bash, Helm, Mike Farah yq v4, the .NET 10 SDK and npm available, run from the repository root
+after test approval:
 
 ```powershell
 npm run test:ps
@@ -204,6 +206,7 @@ dotnet test --project src/Example.CountParsing.Tests/Example.CountParsing.Tests.
 | Container and caller templates | Static audit and synthetic argument/exit tests | Image builds, registry publication and deployment |
 | Helm/GitOps/ingress examples | Real local Helm render/lint/schema/package checks and structural ownership assertions | Cluster bootstrap, admission, routing, certificates and rollback |
 | Forms, policy overrides and cleanup examples | Form comparisons, pure policy composition, mocked APIs and synthetic source edits | Actual GitHub operations and consumer compatibility |
+| Appsettings build items | SDK-only synthetic build/publish/package tests extracted from the configuration instructions, including missing local files and older source timestamps | Real application startup and private configuration values are not exercised |
 | REST collections and network-change evidence | Static structure, variable and approval-boundary checks | Requests, live network measurements and fault recovery |
 | Self-contained parsing fixture | Separate CI job builds all three projects and runs xUnit tests; Dependabot maintains its packages | Benchmark execution remains explicitly requested |
 | Other .NET integration examples | Structural Pester checks | Consumer-bound compile/HTTP fixtures and published-package consumption are not continuously executed |
