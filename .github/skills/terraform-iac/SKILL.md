@@ -205,6 +205,12 @@ deletion success before a service name is reusable: check completion/availabilit
 backoff, and generate a new reviewed plan for the remaining approved actions. Do not reuse the
 stale plan, rename the service silently, or roll back successful unrelated operations.
 
+Successful role-assignment creation and dependency ordering do not prove service-side destination
+authorization. Check the actual principal, permissions, scope and network before blaming propagation.
+If an unchanged retry still fails after a reasonable propagation window, stop repeating it, preserve
+partial-state evidence and investigate a different hypothesis. Broader scopes, additional privileges
+and temporary diagnostic resources require explicit approval, not an automatic recovery fallback.
+
 ## 6. Retire In Reverse Order
 
 Stopping, disabling, scaling to zero and deleting have different durability, availability and
