@@ -217,3 +217,8 @@ deliberately:
 | Google `access_denied` for an outside account | The consent screen is Internal, or External but unpublished without the user as a tester |
 | 400 or 502 from the ingress on the callback | Proxy buffers too small for the sign-in cookies |
 | Sign-in loop after success | The session cookie is `Secure` but the request reached the application as HTTP without forwarded headers |
+
+## Maintaining This Skill
+
+- Entra and Google registration workflows, assignment, consent and supported authorization claims.
+- Secret rotation, redirect URI matching and reverse-proxy callback requirements.

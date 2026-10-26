@@ -71,35 +71,30 @@ function Get-InventoryContainedFile {
     return $full
 }
 
-function Get-InventoryProjectFacts {
-    param([string]$Root, [string]$RelativePath, [string[]]$Files, [string[]]$ProjectPaths)
-    $path = Get-InventoryContainedFile $Root $RelativePath
-    $document = Read-ProjectInventoryXml $path
-    $name = [IO.Path]::GetFileNameWithoutExtension($path)
-    $directory = Split-Path $path -Parent
-    $declarations = [Collections.Generic.List[object]]::new()
-    $notes = [Collections.Generic.List[string]]::new()
-    $evidence = [Collections.Generic.List[string]]::new()
-    $references = [Collections.Generic.List[object]]::new()
-    $packages = [Collections.Generic.List[string]]::new()
-    $documents = [Collections.Generic.List[object]]::new()
-    $sharedPaths = [Collections.Generic.List[string]]::new()
+function Get-InventorySharedDocuments {
+    param([string]$Root, [string]$Directory, [string[]]$Files)
     foreach ($filename in @('Directory.Build.props', 'Directory.Build.targets')) {
-        $ancestor = $directory
+        $ancestor = $Directory
         while ($true) {
             $candidate = Join-Path $ancestor $filename
             $relative = [IO.Path]::GetRelativePath($Root, $candidate).Replace('\', '/')
             if ($relative -in $Files) {
                 $null = Get-InventoryContainedFile $Root $relative
-                $documents.Add([pscustomobject]@{ Path = $relative; Xml = (Read-ProjectInventoryXml $candidate); Shared = $true })
-                $sharedPaths.Add($relative)
+                [pscustomobject]@{ Path = $relative; Xml = (Read-ProjectInventoryXml $candidate); Shared = $true }
                 break
             }
             if ($ancestor -eq $Root) { break }
             $ancestor = Split-Path $ancestor -Parent
         }
     }
-    $documents.Add([pscustomobject]@{ Path = $RelativePath; Xml = $document; Shared = $false })
+}
+
+function Get-InventoryDocuments {
+    param([string]$Root, [string]$RelativePath, [string[]]$Files, [Xml.XmlDocument]$Document)
+    $documents = [Collections.Generic.List[object]]::new()
+    $directory = Split-Path (Join-Path $Root $RelativePath) -Parent
+    foreach ($shared in Get-InventorySharedDocuments $Root $directory $Files) { $documents.Add($shared) }
+    $documents.Add([pscustomobject]@{ Path = $RelativePath; Xml = $Document; Shared = $false })
     $loaded = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($inputDocument in $documents) { $null = $loaded.Add($inputDocument.Path) }
     for ($index = 0; $index -lt $documents.Count; $index++) {
@@ -114,23 +109,41 @@ function Get-InventoryProjectFacts {
             if ($relativeImport -notin $Files -or -not $loaded.Add($relativeImport)) { continue }
             $null = Get-InventoryContainedFile $Root $relativeImport
             $documents.Add([pscustomobject]@{ Path = $relativeImport; Xml = (Read-ProjectInventoryXml $resolved); Shared = $true })
-            $sharedPaths.Add($relativeImport)
         }
     }
-    foreach ($inputDocument in $documents) {
-        foreach ($node in $inputDocument.Xml.SelectNodes('//*[local-name()="PropertyGroup"]/*')) {
-            if ($node.LocalName -notin @('TargetFramework','TargetFrameworks','OutputType','IsTestProject','IsPackable',
-                    'PackAsTool','AssemblyName','PackageId','RootNamespace','UseMicrosoftTestingPlatformRunner')) { continue }
-            $conditioned = $false
-            $parent = $node
-            while ($parent -is [Xml.XmlElement]) {
-                if ($parent.HasAttribute('Condition') -or $parent.LocalName -in @('When','Otherwise','Target')) { $conditioned = $true }
-                $parent = $parent.ParentNode
-            }
-            $declarations.Add([pscustomobject]@{
-                    Name = $node.LocalName; Value = $node.InnerText.Trim()
-                    Source = $inputDocument.Path; Conditional = $conditioned; Shared = $inputDocument.Shared
-                })
+    return $documents.ToArray()
+}
+
+function Test-InventoryConditionalNode {
+    param([Xml.XmlNode]$Node)
+    $parent = $Node
+    while ($parent -is [Xml.XmlElement]) {
+        if ($parent.HasAttribute('Condition') -or $parent.LocalName -in @('When','Otherwise','Target')) { return $true }
+        $parent = $parent.ParentNode
+    }
+    return $false
+}
+
+function Get-InventoryPropertyDeclarations {
+    param([object]$InputDocument)
+    $names = @('TargetFramework','TargetFrameworks','OutputType','IsTestProject','IsPackable',
+        'PackAsTool','AssemblyName','PackageId','RootNamespace','UseMicrosoftTestingPlatformRunner')
+    foreach ($node in $InputDocument.Xml.SelectNodes('//*[local-name()="PropertyGroup"]/*') |
+        Where-Object { $_.LocalName -in $names }) {
+        [pscustomobject]@{
+            Name = $node.LocalName; Value = $node.InnerText.Trim()
+            Source = $InputDocument.Path; Conditional = (Test-InventoryConditionalNode $node); Shared = $InputDocument.Shared
+        }
+    }
+}
+
+function Get-InventoryMetadata {
+    param([object[]]$Documents, [Collections.Generic.List[string]]$Notes)
+    $declarations = [Collections.Generic.List[object]]::new()
+    $packages = [Collections.Generic.List[string]]::new()
+    foreach ($inputDocument in $Documents) {
+        foreach ($declaration in Get-InventoryPropertyDeclarations $inputDocument) {
+            $declarations.Add($declaration)
         }
         if ($inputDocument.Xml.SelectNodes('//*[local-name()="Import"]').Count -gt 0) {
             $notes.Add("Import conditions/expressions in $($inputDocument.Path) are not evaluated; literal in-repository imports are inspected.")
@@ -139,7 +152,12 @@ function Get-InventoryProjectFacts {
             if ($node.HasAttribute('Include')) { $packages.Add($node.GetAttribute('Include')) }
         }
     }
-    foreach ($inputDocument in $documents) {
+    return [pscustomobject]@{ Declarations = $declarations.ToArray(); Packages = $packages.ToArray() }
+}
+
+function Get-InventoryProjectReferences {
+    param([string]$Root, [string]$Directory, [object[]]$Documents)
+    foreach ($inputDocument in $Documents) {
         foreach ($node in $inputDocument.Xml.SelectNodes('//*[local-name()="ProjectReference"]')) {
             if (-not $node.HasAttribute('Include')) { continue }
             $include = $node.GetAttribute('Include')
@@ -147,31 +165,41 @@ function Get-InventoryProjectFacts {
             $candidate = $include.Replace('$(MSBuildThisFileDirectory)', "$ownerDirectory$([IO.Path]::DirectorySeparatorChar)")
             $resolved = ''
             if ($candidate -notmatch '[$@%*?]') {
-                $resolved = [IO.Path]::GetFullPath([IO.Path]::Combine($directory, $candidate.Replace('\', [IO.Path]::DirectorySeparatorChar)))
+                $resolved = [IO.Path]::GetFullPath([IO.Path]::Combine($Directory, $candidate.Replace('\', [IO.Path]::DirectorySeparatorChar)))
             }
-            $references.Add([pscustomobject]@{ Include = $include; Source = $inputDocument.Path; ResolvedPath = $resolved })
+            [pscustomobject]@{ Include = $include; Source = $inputDocument.Path; ResolvedPath = $resolved }
         }
     }
-    $declared = @{}
-    foreach ($item in $declarations | Where-Object { -not $_.Shared -and -not $_.Conditional -and $_.Value -notmatch '\$\(' }) {
-        $declared[$item.Name] = $item.Value
-    }
-    $sdk = $document.DocumentElement.GetAttribute('Sdk')
-    $prefix = ([IO.Path]::GetRelativePath($Root, $directory).Replace('\','/')).TrimEnd('/')
+}
+
+function Get-InventoryOwnedSources {
+    param([string]$Root, [string]$Directory, [string]$RelativePath, [string[]]$Files, [string[]]$ProjectPaths)
+    $prefix = ([IO.Path]::GetRelativePath($Root, $Directory).Replace('\','/')).TrimEnd('/')
     if ($prefix -eq '.') { $prefix = '' }
     $nested = @($ProjectPaths | Where-Object { $_ -ne $RelativePath } | ForEach-Object {
             $folder = [IO.Path]::GetDirectoryName($_).Replace('\','/')
             if ($folder -and $folder -ne $prefix -and
                 ($prefix -eq '' -or $folder.StartsWith("$prefix/", [StringComparison]::OrdinalIgnoreCase))) { "$folder/" }
         })
-    $sourcePaths = @($Files | Where-Object {
+    return $Files | Where-Object {
             $_ -match '\.cs$' -and ($prefix -eq '' -or $_.StartsWith("$prefix/", [StringComparison]::OrdinalIgnoreCase))
         } | Where-Object {
             $file = $_
             @($nested | Where-Object { $file.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) }).Count -eq 0
-        })
+        }
+}
+
+function Get-InventorySourceSignals {
+    param([string]$Root, [string[]]$SourcePaths, [Collections.Generic.List[string]]$Notes)
     $signals = [Collections.Generic.HashSet[string]]::new()
-    foreach ($source in $sourcePaths) {
+    $patterns = [ordered]@{
+        'test-attributes' = '\[(?:Fact|Theory|TestMethod|Test|TestCase)(?:Attribute)?(?:\s*[\](])'
+        'benchmarks' = 'BenchmarkSwitcher|BenchmarkRunner|\[Benchmark(?:Attribute)?(?:\s*[\](])'
+        'entry-or-host-code' = '\b(?:WebApplication|Host)\.Create|\.RunAsync\(|\bstatic\s+(?:async\s+)?(?:void|Task|int)\s+Main\('
+        'backend-code' = ':\s*(?:ControllerBase|BackgroundService|IBgFeature)\b|:\s*[^{;]+,\s*IBgFeature\b'
+        'test-doubles' = '\b(?:class|record)\s+(?:Fake|Stub|Mock)\w+'
+    }
+    foreach ($source in $SourcePaths) {
         if ($source -match '(^|/)(bin|obj)/|\.g\.cs$|\.generated\.cs$') { continue }
         $sourcePath = Get-InventoryContainedFile $Root $source
         $sourceFile = Get-Item -LiteralPath $sourcePath
@@ -179,52 +207,78 @@ function Get-InventoryProjectFacts {
         $text = [IO.File]::ReadAllText($sourcePath)
         # This is a heuristic signal scan, not a C# parser or compiled-file graph.
         $text = [regex]::Replace($text, '(?s:/\*.*?\*/)|(?m:^\s*//[^\r\n]*$)', '')
-        if ($text -match '\[(?:Fact|Theory|TestMethod|Test|TestCase)(?:Attribute)?(?:\s*[\](])') { $null = $signals.Add('test-attributes') }
-        if ($text -match 'BenchmarkSwitcher|BenchmarkRunner|\[Benchmark(?:Attribute)?(?:\s*[\](])') { $null = $signals.Add('benchmarks') }
-        if ($text -match '\b(?:WebApplication|Host)\.Create|\.RunAsync\(|\bstatic\s+(?:async\s+)?(?:void|Task|int)\s+Main\(') { $null = $signals.Add('entry-or-host-code') }
-        if ($text -match ':\s*(?:ControllerBase|BackgroundService|IBgFeature)\b|:\s*[^{;]+,\s*IBgFeature\b') {
-            $null = $signals.Add('backend-code')
+        foreach ($signal in $patterns.Keys) {
+            if ($text -match $patterns[$signal]) { $null = $signals.Add($signal) }
         }
-        if ($text -match '\b(?:class|record)\s+(?:Fake|Stub|Mock)\w+') { $null = $signals.Add('test-doubles') }
     }
-    $readmePath = Join-Path $directory 'README.md'
+    return ,$signals
+}
+
+function Get-InventoryReadmeSignals {
+    param([string]$Root, [string]$Directory, [string[]]$Files)
+    $readmePath = Join-Path $Directory 'README.md'
     $relativeReadme = [IO.Path]::GetRelativePath($Root, $readmePath).Replace('\','/')
     if ($relativeReadme -in $Files) {
         $null = Get-InventoryContainedFile $Root $relativeReadme
         if ((Get-Item -LiteralPath $readmePath).Length -le 256KB) {
             $readme = [IO.File]::ReadAllText($readmePath)
-            if ($readme -match '(?i)test(?:ing)? (?:companion|support|double)|canned|fake (?:client|provider)|in-memory.*(?:test|client)') { $null = $signals.Add('documented-test-support') }
-            if ($readme -match '(?i)integration.test (?:host|application)|test.host|WebApplicationFactory') { $null = $signals.Add('documented-test-host') }
+            if ($readme -match '(?i)test(?:ing)? (?:companion|support|double)|canned|fake (?:client|provider)|in-memory.*(?:test|client)') { 'documented-test-support' }
+            if ($readme -match '(?i)integration.test (?:host|application)|test.host|WebApplicationFactory') { 'documented-test-host' }
         }
     }
+}
+
+function Test-InventoryTestProject {
+    param([hashtable]$Declared, [string[]]$Packages, [Collections.Generic.HashSet[string]]$Signals, [string]$Name)
     $testPackages = @($packages | Where-Object { $_ -in @('xunit','xunit.v3','MSTest.TestFramework','NUnit','TUnit','Microsoft.NET.Test.Sdk') })
-    $isTest = ($declared.ContainsKey('IsTestProject') -and $declared.IsTestProject -eq 'true') -or
+    return ($Declared.ContainsKey('IsTestProject') -and $Declared.IsTestProject -eq 'true') -or
         ($testPackages.Count -gt 0 -and ($signals.Contains('test-attributes') -or $name -match '\.Tests$'))
-    $executable = ($declared.ContainsKey('OutputType') -and $declared.OutputType -in @('Exe','WinExe')) -or
-        ($sdk -match 'Microsoft.NET.Sdk.Web' -and -not ($declared.ContainsKey('OutputType') -and $declared.OutputType -eq 'Library'))
-    $role = 'class-library'
-    $confidence = 'medium'
-    if ($isTest) { $role = 'test-suite'; $confidence = 'high'; $evidence.Add('Test-project declaration or test framework plus test source/name.') }
-    elseif ($signals.Contains('benchmarks') -and @($packages | Where-Object { $_ -eq 'BenchmarkDotNet' }).Count) {
-        $role = 'benchmark'; $confidence = 'high'; $evidence.Add('BenchmarkDotNet reference and benchmark source.')
+}
+
+function Test-InventoryExecutable {
+    param([hashtable]$Declared, [string]$Sdk)
+    return ($Declared.ContainsKey('OutputType') -and $Declared.OutputType -in @('Exe','WinExe')) -or
+        ($Sdk -match 'Microsoft.NET.Sdk.Web' -and -not ($Declared.ContainsKey('OutputType') -and $Declared.OutputType -eq 'Library'))
+}
+
+function Get-InventoryExecutableRole {
+    param([string]$Name, [string]$RelativePath, [string]$Sdk, [Collections.Generic.HashSet[string]]$Signals)
+    if ($Name -match 'TestHost|IntegrationHost' -or $Signals.Contains('documented-test-host')) {
+        return @{ Role = 'integration-test-host'; Evidence = 'Executable/web shape with test-host name or documentation.' }
     }
-    elseif ($executable -and ($name -match 'TestHost|IntegrationHost' -or $signals.Contains('documented-test-host'))) {
-        $role = 'integration-test-host'; $evidence.Add('Executable/web shape with test-host name or documentation.')
+    if ($RelativePath -match '(?i)(^|/)(samples?|examples?|fixtures?)/') {
+        return @{ Role = 'sample-application'; Evidence = 'Executable/web shape in a sample/example/fixture directory.' }
     }
-    elseif ($executable -and $RelativePath -match '(?i)(^|/)(samples?|examples?|fixtures?)/') {
-        $role = 'sample-application'; $evidence.Add('Executable/web shape in a sample/example/fixture directory.')
+    if ($Sdk -match 'Microsoft.NET.Sdk.BlazorWebAssembly') {
+        return @{ Role = 'frontend-client'; Evidence = 'Blazor WebAssembly SDK; distinguish the browser client from its server host.' }
     }
-    elseif ($sdk -match 'Microsoft.NET.Sdk.BlazorWebAssembly') {
-        $role = 'frontend-client'; $evidence.Add('Blazor WebAssembly SDK; distinguish the browser client from its server host.')
+    return @{ Role = 'application'; Evidence = 'Declared executable or Web SDK executable default; deployment intent is unverified.' }
+}
+
+function Get-InventoryPrimaryRole {
+    param([string]$Name, [string]$RelativePath, [string]$Sdk, [Collections.Generic.HashSet[string]]$Signals,
+        [string[]]$Packages, [bool]$IsTest, [bool]$Executable)
+    if ($IsTest) {
+        return @{ Role = 'test-suite'; Confidence = 'high'; Evidence = 'Test-project declaration or test framework plus test source/name.' }
     }
-    elseif ($executable) { $role = 'application'; $evidence.Add('Declared executable or Web SDK executable default; deployment intent is unverified.') }
-    elseif ($name -match '\.(Testing|Fixtures)$' -and ($signals.Contains('test-doubles') -or $signals.Contains('documented-test-support'))) {
-        $role = 'test-support-library'; $evidence.Add('Testing name and reusable fake/support implementation or documentation, without test-suite evidence.')
+    if ($Signals.Contains('benchmarks') -and 'BenchmarkDotNet' -in $Packages) {
+        return @{ Role = 'benchmark'; Confidence = 'high'; Evidence = 'BenchmarkDotNet reference and benchmark source.' }
     }
-    else { $evidence.Add('No direct executable or test-runner evidence; library role is provisional.') }
-    if ($declared.ContainsKey('PackAsTool') -and $declared.PackAsTool -eq 'true' -and $executable -and -not $isTest) {
-        $role = 'cli-tool'; $confidence = 'high'; $evidence.Add('Executable with PackAsTool=true (publication not verified).')
+    if ($Executable) {
+        return (Get-InventoryExecutableRole $Name $RelativePath $Sdk $Signals) + @{ Confidence = 'medium' }
     }
+    if ($Sdk -match 'Microsoft.NET.Sdk.BlazorWebAssembly') {
+        return @{ Role = 'frontend-client'; Confidence = 'medium'; Evidence = 'Blazor WebAssembly SDK; distinguish the browser client from its server host.' }
+    }
+    if ($Name -match '\.(Testing|Fixtures)$' -and ($Signals.Contains('test-doubles') -or $Signals.Contains('documented-test-support'))) {
+        return @{ Role = 'test-support-library'; Confidence = 'medium'; Evidence = 'Testing name and reusable fake/support implementation or documentation, without test-suite evidence.' }
+    }
+    return @{ Role = 'class-library'; Confidence = 'medium'; Evidence = 'No direct executable or test-runner evidence; library role is provisional.' }
+}
+
+function Set-InventoryReviewNotes {
+    param([string]$Name, [string]$Role, [string]$Confidence, [bool]$IsTest, [hashtable]$Declared,
+        [object[]]$Declarations, [Collections.Generic.List[string]]$Notes)
     if ($name -match '\.Tests$' -and -not $isTest) { $notes.Add('Tests suffix without confirmed test-runner evidence.'); $confidence = 'low' }
     if ($declared.ContainsKey('IsTestProject') -and $declared.IsTestProject -eq 'false' -and $isTest) {
         $notes.Add('Explicit IsTestProject=false conflicts with runner/source hints; verify the project contract.'); $confidence = 'low'
@@ -237,6 +291,40 @@ function Get-InventoryProjectFacts {
         $notes.Add('Shared role declarations are recorded, not applied as unconditional project facts.'); $confidence = 'low'
     }
     if ($notes.Count -gt 0 -and $confidence -eq 'high') { $confidence = 'medium' }
+    return $confidence
+}
+
+function Get-InventoryProjectFacts {
+    param([string]$Root, [string]$RelativePath, [string[]]$Files, [string[]]$ProjectPaths)
+    $path = Get-InventoryContainedFile $Root $RelativePath
+    $document = Read-ProjectInventoryXml $path
+    $name = [IO.Path]::GetFileNameWithoutExtension($path)
+    $directory = Split-Path $path -Parent
+    $documents = @(Get-InventoryDocuments $Root $RelativePath $Files $document)
+    $notes = [Collections.Generic.List[string]]::new()
+    $evidence = [Collections.Generic.List[string]]::new()
+    $metadata = Get-InventoryMetadata $documents $notes
+    $declarations = $metadata.Declarations
+    $packages = $metadata.Packages
+    $references = @(Get-InventoryProjectReferences $Root $directory $documents)
+    $declared = @{}
+    foreach ($item in $declarations | Where-Object { -not $_.Shared -and -not $_.Conditional -and $_.Value -notmatch '\$\(' }) {
+        $declared[$item.Name] = $item.Value
+    }
+    $sdk = $document.DocumentElement.GetAttribute('Sdk')
+    $sourcePaths = @(Get-InventoryOwnedSources $Root $directory $RelativePath $Files $ProjectPaths)
+    $signals = Get-InventorySourceSignals $Root $sourcePaths $notes
+    foreach ($signal in Get-InventoryReadmeSignals $Root $directory $Files) { $null = $signals.Add($signal) }
+    $isTest = Test-InventoryTestProject $declared $packages $signals $name
+    $executable = Test-InventoryExecutable $declared $sdk
+    $classification = Get-InventoryPrimaryRole $name $RelativePath $sdk $signals $packages $isTest $executable
+    $role = $classification.Role
+    $confidence = $classification.Confidence
+    $evidence.Add($classification.Evidence)
+    if ($declared.ContainsKey('PackAsTool') -and $declared.PackAsTool -eq 'true' -and $executable -and -not $isTest) {
+        $role = 'cli-tool'; $confidence = 'high'; $evidence.Add('Executable with PackAsTool=true (publication not verified).')
+    }
+    $confidence = Set-InventoryReviewNotes $name $role $confidence $isTest $declared $declarations $notes
     $folder = Split-Path $directory -Leaf
     if ($folder -cne $name) { $notes.Add('Project filename and containing folder differ (not necessarily a defect).') }
     if ($sourcePaths.Count -eq 0) { $notes.Add('No owned tracked C# source discovered; source may be generated or linked.') }
@@ -244,69 +332,74 @@ function Get-InventoryProjectFacts {
         Repository = (Split-Path $Root -Leaf); RepositoryRoot = $Root; Project = $RelativePath
         FullPath = $path; Name = $name; Folder = $folder; Sdk = $sdk; Role = $role; Confidence = $confidence
         ReviewRequired = $true; Evidence = @($evidence); ReviewNotes = @($notes)
-        Declarations = @($declarations); SharedBuildFiles = @($sharedPaths)
+        Declarations = @($declarations); SharedBuildFiles = @($documents | Where-Object Shared | ForEach-Object Path)
         Packages = @($packages | Sort-Object -Unique); ProjectReferences = @($references)
         ReferencedBy = @(); Solutions = @(); SourceFileCount = $sourcePaths.Count; SourceSignals = @($signals | Sort-Object)
     }
 }
 
-function Get-DotNetProjectInventory {
-    [CmdletBinding()]
-    param([Parameter(Mandatory)][string[]]$RepositoryPath, [switch]$IncludeUntracked)
-    $projects = [Collections.Generic.List[object]]::new()
-    $repositories = [Collections.Generic.List[object]]::new()
-    $seen = [Collections.Generic.HashSet[string]]::new(
-        $(if ($IsWindows) { [StringComparer]::OrdinalIgnoreCase } else { [StringComparer]::Ordinal }))
-    foreach ($inputRoot in $RepositoryPath) {
-        $root = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $inputRoot).Path).TrimEnd([IO.Path]::DirectorySeparatorChar)
-        $gitRoot = @(Invoke-ProjectInventoryGit $root @('rev-parse','--show-toplevel'))[0]
-        if ([IO.Path]::GetFullPath($gitRoot) -ne $root) { throw 'Supply repository roots, not subdirectories.' }
-        if (-not $seen.Add($root)) { continue }
-        if (((Get-Item -LiteralPath $root).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Repository roots must not be reparse points.' }
-        $arguments = @('ls-files','--cached','-z')
-        if ($IncludeUntracked) { $arguments += @('--others','--exclude-standard') }
-        $files = @(((Invoke-ProjectInventoryGit $root $arguments) -join "`n").Split([char]0) |
-            Where-Object { $_ } | Sort-Object -Unique)
-        $paths = @($files | Where-Object { $_ -match '\.csproj$' })
-        $missing = @($paths | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_) -PathType Leaf) })
-        $existing = @($paths | Where-Object { $_ -notin $missing })
-        $repositories.Add([pscustomobject]@{
-                Root = $root; ProjectCount = $existing.Count; MissingTrackedProjects = $missing
-                IncludeUntracked = [bool]$IncludeUntracked
-            })
-        $available = @($files | Where-Object { Test-Path -LiteralPath (Join-Path $root $_) -PathType Leaf })
-        foreach ($relative in $existing) {
-            try { $projects.Add((Get-InventoryProjectFacts $root $relative $available $existing)) }
-            catch {
-                throw [InvalidOperationException]::new("Cannot inventory project '$relative'. Check XML, file access and path containment; no build was executed.")
-            }
+function Add-InventorySolutions {
+    param([string]$Root, [string[]]$Files, [object[]]$Projects)
+    foreach ($solution in $Files | Where-Object { $_ -match '\.(slnx|sln)$' }) {
+        $solutionPath = Get-InventoryContainedFile $Root $solution
+        $members = if ($solution -match '\.slnx$') {
+            $xml = Read-ProjectInventoryXml $solutionPath
+            @($xml.SelectNodes('//*[local-name()="Project"]') | ForEach-Object { $_.GetAttribute('Path') })
         }
-        foreach ($solution in $available | Where-Object { $_ -match '\.(slnx|sln)$' }) {
-            $solutionPath = Get-InventoryContainedFile $root $solution
-            $members = if ($solution -match '\.slnx$') {
-                $xml = Read-ProjectInventoryXml $solutionPath
-                @($xml.SelectNodes('//*[local-name()="Project"]') | ForEach-Object { $_.GetAttribute('Path') })
-            }
-            else {
-                @([regex]::Matches([IO.File]::ReadAllText($solutionPath), '(?m)^Project\("[^"]+"\)\s*=\s*"[^"]*",\s*"([^"]+\.csproj)"') |
-                    ForEach-Object { $_.Groups[1].Value })
-            }
-            foreach ($member in $members) {
-                $memberPath = [IO.Path]::GetFullPath([IO.Path]::Combine((Split-Path $solutionPath -Parent), $member.Replace('\', [IO.Path]::DirectorySeparatorChar)))
-                foreach ($project in $projects | Where-Object FullPath -eq $memberPath) { $project.Solutions += $solution }
-            }
+        else {
+            @([regex]::Matches([IO.File]::ReadAllText($solutionPath), '(?m)^Project\("[^"]+"\)\s*=\s*"[^"]*",\s*"([^"]+\.csproj)"') |
+                ForEach-Object { $_.Groups[1].Value })
+        }
+        foreach ($member in $members) {
+            $memberPath = [IO.Path]::GetFullPath([IO.Path]::Combine((Split-Path $solutionPath -Parent), $member.Replace('\', [IO.Path]::DirectorySeparatorChar)))
+            foreach ($project in $Projects | Where-Object FullPath -eq $memberPath) { $project.Solutions += $solution }
         }
     }
-    foreach ($consumer in $projects) {
+}
+
+function Get-InventoryRepositoryFacts {
+    param([string]$Root, [switch]$IncludeUntracked)
+    $projects = [Collections.Generic.List[object]]::new()
+    $arguments = @('ls-files','--cached','-z')
+    if ($IncludeUntracked) { $arguments += @('--others','--exclude-standard') }
+    $files = @(((Invoke-ProjectInventoryGit $Root $arguments) -join "`n").Split([char]0) |
+        Where-Object { $_ } | Sort-Object -Unique)
+    $paths = @($files | Where-Object { $_ -match '\.csproj$' })
+    $missing = @($paths | Where-Object { -not (Test-Path -LiteralPath (Join-Path $Root $_) -PathType Leaf) })
+    $existing = @($paths | Where-Object { $_ -notin $missing })
+    $available = @($files | Where-Object { Test-Path -LiteralPath (Join-Path $Root $_) -PathType Leaf })
+    foreach ($relative in $existing) {
+        try { $projects.Add((Get-InventoryProjectFacts $Root $relative $available $existing)) }
+        catch {
+            throw [InvalidOperationException]::new("Cannot inventory project '$relative'. Check XML, file access and path containment; no build was executed.")
+        }
+    }
+    Add-InventorySolutions $Root $available $projects.ToArray()
+    return [pscustomobject]@{
+        Repository = [pscustomobject]@{
+            Root = $Root; ProjectCount = $existing.Count; MissingTrackedProjects = $missing
+            IncludeUntracked = [bool]$IncludeUntracked
+        }
+        Projects = $projects.ToArray()
+    }
+}
+
+function Set-InventoryIncomingReferences {
+    param([object[]]$Projects)
+    foreach ($consumer in $Projects) {
         foreach ($reference in $consumer.ProjectReferences) {
             foreach ($producer in $projects | Where-Object { $_.FullPath -eq $reference.ResolvedPath }) {
                 $producer.ReferencedBy += "$($consumer.Repository)/$($consumer.Project)"
             }
         }
     }
+}
+
+function Get-InventoryApplicationDependencies {
+    param([object[]]$Projects)
     $reachable = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     $queue = [Collections.Generic.Queue[object]]::new()
-    foreach ($app in $projects | Where-Object Role -in @('application','cli-tool')) { $queue.Enqueue($app) }
+    foreach ($app in $Projects | Where-Object Role -in @('application','cli-tool')) { $queue.Enqueue($app) }
     while ($queue.Count -gt 0) {
         $current = $queue.Dequeue()
         foreach ($reference in $current.ProjectReferences) {
@@ -314,7 +407,12 @@ function Get-DotNetProjectInventory {
             foreach ($dependency in $projects | Where-Object FullPath -eq $reference.ResolvedPath) { $queue.Enqueue($dependency) }
         }
     }
-    foreach ($project in $projects) {
+    return ,$reachable
+}
+
+function Set-InventoryGraphRoles {
+    param([object[]]$Projects, [Collections.Generic.HashSet[string]]$Reachable)
+    foreach ($project in $Projects) {
         $testConsumers = @($projects | Where-Object {
                 $_.Role -eq 'test-suite' -and $project.FullPath -in @($_.ProjectReferences | ForEach-Object { $_.ResolvedPath })
             })
@@ -332,6 +430,28 @@ function Get-DotNetProjectInventory {
         $project.ReferencedBy = @($project.ReferencedBy | Sort-Object -Unique)
         $project.Solutions = @($project.Solutions | Sort-Object -Unique)
     }
+}
+
+function Get-DotNetProjectInventory {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string[]]$RepositoryPath, [switch]$IncludeUntracked)
+    $projects = [Collections.Generic.List[object]]::new()
+    $repositories = [Collections.Generic.List[object]]::new()
+    $seen = [Collections.Generic.HashSet[string]]::new(
+        $(if ($IsWindows) { [StringComparer]::OrdinalIgnoreCase } else { [StringComparer]::Ordinal }))
+    foreach ($inputRoot in $RepositoryPath) {
+        $root = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $inputRoot).Path).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        $gitRoot = @(Invoke-ProjectInventoryGit $root @('rev-parse','--show-toplevel'))[0]
+        if ([IO.Path]::GetFullPath($gitRoot) -ne $root) { throw 'Supply repository roots, not subdirectories.' }
+        if (-not $seen.Add($root)) { continue }
+        if (((Get-Item -LiteralPath $root).Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Repository roots must not be reparse points.' }
+        $inventory = Get-InventoryRepositoryFacts $root -IncludeUntracked:$IncludeUntracked
+        $repositories.Add($inventory.Repository)
+        foreach ($project in $inventory.Projects) { $projects.Add($project) }
+    }
+    Set-InventoryIncomingReferences $projects.ToArray()
+    $reachable = Get-InventoryApplicationDependencies $projects.ToArray()
+    Set-InventoryGraphRoles $projects.ToArray() $reachable
     return [pscustomobject]@{
         SchemaVersion = 1; Analysis = 'Static, unevaluated; roles are review candidates, not rename instructions.'
         Repositories = @($repositories); Projects = @($projects | Sort-Object Repository,Project)

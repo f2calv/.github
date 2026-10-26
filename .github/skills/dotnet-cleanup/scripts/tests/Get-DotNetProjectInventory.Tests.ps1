@@ -118,6 +118,31 @@ Describe 'Static project role inventory' -Tag 'Unit' {
         { Get-DotNetProjectInventory -RepositoryPath $root } | Should -Throw
     }
 
+    It 'retains transitive backend reachability and incoming references through cycles' {
+        New-InventoryFile $root 'Host/Host.csproj' '<Project Sdk="Microsoft.NET.Sdk.Web"><ItemGroup><ProjectReference Include="../First/First.csproj"/></ItemGroup></Project>'
+        New-InventoryFile $root 'First/First.csproj' '<Project><ItemGroup><ProjectReference Include="../Second/Second.csproj"/></ItemGroup></Project>'
+        New-InventoryFile $root 'First/Worker.cs' 'public class Worker : BackgroundService {}'
+        New-InventoryFile $root 'Second/Second.csproj' '<Project><ItemGroup><ProjectReference Include="../First/First.csproj"/></ItemGroup></Project>'
+        New-InventoryFile $root 'Second/Worker.cs' 'public class Worker : IBgFeature {}'
+        git -C $root add -- .
+        $report = Get-DotNetProjectInventory -RepositoryPath $root
+        ($report.Projects | Where-Object Name -eq 'First').Role | Should -Be 'backend-library-candidate'
+        ($report.Projects | Where-Object Name -eq 'Second').Role | Should -Be 'backend-library-candidate'
+        ($report.Projects | Where-Object Name -eq 'First').ReferencedBy.Count | Should -Be 2
+    }
+
+    It 'inspects each literal imported document once even when imports form a cycle' {
+        New-InventoryFile $root 'Directory.Build.props' '<Project><Import Project="shared.props"/></Project>'
+        New-InventoryFile $root 'shared.props' '<Project><Import Project="Directory.Build.props"/><PropertyGroup><AssemblyName>Shared.Identity</AssemblyName></PropertyGroup></Project>'
+        New-InventoryFile $root 'Library/Library.csproj' '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType Condition="false">Exe</OutputType></PropertyGroup></Project>'
+        git -C $root add -- .
+        $item = (Get-DotNetProjectInventory -RepositoryPath $root).Projects[0]
+        $item.Role | Should -Be 'class-library'
+        $item.Confidence | Should -Be 'low'
+        $item.SharedBuildFiles | Should -Be @('Directory.Build.props', 'shared.props')
+        @($item.Declarations | Where-Object Name -eq 'AssemblyName').Count | Should -Be 1
+    }
+
     It 'uses test consumers to flag a fixture library without calling it an executable test host' {
         New-InventoryFile $root 'src/Domain.Tests/Domain.Tests.csproj' '<Project><PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup><ItemGroup><ProjectReference Include="../Domain.Fixtures/Domain.Fixtures.csproj"/></ItemGroup></Project>'
         New-InventoryFile $root 'src/Domain.Fixtures/Domain.Fixtures.csproj' '<Project Sdk="Microsoft.NET.Sdk" />'

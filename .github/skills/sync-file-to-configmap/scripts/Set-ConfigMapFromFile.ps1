@@ -157,6 +157,27 @@ function ConvertTo-ConfigMapLf {
     return $Text.Replace("`r`n", "`n").Replace("`r", "`n")
 }
 
+function Assert-ConfigMapXml {
+    [CmdletBinding()]
+    param([AllowEmptyString()][string]$Text, [string]$XmlRoot)
+    $Options = [Xml.XmlReaderSettings]::new()
+    $Options.DtdProcessing = [Xml.DtdProcessing]::Prohibit
+    $Options.XmlResolver = $null
+    $Options.MaxCharactersInDocument = 1MB
+    $Reader = [Xml.XmlReader]::Create([IO.StringReader]::new($Text), $Options)
+    try {
+        while ($Reader.Read()) {
+            if ($Reader.NodeType -eq [Xml.XmlNodeType]::XmlDeclaration) {
+                $Encoding = $Reader.GetAttribute('encoding')
+                if ($Encoding -and $Encoding -ine 'utf-8') { throw 'Encoding mismatch.' }
+            }
+            if ($Reader.NodeType -eq [Xml.XmlNodeType]::Element -and $Reader.Depth -eq 0 -and
+                $XmlRoot -and $Reader.LocalName -cne $XmlRoot) { throw 'Root mismatch.' }
+        }
+    }
+    finally { $Reader.Dispose() }
+}
+
 function Assert-ConfigMapSource {
     [CmdletBinding()]
     param([AllowEmptyString()][string]$Text, [string]$Format, [string]$XmlRoot)
@@ -170,22 +191,7 @@ function Assert-ConfigMapSource {
                 $Document.Dispose()
             }
             'Xml' {
-                $Options = [Xml.XmlReaderSettings]::new()
-                $Options.DtdProcessing = [Xml.DtdProcessing]::Prohibit
-                $Options.XmlResolver = $null
-                $Options.MaxCharactersInDocument = 1MB
-                $Reader = [Xml.XmlReader]::Create([IO.StringReader]::new($Text), $Options)
-                try {
-                    while ($Reader.Read()) {
-                        if ($Reader.NodeType -eq [Xml.XmlNodeType]::XmlDeclaration) {
-                            $Encoding = $Reader.GetAttribute('encoding')
-                            if ($Encoding -and $Encoding -ine 'utf-8') { throw 'Encoding mismatch.' }
-                        }
-                        if ($Reader.NodeType -eq [Xml.XmlNodeType]::Element -and $Reader.Depth -eq 0 -and
-                            $XmlRoot -and $Reader.LocalName -cne $XmlRoot) { throw 'Root mismatch.' }
-                    }
-                }
-                finally { $Reader.Dispose() }
+                Assert-ConfigMapXml $Text $XmlRoot
             }
             'Text' { }
             default { throw 'Unknown format.' }
@@ -284,35 +290,31 @@ function Assert-ConfigMapCandidate {
 #endregion
 
 #region Local settings and synchronization
-function Get-ConfigMapSettings {
+function Read-ConfigMapLocalSettings {
     [CmdletBinding()]
-    param([hashtable]$Explicit, [string]$Git)
-    $Keys = @('SourcePath', 'TargetRoot', 'TargetPath', 'ConfigMapName', 'ConfigMapNamespace', 'DataKey', 'Format', 'XmlRoot')
-    $Settings = @{ XmlRoot = '' }
-    if (-not $Explicit.ContainsKey('SourceRoot')) { throw 'SourceRoot is required explicitly.' }
-    if ($Explicit.ContainsKey('LocalConfigPath')) {
-        $Local = Resolve-ConfigMapPath $Explicit.SourceRoot $Explicit.LocalConfigPath
-        $Relative = [IO.Path]::GetRelativePath($Explicit.SourceRoot, $Local).Replace('\', '/')
-        $Ignored = Invoke-ConfigMapProcess $Git @('-C', $Explicit.SourceRoot,
-            'check-ignore', '--quiet', '--', $Relative)
-        $Tracked = Invoke-ConfigMapProcess $Git @('--literal-pathspecs', '-C', $Explicit.SourceRoot,
-            'ls-files', '--', $Relative)
-        if ($Ignored.ExitCode -ne 0 -or $Tracked.ExitCode -ne 0 -or $Tracked.Output.Length -ne 0) {
-            throw 'Local data must be gitignored and untracked.'
-        }
-        try { $LocalSettings = Import-PowerShellDataFile -LiteralPath $Local }
-        catch { throw 'Local data could not be imported safely.' }
-        foreach ($Key in $LocalSettings.Keys) {
-            if ($Key -notin $Keys -or $LocalSettings[$Key] -isnot [string]) { throw 'Unsupported local data key or type.' }
-            $Settings[$Key] = $LocalSettings[$Key]
-        }
+    param([hashtable]$Explicit, [string]$Git, [string[]]$AllowedKeys)
+    if (-not $Explicit.ContainsKey('LocalConfigPath')) { return @{} }
+    $Local = Resolve-ConfigMapPath $Explicit.SourceRoot $Explicit.LocalConfigPath
+    $Relative = [IO.Path]::GetRelativePath($Explicit.SourceRoot, $Local).Replace('\', '/')
+    $Ignored = Invoke-ConfigMapProcess $Git @('-C', $Explicit.SourceRoot,
+        'check-ignore', '--quiet', '--', $Relative)
+    $Tracked = Invoke-ConfigMapProcess $Git @('--literal-pathspecs', '-C', $Explicit.SourceRoot,
+        'ls-files', '--', $Relative)
+    if ($Ignored.ExitCode -ne 0 -or $Tracked.ExitCode -ne 0 -or $Tracked.Output.Length -ne 0) {
+        throw 'Local data must be gitignored and untracked.'
     }
-    foreach ($Key in $Explicit.Keys) {
-        if ($Key -notin ($Keys + @('SourceRoot', 'LocalConfigPath'))) { throw 'Unsupported explicit setting.' }
-        if ($Explicit[$Key] -isnot [string]) { throw 'Settings must be strings.' }
-        $Settings[$Key] = $Explicit[$Key]
+    try { $LocalSettings = Import-PowerShellDataFile -LiteralPath $Local }
+    catch { throw 'Local data could not be imported safely.' }
+    foreach ($Key in $LocalSettings.Keys) {
+        if ($Key -notin $AllowedKeys -or $LocalSettings[$Key] -isnot [string]) { throw 'Unsupported local data key or type.' }
     }
-    foreach ($Key in ($Keys | Where-Object { $_ -ne 'XmlRoot' })) {
+    return $LocalSettings
+}
+
+function Assert-ConfigMapSettings {
+    [CmdletBinding()]
+    param([hashtable]$Settings, [string[]]$RequiredKeys)
+    foreach ($Key in $RequiredKeys) {
         if (-not $Settings.ContainsKey($Key) -or [string]::IsNullOrWhiteSpace($Settings[$Key])) {
             throw 'A required source, target, identity or format setting is missing.'
         }
@@ -320,6 +322,24 @@ function Get-ConfigMapSettings {
     if ($Settings.Format -cnotin @('Json', 'Xml', 'Text') -or
         ($Settings.XmlRoot -and $Settings.Format -cne 'Xml') -or
         $Settings.DataKey -cnotmatch '^[A-Za-z0-9._-]{1,253}$') { throw 'Invalid format, XML root option or data key.' }
+}
+
+function Get-ConfigMapSettings {
+    [CmdletBinding()]
+    param([hashtable]$Explicit, [string]$Git)
+    $Keys = @('SourcePath', 'TargetRoot', 'TargetPath', 'ConfigMapName', 'ConfigMapNamespace', 'DataKey', 'Format', 'XmlRoot')
+    $Settings = @{ XmlRoot = '' }
+    if (-not $Explicit.ContainsKey('SourceRoot')) { throw 'SourceRoot is required explicitly.' }
+    $LocalSettings = Read-ConfigMapLocalSettings $Explicit $Git $Keys
+    foreach ($Key in $LocalSettings.Keys) {
+        $Settings[$Key] = $LocalSettings[$Key]
+    }
+    foreach ($Key in $Explicit.Keys) {
+        if ($Key -notin ($Keys + @('SourceRoot', 'LocalConfigPath'))) { throw 'Unsupported explicit setting.' }
+        if ($Explicit[$Key] -isnot [string]) { throw 'Settings must be strings.' }
+        $Settings[$Key] = $Explicit[$Key]
+    }
+    Assert-ConfigMapSettings $Settings ($Keys | Where-Object { $_ -ne 'XmlRoot' })
     return $Settings
 }
 
@@ -327,8 +347,8 @@ function Set-ConfigMapFromFile {
     [CmdletBinding(SupportsShouldProcess)]
     param([hashtable]$Settings, [switch]$ReviewedNonSecret)
     if (-not $ReviewedNonSecret) { throw 'Explicit complete-source non-secret review is required.' }
-    $Git = (Get-Command git -CommandType Application -ErrorAction Stop).Source
-    $Yq = (Get-Command yq -CommandType Application -ErrorAction Stop).Source
+    $Git = (Get-Command git -CommandType Application -TotalCount 1 -ErrorAction Stop).Source
+    $Yq = (Get-Command yq -CommandType Application -TotalCount 1 -ErrorAction Stop).Source
     $Version = Invoke-ConfigMapProcess $Yq @('--version')
     if ($Version.ExitCode -ne 0 -or $Version.Output -notmatch 'github\.com/mikefarah/yq/.*version v4\.') {
         throw 'Mike Farah yq v4 is required.'

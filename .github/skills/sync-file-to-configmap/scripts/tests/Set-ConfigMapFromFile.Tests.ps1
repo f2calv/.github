@@ -4,8 +4,8 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\Set-ConfigMapFromFile.ps1')
-    $script:Git = (Get-Command git -CommandType Application).Source
-    $script:Yq = (Get-Command yq -CommandType Application).Source
+    $script:Git = (Get-Command git -CommandType Application -TotalCount 1).Source
+    $script:Yq = (Get-Command yq -CommandType Application -TotalCount 1).Source
     function Write-Fixture {
         param([string]$Path, [AllowEmptyString()][string]$Text)
         [IO.File]::WriteAllText($Path, $Text, [Text.UTF8Encoding]::new($false))
@@ -74,6 +74,12 @@ binaryData:
         Set-ConfigMapFromFile $script:Settings -ReviewedNonSecret -WhatIf | Should -BeExactly 'Validated'
         [Convert]::ToBase64String([IO.File]::ReadAllBytes($script:TargetPath)) |
             Should -BeExactly ([Convert]::ToBase64String($script:Before))
+    }
+
+    It 'selects a single application path when resolving native tools' {
+        Mock Get-Command { throw 'Native tool discovery must select one executable.' } `
+            -ParameterFilter { $CommandType -eq 'Application' -and $TotalCount -ne 1 }
+        Set-ConfigMapFromFile $script:Settings -ReviewedNonSecret -WhatIf | Should -BeExactly 'Validated'
     }
 
     It 'preserves complete Unicode text, trailing newlines and surrounding semantic metadata' {

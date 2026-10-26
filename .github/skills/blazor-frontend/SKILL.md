@@ -174,3 +174,8 @@ end-to-end browser journeys with Playwright. Keep credentials out of tests.
 - Check keyboard operation, focus, labels, contrast and narrow viewports.
 - Document how the host, the downloaded client and the APIs fit together for maintainers new to
   Blazor.
+
+## Maintaining This Skill
+
+- Current Blazor templates, render modes, client asset publication and component-library setup.
+- OIDC cookie handling, antiforgery and multi-replica asset/Data Protection behavior.
