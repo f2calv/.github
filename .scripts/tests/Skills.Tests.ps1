@@ -1,10 +1,22 @@
 #Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.7.1' }
 
+param(
+    [string[]]$SkillName = @()
+)
+
 BeforeDiscovery {
     $SkillsRoot = Join-Path $PSScriptRoot '..\..\.github\skills'
     $script:Skills = Get-ChildItem -LiteralPath $SkillsRoot -Directory |
-    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md') } |
+    Where-Object {
+        ($SkillName.Count -eq 0 -or $_.Name -in $SkillName) -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md'))
+    } |
     ForEach-Object { @{ Name = $_.Name; Path = Join-Path $_.FullName 'SKILL.md' } }
+
+    $missing = @($SkillName | Where-Object { $_ -notin $script:Skills.Name })
+    if ($missing.Count -gt 0) {
+        throw "Requested skills were not found: $($missing -join ', ')."
+    }
 }
 
 Describe 'Skill <Name>' -Tag 'Unit' -ForEach $script:Skills {

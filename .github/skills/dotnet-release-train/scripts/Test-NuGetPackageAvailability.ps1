@@ -113,13 +113,26 @@ function Test-NuGetPackageAvailability {
                     Write-Verbose "$Id $Version is available."
                 }
             }
-            catch {
-                $StatusCode = [int]$_.Exception.Response.StatusCode
+            catch [System.Net.Http.HttpRequestException] {
+                $StatusCode = if ($_.Exception -is [Microsoft.PowerShell.Commands.HttpResponseException]) {
+                    [int]$_.Exception.Response.StatusCode
+                }
+                elseif ($null -ne $_.Exception.StatusCode) {
+                    [int]$_.Exception.StatusCode
+                }
+                else {
+                    0
+                }
                 if ($StatusCode -notin @(0, 404, 429)) {
-                    throw "NuGet request for $Id failed permanently with HTTP $StatusCode."
+                    throw [InvalidOperationException]::new(
+                        "NuGet request for $Id failed permanently with HTTP $StatusCode.",
+                        $_.Exception)
                 }
 
                 Write-Verbose "$Id $Version is not available yet: $($_.Exception.Message)"
+            }
+            catch [OperationCanceledException] {
+                Write-Verbose "$Id $Version request timed out; retrying within the polling deadline."
             }
         }
 

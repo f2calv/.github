@@ -7,7 +7,8 @@ applyTo: '**/*.cs'
 
 Scoped companions carry the rest: configuration types in `dotnet.configuration`, controllers and
 DTOs in `dotnet.webapi`, tests in `dotnet.testing`. Use the `dotnet-performance` skill for measured
-hot-path work.
+hot-path work and the [gRPC skill](../skills/dotnet-grpc/SKILL.md) for RPC contracts, clients,
+streaming and Kubernetes transport reliability.
 
 ## Files and Types
 
@@ -105,6 +106,11 @@ preferences are suggestions, so apply both while writing:
 - **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
   hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
   end-to-end flow when extraction would obscure it.
+- **Use modern hosting composition**, including samples and test hosts: initialize configuration and
+  register services in `Program.cs` or an `AppHost` composition root. ASP.NET Core hosts use
+  `WebApplication.CreateBuilder`; do not introduce `Startup`/`UseStartup` or separate
+  `ConfigureServices`/`Configure` lifecycle classes. For `WebApplicationFactory`, expose a public
+  partial `Program` marker instead of reverting to the older hosting model.
 - **Keep composition roots shallow.** Register each feature in its own method that returns early when
   the feature is off, and carry feature-derived switches and run-once shared infrastructure in one
   small state type rather than tuples or local functions, so no method exceeds a cognitive

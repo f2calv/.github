@@ -1,0 +1,31 @@
+# Default: docker compose up -d starts the IDE cache only.
+# Probe: docker compose --profile test run --rm probe_test checks cache connectivity without writes.
+# Endpoint: IDE cache localhost:6379; container callers use cache:6379.
+# One local stack at a time; tests must scope writes/cleanup to their own keys, never flush this cache.
+services:
+  cache:
+    image: redis:8
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - cache_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  probe_test:
+    image: redis:8
+    profiles: [test]
+    restart: "no"
+    depends_on:
+      cache:
+        condition: service_healthy
+    command: ["redis-cli", "-h", "cache", "ping"]
+
+volumes:
+  cache_data:

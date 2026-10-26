@@ -68,6 +68,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | Skill | Use it for |
 | --- | --- |
 | [README authoring](.github/skills/readme-authoring/SKILL.md) | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
+| [ADR authoring](.github/skills/adr-authoring/SKILL.md) | Evidence-backed local architecture decisions, source deep links, proposal refinement and optional GitHub issues labelled adr |
 | [Repository baseline](.github/skills/repository-baseline/SKILL.md) | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](.github/skills/repository-privacy/SKILL.md) | Checking public changes for personal data, credentials and private-system details |
 | [Issues and pull requests](.github/skills/github-issues-and-pull-requests/SKILL.md) | Issue quality, pull request descriptions, review findings and merge readiness |
@@ -79,18 +80,32 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Dev Containers](.github/skills/devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Docker Compose](.github/skills/docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
+| [File to ConfigMap](.github/skills/sync-file-to-configmap/SKILL.md) | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
+| [Modular monolith](.github/skills/modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
+| [Ports and adapters](.github/skills/ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
+| [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
+| [.NET background pipelines](.github/skills/dotnet-background-pipelines/SKILL.md) | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
+| [.NET HTTP integrations](.github/skills/dotnet-http-integrations/SKILL.md) | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
+| [.NET CLI](.github/skills/dotnet-cli/SKILL.md) | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [.NET cleanup](.github/skills/dotnet-cleanup/SKILL.md) | Source layout, naming and analyzer-driven cleanup |
 | [.NET exceptions](.github/skills/dotnet-exceptions/SKILL.md) | Throw-site audits and area-specific `GenericException` types |
+| [EF Core data access](.github/skills/dotnet-efcore/SKILL.md) | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [.NET Web API](.github/skills/dotnet-webapi/SKILL.md) | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [.NET gRPC](.github/skills/dotnet-grpc/SKILL.md) | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
+| [Blazor frontend](.github/skills/blazor-frontend/SKILL.md) | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
+| [OIDC app registration](.github/skills/oidc-app-registration/SKILL.md) | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [.NET performance](.github/skills/dotnet-performance/SKILL.md) | Measured hot-path, allocation and parsing improvements |
+| [.NET upgrade](.github/skills/dotnet-upgrade/SKILL.md) | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [.NET release train](.github/skills/dotnet-release-train/SKILL.md) | Dependency-ordered NuGet updates, releases and consumer propagation |
 | [.NET test platform](.github/skills/dotnet-test-platform/SKILL.md) | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Leadership election](.github/skills/leadership-election/SKILL.md) | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [Redis data access](.github/skills/redis-data-access/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [REST Client requests](.github/skills/rest-client-requests/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
 | [Helm charts](.github/skills/helm-charts/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
+| [Terraform IaC](.github/skills/terraform-iac/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [GitOps repository structure](.github/skills/gitops-repository-structure/SKILL.md) | Argo CD Application discovery, ownership and stateful migrations |
 | [NGINX ingress migration](.github/skills/nginx-ingress-migration/SKILL.md) | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [UniFi network management](.github/skills/unifi-network-management/SKILL.md) | Network discovery, VLANs, host networking and performance diagnostics |
@@ -161,7 +176,8 @@ before adding local overrides.
 
 The central Pester runner discovers root script tests and every skill's `scripts/tests` directory,
 including pre-commit management and release-train checks. With PowerShell 7.4+, Pester 5.7.1,
-Git, Bash, Helm, Mike Farah yq v4 and npm available, run from the repository root after test approval:
+Git, Bash, Helm, Mike Farah yq v4, the .NET 10 SDK and npm available, run from the repository root
+after test approval:
 
 ```powershell
 npm run test:ps
@@ -192,12 +208,17 @@ dotnet test --project src/Example.CountParsing.Tests/Example.CountParsing.Tests.
 | Container and caller templates | Static audit and synthetic argument/exit tests | Image builds, registry publication and deployment |
 | Helm/GitOps/ingress examples | Real local Helm render/lint/schema/package checks and structural ownership assertions | Cluster bootstrap, admission, routing, certificates and rollback |
 | Forms, policy overrides and cleanup examples | Form comparisons, pure policy composition, mocked APIs and synthetic source edits | Actual GitHub operations and consumer compatibility |
+| Appsettings build items | SDK-only synthetic build/publish/package tests extracted from the configuration instructions, including missing local files and older source timestamps | Real application startup and private configuration values are not exercised |
 | REST collections and network-change evidence | Static structure, variable and approval-boundary checks | Requests, live network measurements and fault recovery |
 | Self-contained parsing fixture | Separate CI job builds all three projects and runs xUnit tests; Dependabot maintains its packages | Benchmark execution remains explicitly requested |
 | Other .NET integration examples | Structural Pester checks | Consumer-bound compile/HTTP fixtures and published-package consumption are not continuously executed |
 
 The other .NET compile, loopback HTTP and benchmark checks performed while authoring examples remain
 point-in-time evidence. Repeat them after relevant SDK/API changes.
+
+## License
+
+This repository is available under the [MIT License](LICENSE).
 
 <!-- TODO: Extend dotnet-examples with persistent synthetic integration fixtures:
 1. Extract the MCP/controller snippets into isolated hosts, using fake authentication and source

@@ -54,6 +54,9 @@ Apply to every file named `README.md`, wherever it lives — repository root, pr
   when useful; keep detailed contributor and operational guidance in its appropriate document.
 - Do not narrate a repository's internal CI jobs or release plumbing. Explain workflow inputs,
   outputs, permissions and execution flow when the workflow or action is itself the product.
+- Do not duplicate local Compose wiring in READMEs: port mappings, image tags, mounts and storage
+  layout belong in the Compose file and its header. Link to it; retain only necessary startup
+  commands, caller configuration and data-loss warnings in the README.
 - Reuse dedicated or inherited contribution, support and security guidance rather than duplicating
   it. A short link is sufficient where discovery needs help; do not create empty boilerplate sections.
 - A collection's root README provides orientation and one useful catalogue. Project READMEs explain

@@ -7,6 +7,10 @@ applyTo: '**/*.tf,**/*.tfvars,**/*.hcl'
 
 This file covers how to write the HCL. Repository-specific topology, variable bootstrap, state coordinates and deployment workflow belong in that repository's `.github/copilot-instructions.md`, not here.
 
+Use the [Terraform IaC skill](../skills/terraform-iac/SKILL.md) for repository construction,
+onion-layered deployment roots, local child-module incubation and promotion to independently
+released module repositories, composition and ordered provisioning/retirement.
+
 Two role-specific sections follow the universal rules. Apply exactly one of them:
 
 - **Reusable child module repository** — publishes a module consumed by someone else's root module. It declares no backend, no provider configuration and no state of its own.
@@ -14,7 +18,10 @@ Two role-specific sections follow the universal rules. Apply exactly one of them
 
 ## Running Terraform
 
-- `terraform fmt`, `terraform validate` and a backend-free `terraform init` are safe to run unprompted; none of them authenticate or touch state.
+- `terraform fmt` and `terraform validate` are safe to run unprompted. For static initialization
+  of a deployment root, use `terraform init -backend=false` with a fresh, isolated `TF_DATA_DIR`.
+  Reusing deployment backend metadata can still trigger remote-state lookups during module
+  initialization even with `-backend=false`; that requires cloud/state approval.
 - Always ask before any command that authenticates to the cloud provider, reads remote state or mutates infrastructure — `plan`, `apply`, `destroy`, `import` and `state` subcommands included.
 - For an approved apply, save the plan to a file, inspect its exact create/update/replace/destroy actions, and apply that same plan artifact. Do not review one plan and then apply a newly calculated plan.
 - After an address migration, provider transition or other state-sensitive refactor, run a second plan and require a no-change result before removing migration scaffolding.
@@ -123,11 +130,11 @@ Commented-out blocks accumulate fast in Terraform. Delete superseded and dormant
 
 ## Reusable Child Module Repositories
 
-Applies when the repository publishes a module for other root modules to consume over a pinned source.
+Applies to reusable child modules, whether incubated locally or published from their own repository.
 
 ### Versions and Providers
 
-- Set `required_version` to the oldest Terraform the module's syntax needs. Constrain each provider to the current supported major with a permissive lower and exclusive upper bound, such as `>= 5.0, < 6.0`.
+- Set `required_version` to the oldest Terraform the module's syntax needs; for example, `optional(type, default)` requires Terraform 1.3 or newer. Constrain each provider to the current supported major with a permissive lower and exclusive upper bound, such as `>= 5.0, < 6.0`.
 - **Never pin an exact version.** A child module pinning `= 4.81.0` cannot be composed with a caller or a sibling module that needs anything else. Exact pins belong to the root module.
 - **Do not declare `provider` blocks.** Providers are inherited from the caller, which may pass a specific alias via `providers = { ... }`. Pass an alias onto an individual block with `provider = <name>.<alias>`.
 - **Do not declare a `backend`.** The caller owns state.
@@ -171,7 +178,7 @@ Applies when the repository holds the configuration applied against a cloud subs
 
 ### Versions and Providers
 
-- **Terraform**: pin to an exact version in `required_version`, identical across every module in the repository.
+- **Terraform**: pin to an exact version in `required_version`, identical across deployment roots in the repository. Reusable children follow the child-module constraints above, including while hosted locally.
 - **Providers**: use a pessimistic constraint (`~>`) on major.minor for mainstream providers, and an exact pin (`=`) where a patch bump has previously broken a plan.
 - **Commit `.terraform.lock.hcl`.** The root module owns the resolved provider builds, and the lock file is what makes a plan reproducible.
 - Declare provider configuration here. Where the configuration spans more than one subscription or cluster, declare aliased providers and pass them explicitly with `providers = { ... }` on a module call or `provider = <name>.<alias>` on a block.

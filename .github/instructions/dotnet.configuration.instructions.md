@@ -1,6 +1,6 @@
 ---
-description: 'Application configuration layering, options types and validation, options synchronisation, command-line precedence and secret-safety conventions.'
-applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
+description: 'Application configuration layering, appsettings MSBuild copy/publish/pack metadata, optional local files, options validation, command-line precedence and secret safety.'
+applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs,**/*.csproj,**/*.props,**/*.targets'
 ---
 
 # Configuration
@@ -33,6 +33,87 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   name maps onto a bound options property. Exclude any secret family whose names would bind into
   another application's options, such as a per-application identity under a shared section name.
 
+## Appsettings Build Items
+
+- Set **`CopyToOutputDirectory="Always"`** on every appsettings file intended for build output,
+  including base, environment, test and optional local overlays. Do not substitute `PreserveNewest`:
+  restored/copied configuration can have an older timestamp while containing different values.
+  Preserve deliberate exclusions, such as host tests that remove private settings copied from a
+  referenced server. Do not add configuration to a library that does not consume it.
+- Keep the existing source location and environment names. A root file shared by entry hosts is
+  linked, not duplicated into each project. Set `Link` to its intended output filename. In a shared
+  imported props/targets file, anchor the source with `$(MSBuildThisFileDirectory)`; a bare relative
+  path otherwise depends on the importing project's directory.
+- Use `Include` for an external file not already included by the SDK. Use `Update` for an existing
+  SDK item: project-local JSON is normally `Content` in Web SDK projects and `None` in plain SDK
+  projects. Inspect evaluated items, SDK defaults, `Remove` entries and imports before choosing.
+  Retain a deliberate explicit item type when needed; do not include the same file as both Content
+  and None or assign two sources the same output path.
+- Guard explicit optional local items with `Condition="Exists('the-same-source-path')"`. Combine
+  it with any existing condition rather than discarding build/platform selection. A wildcard
+  `Update` naturally matches only existing items; do not use `Exists('appsettings*.json')`, because
+  `Exists` is not a glob test.
+- Required base/deployment files should fail when missing. Add `Exists` to a test/environment
+  overlay only when it is intentionally optional; preserve existing optionality rather than
+  silently hiding a required file. Whether a runtime JSON provider is optional is a separate
+  decision from MSBuild item inclusion.
+- Local overrides carry private configuration: set **`CopyToPublishDirectory="Never"` and
+  `Pack="false"`**, while retaining `CopyToOutputDirectory="Always"` for intended local execution.
+  Cover both `appsettings.Local*.json` and any existing `appsettings.*.Local.json` naming pattern.
+  Do not introduce a second naming convention or rename existing files during a metadata cleanup.
+- Keep the established publish behavior of non-local base/environment files. Build copying,
+  publishing and NuGet packaging are separate contracts; changing `CopyToOutputDirectory` does not
+  express a publish exclusion. For a broad appsettings glob, put the local metadata override after
+  the broad item so it wins.
+- Preserve credential-free test isolation. A test project may deliberately remove inherited
+  application-local output while retaining its own test-specific overlay. `Always` and `Exists`
+  do not remove a previously copied file after the source disappears; validate absent-file cases in
+  fresh output and clean only known stale artifacts, not a shared output tree.
+
+### Linked Files Outside a Project
+
+Adapt paths to the existing repository layout; these are item-group fragments, not complete projects:
+
+```xml
+<ItemGroup>
+  <Content Include="..\..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="Always" />
+  <Content Include="..\..\appsettings.Development.json" Link="appsettings.Development.json" CopyToOutputDirectory="Always" />
+  <Content Include="..\..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" Pack="false" Condition="Exists('..\..\appsettings.Local.json')" />
+  <Content Include="..\..\appsettings.Local.Development.json" Link="appsettings.Local.Development.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" Pack="false" Condition="Exists('..\..\appsettings.Local.Development.json')" />
+</ItemGroup>
+```
+
+For a shared props file one directory below the source, replace the source prefix in both `Include`
+and `Exists` with `$(MSBuildThisFileDirectory)..\`. Keep `Link` unchanged. Import it only into the
+hosts that consume those settings; do not broaden it to every project through unrelated global policy.
+
+### Project-Local SDK Items
+
+Use the matching SDK item type; an existing plain SDK `None` glob can be written as:
+
+```xml
+<ItemGroup>
+  <None Update="appsettings*.json" CopyToOutputDirectory="Always" />
+  <None Update="appsettings.Local*.json;appsettings.*.Local.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" Pack="false" />
+</ItemGroup>
+```
+
+For Web SDK default items use `Content Update` instead. Prefer explicit filenames when the project
+has a defined subset of settings or test overlays; do not broaden that subset merely to shorten XML.
+
+### Validate Without Disclosing Local Settings
+
+Inspect evaluated Content/None metadata in the intended configuration/framework: source path,
+Link/TargetPath, copy flags, publish flags and Pack. Do not dump configuration values. Use synthetic
+fixtures to prove output is replaced even when source timestamps are older, missing optional files
+do not break the build, and local files are absent from a fresh publish directory and NuGet package.
+Do not run a real application or integration suite merely to validate build metadata.
+
+Local publish/package exclusion does not prevent a custom archive script from shipping `bin/`.
+Treat build output as potentially private. Deployment configuration is a separate approved workflow;
+use the central `sync-file-to-configmap` skill for reviewed non-secret files in a private GitOps
+repository, never as a route for credentials into a ConfigMap.
+
 ## Options Synchronisation
 
 - Give every optional configuration property an explicit safe default on the options record or
@@ -43,6 +124,9 @@ applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
   can drift. Keep base-file keys only for required values without a safe code default, deliberate
   overrides, placeholders that make a tracked example runnable, or collection content that cannot
   be expressed as an empty/default object.
+- The binder appends configured array elements to a non-empty array default instead of replacing
+  it, so repeating such a default duplicates its entries and an override cannot remove one. Keep
+  collection defaults empty when configuration should own the list.
 - When adding, renaming or removing a bindable property on an options type — or on any nested type reachable from it — review the base file, each applicable tracked environment override, each existing local tier used by the repository, and every documentation example in the same change. Add or retain a key only where that provider intentionally differs from the code default.
 - Add a key to an environment-specific file only when that environment genuinely needs to override the type's default.
 - Add a key to a local file only when it differs from the tracked defaults or contains private

@@ -1,9 +1,13 @@
 ---
-description: 'EF Core and PostgreSQL conventions for model mapping, migration generation and zero-downtime rolling deployments.'
+description: 'EF Core and PostgreSQL invariants for model naming, schema safety and rolling compatibility; the dotnet-efcore skill owns implementation and migration workflows.'
 applyTo: '**/*DbContext*.cs,**/*EntityTypeConfiguration*.cs,**/Entities/**/*.cs,**/Migrations/**/*.cs'
 ---
 
 # EF Core And PostgreSQL
+
+Use the [EF Core data-access skill](../skills/dotnet-efcore/SKILL.md) for context lifetimes,
+factories, mappings, queries, performance, transactions, concurrency, migrations, seeding and
+provider-backed validation. This file owns the scoped invariants; the skill owns their procedures.
 
 ## PostgreSQL Naming
 
@@ -14,46 +18,34 @@ applyTo: '**/*DbContext*.cs,**/*EntityTypeConfiguration*.cs,**/Entities/**/*.cs,
 - In a repository that uses explicit mappings, add the mapping before generating a migration.
   Review the migration and model snapshot for accidental PascalCase identifiers before committing.
 
-## Migration Generation
+## Model and Migration Safety
 
-- Scaffold from the current model build. Let `dotnet ef migrations add` build by default. Use
-  `--no-build` only after explicitly verifying that the compiled assembly reflects the current
-  model. Treat an unexpectedly empty `Up` or `Down` method as a stale-build warning and regenerate
-  rather than committing it.
-- Remove an unapplied migration offline with `dotnet ef migrations remove --force` so EF reverts
-  both the migration files and model snapshot even when it cannot query the database. Use a clearly
-  non-routable placeholder connection string only when the design-time factory requires one. Never
-  use `--force` when the migration may already be applied; verify deployment state first.
-- Review generated data operations. When an entity uses `HasData`, inspect migrations for bulk
-  `UpdateData`, `InsertData` or `DeleteData` churn after model changes. Verify each generated
-  operation is intentional. Remove demonstrable no-op seed updates before committing, then inspect
-  the generated SQL and confirm the model snapshot still matches the intended model.
-- Do not use `HasData` for large, mutable or runtime-owned datasets. EF embeds the complete payload
-  in every model snapshot and can generate enormous or destructive data operations after unrelated
-  model changes. Bootstrap such data through an explicit idempotent initializer or deployment job
-  using stable natural keys and upserts that preserve runtime-owned columns.
-- Removing existing `HasData` is a data migration, not a metadata-only refactor: generated
-  `DeleteData` operations can erase live rows. Review and deliberately neutralize or replace those
-  operations, then verify both fresh initialization and upgrade from an existing database.
-- Gate deployment on model consistency. Before building or deploying an EF-backed application, run
-  `dotnet ef migrations has-pending-model-changes` against the current model. Stop before publishing
-  artifacts or mutating deployment manifests when model changes have no migration.
+- A context is a short-lived, single unit of work, never shared concurrently. Keep read/write tenant
+  scope and database constraints authoritative even when using query filters, raw SQL or caches.
+- Scaffold migrations from the current model build and review generated code, SQL and snapshot.
+  Never rewrite published/applied migration history or remove a migration with unknown deployment
+  state. An unexpectedly empty migration requires investigation.
+- Keep large, mutable and runtime-owned data out of `HasData`. Removing model-managed seed data
+  is a potentially destructive data migration, not a metadata-only change.
+- Reject new migration, designer and snapshot changes dominated by embedded datasets. Loading
+  data from a helper, file or generator and passing it to `HasData` still embeds it in the model.
+  Use an explicit idempotent seeding path outside the model; reserve `HasData` for a small,
+  genuinely static reference set whose inclusion is justified during review.
+- Gate CI and deployment artifact publication on the current model's
+  `dotnet ef migrations has-pending-model-changes` check. Stop on missing migrations before
+  publishing artifacts or mutating deployment manifests.
 
-## Expand/Contract (Parallel Change)
+## Shared Schema and Rolling Compatibility
 
-When an application runs rolling `Deployment` updates against a shared database, the old and new ReplicaSets hit the **same** schema simultaneously. Every migration MUST be backward-compatible with the currently-running release — follow the expand/contract (parallel change) pattern.
-
-- **Schema application is external, not in-pod.** Apply migrations from a dedicated step that runs to completion **before** the new ReplicaSet rolls — an idempotent EF SQL script (`dotnet ef migrations script --idempotent`), an `efbundle`, or a one-shot migration workload gated behind a deploy hook (e.g. an Argo **PreSync Job**). Disable automatic migrate-on-startup in shared environments so no pod races to migrate at boot. Runtime `MigrateAsync()` is inappropriate for production (instance races, elevated schema perms, no inspection step, hard rollback). Local development may keep migrate-on-startup for convenience.
-- **Additive-only within a release.** A single release may only ADD tables, columns, indexes, or constraints that older code ignores. New columns are added **nullable** (or with a DB default). Never add a NOT NULL column without a default while older pods are still running.
-- **Never rename or drop in the same release as the code change.** A rename spans **two** releases: expand (add the new column) → migrate (dual-write and backfill, ship code that reads the new column) → contract (drop the old column). Dropping a column/table follows the same split: stop referencing it in release N, drop it in release N+1.
-- **Nullable → backfill → non-null across releases.** (1) Add the nullable column plus code that writes it; (2) backfill existing rows (migration data step or a job); (3) once all rows are populated **and** no old pods remain, a later release adds the NOT NULL constraint and/or drops the legacy column.
-- **Dual-write during migrate.** While both old and new columns exist, new code writes **both**, so a rollback to the previous release still functions.
-- **Destructive DDL only after contract.** Column/table drops, type narrowing, and NOT NULL tightening land only once no running pod references the old shape.
-- **CI guards.** Run `dotnet ef migrations has-pending-model-changes` in CI to fail on model/migration drift. Review the generated SQL before merge — a "rename" can silently become a drop + add (data loss). Migrations must be idempotent and re-runnable.
-- **Deploy-hook + rolling interaction.** The external migrator applies the EXPAND (additive) schema → the rolling `Deployment` brings up new pods that tolerate both the old and new shape → old pods drain. Only a subsequent release's migrator runs the CONTRACT.
-
-## References
-
-- [EF Core — Applying Migrations](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/applying)
-- [EF Core — Managing Migrations (`has-pending-model-changes`)](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/managing)
-- [Martin Fowler — Parallel Change (expand/contract)](https://martinfowler.com/bliki/ParallelChange.html)
+- Apply schema changes through an external, serialized, reviewable migration step that completes
+  before application rollout. Disable migrate-on-startup in shared environments; local development
+  may use it deliberately. Keep schema-changing privileges separate from the runtime identity.
+- Preserve compatibility with every application version still running or supported for rollback.
+  Use expand/migrate/contract across releases: additive structures first, compatible writes and
+  backfill next, destructive changes only in a later release after old dependencies are gone.
+- New columns must be nullable or have a database default compatible with old writers. Renames,
+  drops, type narrowing and non-null tightening cannot accompany the first code switch.
+- Preserve old/new representations during the transition where rollback requires dual writes;
+  validate backfill completion and concurrent writers before contract.
+- Deployment retries must be safe for the actual provider and runner. Migration-history checks do
+  not make arbitrary DDL or data operations idempotent after partial failure.

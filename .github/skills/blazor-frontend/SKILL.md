@@ -1,0 +1,181 @@
+---
+name: blazor-frontend
+description: 'Create, extend, audit or troubleshoot Blazor Web App frontends: render-mode choice, co-hosted WebAssembly client projects, component libraries, typed API clients, OIDC cookie authentication, antiforgery, multi-replica assets and Data Protection, and component or browser tests.'
+---
+
+# Blazor Frontend
+
+Add or change a Blazor frontend with an explicit render-mode decision, a thin component layer over
+authorized HTTP APIs and a deployment that survives several replicas. Verify current framework and
+package behavior while implementing; do not rely on remembered template output.
+
+## Authorities
+
+- [Blazor instructions](../../instructions/dotnet.blazor.instructions.md) own component invariants.
+- [C# instructions](../../instructions/dotnet.csharp.instructions.md) own types, DI, cancellation and
+  logging. [Web API instructions](../../instructions/dotnet.webapi.instructions.md) and the
+  [Web API skill](../dotnet-webapi/SKILL.md) own the controllers the frontend calls.
+- [Configuration instructions](../../instructions/dotnet.configuration.instructions.md) own options
+  and secret placement. [Testing instructions](../../instructions/dotnet.testing.instructions.md) own
+  test approval and layout.
+- [Container images](../container-images/SKILL.md) owns Dockerfiles that publish the host.
+- [OIDC app registration](../oidc-app-registration/SKILL.md) owns identity-provider registrations,
+  client secrets and reverse-proxy callback setup.
+
+Keep application-specific choices, such as one application's render mode or tenant model, in that
+repository's own instructions rather than in these shared files.
+
+## Workflow
+
+### 1. Establish the Context
+
+Read the host bootstrap, middleware order, authentication schemes, authorization policies, API
+controllers and contracts, solution files, Dockerfile and deployment chart before editing. Record
+the routes the browser must call and which of them already serve machine callers.
+
+### 2. Choose the Render Mode
+
+| Mode | Use when | Costs |
+| --- | --- | --- |
+| Interactive WebAssembly | Replicas must stay interchangeable, or browser-owned state suits the app | Larger first download; every server operation is an explicit HTTP API |
+| Interactive Server | Low-latency internal tools that may hold a live server circuit per user | Sticky circuits, reconnects and per-user server memory; a SignalR backplane does not move circuits |
+| Interactive Auto | First paint must be fast and the team accepts both models | Inherits the Server circuit concerns and duplicates the data-access boundary |
+| Static server rendering | Content pages and simple forms | No rich component interactivity |
+
+Apply the mode globally on `Routes` and `HeadOutlet` unless pages deliberately differ. Disabling
+prerendering (`new InteractiveWebAssemblyRenderMode(prerender: false)`) simplifies a first frontend:
+components run only in the browser, so they never need server-side data paths or persisted state.
+
+### 3. Scaffold From the Current Template
+
+Generate a reference project in a temporary directory and copy its wiring rather than writing it
+from memory, then delete the directory:
+
+```powershell
+$reference = Join-Path ([IO.Path]::GetTempPath()) 'blazor-reference'
+dotnet new blazor -n Reference -o $reference --interactivity WebAssembly --all-interactive --empty
+```
+
+For a co-hosted WebAssembly frontend:
+
+- Add a `Microsoft.NET.Sdk.BlazorWebAssembly` client project under `src/`, referenced by the host.
+  Add it to every solution file the repository builds, including Release and container paths.
+- The host references `Microsoft.AspNetCore.Components.WebAssembly.Server`, keeps `App.razor` and
+  maps `MapStaticAssets()` and `MapRazorComponents<App>().AddInteractiveWebAssemblyRenderMode()`
+  with `AddAdditionalAssemblies` for the client assembly.
+- Copy template properties such as `BlazorDisableThrowNavigationException`, the router's
+  `NotFoundPage` and `ResourcePreloader`, then reconcile them with the repository's central package
+  management, analyzers and `GlobalUsings.cs` conventions.
+- Keep existing API, health and protocol routes ahead of the component fallback, and confirm that an
+  unknown `/api` path still returns a JSON 404 rather than the HTML shell. Do not copy the template's
+  `UseStatusCodePagesWithReExecute`, which re-executes API 404s into the HTML shell.
+- `MapStaticAssets` adds a GET-only `{**path:file}` fallback. Method matching runs before the file
+  constraint, so any unmatched non-GET request answers 405 instead of 404. Assert route absence from
+  the endpoint data source rather than a 404 status.
+- Make the client project keep its own runtime identifier, or a host publish for a Linux runtime
+  (`-r linux-x64`, or a multi-RID restore) flows into it and fails with `NU1102` for Mono runtime
+  packs. Declare `TreatAsLocalProperty="RuntimeIdentifier;RuntimeIdentifiers;SelfContained"` on the
+  client's `<Project>` and set `RuntimeIdentifier` to `browser-wasm`, `RuntimeIdentifiers` empty and
+  `SelfContained` to `true`.
+- Add `*.razor` and `*.razor.css` to an allow-list `.dockerignore`, then build the image and confirm
+  the published `wwwroot/_framework` contains the client assemblies.
+- Set `<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>` in the host project. The SDK otherwise
+  infers it from `.razor` content items, and a container restore that copies only project files sees
+  none, so the published image silently lacks `blazor.web.js` while local publishes include it. Add
+  `test -f /app/publish/wwwroot/_framework/blazor.web.js` after publish so the image build fails
+  instead.
+- When the frontend is disabled by configuration, answer page navigations with a short setup page
+  that names the missing settings, not their values, rather than a bare 404 or a shell that only
+  receives 401s. Keep API paths and non-GET requests on a plain 404.
+
+### 4. Add the Component Library
+
+Use one library. Check its current stable release and installation guide when adding it, then
+register its services in the client, add its providers to the root layout and reference its assets
+through `@Assets[...]` so fingerprinting applies. Self-host fonts or use the system font stack
+instead of a third-party font CDN, which leaks visitor addresses and complicates a content security
+policy. For MudBlazor follow the [installation guide](https://mudblazor.com/getting-started/installation).
+Keep its analyzer warnings as errors: `MUD0002` catches parameters renamed between major versions,
+such as `MudText` using `HtmlTag` rather than `Component`. Recent versions use `IMudDialogInstance`
+and `ShowMessageBoxAsync`.
+
+### 5. Build the API Boundary
+
+- Serve browser endpoints from the same origin, under a route prefix separate from machine APIs.
+- Keep controllers thin and reuse application services. Return allowlisted DTOs designed for the
+  screen; never serialize configuration records, entities or anything that can carry credentials.
+- Write one typed client service per API area in the client project, returning typed outcomes the
+  components can render.
+- Treat route identifiers such as a tenant key as requested targets. Authorize every one on the
+  server against the authenticated user.
+
+### 6. Authenticate With a Host-Owned Cookie
+
+- Run OIDC authorization code with PKCE on the server with a dedicated web registration, and sign the
+  browser in with a named Secure, HttpOnly, SameSite cookie. Do not save tokens unless the host must
+  call a downstream API on the user's behalf.
+- Keep machine bearer-token policies separate. Select the cookie scheme explicitly on browser
+  endpoints instead of changing the default scheme the machine APIs rely on.
+- Make browser API endpoints return 401 and 403 instead of redirecting to the identity provider; only
+  navigational login and logout endpoints redirect. Register an `IAuthorizationMiddlewareResultHandler`
+  that writes Problem Details for those endpoints: without it a failed policy redirects, or throws when
+  no authentication scheme is registered in an open Development mode.
+- If a Development-only convention makes controllers anonymous, exclude the browser endpoints from
+  it, or it silently bypasses their policy.
+- Prefer a small same-origin session endpoint that describes the signed-in user and issues the
+  antiforgery token. `AddAuthenticationStateSerialization` depends on persisted component state, so
+  verify it with the chosen render mode before relying on it. Authorize again on every API call.
+- Enforce antiforgery on every cookie-authenticated mutation, including logout. With a co-hosted
+  WebAssembly client, issue a request token from that session endpoint and send it in a header.
+  Tokens are bound to the principal: when the cookie is not the default scheme, authenticate it
+  before issuing or validating a token. Controllers registered with `AddControllers` lack MVC's
+  view-feature antiforgery filters, so `[AutoValidateAntiforgeryToken]` fails at runtime; validate
+  with `IAntiforgery` in a small authorization filter instead.
+- Sign-in and sign-out are full page loads to host routes that the client router does not own:
+  navigate with `forceLoad: true`, and post sign-out as a plain form carrying the token field.
+- Derive audit actors from the validated principal, never from a request body.
+
+### 7. Prepare for Several Replicas
+
+- Persist the Data Protection key ring in shared durable storage with a fixed application name, and
+  protect keys at rest. Pod-local keys or an evictable cache break cookies and antiforgery tokens on
+  the next replica.
+- Validate exact HTTPS callback URLs and configure forwarded headers only for trusted proxies.
+- During a rolling release an old page can request assets the new replica no longer serves.
+  Fingerprinted assets avoid stale caches but not that gap; verify a reload recovers, and keep the
+  previous release's assets available when it does not.
+- Do not require session affinity. Test two replicas, a pod replacement mid-session and a mixed-version
+  reload before declaring the frontend highly available.
+
+### 8. Test
+
+Ask before running tests. Cover API authorization, cross-tenant access, antiforgery, 401/403 and
+validation with host tests; render-state and form logic with a small bUnit suite; and one or two
+end-to-end browser journeys with Playwright. Keep credentials out of tests.
+
+- Swap the cookie handler for a header-driven test handler by setting the scheme's `HandlerType` in
+  `ConfigureTestServices`, so authorization runs unchanged without an identity provider.
+- Settings the host reads eagerly in `Program`, such as whether to register a scheme, are not visible
+  through `ConfigureAppConfiguration`; set them as environment variables around `CreateHost`.
+- Prove shared Data Protection keys by issuing an antiforgery token from one test host and
+  validating it on a second host that uses the same key store.
+- When driving forms with browser automation, type into one field at a time; parallel input lands in
+  whichever field has focus.
+
+### 9. Validate and Document
+
+- Build and publish through every supported path and confirm the published output contains the
+  client's `_framework` assets.
+- Smoke-test the built image by fetching every `src` and `href` the served HTML references and
+  requiring 200 for each, or by loading the page in a browser. Matching a script name with a loose
+  pattern can confuse `blazor.web.js` with `blazor.webassembly.js`.
+- Inspect downloaded assemblies, `wwwroot` configuration, API payloads and browser storage for
+  secrets, tokens and private identifiers.
+- Check keyboard operation, focus, labels, contrast and narrow viewports.
+- Document how the host, the downloaded client and the APIs fit together for maintainers new to
+  Blazor.
+
+## Maintaining This Skill
+
+- Current Blazor templates, render modes, client asset publication and component-library setup.
+- OIDC cookie handling, antiforgery and multi-replica asset/Data Protection behavior.

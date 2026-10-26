@@ -115,7 +115,8 @@ In `audit` mode, look for reads that should go through the cache but do not:
    then `Set` sequence loses the per-key stampede protection.
 
 Query shape (N+1 queries, missing indexes, projections, paging) is database tuning, not caching.
-Report it separately rather than hiding a slow query behind a cache.
+Use the [EF Core skill](../dotnet-efcore/SKILL.md) for EF-backed query tuning; report it separately
+rather than hiding a slow query behind a cache.
 
 ## 4. Set Expiry Deliberately
 

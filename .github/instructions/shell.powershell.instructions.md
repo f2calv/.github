@@ -33,9 +33,13 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 
 ## Arrays and Shapes
 
+- Resolve one native executable with `Get-Command -CommandType Application -TotalCount 1`.
+  Multiple matching PATH entries can otherwise turn `.Source` into an array instead of a process filename.
 - **Wrap in `@()` whenever a collection leaves an `if`, `switch`, or `foreach`.** A single-element array collapses to a bare object on assignment, which silently serialises as an object instead of an array and is rejected by REST APIs as an empty collection.
 - Type a parameter that must be a collection as `[array]` or `[object[]]`.
 - Do not assume a REST response shape. Handle both a bare array and a `count`/`value` envelope.
+- `ConvertFrom-Json` can materialize ISO timestamps as `DateTime`. Convert typed timestamps directly
+  to `DateTimeOffset`; do not stringify and reparse them through the current culture.
 
 ## Testing With Pester
 
@@ -55,6 +59,8 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - Use `$TestDrive` for files and temporary Git repositories. Use synthetic values only; never load
   real local configuration, credentials, repository coordinates, or deployment identifiers into a
   test fixture or test output.
+- Build fixture paths with `Join-Path` so containment and link checks exercise the same scenario on
+  Windows and Unix; use literal separators only when testing that separator's handling.
 - Mock PowerShell commands with Pester. Wrap native executables behind functions or place synthetic
   executables earlier on `PATH` so tests do not contact external services or mutate real state.
 - Provide an `Invoke-Tests.ps1` entry point for a script package or skill with multiple tests. Pin its

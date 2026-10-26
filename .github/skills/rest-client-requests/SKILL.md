@@ -152,8 +152,16 @@ Accept: application/json
 * Keep example payloads synthetic. Never embed real personal data, account identifiers, device
   addresses, phone numbers, or operational secrets.
 * Mark intentionally failing examples in their section title, such as `Expected 400`.
-* Add `# @note` before every `POST`, `PUT`, `PATCH`, or `DELETE` request. Omit it only when the
-  operation is demonstrably read-only and the exception is explained beside the request.
+* Add a descriptive `# @note` before every side-effecting request, including GET callbacks,
+  inbox drains, hardware commands and costly inference. Explain what changes, what data leaves
+  the client and any uncertain-outcome retry risk; a bare marker is not a warning.
+  Treat `POST`, `PUT`, `PATCH` and `DELETE` as side-effecting unless the operation is demonstrably
+  read-only and that exception is explained beside the request. HTTP verbs alone do not prove safety.
+* Verify each authentication variable is sent only to its intended service. Remove unrelated
+  scaffold requests rather than forwarding configured credentials to an example destination.
+* Validate examples against current routes, binding types, required fields, enum members and
+  domain constraints. Label negative examples explicitly; distinguish caller-supplied resources
+  and files from bundled fixtures. Never imply placeholder configuration makes an example runnable.
 * Use request variables for response chaining only within the same file.
 * Do not treat `.http` files as automated tests unless CI executes and asserts them through a
   dedicated runner.
@@ -181,6 +189,9 @@ Accept: application/json
 4. Scan tracked request files and examples for literal authorization values, credential-shaped query
    parameters, private identifiers, and machine-specific absolute paths.
 5. Verify request-body fixture paths resolve after moves.
+   For caller-supplied files, use documented dotenv paths rather than references to absent bundled
+   samples. Validate synthetic JSON statically, but check DTO constraints separately: parsing JSON
+   alone does not prove the endpoint accepts it.
 6. Search the repository for references to old request paths.
 7. Verify `humao.rest-client` is recommended for host and Dev Container use where applicable.
 8. Run repository privacy scanning before committing public changes.

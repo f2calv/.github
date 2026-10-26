@@ -1,6 +1,6 @@
 ---
 name: dotnet-release-train
-description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for routine dependency sweeps and chained releases: CI tooling and Helm charts first, then the base library and its consumers in dependency order.'
+description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for dependency sweeps and chained releases, from CI tooling and Helm charts through the base library and its consumers, and user-approved clean-semver Kubernetes rollouts through GitHub workflows.'
 argument-hint: '[start={tooling|<first-producer>}] [packages={all|internal}]'
 user-invocable: true
 ---
@@ -61,10 +61,15 @@ user explicitly asks for parallel sessions.
   - Read the repository instructions and documented package holds first.
   - Fetch the default branch and inspect the current branch, worktree, existing pull request, and
     open Dependabot pull requests.
+    - If an Action repository's tag fetch rejects a moved floating alias, inspect the remote target,
+      then refresh only that exact local `vMAJOR` or `vMAJOR.MINOR` ref with an explicit `+` fetch
+      refspec and retry the full fetch. Never force-refresh immutable version tags or use a broad
+      tag wildcard.
   - Before releasing a producer, confirm every consumer's Release graph is complete: a reference
     that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
     consumer's Release build after the producer ships. Fix the graph on the consumer's branch
-    before releasing the producer.
+    before releasing the producer. Identify producer references by evaluated project paths within
+    its repository, not name prefixes that can include unrelated, similarly named projects.
   - Preserve unrelated work. Do not create another branch or pull request when the current one is
     already the correct release branch.
   - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
@@ -87,6 +92,9 @@ user explicitly asks for parallel sessions.
     repository while that scope remains unchanged.
   - Restore and build the repository's Debug solution when it uses local `ProjectReference` paths.
   - Restore and build its Release solution to prove the published `PackageReference` path.
+  - Audit the Release dependency graph too. For `dotnet list package --vulnerable --include-transitive`,
+    set the process environment's `Configuration=Release`; the solution filename does not select
+    conditional references, and default Debug evaluation can disagree with restored Release assets.
   - Run the repository's lint command and all relevant unit tests.
   - Run integration tests when authorized and their dependencies are available.
     - Classify failures caused by unavailable external services, credentials, market hours, or local
@@ -98,11 +106,17 @@ user explicitly asks for parallel sessions.
   - Follow the normal auto-commit and auto-push switches; the skill grants no extra Git permission.
   - For public repositories, run the privacy scan before committing.
   - Use conventional commits and keep unrelated changes separate.
+  - Before every authorized push, automatically perform the
+    [unpushed attribution cleanup](#unpushed-attribution-cleanup), including on resume and after
+    adding commits. Do not wait for a separate cleanup request.
   - Push the branch and create or update one pull request covering the full branch diff.
   - Link an existing issue when relevant. Never create an issue solely because a pull-request
     template asks for one.
   - Apply accurate labels and assign the authenticated user.
 - **Review and merge**
+  - For a large or breaking pull request, complete the
+    [release-version decision](#release-version-decision) before merging, even when auto-merge is
+    enabled. Do not silently accept the default patch increment.
   - Wait for every required check on the current head SHA.
   - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
     required check or quality gate.
@@ -125,17 +139,115 @@ user explicitly asks for parallel sessions.
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
     version before continuing downstream.
+    - Check the publication action's branch gates before choosing a workflow-dispatch ref.
+      `gha-dotnet-nuget` publishes stable packages from the default branch, not a tag dispatch.
+      Recover missing packages using the exact release source without rebuilding or replacing
+      an already-published image or chart; skipped publication steps are not success.
     - From this skill's directory, PowerShell:
       `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
       Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
     - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
-  - If the repository publishes no packages, continue once its merge and release checks are complete.
+  - For application images and charts, verify every expected platform's version/revision and the
+    published chart's effective image selection, not only its metadata. An umbrella `appVersion`
+    does not supply a dependency's image tag; honor documented explicit-tag requirements.
+    Use authorized registry access for restricted artifacts without changing their visibility.
+  - If the repository publishes no packages, continue once its merge and artifact checks are complete.
+  - For a .NET Kubernetes application, offer a
+    [clean-semver workload rollout](#clean-semver-workload-rollouts) after verifying its release.
+    Publication alone does not establish that the released version has been deployed.
 - **Update documentation downstream**
   - In each consumer's pull request, remove README statements the release has made untrue, such as
     "Debug-only", "Release build not supported", "not yet published" or adjacent-checkout
     requirements, and add package badges or version rows for packages that now exist.
   - Search for them before opening the pull request rather than relying on memory, for example
     `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
+
+## Clean-SemVer Workload Rollouts
+
+Development deployments through `deploy.ps1` may still be running Debug images after a successful
+pull-request merge and release. After verifying a .NET Kubernetes application's release, use a UI
+question: "Do you wish to roll out a new version of `<application>` (`<released X.Y.Z>`) from the GitHub
+workflows?" Offer rollout now, defer to the next agreed batch, hold until the end of the train, or
+decline this rollout. Respect existing publication and deployment holds.
+
+- Let the user choose end-of-train rollouts or batches at useful milestones. Keep deferred
+  applications and their verified versions in the existing task list, not a separate release state
+  machine, and revisit them at the selected milestone and before the final report.
+- Obtain explicit dispatch approval for the named application/version/environment, individually or
+  as a clearly identified batch. Deferral is not approval to dispatch later; confirm the pending
+  batch when it is due. Merge, release, auto-push and prior Debug-deployment permissions do not
+  authorize these workflow runs.
+- Inspect the repository's existing GitHub deployment workflow and declared inputs. Use its
+  release path to build or select the published Release artifact with a clean `X.Y.Z` version,
+  such as `1.2.3`, tied to the verified release commit. Do not invent workflow inputs, substitute
+  `latest-dev` or a prerelease, merely retag a Debug image, or rerun `deploy.ps1` instead.
+- Follow the dispatched run through build, publication and deployment. Verify the exact released
+  artifact and actual workload rollout using the
+  [container deployment verification guidance](../container-workflows/examples/caller-setup.md#check-the-result);
+  a successful merge, tag or workflow dispatch alone is insufficient. Report the workflow URL,
+  deployed version and verification result.
+- Treat workflow failures as blockers for the affected rollout and investigate them while the
+  train is in progress. Fix introduced CI/build/deployment bugs through the normal validation,
+  pull-request and merge gates before retrying; do not silently fall back to a local Debug deploy.
+  If a correction changes the published artifact, release a new immutable version rather than
+  replacing it or moving a published version tag. Mark a rollout complete only after verification,
+  and report declined or deferred deployments separately.
+
+## Release-Version Decision
+
+- Review the full branch diff and commits for consumer impact, not only the pull-request title.
+  Prompt for a substantial feature, architectural migration, or broad refactor, and always for
+  removed or renamed public contracts, incompatible configuration, or other breaking behaviour.
+  Diff size alone does not determine a semantic version.
+- Inspect the repository's `GitVersion.yml`, release workflow and scoped versioning instructions,
+  the latest immutable release tag, and any existing version directives on the branch. Do not
+  assume that conventional-commit wording or `BREAKING CHANGE` automatically controls GitVersion.
+- Before merging, use a UI choice to ask whether to deliberately bump **major**, bump **minor**, or
+  retain the **patch/default increment**. Show the current version, expected outcome of each
+  choice, and relevant compatibility impact. Recommend major for breaking changes, minor for
+  compatible new functionality, and patch for compatible fixes or internal-only refactoring.
+  For pre-1.0 packages, explain the repository's established breaking-change policy.
+- Wait for an explicit decision for that pull request; general merge approval or an active
+  auto-merge instruction does not select a version. Reconfirm if subsequent changes materially
+  alter the compatibility assessment.
+- Apply the selected increment using the repository's established mechanism. When it uses
+  `+semver:` commit directives, inspect every commit since the merge base, reuse or correct the
+  existing directive rather than stacking conflicting requests, and verify which directive maps
+  to the chosen increment under that repository's configuration. Do not hardcode a directive
+  mapping or change the global increment policy to release one pull request.
+- Preserve published history: use a normal authorized follow-up commit or the supported
+  release-workflow input instead of amending or force-pushing published commits. If an existing
+  directive prevents the selected result without rewriting history, stop and ask for direction.
+- Verify the resulting numeric version with the repository's GitVersion configuration and release
+  path; do not mistake a pull-request prerelease version for the eventual release. Record the
+  selected increment and rationale in the pull request, update affected consumer examples or
+  major-tag references, and wait for required checks on the final head before merging. If the
+  requested result cannot be verified, stop rather than silently falling back to patch.
+- Keep the post-merge immutable-tag and package-availability checks: the version decision is not
+  proof that the intended release was published.
+
+## Unpushed Attribution Cleanup
+
+- Refresh every configured remote before identifying candidates. Stop if a fetch fails.
+- Inspect commits reachable from the release branch but not from any remote branch or published
+  tag, not just `@{u}..HEAD`; a commit already published on another ref must remain unchanged.
+- Remove every `Co-authored-by:` trailer, case-insensitively, from those unpushed commits,
+  regardless of the named co-author. Leave the rest of each message unchanged except for the
+  trailing blank lines left by removal. If none match, make no changes.
+- Rewrite affected commits and their unpushed descendants, preserving trees, author and committer
+  identities and timestamps, merge topology, and all other commit metadata. Do not rebase or replay
+  patches. Stop for signed commits or signature-bearing metadata that cannot remain valid.
+- Keep local recovery refs to the original branch tips. Update branch refs with expected-old-SHA
+  guards; preserve the index, working-tree edits, untracked files and active checkout. Do not move a
+  branch checked out in another worktree or rewrite the default branch.
+- Verify every rewritten tree and metadata field, confirm that only the trailers and necessary
+  parent IDs changed, and rescan the candidate range for remaining attribution. Surface failures
+  and stop before pushing; do not silently skip a failed cleanup.
+- This step authorizes only local unpushed attribution rewrites within the train's repositories,
+  not a workspace-wide sweep, a push, a timestamp change or a published-history rewrite.
+  Follow the shared privacy and timestamp checks. Never force-push merely for this cleanup; if
+  published attribution is found, report it and request separate authorization to rewrite it.
+- Report the repositories and footer counts cleaned, or state that none were found.
 
 ## Interruptions And Resume
 
@@ -159,6 +271,8 @@ user explicitly asks for parallel sessions.
 - A successful package push is not proof that NuGet clients can restore it. Verify every expected
   package ID at the exact version through the package source's restore endpoint, and stop the chain
   when any package from a multi-package producer is absent.
+- Availability polling retries network failures and request timeouts within its deadline, without
+  treating them as successful checks. Permanent HTTP and unexpected failures stop verification.
 - The availability helpers support public nuget.org only; authenticated feeds need a separate
   credential-safe implementation. Never put a NuGet API key in source, configuration or logs.
 - Use `--skip-duplicate` only to make an idempotent publication retry safe; it never permits

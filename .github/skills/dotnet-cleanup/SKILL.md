@@ -1,6 +1,6 @@
 ---
 name: dotnet-cleanup
-description: 'Audit and clean C#/.NET repositories for one-type-per-file layout, filename/type mismatches, identifier casing, primary-constructor candidates, ILogger template casing, and selected IDE/CA diagnostics. Use for source cleanup, convention drift, naming sweeps, or before tightening analyzers.'
+description: 'Inventory and classify .NET projects before naming/folder changes; audit C# type layout, naming, constructors, ILogger templates and IDE/CA diagnostics. Use for project-role inventories, distinguishing test suites from test-support libraries and integration hosts, source cleanup or convention drift.'
 argument-hint: 'mode={audit|fix-logging|format} repository=<path> [audit={Layout|Naming|Constructors|Logging}]'
 user-invocable: true
 compatibility: 'Requires PowerShell 7.4 and git. Formatter mode also requires the repository .NET SDK and restored projects.'
@@ -16,6 +16,7 @@ discovery and narrowly scoped fixes.
 
 | Mode | Script | Behavior |
 | --- | --- | --- |
+| `inventory` | `scripts/Get-DotNetProjectInventory.ps1` | Read-only project-purpose candidates with declarations, references, source signals and review flags; no renames |
 | `audit` | `scripts/Test-DotNetSourceConventions.ps1` | Read-only tracked-source audit for layout, naming, constructors and logging templates |
 | `fix-logging` | `scripts/Set-DotNetLogTemplateCasing.ps1` | Opt-in casing repair for single-line ILogger templates; supports `-Check` and `-WhatIf` |
 | `format` | `scripts/Invoke-DotNetFormatDiagnostics.ps1` | Runs one IDE or CA diagnostic family project by project; supports `-Check` and `-WhatIf` |
@@ -40,6 +41,17 @@ valid layout exceptions, an exact logging repair and a deliberately unhandled in
 6. Group fixes by rule and ownership area. Keep structural moves separate from broad formatting.
 7. Re-run the same audit, `git diff --check`, focused builds/tests with approval, then the repository
    privacy gate when public.
+
+## Project Purpose Before Naming
+
+Use the [project inventory guide](./references/project-inventory.md) before consolidating project
+filenames, containing folders, namespaces or assembly/package identities. An executable xUnit
+project is still a test suite; a `.Testing` library can be a reusable fake provider rather than a
+test application. `GenericHost` is a name, not proof that a project is an integration-test harness.
+
+Inventory only explicit repository roots, including tooling repositories with nested .NET examples.
+Keep the report local when the workspace contains private repositories. Classifications are
+evidence-backed candidates for human review, not a mandate to rename.
 
 ## Layout Contract
 
@@ -105,6 +117,9 @@ project separately to avoid multi-target rewrite conflicts.
 - Keep repository-specific incidents and domain rules out of the central skill.
 - Exercise the documented snippets through the existing audit/fixer functions; a skipped source
   shape or clean regex report is not proof of compilation or logging-contract correctness.
+- Keep project classification precedence and its false-positive tests aligned when new SDK,
+  runner, support-library or test-host shapes appear. Preserve the separation between static
+  evidence and evaluated build/deployment intent.
 
 ## Tests
 

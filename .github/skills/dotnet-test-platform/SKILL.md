@@ -41,7 +41,8 @@ into the target repository rather than copying over existing policy.
 ## Command Syntax
 
 - Run from the repository containing the intended `global.json`; an absolute `--project` path does
-  not select that file for SDK/test-runner discovery when the current directory is elsewhere.
+  not select that file for SDK/test-runner discovery when the current directory is elsewhere. The
+  symptom is `dotnet test` falling back to VSTest and rejecting `--project` with `MSB1001`.
 - Use the .NET 10 native command: `dotnet test --project <path.csproj>` or
   `dotnet test --solution <path.slnx>`. Never pass a project or solution as a bare positional
   argument, and do not use `dotnet run` as the normal test command.
