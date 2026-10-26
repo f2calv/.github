@@ -4,6 +4,10 @@
   "name": "Copilot Customizations",
   "image": "mcr.microsoft.com/devcontainers/base:trixie",
   "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "os-provided",
+      "toolsToInstall": "uv==0.13.4"
+    },
     "ghcr.io/devcontainers-extra/features/pre-commit:2": {},
     "ghcr.io/devcontainers/features/powershell:2": {
       "modules": "Pester==5.7.1"
@@ -17,10 +21,23 @@
       "yqVersion": "latest"
     }
   },
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../gha-workflows,target=/workspaces/gha-workflows,type=bind",
+    "source=${localWorkspaceFolder}/../gha-release-versioning,target=/workspaces/gha-release-versioning,type=bind"
+  ],
+  "containerEnv": {
+    "SPECIFY_CLI_VERSION": "1.2.3"
+  },
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin"
+  },
   "postCreateCommand": "pwsh -NoProfile -File ./.devcontainer/Initialize-DevContainer.ps1",
   "customizations": {
     "vscode": {
       "extensions": [
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
         "ms-vscode.powershell",
         "davidanson.vscode-markdownlint",
         "redhat.vscode-yaml",
