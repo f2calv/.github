@@ -36,6 +36,8 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - **Wrap in `@()` whenever a collection leaves an `if`, `switch`, or `foreach`.** A single-element array collapses to a bare object on assignment, which silently serialises as an object instead of an array and is rejected by REST APIs as an empty collection.
 - Type a parameter that must be a collection as `[array]` or `[object[]]`.
 - Do not assume a REST response shape. Handle both a bare array and a `count`/`value` envelope.
+- `ConvertFrom-Json` can materialize ISO timestamps as `DateTime`. Convert typed timestamps directly
+  to `DateTimeOffset`; do not stringify and reparse them through the current culture.
 
 ## Testing With Pester
 
