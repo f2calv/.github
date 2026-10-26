@@ -48,6 +48,7 @@ repository settings, required checks and SonarQube setup. How the agent works da
 
 - Publish every release as an immutable tag. Never move, delete or rewrite a tag that has been published, other than the floating aliases below.
 - **GitHub Action repositories are the only repositories that use a `v` prefix, and the only ones that use floating tags.** They publish `vMAJOR.MINOR.PATCH` and then move the floating `vMAJOR` and `vMAJOR.MINOR` aliases to the same commit. Consumers reference `vMAJOR` in `uses:`; `vMAJOR.MINOR` lets one opt out of new minor releases without pinning a patch.
-- **Every other repository publishes plain `X.Y.Z` tags with no prefix and no aliases** — Terraform modules, libraries, applications and infrastructure repositories alike. Consumers pin an exact version.
+- **Repository-level releases outside GitHub Action repositories use plain `X.Y.Z` tags with no prefix and no aliases.** This applies to Terraform modules, libraries, applications and infrastructure repositories alike. Consumers pin an exact version.
+- Independently versioned non-Action components in a monorepo may publish immutable `<component-id>/X.Y.Z` tags. The `<component-id>/` namespace is the only permitted prefix for these component releases; never add a `v` version prefix or floating aliases. Consumers pin an exact component tag.
 - Never create a floating patch or pre-release alias anywhere, including in Action repositories.
-- Set the release-versioning workflow inputs to match: Action repositories keep the `v` prefix and rolling-alias defaults; every other repository must override both.
+- Set the release-versioning workflow inputs to match: Action repositories keep the `v` prefix and rolling-alias defaults; non-Action releases disable rolling aliases and explicitly set the tag prefix to empty for repository-level releases or `<component-id>/` for independently versioned monorepo components.
