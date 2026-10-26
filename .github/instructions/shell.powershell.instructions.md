@@ -59,6 +59,8 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - Use `$TestDrive` for files and temporary Git repositories. Use synthetic values only; never load
   real local configuration, credentials, repository coordinates, or deployment identifiers into a
   test fixture or test output.
+- Build fixture paths with `Join-Path` so containment and link checks exercise the same scenario on
+  Windows and Unix; use literal separators only when testing that separator's handling.
 - Mock PowerShell commands with Pester. Wrap native executables behind functions or place synthetic
   executables earlier on `PATH` so tests do not contact external services or mutate real state.
 - Provide an `Invoke-Tests.ps1` entry point for a script package or skill with multiple tests. Pin its

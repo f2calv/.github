@@ -205,7 +205,7 @@ binaryData:
     It 'rejects source and target containment escapes' -ForEach @(
         @{ Key = 'SourcePath' }, @{ Key = 'TargetPath' }
     ) {
-        $script:Settings[$Key] = '..\outside.txt'
+        $script:Settings[$Key] = Join-Path '..' 'outside.txt'
         { Set-ConfigMapFromFile $script:Settings -ReviewedNonSecret -WhatIf } | Should -Throw '*inside its configured root*'
     }
 
@@ -220,7 +220,7 @@ binaryData:
         { Resolve-ConfigMapPath (Join-Path $Link 'nested') 'text.txt' } | Should -Throw '*symbolic links or reparse points*'
         $InnerLink = Join-Path $script:SourceRoot 'link'
         $null = New-Item -ItemType $Type -Path $InnerLink -Target $Nested
-        { Resolve-ConfigMapPath $script:SourceRoot 'link\text.txt' } | Should -Throw '*symbolic links or reparse points*'
+        { Resolve-ConfigMapPath $script:SourceRoot (Join-Path 'link' 'text.txt') } | Should -Throw '*symbolic links or reparse points*'
     }
 
     It 'loads only ignored untracked local data with explicit overrides and rejects unknown keys' {
