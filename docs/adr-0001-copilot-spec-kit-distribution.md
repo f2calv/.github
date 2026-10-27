@@ -1,7 +1,8 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
-**Status:** In Progress. Bounded metadata and local version-preparation implementation authorized; remaining distribution decisions are proposed.
+**Status:** In Progress. Metadata, local version preparation, committed inventory preview and Spec Kit adoption are implemented locally; remaining distribution decisions are proposed.
 **Date:** 2026-10-26.
+**Last Updated:** 2026-10-27.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
 ## Context and Problem
@@ -88,8 +89,9 @@ Derive invariant native entrypoints and source origin at packaging, not from aut
 The user selected one YAML sidecar per skill as the storage
 strategy, replacing the earlier embedded JSON `## Skill Dependencies` proposal.
 A central index may reference authoritative records but must not repeat dependency declarations.
-The bounded metadata and local version-preparation slices are implemented; ordinary Markdown links do
-not become graph edges. Packaging, installation and publication remain unimplemented.
+The bounded metadata, local version-preparation and committed inventory-preview slices are implemented;
+ordinary Markdown links do not become graph edges. Archive creation, installation and publication
+remain unimplemented. Local inventory output is review evidence, not an immutable release record.
 
 ### Metadata Contract
 
@@ -102,7 +104,9 @@ the [skill-library skill](../.github/skills/skill-library/SKILL.md), with reposi
 example data, not a catalog record. Optional `$schema` paths are informational; the validator always
 uses the bundled schema and never retrieves user-supplied references.
 On 2026-10-27 the owner authorized this bounded implementation before Spec Kit initialization and
-dogfooding, superseding the earlier sequencing only for this slice. No initialization is authorized.
+dogfooding, superseding the earlier sequencing only for this slice. That approval did not authorize
+initialization; separately approved initialization and the authoring exercise subsequently completed
+as recorded under [Handover](#handover).
 
 | Declaration | Implemented authoring contract |
 | --- | --- |
@@ -170,16 +174,25 @@ extension manifest; this evaluation promises neither implemented support nor a s
 
 ### Exact Closure and Snapshots
 
-Proposed tooling under `.scripts/spec-kit/` would resolve exact versions for the pilot, starting
-from selected roots. Required skill, instruction and resource dependencies are transitive;
-optional nodes are excluded unless explicitly selected. Resource prerequisites must not stop at
-an instruction boundary. Build-time packaging and consumer selection must reuse this graph contract
-and resolution rules, not independently maintained graphs. Deduplicate identical resolved nodes.
+The implemented [committed inventory preview](../.github/skills/skill-library/scripts/Invoke-InventoryPreview.ps1)
+uses the existing validator's selected closure against one locally available commit. It includes
+eligible committed internal content, mandatory external files and inherited/additional notices,
+with every owner, inclusion reason and declaration source. Required dependencies are transitive;
+optional relationships are excluded unless explicitly selected, then bring their required closure.
+The [command contract](../specs/001-packaging-inventory-preview/contracts/inventory-preview.md)
+separates the invoked trusted validation bundle from historical source data. Historical scripts,
+filters, hooks and advisory tooling remain inert; committed ignore rules determine eligibility.
+Success is emitted only after temporary inspection cleanup, and local edits are excluded.
+
+This tooling remains owned by `skill-library`, not a second resolver under `.scripts/spec-kit/`.
+Future packaging and consumer selection must reuse its authoritative graph contract and resolution
+rules. Resource prerequisites must not stop at an instruction boundary. Deduplicate identical resolved nodes.
 Missing selected content, cycles, version conflicts, traversal, symlink
 escapes, duplicate output paths and case-insensitive collisions must fail with a useful graph path.
 Local-link validation is a separate completeness check, not dependency inference.
 
-Each component version would have a generated reviewed immutable provenance/release record with
+The preview creates no archive or durable provenance record and does not establish redistribution
+rights. Each future component version would have a generated reviewed immutable provenance/release record with
 repository identity, exact source commit, derived skill folder/entrypoint, exact committed input paths
 and SHA-256, resolved edges/versions, optional selections, inclusion reasons, tool/schema versions,
 effective licenses and shared/additional notices, rights-review evidence bound to that inventory/revision,
@@ -329,9 +342,9 @@ aggregate payload ownership must be agreed before aggregate publication.
 
 ### Provenance and Publication Boundary
 
-The bounded review covers only the candidate skill, reference and example linked above. Local
+The initial bounded review covered only the candidate skill, reference and example linked above. Local
 history introduces all three in `2d20a36ae9e724c875f5c285f82a3d2e4bc7d0d3` on 2026-10-24,
-with no later candidate-path commit observed. Their text contains no file-specific SPDX license,
+with no later candidate-path commit observed at that initial review. Their text contains no file-specific SPDX license,
 copyright notice or copied/adapted-origin declaration. The skill links official Microsoft
 architecture guidance; the example explicitly calls itself synthetic and illustrative, not compiled.
 Links and local Git authorship do not establish originality or third-party redistribution rights.
@@ -377,7 +390,7 @@ Observed preparation is distinct from future acceptance:
   read-only validator and three example records before Spec Kit adoption. Simplify the records to
   explicit identity/version, inherited repository defaults and optional component exceptions; derive
   native source paths and remove the unbound publication declaration gate.
-* [x] Run 75 approved synthetic metadata/schema/defaults/dependency/path tests with Pester 5.7.1
+* [x] Run the initial 75 approved synthetic metadata/schema/defaults/dependency/path tests with Pester 5.7.1
   and PyYAML 6.0.3: 75 passed, zero failed or skipped. Run the existing native structural suite for
   the three opted-in skills: 12 passed, zero failed or skipped. Actual repository validation checks
   all three records and dependency-first optional closure. This is local authoring evidence, not
@@ -386,12 +399,19 @@ Observed preparation is distinct from future acceptance:
   checks and 28 previously approved automated structural checks. On 2026-10-27 the owner reported
   testing the skills successfully in another non-Dev-Container session; this is owner-reported native
   acceptance, not agent-observed discovery/invocation or packaged-route validation.
-* [ ] Settle installation targets, inventory/recovery contract, pilot closure and Spec Kit authoring
-  exercise; accept the remaining distribution decisions separately from bounded implementation progress.
+* [ ] Settle installation targets, inventory/recovery contract and the first distributable pilot
+  closure; accept the remaining distribution decisions separately from bounded implementation progress.
 * [ ] Verify actual custom command registration and rendered name in the pinned Copilot integration,
   invoking the packaged installer without overriding core commands or using automatic install hooks.
-* [ ] Demonstrate required transitive selection and explicit optional opt-in, with a resolved preview
-  and separate approval before payload mutation.
+* [x] Demonstrate required transitive selection, explicit nested optional opt-in, shared ownership and
+  notice provenance in a read-only committed inventory. The [validation guide](../specs/001-packaging-inventory-preview/quickstart.md#observed-checkpoints)
+  records 163 passing focused tests (76 metadata, 38 preparation, 49 inventory), four passing owning-skill
+  structural checks, deterministic pilot JSON and unchanged source/Git state. The pilot grows from
+  one component/six files to two components/14 files when its optional relationship is selected.
+* [ ] Verify native Windows behavior and the configured pre-commit hooks. The [feature tasks](../specs/001-packaging-inventory-preview/tasks.md)
+  retain T038 and T039 open: Windows was unavailable and the hook cache absent; no provisioning was authorized.
+* [ ] Demonstrate the packaged installer's resolved plan and separately approved payload mutation;
+  a successful read-only inventory does not establish installation behavior.
 * [ ] Verify negative resolver cases, including cycles, version/integrity and path conflicts, plus
   install inventory, concurrent mutation rejection and interrupted-install/local-edit recovery.
 * [x] Implement the skill-owned preview/explicit-apply version writer; verify numeric baselines,
@@ -410,22 +430,54 @@ Observed preparation is distinct from future acceptance:
   [lifecycle](../.devcontainer/Initialize-DevContainer.ps1) and
   [focused tests](../.scripts/tests/Initialize-DevContainer.Tests.ps1); see [Handover](#handover)
   for observed results and their environment boundary.
-* [ ] Adopt Spec Kit here with approved conflict handling; demonstrate real skill authoring before
-  fresh-library bootstrap. Existing native guidance alone does not satisfy dogfooding.
-* [ ] Verify graph failures, exact snapshots, resource-complete inventories, license gates and
-  equal byte hashes from two builds of the same recorded inputs.
+* [x] Adopt Spec Kit with separately approved initialization and conflict handling; adopt the
+  [constitution](../.specify/memory/constitution.md) and complete a real authoring exercise through
+  [the inventory feature](../specs/001-packaging-inventory-preview/spec.md), plan, tasks, analysis and
+  implementation. This enhanced the existing `skill-library` skill and tooling, not a new unrelated
+  skill. Standard Agent executed the Spec Kit workflow directly without HVE task-implementor orchestration.
+* [ ] Verify deterministic resource-complete archive builds, inventory-bound rights/privacy gates
+  and equal byte hashes from two builds of the same recorded inputs. Deterministic preview JSON
+  does not prove deterministic archive bytes or legal clearance.
 * [ ] Demonstrate authorized published `1.0.0` and `1.1.0` exact install/upgrade/history, native
   compatibility and observed resource loading in representative Copilot sessions.
 
-Container preparation does not demonstrate generated-extension runtime compatibility, deterministic
+Container preparation and the inventory authoring exercise do not demonstrate generated-extension runtime compatibility, deterministic
 archives, releases, legal clearance or context savings. Local link/structure checks and
-editor diagnostics are not configured CI lint. No packaging build has run in this metadata slice.
+editor diagnostics are not configured CI lint. No archive packaging build has run.
 
 Later shared automation, Bash/Python parity, glossary/crosswalk/demo material and a minimal
 fresh-library scaffold remain separate planned work. Extract automation after the local contract
 and two-version demonstration work; bootstrap a fresh library only after here-adoption and dogfood.
 
 ## Handover
+
+### Current Progress (2026-10-27)
+
+The following work is committed locally, not pushed or released:
+
+| Slice | Commit and evidence | Remaining boundary |
+| --- | --- | --- |
+| Metadata/defaults and local version preparation | `defb612`, `b352983`; [owning workflow](../.github/skills/skill-library/SKILL.md) | No published component versions or tags; native Windows verification remains open. |
+| Spec Kit initialization | `d39c7f0`; generated native skills and `.specify/` scaffolding | Attached-editor discovery and packaged runtime behavior are not inferred from installed files. |
+| Constitution adoption | `c91f5d2`; [constitution 1.0.0](../.specify/memory/constitution.md) | Maintainer approved removal of the temporary review report; this is not blanket ADR acceptance. |
+| Committed inventory preview | `9c3cbaa`; [contract](../specs/001-packaging-inventory-preview/contracts/inventory-preview.md), [task state](../specs/001-packaging-inventory-preview/tasks.md) and [verification](../specs/001-packaging-inventory-preview/quickstart.md) | 38 of 40 tasks complete; Windows and configured lint remain unverified. No archive, install or publication support. |
+
+The bounded inventory enhancement was specified, planned, tasked, analyzed and implemented using
+Spec Kit, with synthetic fixtures for graph cases absent from the three real opted-in records.
+The two accepted non-blocking analysis findings did not authorize broader planning changes.
+The completed exercise is distinct from generated-extension consumption and fresh-library bootstrap.
+
+Resume from the existing feature tasks to close the two verification gaps when their prerequisites
+and approvals are available. Scope the next distribution slice separately rather than interpreting
+the remaining ADR checklist as implementation authorization. Keep one task authority for an active
+feature; no second HVE tracking plan was maintained for this Spec Kit exercise.
+
+The current checkout is the source of truth for branch and status. GitHub authentication was checked
+and unavailable during the commit handover; no login, credential mount or push was attempted.
+The requested local commits are one-shot operations: auto-commit and auto-push remain off. Further
+tests, setup, publication and remote mutations require their applicable approvals.
+
+### Historical Container Handover (2026-10-26)
 
 Historical resume point, 2026-10-26: container preparation was verified; this ADR was Proposed.
 Local commits `7bb1571a718117bc266e8bc87fcc6c249191df6b` (pinned development tooling) and
@@ -442,42 +494,24 @@ The 13 focused lifecycle tests passed with zero failures; effective source compa
 read/write access passed. These results apply to the approved local configuration, not an unmodified
 public-default build. Required local overrides remain outside the checkout; preserve them out of band.
 
-1. Identify the validated running container locally with `docker ps`, then use **Dev Containers:
-  Attach to Running Container**. Do not substitute ordinary **Reopen in Container**, which reads
-  public configuration and may bypass required local settings. If it is unavailable, stop and
-  obtain approval before rebuilding; this handover authorizes no recreation or extra mounts.
-2. Open `/workspaces/.github` and add `/workspaces/gha-workflows` and
-  `/workspaces/gha-release-versioning` to the workspace. The
-  [portable sibling binds](../.devcontainer/devcontainer.json) provide those existing targets.
-  Keep the central repository open for shared customization discovery. Detailed execution progress
-  is in local ignored `.copilot-tracking`, available through the existing workspace bind, not a fresh clone.
-3. Check `pwd`, `git -C /workspaces/.github status --short`,
-  `git -C /workspaces/.github branch --show-current`, `specify version`, `uv --version` and
-  `pwsh -NoProfile -Command '$PSVersionTable.PSVersion'`. Verify required VS Code extensions in
-  the attached editor, Chat Diagnostics listing shared customizations, and actual relevant skill
-  loading. CLI-created-container attachment may not install the configured extensions automatically;
-  editor discovery remains unverified. Host profile links and settings do not automatically transfer.
-4. Next, review the draft metadata contract and recommended filename/schema location, settle install
-  targets, then revise the implementation plan for the dependency-aware command and shared graph
-  contract. Read-only initialization preflight is complete, but attached-editor discovery remains pending. Recheck
-  generated-path collisions against the installed CLI and registry if inputs change.
-  Separately obtain explicit nonempty initialization and `--force` permission before any `specify init` here.
-  Confirm Copilot integration and the proposed `sh` generated helpers first; project tooling remains
-  PowerShell. No initialization has run; `.specify/` and generated Spec Kit skills are absent. After approved
-  initialization, verify generated and native discovery and agree a meaningful Spec Kit-authored
-  enhancement or distinct skill. Native guidance authored outside Spec Kit is not dogfood evidence.
+The historical container recovery route used **Dev Containers: Attach to Running Container**,
+not an unreviewed **Reopen in Container** that could bypass required out-of-band configuration.
+Container recreation, extra mounts and credential transfer remain separately authorized operations.
+Editor extension/customization discovery still needs observed evidence; host profile links and
+settings do not automatically transfer. Ignored HVE tracking from earlier work is historical context,
+not the active inventory feature's task authority.
 
 Earlier update, 2026-10-27: rename commit `00bc81aa3316a41fc6ec9282644aee019f951fed` completed the
 seven-skill batch. The owner reports successful native skill testing in another non-Dev-Container
 session, not observed by the agent. This does not validate attached-container discovery or packaged
 consumption. At that handover the metadata contract was design only and adoption-gated.
-The later bounded authorization supersedes that sequencing for metadata implementation only;
-initialization and dogfooding remain pending. The status is now In Progress, not blanket ADR acceptance.
+The later bounded authorization superseded that sequencing for metadata implementation only;
+initialization and dogfooding were still pending at that earlier handover. Their subsequent completion
+is recorded above. The status remains In Progress, not blanket ADR acceptance.
 
-GitHub authentication has not been checked and host credentials were not mounted. Before future
-GitHub CLI operations, inspect read-only `gh auth status` privately; do not expose its output,
-log in or add credential mounts automatically. No standing commit, staging or push approval exists.
-Further tests, setup, initialization and publication need their respective approvals.
+At the container handover GitHub authentication had not been checked and host credentials were not
+mounted. Before future GitHub CLI operations, inspect authentication privately; do not expose its
+output, log in or add credential mounts automatically. No standing commit or push approval exists.
 Packaging/installation tooling, exact-version demonstrations, provenance clearance and publishing
 remain pending; handover is neither ADR acceptance nor rights approval.
 
@@ -486,13 +520,14 @@ remain pending; handover is neither ADR acceptance nor rights approval.
 * Should installed payloads be repository-local or user-profile, where will the ownership inventory
   live, and what recovery contract will the revised plan validate?
   Which further naming changes and generated output formats should the pilot use?
-* Does a meaningful Spec Kit-authored enhancement of `patterns-ports-and-adapters` satisfy the requested
-  creation exercise, or is a distinct bounded skill required? Explicit agreement is outstanding.
+* Does a later pilot need a distinct newly authored skill in addition to the completed Spec Kit-authored
+  inventory enhancement? The existing exercise validates local authoring, not a fresh-library scaffold
+  or generated-extension consumption.
 * Which optional nodes and resources constitute the first positively selected pilot closure,
   and what origin/notice evidence resolves its third-party rights?
 * In the validated pinned container, will the attached editor load the required extensions and
   discover shared customizations? Generated wrappers, native activation and consumer edit preservation
-  still require observed session evidence after separately approved initialization.
+  still require observed session evidence; initialization alone does not establish them.
 
 Reconsider the extension route if installed pinned-runtime evidence disproves payload completeness,
 historical exact selection or native coexistence. Revisit extraction and aggregate bundles only
