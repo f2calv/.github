@@ -8,6 +8,7 @@ BeforeDiscovery {
     $SkillsRoot = Join-Path $PSScriptRoot '..\..\.github\skills'
     $script:Skills = Get-ChildItem -LiteralPath $SkillsRoot -Directory |
     Where-Object {
+        $_.Name -notlike 'speckit-*' -and
         ($SkillName.Count -eq 0 -or $_.Name -in $SkillName) -and
         (Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md'))
     } |
