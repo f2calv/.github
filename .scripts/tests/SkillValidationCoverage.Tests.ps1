@@ -32,6 +32,7 @@ Describe 'Central skill suite discovery' -Tag 'Unit' {
         $install[0].run | Should -Match '--only-binary :all:'
         $requirements = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/skills/skill-library/scripts/requirements.txt') -Raw
         $requirements | Should -Match '\APyYAML==[0-9]+\.[0-9]+\.[0-9]+ \\\r?\n'
+        $requirements | Should -Not -Match '(?m)^[\t ]+--hash='
         [regex]::Matches($requirements, '--hash=sha256:[0-9a-f]{64}').Count | Should -BeGreaterThan 0
     }
 
