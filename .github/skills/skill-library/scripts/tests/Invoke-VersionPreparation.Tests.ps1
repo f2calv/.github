@@ -77,9 +77,13 @@ Describe 'Skill version preparation' -Tag 'Unit' {
             [Text.Encoding]::UTF8.GetString($Result.Bytes).Replace("`r", '') | Should -BeExactly "0`n`n"
         }
         finally {
-            [Environment]::SetEnvironmentVariable('GIT_DIR', $Previous)
-            [Environment]::SetEnvironmentVariable('GIT_OPTIONAL_LOCKS', $PreviousLocks)
+            if ($null -eq $Previous) { Remove-Item Env:GIT_DIR -ErrorAction SilentlyContinue }
+            else { [Environment]::SetEnvironmentVariable('GIT_DIR', $Previous) }
+            if ($null -eq $PreviousLocks) { Remove-Item Env:GIT_OPTIONAL_LOCKS -ErrorAction SilentlyContinue }
+            else { [Environment]::SetEnvironmentVariable('GIT_OPTIONAL_LOCKS', $PreviousLocks) }
         }
+        [Environment]::GetEnvironmentVariable('GIT_DIR') | Should -BeExactly $Previous
+        [Environment]::GetEnvironmentVariable('GIT_OPTIONAL_LOCKS') | Should -BeExactly $PreviousLocks
     }
 
     It 'shares subprocess failure handling without exposing native diagnostics' {
