@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill-library YAML metadata, defaults, exact dependencies and external files; own the planned component version-preparation workflow. Use for metadata adoption, validation failures or version/bump decisions; packaging, installation and publishing are not implemented.'
+description: 'Author and validate skill-library YAML metadata, defaults, exact dependencies and external files; preview and explicitly apply component version preparation. Use for metadata adoption, validation failures, release baselines or version/bump decisions; packaging, installation and publishing are not implemented.'
 user-invocable: true
 ---
 
@@ -20,7 +20,9 @@ discovery name and description. Metadata adds distribution identity, not another
    unpublished authoring intent, not releases. Explicit initial versions are deliberate bootstrap
    authoring, not an automatic release. Author content and dependency intent normally, but avoid
    hand-editing own versions or required/optional version pins for release preparation; use the
-   planned workflow below once implemented. Today only metadata authoring/validation is implemented.
+   [version-preparation workflow](#version-preparation) below. Inputs must pass the existing validator,
+   including coherent exact dependency pins, before preparation; consistent already-prepared versions
+   and pins are accepted when they match explicit decisions against released baselines.
 3. Declare repository-wide license and shared notice defaults once in `.config/skill-library.yaml`,
    using the bundled [closed defaults schema](./repository-defaults.schema.json). The repository's
    [defaults](../../../.config/skill-library.yaml) declare `license: MIT` and `notices: [LICENSE]`.
@@ -79,8 +81,9 @@ After schema edits, refresh the editor's YAML schema cache if diagnostics still 
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
 
 After explicit test approval, the [focused test entry point](./scripts/Invoke-Tests.ps1) runs only the
-adjacent synthetic suite using installed Pester 5.7.1 and the supplied `-PythonPath`. The repository's
-existing runner also discovers that suite; neither route installs prerequisites.
+adjacent synthetic metadata and preparation suites using installed Pester 5.7.1 and the supplied
+`-PythonPath`. The repository's existing runner also discovers both suites; neither route installs
+prerequisites. Preparation fixtures create commits and tags only in minimal temporary repositories.
 
 The reader rejects duplicate/non-string keys, aliases/anchors, explicit tags, merges, multiple documents,
 non-JSON types, nonfinite numbers and excessive nesting. Path checks reject traversal, absolute paths,
@@ -96,13 +99,74 @@ record will capture repository/revision, derived folders and entrypoints, input 
 licenses/notices, exact dependency closure and optional selections, review evidence and artifact digests.
 Authored metadata, generated release evidence and consumer install inventory remain separate authorities.
 
+## Version Preparation
+
+The [local PowerShell entry point](./scripts/Invoke-VersionPreparation.ps1) prepares all opted-in
+components without packaging or Git writes. Default execution returns a JSON preview with `Ready`,
+`MissingDecisions`, `SourceCommit`, baseline/target versions and baseline commits, reasons, exact
+own-version/pin edits, proposed immutable tags and a `Fingerprint`. It writes no repository files;
+temporary parsing material is removed. Dot-sourcing exposes `Invoke-SkillVersionPreparation`, returning
+the same plan as an object rather than JSON. `-RepoRoot` and `-PythonPath` follow validation defaults.
+
+For unpublished components, acknowledge every ID in `-BootstrapId`; retain each declared initial
+version rather than inventing `0.0.0` or incrementing it. Omitted acknowledgements produce an incomplete
+preview. This also covers new nonignored components not yet committed. For released components,
+`-ImpactJson` maps every affected ID, including reverse consumers, to an explicit `patch`, `minor` or
+`major` decision. Missing decisions produce `Ready: false` and prevent apply. Unknown IDs, inappropriate
+bootstrap/impact decisions and unexplained own-version/pin drift fail rather than being overwritten.
+
+```powershell
+$script = './.github/skills/skill-library/scripts/Invoke-VersionPreparation.ps1'
+$decisions = '{"example-skill":"minor","example-consumer":"patch"}'
+$preview = & $script -ImpactJson $decisions -PythonPath /path/to/python | ConvertFrom-Json
+$preview | ConvertTo-Json -Depth 64
+# After reviewing Ready, components, reasons, edits and proposed tags:
+& $script -ImpactJson $decisions -PythonPath /path/to/python `
+   -Apply -ReviewedFingerprint $preview.Fingerprint
+```
+
+For an initial release, replace `-ImpactJson $decisions` with
+`-BootstrapId example-skill,example-consumer` in both calls; mixed catalogs can use both parameters
+for different IDs. A preview is not apply approval. `-Apply` requires the reviewed fingerprint and
+recomputes the plan before any metadata mutation. Export JSON only through an explicit caller action
+outside managed skill content, which itself would change the inputs. Nonzero exit means failure;
+an incomplete preview is a successful read-only diagnostic, not an applicable plan.
+
+Baselines use the numerically latest local `<stable-id>/X.Y.Z` tag, not lexical order or current
+folder identity. Every matching tag must resolve to an ancestor of `HEAD` with exactly one committed
+sidecar carrying that ID and matching version. Stable-ID source/native renames are detected using that
+committed identity, never Git rename similarity. Noncanonical/mismatched/ambiguous tags, missing
+objects, shallow or partial history, replacements, grafts, alternates and unmerged indexes fail.
+Supply complete trusted local history and release refs beforehand: no network runs, and local Git
+cannot prove that a tag was never moved or an unfetched tag does not exist. Tags are only proposed.
+
+Detection compares eligible tracked and new nonignored internal content, declared external files,
+defaults and inherited/additional notices against each released source. Deletions, declaration changes,
+native moves and source executable-mode changes count. Version and exact-pin scalar values alone do
+not count as content changes; comments, quotes and unrelated metadata remain meaningful source inputs.
+Unchanged released records must still equal the released version. Prepared targets are calculated from
+the baseline and explicit impact, so identical prepared content/pins do not trigger another bump.
+
+The fingerprint binds effective raw inputs, Unix file modes, the implementation/schemas, Git refs,
+`HEAD`, index, repository location, bootstrap acknowledgements and decisions. Planning checks inputs
+before and after calculation; apply rechecks before writing and verifies expected inputs afterward.
+All candidate metadata is rendered through the strict reader's parsed YAML scalar marks and validated
+together in temporary storage before mutation. Only existing own-version and required/optional pin
+scalars are writable; quoted style, comments, Unicode, CRLF and unrelated fields are preserved. Plain
+or single/double-quoted version scalars are supported; block-style version scalars fail conservatively.
+
+Apply holds metadata handles denying cooperating writers, checks original bytes and validates the
+resulting library. Ordinary write/validation failures restore owned original bytes and remove temporary
+storage. Unexpected concurrent bytes are never blindly restored over: preserve them and retain the
+reported temporary originals for deliberate recovery, then remove that recovery directory after review.
+This is not a filesystem-wide transaction, durable crash journal or protection against hostile path
+replacement/noncooperating native writers. Do not edit inputs concurrently; interruption or storage
+failure can require manual recovery. Windows filesystem behavior still needs native-host verification.
+
 ## Planned Release Flow
 
-This skill owns version preparation: its workflow will orchestrate affected-component detection and
-impact-based bump decisions, then delegate consistent writes to a planned deterministic local
-PowerShell script under its own `scripts/` directory. Preview must show baseline/target versions,
-reasons, own-version and exact-pin edits, and proposed immutable `<component-id>/X.Y.Z` tag names;
-only explicit apply approval permits metadata writes. No executable bump command exists yet.
+Version preparation above is implemented; PR creation, packaging and publication remain separate
+future operations. Review the preparation before opening a PR and rerun after changed inputs or decisions.
 
 Reuse the [release-train version-decision policy](../dotnet-release-train/SKILL.md#release-version-decision),
 not an assumed reusable skill-version script: major for breaking public contracts, minor for compatible
@@ -133,7 +197,7 @@ human-readable inspection and debugging: it declares release intent before publi
 `<component-id>/X.Y.Z` tag identifies the released commit; the release gate must reject any mismatch
 between that tag and the committed metadata version. The generated exact-inventory record
 must bind that commit, reviewed rights evidence and artifact hashes; changed inputs at an unchanged
-released version must fail. No bump helper, packaging, tags, publication, immutable snapshots, catalogs,
+released version must fail. No packaging, tag creation, publication, immutable snapshots, catalogs,
 installer ownership/recovery, Spec Kit initialization or packaged runtime discovery is implemented here.
 
 ## Planned Identity Evolution
@@ -156,5 +220,7 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
-- Recheck version-preparation ownership, baseline decisions and idempotence when implementing the writer.
+- Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
+- Keep synthetic self-preparation coverage: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
+- Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
 - Verify native discovery before deepening folders; keep catalog migration history and installer recovery aligned.

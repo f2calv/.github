@@ -1,6 +1,6 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
-**Status:** In Progress. Bounded metadata implementation authorized; remaining distribution decisions are proposed.
+**Status:** In Progress. Bounded metadata and local version-preparation implementation authorized; remaining distribution decisions are proposed.
 **Date:** 2026-10-26.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
@@ -88,7 +88,8 @@ Derive invariant native entrypoints and source origin at packaging, not from aut
 The user selected one YAML sidecar per skill as the storage
 strategy, replacing the earlier embedded JSON `## Skill Dependencies` proposal.
 A central index may reference authoritative records but must not repeat dependency declarations.
-The bounded metadata phase is implemented locally; ordinary Markdown links do not become graph edges.
+The bounded metadata and local version-preparation slices are implemented; ordinary Markdown links do
+not become graph edges. Packaging, installation and publication remain unimplemented.
 
 ### Metadata Contract
 
@@ -193,11 +194,11 @@ It is neither a distribution snapshot nor runtime discovery evidence.
 
 ### PR-Based Component Releases
 
-The planned flow prepares versions before opening a pull request and publishes only after merge:
+Local version preparation is implemented; the planned PR/publication flow publishes only after merge:
 
-1. The [skill-library workflow](../.github/skills/skill-library/SKILL.md#planned-release-flow) owns
-  version preparation, orchestrating detection and impact decisions through a planned deterministic
-  local PowerShell writer under that skill's `scripts/` directory. Authors edit content and dependency
+1. The [skill-library workflow](../.github/skills/skill-library/SKILL.md#version-preparation) owns
+  version preparation through its [local PowerShell writer](../.github/skills/skill-library/scripts/Invoke-VersionPreparation.ps1).
+  Authors edit content and dependency
   intent normally, but should not hand-edit own release versions or required/optional version pins.
   Explicit initial versions remain deliberate bootstrap authoring, not automatic publication.
   Reuse the [release-train version-decision policy](../.github/skills/dotnet-release-train/SKILL.md#release-version-decision):
@@ -206,7 +207,7 @@ The planned flow prepares versions before opening a pull request and publishes o
   preparation state; require explicit decisions for breaking/substantial changes, never a blind patch
   default. That policy is not an existing reusable skill-bump script, and independent skill versions
   must not inherit repository GitVersion or its `+semver:` commit directives.
-2. The future writer detects affected components from skill-directory content, shared external
+2. The writer detects affected components from skill-directory content, shared external
   inputs, repository defaults and incorporated dependency changes, not only direct Markdown edits.
   Propagate
   through both required and optional reverse dependency edges until a fixed point. A pin-only consumer
@@ -216,7 +217,10 @@ The planned flow prepares versions before opening a pull request and publishes o
   existing runtime closure rules; this release contract does not change them.
 3. Compute a complete preview of baseline/target versions, reasons, paired own-version/exact-pin
   edits and matching immutable `<component-id>/X.Y.Z` tag names before writing. Require explicit apply
-  approval, then write the consistent preparation for PR review. For example, if a PR edits skills A
+  approval with `-Apply -ReviewedFingerprint`, then recompute and write the consistent preparation for
+  PR review. Unpublished IDs need explicit bootstrap acknowledgement and retain their authored initial
+  version. Every affected released ID needs an explicit impact decision, including reverse consumers.
+  For example, if a PR edits skills A
   and B and A depends on B, A's metadata must
   update both its own `version` and the required or optional exact `dependency.version` pin to B's new
   version. B's own version also changes. Bump each affected component at most once per preparation,
@@ -239,8 +243,17 @@ commit: [version preparation](https://github.com/f2calv/helm-charts/commit/6e020
 [workload/1.6.0 release](https://github.com/f2calv/helm-charts/releases/tag/workload/1.6.0).
 Its [publisher at the merge commit](https://github.com/f2calv/helm-charts/blob/a6d10ce9cba7b66043fa7cbba080ec1d236352b5/.github/workflows/_publish-chart.yml)
 reads chart versions and gates publication on the default branch. The inspected source establishes
-no pre-PR detection/bump helper to reuse; this proposed skill-owned writer, release scripts, tag creation
-and generated release records remain unimplemented and outside the bounded metadata phase.
+no pre-PR detection/bump helper to reuse. The skill-owned writer is now implemented locally; release
+scripts, tag creation and generated release records remain unimplemented. It verifies numeric local
+tags against committed identity/version and ancestry, rejects incomplete/redirected history, and binds
+preview approval to source inputs, decisions, implementation and Git state. It cannot prove that local
+release refs are complete or historically immutable without separately trusted release evidence.
+Parser-mark edits preserve unrelated YAML; complete staged validation precedes metadata-only writes.
+Guarded rollback restores owned bytes on ordinary failures, preserves unexpected concurrent edits and
+retains originals for manual recovery when necessary. Multi-file writes are not filesystem-atomic or
+crash-durable; Windows behavior remains a native-host verification gate. The
+[command contract and limits](../.github/skills/skill-library/SKILL.md#version-preparation) remain with
+the owning skill rather than a second release policy here.
 
 ### Identity and Migration History
 
@@ -381,9 +394,10 @@ Observed preparation is distinct from future acceptance:
   and separate approval before payload mutation.
 * [ ] Verify negative resolver cases, including cycles, version/integrity and path conflicts, plus
   install inventory, concurrent mutation rejection and interrupted-install/local-edit recovery.
-* [ ] Implement the skill-owned preview/explicit-apply version writer; verify numeric baselines,
+* [x] Implement the skill-owned preview/explicit-apply version writer; verify numeric baselines,
   impact decisions, paired own-version/required and optional pin propagation, shared inputs, converging
-  dependency graphs and once-per-preparation idempotent reruns. No writer exists in this documentation slice.
+  dependency graphs and once-per-preparation idempotent reruns through focused synthetic fixtures.
+  No real component metadata, tags or releases were mutated during implementation.
 * [ ] Verify future renamed-ID upgrades and same-ID source/native-path changes, exact historical-version
   scope, explicit chains, cycles/ambiguity, missing or unsupported targets, unapproved major rejection,
   already-installed destination collisions, dependent references and repeated-run idempotence.

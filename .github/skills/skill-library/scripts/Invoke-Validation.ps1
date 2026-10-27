@@ -94,7 +94,7 @@ function Assert-SkillTree {
 function Invoke-SkillValidation {
     param(
         [string]$RepoRoot, [string[]]$SkillName = @(), [string[]]$OptionalSelection = @(),
-        [string]$PythonPath = 'python3'
+        [string]$PythonPath = 'python3', [switch]$IncludeCatalog
     )
     $Root = (Resolve-Path -LiteralPath $RepoRoot).Path
     if ((Get-Item -LiteralPath $Root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
@@ -220,7 +220,13 @@ function Invoke-SkillValidation {
     }
     foreach ($Id in $Roots) { Resolve-SkillDependency -Id $Id -IncludeOptional $true }
     if (@($Chosen.Values | Where-Object { -not $_ }).Count -gt 0) { throw 'Optional selection is not reachable from the selected roots.' }
-    [pscustomobject]@{ CatalogCount = $Catalog.Count; SelectedIds = $Resolved.ToArray() }
+    $Result = [ordered]@{ CatalogCount = $Catalog.Count; SelectedIds = $Resolved.ToArray() }
+    if ($IncludeCatalog) {
+        $Result['Catalog'] = $Catalog
+        $Result['Folders'] = $Folders
+        $Result['Defaults'] = $Defaults
+    }
+    [pscustomobject]$Result
 }
 #endregion
 
