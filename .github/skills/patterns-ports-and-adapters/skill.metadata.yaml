@@ -1,0 +1,13 @@
+$schema: ../skill-library/skill-metadata.schema.json
+id: patterns-ports-and-adapters
+version: '1.0.0'
+facets: [architecture, integration]
+optional:
+  - id: patterns-monolith-modular
+    version: '1.0.0'
+    selectionKey: module-composition
+    reason: Include module and runtime-role composition when applying integration boundaries in a modular monolith.
+externalFiles:
+  - path: .github/instructions/dotnet.csharp.instructions.md
+    kind: instruction
+    loadingPurpose: Follow C# interface and error conventions when applying a .NET integration boundary.
