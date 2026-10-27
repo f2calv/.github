@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill-library YAML metadata, defaults, exact dependencies and external files; preview and explicitly apply component version preparation. Use for metadata adoption, validation failures, release baselines or version/bump decisions; packaging, installation and publishing are not implemented.'
+description: 'Author and validate skill-library metadata, defaults and exact dependencies; preview committed packaging inventories and prepare explicit component versions. Use for metadata adoption, inventory/notice review, validation failures or version decisions. Archive creation, installation and publication are not implemented.'
 user-invocable: true
 ---
 
@@ -81,16 +81,18 @@ After schema edits, refresh the editor's YAML schema cache if diagnostics still 
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
 
 After explicit test approval, the [focused test entry point](./scripts/Invoke-Tests.ps1) runs only the
-adjacent synthetic metadata and preparation suites using installed Pester 5.7.1 and the supplied
-`-PythonPath`. The repository's existing runner also discovers both suites; neither route installs
-prerequisites. Preparation fixtures create commits and tags only in minimal temporary repositories.
+adjacent synthetic metadata, preparation and inventory suites using installed Pester 5.7.1 and the
+supplied `-PythonPath`. Each suite must execute nonzero tests. The repository's existing runner also
+discovers these suites; neither route installs prerequisites. Fixture Git mutations remain confined
+to minimal temporary repositories, never the source repository.
 
 The reader rejects duplicate/non-string keys, aliases/anchors, explicit tags, merges, multiple documents,
 non-JSON types, nonfinite numbers and excessive nesting. Path checks reject traversal, absolute paths,
 backslashes, symbolic links (including ancestors), case collisions in skill trees and conservative
 secret/cache filenames. They inspect local opted-in trees, not a Git archive or privacy scan; untracked
-local files are not thereby approved for packaging. Future packaging must use eligible committed files,
-exclude ignored/untracked inputs and validate its exact inventory. Do not recurse unconverted private skills.
+local files are not thereby approved for packaging. The inventory preview below evaluates committed
+inputs separately; packaging must still review its exact inventory and rights. Do not recurse
+unconverted private skills.
 
 There is no publication mode or legal-clearance result. Before publication, a separate future gate
 must review actual rights and notice obligations against the exact committed inventory and revision,
@@ -98,6 +100,47 @@ including third-party material, and exclude unresolved content. A generated immu
 record will capture repository/revision, derived folders and entrypoints, input paths/hashes, effective
 licenses/notices, exact dependency closure and optional selections, review evidence and artifact digests.
 Authored metadata, generated release evidence and consumer install inventory remain separate authorities.
+
+## Committed Inventory Preview
+
+Use the [read-only preview](./scripts/Invoke-InventoryPreview.ps1) to inspect eligible committed files,
+dependency reasons, external instructions and effective license/notice declarations. It uses the same
+installed prerequisites as validation plus local Git, and never installs tools or executes payloads.
+
+```powershell
+./.github/skills/skill-library/scripts/Invoke-InventoryPreview.ps1 `
+   -SkillName patterns-ports-and-adapters `
+   -OptionalSelection patterns-ports-and-adapters/module-composition `
+   -PythonPath /path/to/python
+```
+
+`-RepoRoot` defaults to the invoked script's repository, independent of caller location.
+`-SourceRevision` defaults to `HEAD`; it must resolve unambiguously to one locally available commit.
+Dirty, staged, deleted-local and untracked files never replace committed bytes. Omitted `-SkillName`
+selects all opted-in native roots; repeated roots normalize. Only reachable explicit optional choices
+enter closure; duplicate choices still fail. The existing validator owns catalog-wide checks and
+membership, not a second resolver or inferred Markdown links.
+
+`ValidationRules=invoked-tool-bundle` identifies the currently invoked trusted rules, independently of
+`SourceCommit`. The validator, isolated Python reader and schemas are captured separately from inert
+historical files; historical tooling is never executed. Eligible regular internal files are implicit.
+Only committed ancestor ignore rules apply: ignored ordinary content is omitted, while ignored selected
+entrypoints, sidecars, external declarations or notices fail. Host/global excludes do not participate.
+Defaults and ancestor ignore files are rule inputs, not automatically payload. Unsupported modes,
+links, unsafe paths and collisions fail before source paths are materialized.
+
+Success emits one complete JSON object after removing temporary inspection data; dot-sourcing exposes
+`Invoke-SkillInventoryPreview` returning an object without exiting its host. Components/files are unique
+and ordinally ordered, with every owner, reaching root and active incoming edge. Collections remain
+arrays for empty and singleton results. External reasons retain
+loading purpose and zero-based declaration indexes. License sources distinguish explicit overrides from
+inheritance even when their values match. Failures are sanitized categories on stderr/nonzero exit, or
+terminating object errors; cleanup failure suppresses success. No inventory file is created automatically.
+
+The preview creates no archive, installation, version edit, tag, release or publication. It is not
+immutable provenance, rights clearance or delivery approval. Linux synthetic validation is recorded in
+the feature's validation guide; native Windows verification remains required before claiming Windows
+support. Future packaging and redistribution require their own exact-content and rights review gates.
 
 ## Version Preparation
 
@@ -197,7 +240,7 @@ human-readable inspection and debugging: it declares release intent before publi
 `<component-id>/X.Y.Z` tag identifies the released commit; the release gate must reject any mismatch
 between that tag and the committed metadata version. The generated exact-inventory record
 must bind that commit, reviewed rights evidence and artifact hashes; changed inputs at an unchanged
-released version must fail. No packaging, tag creation, publication, immutable snapshots, catalogs,
+released version must fail. No archive packaging, tag creation, publication, immutable release snapshots, catalogs,
 installer ownership/recovery, Spec Kit initialization or packaged runtime discovery is implemented here.
 
 ## Planned Identity Evolution
@@ -220,7 +263,8 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
+- Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
-- Keep synthetic self-preparation coverage: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
+- Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
 - Verify native discovery before deepening folders; keep catalog migration history and installer recovery aligned.

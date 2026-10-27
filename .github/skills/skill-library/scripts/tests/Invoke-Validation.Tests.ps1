@@ -47,6 +47,20 @@ Describe 'Skill metadata validation' -Tag 'Unit' {
         @($Result.SelectedIds).Count | Should -Be 1
     }
 
+    It 'isolates trusted Python imports from inherited paths and snapshot payloads' {
+        $Injection = Join-Path $TestDrive 'synthetic-imports'
+        [void][IO.Directory]::CreateDirectory($Injection)
+        [IO.File]::WriteAllText((Join-Path $Injection 'sitecustomize.py'), 'raise SystemExit("SYNTHETIC_IMPORT_EXECUTED")')
+        [IO.File]::WriteAllText((Join-Path $Injection 'yaml.py'), 'raise RuntimeError("SYNTHETIC_IMPORT_EXECUTED")')
+        $Previous = [Environment]::GetEnvironmentVariable('PYTHONPATH')
+        try {
+            $env:PYTHONPATH = $Injection
+            (Invoke-FixtureValidation $script:Root).CatalogCount | Should -Be 1
+            @(Get-ChildItem -LiteralPath $Injection -Recurse -Filter '*.pyc' -Force).Count | Should -Be 0
+        }
+        finally { [Environment]::SetEnvironmentVariable('PYTHONPATH', $Previous) }
+    }
+
     It 'validates the fully formed synthetic template against the authoritative schema' {
         $Template = Read-SkillYaml -Path (Join-Path $PSScriptRoot '../../examples/metadata.yaml.tmpl') -PythonPath $script:Python
         Test-Json -Json (ConvertTo-Json -InputObject $Template -Depth 20) -SchemaFile $script:Schema | Should -BeTrue

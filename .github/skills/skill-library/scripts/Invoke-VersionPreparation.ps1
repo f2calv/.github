@@ -40,43 +40,22 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 . (Join-Path $PSScriptRoot 'Invoke-Validation.ps1') -RepoRoot $RepoRoot -PythonPath $PythonPath
+. (Join-Path $PSScriptRoot 'Git-Process.ps1')
 
 #region Functions
 function Invoke-PreparationProcess {
     param([string]$Executable, [string[]]$Arguments)
-    $Start = [Diagnostics.ProcessStartInfo]::new($Executable)
-    $Start.UseShellExecute = $false
-    $Start.RedirectStandardOutput = $true
-    $Start.RedirectStandardError = $true
-    foreach ($Key in @($Start.Environment.Keys)) {
-        if ($Key.StartsWith('GIT_', [StringComparison]::OrdinalIgnoreCase)) { [void]$Start.Environment.Remove($Key) }
-    }
-    $Start.Environment['GIT_NO_REPLACE_OBJECTS'] = '1'
-    $Start.Environment['GIT_NO_LAZY_FETCH'] = '1'
-    $Start.Environment['PYTHONDONTWRITEBYTECODE'] = '1'
-    foreach ($Argument in $Arguments) { $Start.ArgumentList.Add($Argument) }
-    $Process = [Diagnostics.Process]::new()
-    $Process.StartInfo = $Start
-    $Buffer = [IO.MemoryStream]::new()
-    try {
-        [void]$Process.Start()
-        $OutputTask = $Process.StandardOutput.BaseStream.CopyToAsync($Buffer)
-        $ErrorTask = $Process.StandardError.ReadToEndAsync()
-        $Process.WaitForExit()
-        [void]$OutputTask.GetAwaiter().GetResult()
-        [void]$ErrorTask.GetAwaiter().GetResult()
-        if ($Process.ExitCode -ne 0) { throw 'Preparation subprocess failed; verify local Git history or Python/PyYAML prerequisites.' }
-        return ,$Buffer.ToArray()
-    }
-    finally { $Buffer.Dispose(); $Process.Dispose() }
+    $Result = Invoke-LibraryProcess -Executable $Executable -Arguments $Arguments
+    if ($Result.ExitCode -ne 0) { throw 'Preparation subprocess failed; verify local Git history or Python/PyYAML prerequisites.' }
+    return ,$Result.Bytes
 }
 
 function Invoke-PreparationGit {
     param([string]$Root, [string[]]$Arguments, [switch]$Bytes)
-    $Executable = (Get-Command git -CommandType Application -TotalCount 1).Source
-    $Data = Invoke-PreparationProcess -Executable $Executable -Arguments (@('-c', "safe.directory=$Root", '-c', 'core.fsmonitor=false', '-C', $Root) + $Arguments)
-    if ($Bytes) { return ,$Data }
-    return [Text.Encoding]::UTF8.GetString($Data).TrimEnd("`n", "`r")
+    $Result = Invoke-LibraryGit -Root $Root -Arguments $Arguments
+    if ($Result.ExitCode -ne 0) { throw 'Preparation subprocess failed; verify local Git history or Python/PyYAML prerequisites.' }
+    if ($Bytes) { return ,$Result.Bytes }
+    return [Text.Encoding]::UTF8.GetString($Result.Bytes).TrimEnd("`n", "`r")
 }
 
 function Get-PreparationHash {

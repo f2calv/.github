@@ -2,7 +2,7 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-Run only the skill-library synthetic metadata and preparation tests after approval.
+Run only the skill-library synthetic metadata, preparation and inventory tests after approval.
 .DESCRIPTION
 Import pinned Pester and run the adjacent suite without provisioning or broad repository tests.
 .PARAMETER PythonPath
@@ -23,16 +23,20 @@ if ($MyInvocation.InvocationName -ne '.') {
     try {
         $env:SKILL_LIBRARY_TEST_PYTHON = $PythonPath
         Import-Module Pester -RequiredVersion 5.7.1
-        $Container = New-PesterContainer -Path @(
+        $Suites = @(
             (Join-Path $PSScriptRoot 'tests/Invoke-Validation.Tests.ps1'),
-            (Join-Path $PSScriptRoot 'tests/Invoke-VersionPreparation.Tests.ps1')
+            (Join-Path $PSScriptRoot 'tests/Invoke-VersionPreparation.Tests.ps1'),
+            (Join-Path $PSScriptRoot 'tests/Invoke-InventoryPreview.Tests.ps1')
         )
-        $Result = Invoke-Pester -Container $Container -Output Normal -PassThru
-        if ($Result.FailedCount -gt 0 -or $Result.TotalCount -eq 0) { exit 1 }
+        foreach ($Suite in $Suites) {
+            $Container = New-PesterContainer -Path $Suite
+            $Result = Invoke-Pester -Container $Container -Output Normal -PassThru
+            if ($Result.FailedCount -gt 0 -or $Result.TotalCount -eq 0) { exit 1 }
+        }
         exit 0
     }
     catch {
-        Write-Error -Message 'Focused metadata tests failed to run; check installed Pester 5.7.1 and Python/PyYAML prerequisites.' -ErrorAction Continue
+        Write-Error -Message 'Focused skill-library tests failed to run; check installed Pester 5.7.1 and Python/PyYAML prerequisites.' -ErrorAction Continue
         exit 1
     }
     finally {

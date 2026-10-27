@@ -56,6 +56,39 @@ Describe 'Skill version preparation' -Tag 'Unit' {
         Save-VersionFixture
     }
 
+    It 'shares byte-safe process input and drains stderr independently' {
+        $Bytes = [byte[]]@(0, 255, 13, 10, 128)
+        $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
+        $Result = Invoke-LibraryProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import sys; sys.stderr.write("synthetic diagnostic" * 8192); sys.stdout.buffer.write(sys.stdin.buffer.read())') -InputBytes $Bytes
+        $Result.ExitCode | Should -Be 0
+        $Result.Bytes | Should -Be $Bytes
+        $Result.Error.Length | Should -BeGreaterThan 65536
+    }
+
+    It 'shares process isolation without inheriting Git redirects or optional locks' {
+        $Previous = [Environment]::GetEnvironmentVariable('GIT_DIR')
+        $PreviousLocks = [Environment]::GetEnvironmentVariable('GIT_OPTIONAL_LOCKS')
+        try {
+            $env:GIT_DIR = Join-Path $TestDrive 'missing-synthetic-git'
+            $env:GIT_OPTIONAL_LOCKS = '1'
+            (Invoke-FixtureGit @('rev-parse', '--verify', 'HEAD')) | Should -Match '^[0-9a-f]{40,64}$'
+            $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
+            $Result = Invoke-LibraryProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import os; print(os.environ.get("GIT_OPTIONAL_LOCKS")); print(os.environ.get("GIT_ALLOW_PROTOCOL"))')
+            [Text.Encoding]::UTF8.GetString($Result.Bytes).Replace("`r", '') | Should -BeExactly "0`n`n"
+        }
+        finally {
+            [Environment]::SetEnvironmentVariable('GIT_DIR', $Previous)
+            [Environment]::SetEnvironmentVariable('GIT_OPTIONAL_LOCKS', $PreviousLocks)
+        }
+    }
+
+    It 'shares subprocess failure handling without exposing native diagnostics' {
+        $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
+        { Invoke-PreparationProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import sys; sys.stderr.write("SYNTHETIC_PRIVATE_DIAGNOSTIC"); sys.exit(7)') } | Should -Throw '*subprocess failed*'
+        try { [void](Invoke-PreparationProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import sys; sys.stderr.write("SYNTHETIC_PRIVATE_DIAGNOSTIC"); sys.exit(7)')) }
+        catch { $_.Exception.Message | Should -Not -Match 'SYNTHETIC_PRIVATE_DIAGNOSTIC' }
+    }
+
     It 'requires explicit bootstrap and retains initial intent without writes' {
         $Path = Join-Path $script:Root '.github/skills/example/skill.metadata.yaml'
         $Before = [IO.File]::ReadAllText($Path)
@@ -356,7 +389,7 @@ Describe 'Skill version preparation' -Tag 'Unit' {
         Set-VersionFixtureSkill -Id preparer
         $Destination = Join-Path $script:Root '.github/skills/preparer'
         [void][IO.Directory]::CreateDirectory((Join-Path $Destination 'scripts'))
-        foreach ($Name in @('Invoke-Validation.ps1', 'Invoke-VersionPreparation.ps1', 'Read-Metadata.py')) {
+        foreach ($Name in @('Invoke-Validation.ps1', 'Invoke-VersionPreparation.ps1', 'Git-Process.ps1', 'Read-Metadata.py')) {
             [IO.File]::Copy((Join-Path $PSScriptRoot "../$Name"), (Join-Path $Destination "scripts/$Name"))
         }
         foreach ($Name in @('skill-metadata.schema.json', 'repository-defaults.schema.json')) {

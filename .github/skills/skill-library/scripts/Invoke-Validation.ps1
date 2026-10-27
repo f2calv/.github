@@ -39,6 +39,8 @@ function Read-SkillYaml {
     $Start.RedirectStandardOutput = $true
     $Start.RedirectStandardError = $true
     $Start.Environment['PYTHONDONTWRITEBYTECODE'] = '1'
+    $Start.ArgumentList.Add('-I')
+    $Start.ArgumentList.Add('-B')
     $Start.ArgumentList.Add((Join-Path $PSScriptRoot 'Read-Metadata.py'))
     $Start.ArgumentList.Add($Path)
     if ($Frontmatter) { $Start.ArgumentList.Add('--frontmatter') }
