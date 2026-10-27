@@ -45,7 +45,9 @@ Set-StrictMode -Version 3.0
 #region Functions
 function Invoke-PreparationProcess {
     param([string]$Executable, [string[]]$Arguments, [byte[]]$InputBytes)
-    $Result = Invoke-LibraryProcess -Executable $Executable -Arguments $Arguments -InputBytes $InputBytes
+    $Parameters = @{ Executable = $Executable; Arguments = $Arguments }
+    if ($PSBoundParameters.ContainsKey('InputBytes')) { $Parameters['InputBytes'] = $InputBytes }
+    $Result = Invoke-LibraryProcess @Parameters
     if ($Result.ExitCode -ne 0) { throw 'Preparation subprocess failed; verify local Git history or Python/PyYAML prerequisites.' }
     return ,$Result.Bytes
 }
