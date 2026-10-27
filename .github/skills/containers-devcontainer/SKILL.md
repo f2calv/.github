@@ -225,6 +225,12 @@ Feature's implicit customization remaining unchanged.
 
 Keep lifecycle behavior in scripts rather than long JSON command strings.
 
+The reusable [tool verifier](./scripts/Initialize-DevContainer.ps1) checks an exact installed
+Pester version and caller-selected executables without installing packages. Keep repository tool
+selection in a thin local lifecycle entry point; specialized installers belong to their owning
+skills. The [composition tests](./scripts/tests/Initialize-DevContainer.Tests.ps1) exercise this
+repository's entry point with mocked tools, not a live container build.
+
 Lifecycle order is `initializeCommand`, `onCreateCommand`, `updateContentCommand`,
 `postCreateCommand`, `postStartCommand`, then `postAttachCommand`.
 

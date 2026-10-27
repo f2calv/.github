@@ -54,6 +54,11 @@ isolated tool environment; do not create a repository virtual environment or add
 application's dependencies. Install through one image/Feature/lifecycle owner and never initialize
 the repository from a container lifecycle hook.
 
+The reusable [Specify installer](./scripts/Install-Specify.ps1) accepts an exact release version,
+adds the non-root user's tool-bin directory to `PATH`, and verifies `specify version`. Compose it
+with the generic Dev Container tool verifier from a thin repository lifecycle entry point only
+when this repository needs Spec Kit; generic container initialization must not install it.
+
 After an approved build or rebuild, run inside the container:
 
 ```text

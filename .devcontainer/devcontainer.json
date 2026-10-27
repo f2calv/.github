@@ -22,11 +22,6 @@
     }
   },
   "remoteUser": "vscode",
-  "mounts": [
-    "source=${localWorkspaceFolder}/../gha-workflows,target=/workspaces/gha-workflows,type=bind",
-    "source=${localWorkspaceFolder}/../gha-release-versioning,target=/workspaces/gha-release-versioning,type=bind",
-    "source=${localWorkspaceFolder}/../helm-charts,target=/workspaces/helm-charts,type=bind"
-  ],
   "containerEnv": {
     "SPECIFY_CLI_VERSION": "1.2.3"
   },

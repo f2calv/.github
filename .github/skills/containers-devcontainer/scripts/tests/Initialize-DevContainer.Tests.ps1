@@ -3,7 +3,7 @@
 #Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.7.1' }
 
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../.devcontainer/Initialize-DevContainer.ps1')
+    . (Join-Path $PSScriptRoot '../../../../../.devcontainer/Initialize-DevContainer.ps1')
     function uv { $global:LASTEXITCODE = 0 }
     function specify { $global:LASTEXITCODE = 0 }
     function python { $global:LASTEXITCODE = 0 }
@@ -33,7 +33,8 @@ Describe 'Dev Container preparation' -Tag 'Unit' {
     }
 
     It 'installs the exact pin through uv and only requests version output from Specify' {
-        $output = Initialize-DevContainer
+        Install-Specify -Version $env:SPECIFY_CLI_VERSION | Out-Null
+        $output = Initialize-DevContainer -Tools @('pre-commit', 'gh', 'node', 'python', 'uv', 'git')
         "$output" | Should -Match 'Pester 5\.7\.1'
         Should -Invoke uv -Times 1 -Exactly -ParameterFilter {
             ($args -join ' ') -eq 'tool install --force specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3'
@@ -45,8 +46,8 @@ Describe 'Dev Container preparation' -Tag 'Unit' {
     }
 
     It 'can prepare the same pinned tool repeatedly without initializing a repository' {
-        Initialize-DevContainer | Out-Null
-        Initialize-DevContainer | Out-Null
+        Install-Specify -Version $env:SPECIFY_CLI_VERSION | Out-Null
+        Install-Specify -Version $env:SPECIFY_CLI_VERSION | Out-Null
         Should -Invoke uv -Times 2 -Exactly -ParameterFilter { $args[0] -eq 'tool' }
         Should -Invoke specify -Times 2 -Exactly -ParameterFilter { ($args -join ' ') -eq 'version' }
     }
@@ -55,13 +56,13 @@ Describe 'Dev Container preparation' -Tag 'Unit' {
         @{ Version = '' }, @{ Version = 'latest' }, @{ Version = '1.2' }
     ) {
         $env:SPECIFY_CLI_VERSION = $Version
-        { Initialize-DevContainer } | Should -Throw '*exact published version*'
+        { Install-Specify -Version $env:SPECIFY_CLI_VERSION } | Should -Throw '*exact published*version*'
         Should -Invoke uv -Times 0 -Exactly
     }
 
     It 'stops when uv installation fails' {
         Mock uv { $global:LASTEXITCODE = 9 }
-        { Initialize-DevContainer } | Should -Throw '*installation failed with exit code 9*'
+        { Install-Specify -Version $env:SPECIFY_CLI_VERSION } | Should -Throw '*installation failed with exit code 9*'
         Should -Invoke specify -Times 0 -Exactly
     }
 
@@ -70,6 +71,11 @@ Describe 'Dev Container preparation' -Tag 'Unit' {
         @{ Tool = 'python' }, @{ Tool = 'uv' }, @{ Tool = 'git' }, @{ Tool = 'specify' }
     ) {
         Mock $Tool { $global:LASTEXITCODE = 7 } -ParameterFilter { $args[0] -ne 'tool' }
-        { Initialize-DevContainer } | Should -Throw '*version check failed with exit code 7*'
+        if ($Tool -eq 'specify') {
+            { Install-Specify -Version $env:SPECIFY_CLI_VERSION } | Should -Throw '*version check failed*'
+        }
+        else {
+            { Initialize-DevContainer -Tools @($Tool) } | Should -Throw '*version check failed with exit code 7*'
+        }
     }
 }
