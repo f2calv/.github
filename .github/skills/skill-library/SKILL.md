@@ -61,6 +61,8 @@ and the [pinned PyYAML prerequisite](./scripts/requirements.txt). The bundled
 interpreter with PyYAML 6.0.3 through `-PythonPath` if `python3` lacks it; no setup runs automatically.
 The PowerShell callers pass bounded UTF-8 source bytes over standard input; the Python reader
 accepts no file paths and never opens metadata files itself. Both boundaries enforce the 1 MiB limit.
+The requirements file pins published wheel digests. CI requires those hashes and binary-only
+installation; source-distribution setup scripts are not permitted.
 
 From the repository root:
 
@@ -264,7 +266,7 @@ needs no ID migration, but still needs version-impact review and safe installed-
 ## Maintaining This Skill
 
 - Recheck draft 2020-12 behavior when PowerShell's `Test-Json` or JsonSchema.Net changes.
-- Recheck node/tag handling and scalar preservation when updating PyYAML or Python.
+- Recheck node/tag handling, scalar preservation, stdin limits and published wheel hashes when updating PyYAML or Python.
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.

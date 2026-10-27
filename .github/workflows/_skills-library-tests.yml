@@ -33,7 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: python -m pip install -r skill-library requirements
-        run: python -m pip install -r .github/skills/skill-library/scripts/requirements.txt
+        run: 'python -m pip install --require-hashes --only-binary :all: -r .github/skills/skill-library/scripts/requirements.txt'
 
       - name: verify local fixture tools
         shell: pwsh

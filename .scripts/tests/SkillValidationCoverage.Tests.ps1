@@ -20,6 +20,21 @@ BeforeAll {
 }
 
 Describe 'Central skill suite discovery' -Tag 'Unit' {
+    It 'installs hash-locked Python wheels without executing source setup scripts' {
+        $json = & yq -o=json '.' (Join-Path $repositoryRoot '.github/workflows/_skills-library-tests.yml')
+        $LASTEXITCODE | Should -Be 0
+        $workflow = ($json -join "`n") | ConvertFrom-Json -AsHashtable
+        $install = @($workflow.jobs.test.steps | Where-Object {
+                $_.ContainsKey('run') -and $_.run -match 'python -m pip install'
+            })
+        $install.Count | Should -Be 1
+        $install[0].run | Should -Match '--require-hashes'
+        $install[0].run | Should -Match '--only-binary :all:'
+        $requirements = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/skills/skill-library/scripts/requirements.txt') -Raw
+        $requirements | Should -Match '\APyYAML==[0-9]+\.[0-9]+\.[0-9]+ \\\r?\n'
+        [regex]::Matches($requirements, '--hash=sha256:[0-9a-f]{64}').Count | Should -BeGreaterThan 0
+    }
+
     It 'includes root tests and every bundled skill test directory exactly once' {
         $paths = @(& {
                 param($RunnerRoot, $Code)

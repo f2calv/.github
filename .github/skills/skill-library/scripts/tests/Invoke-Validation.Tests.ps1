@@ -81,6 +81,16 @@ Describe 'Skill metadata validation' -Tag 'Unit' {
         $Result.Bytes.Length | Should -Be 0
     }
 
+    It 'independently rejects oversized stdin in the Python reader' {
+        $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
+        $Result = Invoke-LibraryProcess -Executable $Executable -Arguments @(
+            '-I', '-B', (Join-Path $PSScriptRoot '../Read-Metadata.py')
+        ) -InputBytes ([byte[]]::new(1048577))
+        $Result.ExitCode | Should -Be 1
+        $Result.Bytes.Length | Should -Be 0
+        $Result.Error | Should -Match 'below 1 MiB'
+    }
+
     It 'treats a path-like YAML scalar as data rather than another input file' {
         $Path = Join-Path $TestDrive 'path-scalar.yaml'
         Set-Content -LiteralPath $Path -Value '/synthetic/not-reader-input.yaml'
