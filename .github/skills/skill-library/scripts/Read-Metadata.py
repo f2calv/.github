@@ -8,7 +8,6 @@ import json
 import math
 import re
 import sys
-from pathlib import Path
 from typing import TypeAlias
 
 import yaml
@@ -55,10 +54,14 @@ def _parse(text: str) -> tuple[JsonValue, Node]:
         loader.dispose()
 
 
-def _read(path: Path, frontmatter: bool) -> JsonValue:
-    if path.stat().st_size > 1_048_576:
+def _read_input() -> str:
+    data = sys.stdin.buffer.read(1_048_577)
+    if len(data) > 1_048_576:
         raise ValueError("Keep metadata inputs below 1 MiB.")
-    text = path.read_bytes().decode("utf-8")
+    return data.decode("utf-8")
+
+
+def _read(text: str, frontmatter: bool) -> JsonValue:
     if frontmatter:
         lines = text.splitlines()
         if not lines or lines[0] != "---" or "---" not in lines[1:]:
@@ -67,15 +70,12 @@ def _read(path: Path, frontmatter: bool) -> JsonValue:
     return _parse(text)[0]
 
 
-def _prepare(path: Path, versions: dict[str, str]) -> dict[str, str]:
+def _prepare(text: str, versions: dict[str, str]) -> dict[str, str]:
     if not isinstance(versions, dict) or any(
         not isinstance(identity, str) or not isinstance(version, str)
         for identity, version in versions.items()
     ):
         raise ValueError("Preparation versions must be a JSON object of string IDs and versions.")
-    if path.stat().st_size > 1_048_576:
-        raise ValueError("Keep metadata inputs below 1 MiB.")
-    text = path.read_bytes().decode("utf-8")
     value, node = _parse(text)
     if not isinstance(value, dict) or not isinstance(node, MappingNode):
         raise ValueError("Version preparation requires a metadata mapping.")
@@ -118,7 +118,6 @@ def _prepare(path: Path, versions: dict[str, str]) -> dict[str, str]:
 def main() -> int:
     """Return JSON on success and sanitized diagnostics on failure."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path", type=Path)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--frontmatter", action="store_true")
     modes.add_argument("--versions-json", help="Render version scalars as base64 JSON; never write files.")
@@ -126,10 +125,11 @@ def main() -> int:
     try:
         if sys.version_info < (3, 11) or yaml.__version__ != "6.0.3":
             raise ValueError("Use Python 3.11+ with PyYAML 6.0.3.")
+        text = _read_input()
         value = (
-            _prepare(arguments.path, json.loads(arguments.versions_json))
+            _prepare(text, json.loads(arguments.versions_json))
             if arguments.versions_json is not None
-            else _read(arguments.path, arguments.frontmatter)
+            else _read(text, arguments.frontmatter)
         )
         sys.stdout.write(json.dumps(value, allow_nan=False, ensure_ascii=True) + "\n")
     except UnicodeError:

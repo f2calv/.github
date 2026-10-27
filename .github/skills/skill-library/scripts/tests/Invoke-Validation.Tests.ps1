@@ -47,6 +47,46 @@ Describe 'Skill metadata validation' -Tag 'Unit' {
         @($Result.SelectedIds).Count | Should -Be 1
     }
 
+    It 'preserves exact UTF-8 bytes including CRLF across the bounded input boundary' {
+        $Path = Join-Path $TestDrive 'bytes.yaml'
+        $Expected = [byte[]]@(0x23, 0x20, 0xc3, 0xa9, 0x0d, 0x0a)
+        [IO.File]::WriteAllBytes($Path, $Expected)
+        (Read-SkillInputBytes -Path $Path) | Should -Be $Expected
+    }
+
+    It 'accepts an empty source and exactly one MiB at the bounded input boundary' {
+        $Path = Join-Path $TestDrive 'boundary.yaml'
+        foreach ($Length in @(0, 1048576)) {
+            [IO.File]::WriteAllBytes($Path, [byte[]]::new($Length))
+            (Read-SkillInputBytes -Path $Path).Length | Should -Be $Length
+        }
+    }
+
+    It 'rejects oversized metadata before starting the Python reader' {
+        $Path = Join-Path $TestDrive 'oversized.yaml'
+        [IO.File]::WriteAllBytes($Path, [byte[]]::new(1048577))
+        Mock Invoke-LibraryProcess { throw 'The reader must not start.' }
+        { Read-SkillYaml -Path $Path -PythonPath $script:Python } | Should -Throw '*1 MiB*'
+        Should -Invoke Invoke-LibraryProcess -Times 0 -Exactly
+    }
+
+    It 'rejects file-path arguments to the stdin-only Python reader' {
+        $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
+        $Path = Join-Path $TestDrive 'not-an-input.yaml'
+        Set-Content -LiteralPath $Path -Value 'SYNTHETIC_NOT_READER_INPUT'
+        $Result = Invoke-LibraryProcess -Executable $Executable -Arguments @(
+            '-I', '-B', (Join-Path $PSScriptRoot '../Read-Metadata.py'), $Path
+        ) -InputBytes ([Text.Encoding]::UTF8.GetBytes('id: example-skill'))
+        $Result.ExitCode | Should -Be 2
+        $Result.Bytes.Length | Should -Be 0
+    }
+
+    It 'treats a path-like YAML scalar as data rather than another input file' {
+        $Path = Join-Path $TestDrive 'path-scalar.yaml'
+        Set-Content -LiteralPath $Path -Value '/synthetic/not-reader-input.yaml'
+        Read-SkillYaml -Path $Path -PythonPath $script:Python | Should -Be '/synthetic/not-reader-input.yaml'
+    }
+
     It 'isolates trusted Python imports from inherited paths and snapshot payloads' {
         $Injection = Join-Path $TestDrive 'synthetic-imports'
         [void][IO.Directory]::CreateDirectory($Injection)

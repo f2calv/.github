@@ -28,37 +28,33 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
+. (Join-Path $PSScriptRoot 'Git-Process.ps1')
 
 #region Functions
+function Read-SkillInputBytes {
+    param([string]$Path)
+    $Stream = [IO.File]::OpenRead($Path)
+    try {
+        $Buffer = [byte[]]::new(1048577)
+        $Count = $Stream.ReadAtLeast($Buffer, $Buffer.Length, $false)
+        if ($Count -gt 1048576) { throw 'Keep metadata inputs below 1 MiB.' }
+        [Array]::Resize([ref]$Buffer, $Count)
+        return ,$Buffer
+    }
+    finally { $Stream.Dispose() }
+}
+
 function Read-SkillYaml {
     param([string]$Path, [string]$PythonPath, [switch]$Frontmatter)
     try { $Executable = (Get-Command $PythonPath -CommandType Application -TotalCount 1).Source }
     catch { throw 'Python unavailable: pass -PythonPath pointing to Python 3.11+ with PyYAML 6.0.3.' }
-    $Start = [Diagnostics.ProcessStartInfo]::new($Executable)
-    $Start.UseShellExecute = $false
-    $Start.RedirectStandardOutput = $true
-    $Start.RedirectStandardError = $true
-    $Start.Environment['PYTHONDONTWRITEBYTECODE'] = '1'
-    $Start.ArgumentList.Add('-I')
-    $Start.ArgumentList.Add('-B')
-    $Start.ArgumentList.Add((Join-Path $PSScriptRoot 'Read-Metadata.py'))
-    $Start.ArgumentList.Add($Path)
-    if ($Frontmatter) { $Start.ArgumentList.Add('--frontmatter') }
-    $Process = [Diagnostics.Process]::new()
-    $Process.StartInfo = $Start
-    try {
-        [void]$Process.Start()
-        $OutputTask = $Process.StandardOutput.ReadToEndAsync()
-        $ErrorTask = $Process.StandardError.ReadToEndAsync()
-        $Process.WaitForExit()
-        $OutputText = $OutputTask.GetAwaiter().GetResult()
-        [void]$ErrorTask.GetAwaiter().GetResult()
-        if ($Process.ExitCode -ne 0) {
-            throw 'YAML reader failed: check Python/PyYAML prerequisites and restricted single-document YAML; remove duplicate keys, aliases, tags and non-JSON types.'
-        }
-        return ConvertFrom-Json -InputObject $OutputText -AsHashtable -NoEnumerate -Depth 64
+    $Arguments = @('-I', '-B', (Join-Path $PSScriptRoot 'Read-Metadata.py'))
+    if ($Frontmatter) { $Arguments += '--frontmatter' }
+    $Result = Invoke-LibraryProcess -Executable $Executable -Arguments $Arguments -InputBytes (Read-SkillInputBytes -Path $Path)
+    if ($Result.ExitCode -ne 0) {
+        throw 'YAML reader failed: check Python/PyYAML prerequisites and restricted single-document YAML; remove duplicate keys, aliases, tags and non-JSON types.'
     }
-    finally { $Process.Dispose() }
+    return ConvertFrom-Json -InputObject ([Text.Encoding]::UTF8.GetString($Result.Bytes)) -AsHashtable -NoEnumerate -Depth 64
 }
 
 function Assert-LibraryPath {

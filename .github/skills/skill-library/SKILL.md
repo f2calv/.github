@@ -59,6 +59,8 @@ The [PowerShell entry point](./scripts/Invoke-Validation.ps1) requires PowerShel
 and the [pinned PyYAML prerequisite](./scripts/requirements.txt). The bundled
 [YAML reader](./scripts/Read-Metadata.py) parses metadata and native frontmatter. Supply an existing
 interpreter with PyYAML 6.0.3 through `-PythonPath` if `python3` lacks it; no setup runs automatically.
+The PowerShell callers pass bounded UTF-8 source bytes over standard input; the Python reader
+accepts no file paths and never opens metadata files itself. Both boundaries enforce the 1 MiB limit.
 
 From the repository root:
 

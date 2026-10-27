@@ -44,8 +44,8 @@ Set-StrictMode -Version 3.0
 
 #region Functions
 function Invoke-PreparationProcess {
-    param([string]$Executable, [string[]]$Arguments)
-    $Result = Invoke-LibraryProcess -Executable $Executable -Arguments $Arguments
+    param([string]$Executable, [string[]]$Arguments, [byte[]]$InputBytes)
+    $Result = Invoke-LibraryProcess -Executable $Executable -Arguments $Arguments -InputBytes $InputBytes
     if ($Result.ExitCode -ne 0) { throw 'Preparation subprocess failed; verify local Git history or Python/PyYAML prerequisites.' }
     return ,$Result.Bytes
 }
@@ -76,8 +76,8 @@ function Get-PreparationRendering {
     $Executable = (Get-Command $PythonPath -CommandType Application -TotalCount 1).Source
     $Json = ConvertTo-Json -InputObject $Versions -Compress -Depth 10
     $Data = Invoke-PreparationProcess -Executable $Executable -Arguments @(
-        (Join-Path $PSScriptRoot 'Read-Metadata.py'), $Path, '--versions-json', $Json
-    )
+        '-I', '-B', (Join-Path $PSScriptRoot 'Read-Metadata.py'), '--versions-json', $Json
+    ) -InputBytes (Read-SkillInputBytes -Path $Path)
     return ConvertFrom-Json -InputObject ([Text.Encoding]::UTF8.GetString($Data)) -AsHashtable
 }
 
