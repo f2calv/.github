@@ -5,7 +5,7 @@ argument-hint: '[design|apply|audit] [capability or adapter boundary]'
 user-invocable: true
 ---
 
-# Ports and Adapters
+# Ports and Adapters (Hexagonal Architecture)
 
 Put policy on the application side of a deliberate contract and keep technology-specific behavior
 in its adapter. Use the boundary where it buys actual substitution, isolation or testability.

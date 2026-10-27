@@ -61,9 +61,25 @@ Describe 'Skill metadata validation' -Tag 'Unit' {
         finally { [Environment]::SetEnvironmentVariable('PYTHONPATH', $Previous) }
     }
 
-    It 'validates the fully formed synthetic template against the authoritative schema' {
-        $Template = Read-SkillYaml -Path (Join-Path $PSScriptRoot '../../examples/metadata.yaml.tmpl') -PythonPath $script:Python
+    It 'validates the <Name> template against the authoritative schema' -ForEach @(
+        @{ Name = 'metadata.yaml.tmpl' }
+        @{ Name = 'metadata-full.yaml.tmpl' }
+    ) {
+        $Template = Read-SkillYaml -Path (Join-Path $PSScriptRoot "../../examples/$Name") -PythonPath $script:Python
         Test-Json -Json (ConvertTo-Json -InputObject $Template -Depth 20) -SchemaFile $script:Schema | Should -BeTrue
+    }
+
+    It 'resolves the complete example with synthetic dependencies and declared files' {
+        [void](Set-FixtureSkill -Root $script:Root -Name 'example-dependency')
+        [void](Set-FixtureSkill -Root $script:Root -Name 'example-extra')
+        [void][IO.Directory]::CreateDirectory((Join-Path $script:Root 'docs'))
+        foreach ($Name in @('example-NOTICE.txt', 'example-external-NOTICE.txt', 'example-instructions.md')) {
+            Set-Content -LiteralPath (Join-Path $script:Root "docs/$Name") -Value 'Synthetic reviewed input.'
+        }
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../examples/metadata-full.yaml.tmpl') `
+            -Destination (Join-Path $script:Root '.github/skills/example-skill/skill.metadata.yaml')
+        $Result = Invoke-FixtureValidation $script:Root -Names example-skill -Selections example-skill/extra-guidance
+        $Result.SelectedIds -join ',' | Should -Be 'example-dependency,example-extra,example-skill'
     }
 
     It 'rejects invalid closed-schema field <Label>' -ForEach @(

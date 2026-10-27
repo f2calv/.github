@@ -1,7 +1,7 @@
 $schema: ../skill-library/skill-metadata.schema.json
 id: patterns-ports-and-adapters
 version: '1.0.0'
-facets: [architecture, integration]
+facets: [architecture, integration, hexagonal]
 optional:
   - id: patterns-monolith-modular
     version: '1.0.0'

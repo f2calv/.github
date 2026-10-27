@@ -13,7 +13,10 @@ discovery name and description. Metadata adds distribution identity, not another
 ## Authoring
 
 1. Inspect the skill directory, native links and actual external prerequisites. Start from the
-   [valid synthetic template](./examples/metadata.yaml.tmpl); replace its example identity.
+   [minimal template](./examples/metadata.yaml.tmpl); replace its example identity. The
+   [complete synthetic example](./examples/metadata-full.yaml.tmpl) demonstrates every supported
+   optional field, not default prerequisites. Replace its synthetic dependencies and paths with
+   real reviewed inputs; omit the license override unless terms genuinely differ.
 2. Keep `id` explicit; it may differ from the aligned native folder/frontmatter name. Quote the exact
    plain `X.Y.Z` version. Keep distribution identity stable across source-folder/native-name renames
    by default; native folder/frontmatter alignment still applies. The three initial `1.0.0` values are
