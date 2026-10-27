@@ -8,15 +8,27 @@
     "$schema": { "type": "string", "minLength": 1 },
     "id": { "$ref": "#/$defs/id" },
     "version": { "$ref": "#/$defs/version" },
-    "facets": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "facets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
     "license": { "type": "string", "minLength": 1 },
-    "notices": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/path" } },
+    "notices": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/path" }
+    },
     "required": { "type": "array", "items": { "$ref": "#/$defs/dependency" } },
-    "optional": { "type": "array", "items": { "$ref": "#/$defs/optionalDependency" } },
+    "optional": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/optionalDependency" }
+    },
     "externalFiles": {
       "type": "array",
       "items": {
-        "type": "object", "additionalProperties": false,
+        "type": "object",
+        "additionalProperties": false,
         "required": ["path", "kind", "loadingPurpose"],
         "properties": {
           "path": { "$ref": "#/$defs/path" },
@@ -28,11 +40,15 @@
     "tooling": {
       "type": "array",
       "items": {
-        "type": "object", "additionalProperties": false,
+        "type": "object",
+        "additionalProperties": false,
         "required": ["id", "versionRequirement", "scope", "required"],
         "properties": {
           "id": { "$ref": "#/$defs/id" },
-          "versionRequirement": { "type": "string", "pattern": "^(>=)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+          "versionRequirement": {
+            "type": "string",
+            "pattern": "^(>=)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+          },
           "scope": { "enum": ["build", "authoring", "consumer"] },
           "required": { "type": "boolean" }
         }
@@ -40,18 +56,37 @@
     }
   },
   "$defs": {
-    "id": { "type": "string", "maxLength": 64, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
-    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
-    "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[\\\\:\\x00-\\x1f])[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$" },
+    "id": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[\\\\:\\x00-\\x1f])[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"
+    },
     "dependency": {
-      "type": "object", "additionalProperties": false, "required": ["id", "version"],
-      "properties": { "id": { "$ref": "#/$defs/id" }, "version": { "$ref": "#/$defs/version" } }
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "version": { "$ref": "#/$defs/version" }
+      }
     },
     "optionalDependency": {
-      "type": "object", "additionalProperties": false, "required": ["id", "version", "selectionKey", "reason"],
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "selectionKey", "reason"],
       "properties": {
-        "id": { "$ref": "#/$defs/id" }, "version": { "$ref": "#/$defs/version" },
-        "selectionKey": { "$ref": "#/$defs/id" }, "reason": { "type": "string", "minLength": 1 }
+        "id": { "$ref": "#/$defs/id" },
+        "version": { "$ref": "#/$defs/version" },
+        "selectionKey": { "$ref": "#/$defs/id" },
+        "reason": { "type": "string", "minLength": 1 }
       }
     }
   }
