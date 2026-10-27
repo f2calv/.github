@@ -408,8 +408,14 @@ Observed preparation is distinct from future acceptance:
   records 163 passing focused tests (76 metadata, 38 preparation, 49 inventory), four passing owning-skill
   structural checks, deterministic pilot JSON and unchanged source/Git state. The pilot grows from
   one component/six files to two components/14 files when its optional relationship is selected.
-* [ ] Verify native Windows behavior and the configured pre-commit hooks. The [feature tasks](../specs/001-packaging-inventory-preview/tasks.md)
-  retain T038 and T039 open: Windows was unavailable and the hook cache absent; no provisioning was authorized.
+* [x] Complete T039's configured scoped lint gate after explicit container-only provisioning approval:
+  pre-commit 4.6.2 ran the root configuration on all 17 feature files; six applicable hooks passed,
+  five skipped for unmatched file types, and no files were modified. Editor diagnostics and static
+  parsing of all eight feature PowerShell files were clean; the updated records also passed lint.
+* [x] Record the owner's 2026-10-27 decision to permanently skip inventory feature task T038.
+  Python tooling stays in the dev container without Windows host provisioning. Native Windows
+  behavior remains unverified; the waiver is not a test pass or support claim. The [feature tasks](../specs/001-packaging-inventory-preview/tasks.md)
+  close with 39 completed tasks, one permanently skipped and none pending.
 * [ ] Demonstrate the packaged installer's resolved plan and separately approved payload mutation;
   a successful read-only inventory does not establish installation behavior.
 * [ ] Verify negative resolver cases, including cycles, version/integrity and path conflicts, plus
@@ -460,17 +466,19 @@ The following work is committed locally, not pushed or released:
 | Metadata/defaults and local version preparation | `defb612`, `b352983`; [owning workflow](../.github/skills/skill-library/SKILL.md) | No published component versions or tags; native Windows verification remains open. |
 | Spec Kit initialization | `d39c7f0`; generated native skills and `.specify/` scaffolding | Attached-editor discovery and packaged runtime behavior are not inferred from installed files. |
 | Constitution adoption | `c91f5d2`; [constitution 1.0.0](../.specify/memory/constitution.md) | Maintainer approved removal of the temporary review report; this is not blanket ADR acceptance. |
-| Committed inventory preview | `9c3cbaa`; [contract](../specs/001-packaging-inventory-preview/contracts/inventory-preview.md), [task state](../specs/001-packaging-inventory-preview/tasks.md) and [verification](../specs/001-packaging-inventory-preview/quickstart.md) | 38 of 40 tasks complete; Windows and configured lint remain unverified. No archive, install or publication support. |
+| Committed inventory preview | `9c3cbaa`; [contract](../specs/001-packaging-inventory-preview/contracts/inventory-preview.md), [task state](../specs/001-packaging-inventory-preview/tasks.md) and [verification](../specs/001-packaging-inventory-preview/quickstart.md) | Closed: 39 tasks completed, T038 permanently skipped by owner decision; configured scoped lint passed. Native Windows remains unverified. No archive, install or publication support. |
 
 The bounded inventory enhancement was specified, planned, tasked, analyzed and implemented using
 Spec Kit, with synthetic fixtures for graph cases absent from the three real opted-in records.
 The two accepted non-blocking analysis findings did not authorize broader planning changes.
 The completed exercise is distinct from generated-extension consumption and fresh-library bootstrap.
 
-Resume from the existing feature tasks to close the two verification gaps when their prerequisites
-and approvals are available. Scope the next distribution slice separately rather than interpreting
-the remaining ADR checklist as implementation authorization. Keep one task authority for an active
-feature; no second HVE tracking plan was maintained for this Spec Kit exercise.
+The inventory feature is closed with its recorded native Windows limitation. Scope the next
+distribution slice separately rather than interpreting the remaining ADR checklist as implementation
+authorization. A proposed next increment is deterministic local archive creation from recorded
+committed inputs; define its format, build contract and provenance/rights boundaries through Spec Kit
+before implementation. Installation and publication remain excluded. Keep one task authority for an
+active feature; no second HVE tracking plan was maintained for this Spec Kit exercise.
 
 The current checkout is the source of truth for branch and status. GitHub authentication was checked
 and unavailable during the commit handover; no login, credential mount or push was attempted.

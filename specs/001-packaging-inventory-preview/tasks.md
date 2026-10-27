@@ -142,12 +142,17 @@ omission or inferred rights. Complete the cross-cutting gates before claiming fe
 
 Purpose: Align guidance with observed behavior, run approved required gates and record limits.
 
+Disposition: 39 tasks completed, one permanently skipped, none pending. T038's checked marker
+records its explicit waiver, not successful execution. On 2026-10-27 the maintainer permanently
+waived native Windows verification for this feature: Python tooling stays in the dev container,
+and Windows host provisioning is not required. Native Windows behavior remains unverified.
+
 - [x] T035 [P] Update `.github/skills/skill-library/SKILL.md` to document the implemented read-only inventory command, parameters, trusted-rules/source-commit separation, prerequisites, selection/eligibility behavior and approval boundaries; retain authored metadata/schema ownership, native consumption and the explicit statement that archive packaging/installation/publication remain unimplemented; depends on all stories.
 - [x] T036 [P] Finalize `specs/001-packaging-inventory-preview/quickstart.md` against the implemented command/runner, retain only accurate examples, consolidate actual per-story evidence and pending gates, and ensure the pinned-commit determinism examples and notices review exercise the final contract; may proceed alongside T035.
 - [x] T037 Request approval for the complete Linux focused gate, then run `.github/skills/skill-library/scripts/Invoke-Tests.ps1` with the existing supported interpreter; require nonzero counts for validation, preparation and inventory, zero failures, no provisioning, and record tool versions/counts plus binary/ignore/cleanup/state evidence in `specs/001-packaging-inventory-preview/quickstart.md`; completion requires observed results, not a zero-test exit.
-- [ ] T038 Request separate native Windows execution approval and run `.github/skills/skill-library/scripts/Invoke-Tests.ps1` plus relevant `specs/001-packaging-inventory-preview/quickstart.md` scenarios on an available Windows host, verifying path collisions/modes/binary handling/ignore matching/cleanup and caller state; if unavailable or declined, record that blocker and do not claim Windows support or mark this gate complete.
-- [ ] T039 Validate the changed guidance and scripts with editor diagnostics and the applicable repository-configured static/lint gates; follow `.github/instructions/markdown.instructions.md`, `.github/instructions/shell.powershell.instructions.md` and the owning skills, avoid package downloads or broad test execution without approval, and record actual checks and unresolved gaps in `specs/001-packaging-inventory-preview/quickstart.md`.
-- [x] T040 Review FR-001 through FR-012 and SC-001 through SC-007 against the implemented `.github/skills/skill-library/scripts/Invoke-InventoryPreview.ps1`, assertions and recorded evidence; update completion checkboxes in `specs/001-packaging-inventory-preview/tasks.md` only for completed work, leave blocked platform/gate items open, and report no archive/version/tag/install/publication action or legal-clearance claim; no automatic commit/push.
+- [x] T038 **PERMANENTLY SKIPPED** by maintainer decision on 2026-10-27: native Windows execution of `.github/skills/skill-library/scripts/Invoke-Tests.ps1` and relevant `specs/001-packaging-inventory-preview/quickstart.md` scenarios is waived for this feature. No Windows host provisioning is required. Native path collisions, modes, binary handling, ignore matching, cleanup and caller-state behavior remain unverified; this disposition is not a test pass or Windows support claim.
+- [x] T039 Validate the changed guidance and scripts with editor diagnostics and the applicable repository-configured static/lint gates; follow `.github/instructions/markdown.instructions.md`, `.github/instructions/shell.powershell.instructions.md` and the owning skills, avoid package downloads or broad test execution without approval, and record actual checks and unresolved gaps in `specs/001-packaging-inventory-preview/quickstart.md`.
+- [x] T040 Review FR-001 through FR-012 and SC-001 through SC-007 against the implemented `.github/skills/skill-library/scripts/Invoke-InventoryPreview.ps1`, assertions and recorded evidence; update completion checkboxes in `specs/001-packaging-inventory-preview/tasks.md` only for completed work or explicitly recorded maintainer waivers, leave other blocked platform/gate items open, and report no archive/version/tag/install/publication action or legal-clearance claim; no automatic commit/push.
 
 ## Dependencies and Execution Order
 
@@ -160,7 +165,8 @@ Purpose: Align guidance with observed behavior, run approved required gates and 
 4. US2: T021/T022 -> T023 -> T024 -> T025 -> T026 -> T027, after US1.
 5. US3: T028/T029 -> T030 -> T031 -> T032 -> T033 -> T034, after US2.
 6. Polish: T035/T036 -> T037 -> T038 -> T039 -> T040. No later gate converts an unrun earlier
-   gate into a passing result. Host unavailability must be reported, not bypassed.
+   gate into a passing result. T038 is permanently waived by the recorded maintainer decision,
+   not passed; other unavailable gates must remain explicit.
 
 ### Dependency Graph
 
@@ -255,7 +261,8 @@ command; do not introduce a second metadata schema, closure resolver or separate
 
 ### Completion Gates
 
-Run only explicitly approved checks. Required Linux/shared-boundary gates and native Windows
-verification remain open until observed. Report blockers and actual evidence; a static check is
+Run only explicitly approved checks. Required Linux/shared-boundary and scoped lint gates passed;
+native Windows verification is permanently skipped under T038's recorded waiver. All feature tasks
+are closed with that limitation, not with a cross-platform verification claim. A static check is
 not runtime or editor-discovery evidence. No packaging, release/version preparation, installation,
 rights clearance, publication, automatic commit or push is part of these tasks.
