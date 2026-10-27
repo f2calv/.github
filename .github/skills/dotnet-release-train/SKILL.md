@@ -183,7 +183,7 @@ decline this rollout. Respect existing publication and deployment holds.
   `latest-dev` or a prerelease, merely retag a Debug image, or rerun `deploy.ps1` instead.
 - Follow the dispatched run through build, publication and deployment. Verify the exact released
   artifact and actual workload rollout using the
-  [container deployment verification guidance](../container-workflows/examples/caller-setup.md#check-the-result);
+  [container deployment verification guidance](../containers-workflows/examples/caller-setup.md#check-the-result);
   a successful merge, tag or workflow dispatch alone is insufficient. Report the workflow URL,
   deployed version and verification result.
 - Treat workflow failures as blockers for the affected rollout and investigate them while the

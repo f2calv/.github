@@ -1,0 +1,17 @@
+$schema: skill-metadata.schema.json
+id: skill-library
+version: '1.0.0'
+facets: [authoring, metadata]
+tooling:
+  - id: powershell
+    versionRequirement: '>=7.4.0'
+    scope: authoring
+    required: true
+  - id: python
+    versionRequirement: '>=3.11.0'
+    scope: authoring
+    required: true
+  - id: pyyaml
+    versionRequirement: '6.0.3'
+    scope: authoring
+    required: true

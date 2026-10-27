@@ -9,8 +9,8 @@ Rules that hold for every Dockerfile. Classify each image twice: its profile say
 and published, and its workload shape says how it runs. Compose runs images only for local
 development and testing. Choices that vary per image — build strategy, platform set,
 runtime base, pinning mode, cache sharing, provenance, entrypoint and debug variants — are made
-with the `container-images` skill, which also carries the patterns and a static audit. Compose files
-follow `docker.compose.instructions.md`. Dev container Dockerfiles belong to the `devcontainer`
+with the `containers-images` skill, which also carries the patterns and a static audit. Compose files
+follow `docker.compose.instructions.md`. Dev container Dockerfiles belong to the `containers-devcontainer`
 skill and are exempt from this file.
 
 ## Image Profiles
@@ -144,7 +144,7 @@ Name the shape in the header comment when it is not `service`.
 
 ## .NET Artifact Identity
 
-- Start .NET service images from the canonical templates bundled with the `container-images` skill:
+- Start .NET service images from the canonical templates bundled with the `containers-images` skill:
   `templates/dotnet-service.dockerfile.tmpl` for published images and
   `templates/dotnet-service-debug.dockerfile.tmpl` for sibling-project Debug images. Preserve their
   argument order, stage order, restore/publish option order and line wrapping. Change only marked
@@ -228,6 +228,6 @@ Name the shape in the header comment when it is not `service`.
 
 - After changing a Dockerfile or its packaging, run the skill's audit, build the native platform and
   smoke-run it, and leave the full platform matrix to CI unless the change is platform-specific. The
-  `container-workflows` skill owns the local build scripts.
+  `containers-workflows` skill owns the local build scripts.
 - On a workstation, run one image build at a time. Concurrent multi-platform builds, each emulating
   arm under QEMU, can exhaust a laptop's memory.

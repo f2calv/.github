@@ -17,7 +17,7 @@ Treat a queue as an admission, ownership and lifecycle contract, not just a coll
 - The [C# instructions](../../instructions/dotnet.csharp.instructions.md) own cancellation,
   task/disposal and hot-path logging conventions. Use
   [DI](../dotnet-dependency-injection/SKILL.md) for scopes,
-  [modular monolith](../modular-monolith/SKILL.md) for role/host contracts and
+   [modular monolith](../patterns-monolith-modular/SKILL.md) for role/host contracts and
   [leadership election](../leadership-election/SKILL.md) for replica ownership.
 - Use [Redis data access](../redis-data-access/SKILL.md) for Redis streams/consumer groups,
   [gRPC](../dotnet-grpc/SKILL.md) for remote streaming, transport liveness and RPC acknowledgements,

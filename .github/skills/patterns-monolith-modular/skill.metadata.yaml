@@ -1,0 +1,11 @@
+$schema: ../skill-library/skill-metadata.schema.json
+id: patterns-monolith-modular
+version: '1.0.0'
+facets: [architecture, composition]
+externalFiles:
+  - path: .github/instructions/dotnet.csharp.instructions.md
+    kind: instruction
+    loadingPurpose: Apply C# composition, asynchronous work and shutdown conventions.
+  - path: .github/instructions/dotnet.configuration.instructions.md
+    kind: instruction
+    loadingPurpose: Apply startup configuration, secret handling and reload conventions.

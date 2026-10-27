@@ -19,7 +19,7 @@ HTTP calls or wrapping every failure in an unbounded retry.
 - Load [resilience and contracts](./references/resilience-and-contracts.md) for retry/authentication
   decisions, and the [safe client example](./examples/safe-read-and-mutation.md) for wiring and
   fake-handler acceptance cases.
-- Use [ports/adapters](../ports-and-adapters/SKILL.md) for external contract boundaries,
+- Use [ports/adapters](../patterns-ports-and-adapters/SKILL.md) for external contract boundaries,
   [.NET Web API](../dotnet-webapi/SKILL.md) for inbound endpoints,
   [.NET gRPC](../dotnet-grpc/SKILL.md) for HTTP/2 RPC clients and streaming recovery,
   [REST Client requests](../rest-client-requests/SKILL.md) for manual request files and

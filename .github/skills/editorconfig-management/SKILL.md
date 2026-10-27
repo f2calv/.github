@@ -40,9 +40,9 @@ The central repository owns:
 | `.config/editorconfig/python.editorconfig` | Python and TOML editor settings |
 | `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
 | `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
-| `.scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
+| `.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
 | `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
-| `.scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
+| `.github/skills/editorconfig-management/scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
 Change policy in the fragments, not in generated consumer files. Regenerate every affected
@@ -107,13 +107,13 @@ For each repository:
 From the central repository root, generate a tracked file:
 
 ```powershell
-./.scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile>
+./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile>
 ```
 
 Perform a read-only drift check:
 
 ```powershell
-./.scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile> -Check
+./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile> -Check
 ```
 
 Preview a write with `-WhatIf`. Pass one or more `-OverridePath` values only for documented,

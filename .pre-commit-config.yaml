@@ -58,4 +58,5 @@ repos:
   rev: v0.49.1
   hooks:
   - id: markdownlint
+    exclude: ^\.github/skills/speckit-[^/]+/
     args: ["--disable", "MD013", "--disable", "MD034", "--"]

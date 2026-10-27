@@ -17,7 +17,7 @@ not a background worker that happens to stop eventually.
 - Load [command lifecycle](./references/command-lifecycle.md) and the
   [finite-command example](./examples/finite-command-and-help.md) for dispatch and exit contracts.
 - Use [DI](../dotnet-dependency-injection/SKILL.md) for construction/ownership,
-  [modular monolith](../modular-monolith/SKILL.md) for one-image roles,
+   [modular monolith](../patterns-monolith-modular/SKILL.md) for one-image roles,
   [background pipelines](../dotnet-background-pipelines/SKILL.md) for supervised workers and
   [EF Core](../dotnet-efcore/SKILL.md) for migration/seeding modes.
 - The official [Generic Host documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host)

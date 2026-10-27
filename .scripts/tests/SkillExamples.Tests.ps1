@@ -61,7 +61,7 @@ Describe 'Dependabot examples' -Tag 'Unit' {
 
 Describe 'Dev Container tooling example' -Tag 'Unit' {
     BeforeAll {
-        $devTemplates = Join-Path $skillsRoot 'devcontainer/templates'
+        $devTemplates = Join-Path $skillsRoot 'containers-devcontainer/templates'
         $container = Get-Content -LiteralPath (Join-Path $devTemplates 'devcontainer.json') -Raw |
             ConvertFrom-Json -AsHashtable
         $extensions = Get-Content -LiteralPath (Join-Path $devTemplates 'extensions.json') -Raw |

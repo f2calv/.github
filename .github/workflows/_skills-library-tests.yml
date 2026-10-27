@@ -1,0 +1,55 @@
+name: _skills-library-tests
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: Runner label
+        type: string
+        default: ubuntu-24.04
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Install-Module Pester -RequiredVersion 5.7.1
+        shell: pwsh
+        run: Install-Module Pester -Scope CurrentUser -RequiredVersion 5.7.1 -Force
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: python -m pip install -r skill-library requirements
+        run: 'python -m pip install --require-hashes --only-binary :all: -r .github/skills/skill-library/scripts/requirements.txt'
+
+      - name: verify local fixture tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw 'PowerShell 7.4 or later is required.' }
+          foreach ($tool in 'git', 'bash', 'helm', 'yq', 'node', 'npm') {
+            Get-Command $tool -ErrorAction Stop | Select-Object Name, Source
+          }
+          helm version --short
+          if ($LASTEXITCODE -ne 0) { throw 'Helm is unavailable.' }
+          $yqVersion = yq --version
+          if ($LASTEXITCODE -ne 0 -or "$yqVersion" -notmatch 'mikefarah/yq.*version v4\.') {
+            throw 'The fixture suite requires Mike Farah yq v4.'
+          }
+          Write-Host $yqVersion
+
+      - name: npm run test:ps
+        run: npm run test:ps

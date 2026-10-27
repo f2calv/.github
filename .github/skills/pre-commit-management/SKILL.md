@@ -120,6 +120,22 @@ live in each repository configuration and are normally maintained by Dependabot.
 5. Add or repair the CI `lint` job and include it in release fan-in.
 6. Remove automatic lifecycle-script updates; startup must never mutate tracked hook pins.
 
+#### Generated Spec Kit Skills
+
+When a repository retains upstream-generated Spec Kit skills unchanged, merge this exclusion into
+its existing `markdownlint` hook rather than reformatting generated commands or disabling lint
+repository-wide:
+
+```yaml
+- id: markdownlint
+  exclude: ^\.github/skills/speckit-[^/]+/
+  args: ["--disable", "MD013", "--disable", "MD034", "--"]
+```
+
+Keep the exclusion hook-local: other structural and whitespace hooks still apply, and authored
+skills remain linted. Combine it with any existing hook exclusion rather than replacing that policy.
+Verify matching generated paths and nonmatching maintained skills when changing the pattern.
+
 ### 4. Run Or Update Hooks
 
 Use the bundled entry point from the central repository:

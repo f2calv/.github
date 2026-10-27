@@ -31,13 +31,13 @@ central repository at editor startup.
 Generate a baseline-only file:
 
 ```powershell
-./.scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-repository -Profile Base
+./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-repository -Profile Base
 ```
 
 Generate the strict .NET profile:
 
 ```powershell
-./.scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-dotnet-repository -Profile DotNet
+./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-dotnet-repository -Profile DotNet
 ```
 
 Perform a read-only drift check by adding `-Check`. The command exits nonzero when the tracked file

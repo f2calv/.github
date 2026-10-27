@@ -22,7 +22,7 @@ Run from PowerShell 7.4 with the central checkout and target root explicitly sel
 ```powershell
 $central = '<absolute-central-checkout>'
 $repository = '<absolute-target-repository>'
-$generator = Join-Path $central '.scripts/Set-EditorConfig.ps1'
+$generator = Join-Path $central '.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1'
 $overrides = Join-Path $repository '.config/editorconfig/overrides.editorconfig'
 $parameters = @{
     RepositoryPath = $repository
