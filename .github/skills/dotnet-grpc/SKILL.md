@@ -26,7 +26,7 @@ API. Trace the actual protocol before changing transport settings.
   [HTTP integrations](../dotnet-http-integrations/SKILL.md) for REST adapters,
   [Web API](../dotnet-webapi/SKILL.md) for controllers,
   [Helm](../helm-charts/SKILL.md) for chart mechanics and
-  [container images](../container-images/SKILL.md) for packaging.
+   [container images](../containers-images/SKILL.md) for packaging.
 - Ask before executing tests or live calls; audits do not authorize deployments, restarts, replica
   changes, migrations, package publication or history rewrites.
 

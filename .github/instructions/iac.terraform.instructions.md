@@ -7,7 +7,7 @@ applyTo: '**/*.tf,**/*.tfvars,**/*.hcl'
 
 This file covers how to write the HCL. Repository-specific topology, variable bootstrap, state coordinates and deployment workflow belong in that repository's `.github/copilot-instructions.md`, not here.
 
-Use the [Terraform IaC skill](../skills/terraform-iac/SKILL.md) for repository construction,
+Use the [Terraform IaC skill](../skills/iac-terraform/SKILL.md) for repository construction,
 onion-layered deployment roots, local child-module incubation and promotion to independently
 released module repositories, composition and ordered provisioning/retirement.
 

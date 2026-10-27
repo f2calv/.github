@@ -1,6 +1,6 @@
 ---
 name: spec-kit-bootstrap
-description: 'Bootstrap a new or existing repository with GitHub Spec Kit and the Specify CLI for spec-driven development. Use when adopting spec-kit, initializing .specify, or preparing a Dev Container to run specify commands; delegates container setup to the devcontainer skill.'
+description: 'Bootstrap a new or existing repository with GitHub Spec Kit and the Specify CLI for spec-driven development. Use when adopting spec-kit, initializing .specify, or preparing a Dev Container to run specify commands; delegates container setup to the containers-devcontainer skill.'
 ---
 
 # Spec Kit Bootstrap
@@ -32,7 +32,7 @@ implementation merely because bootstrap was requested.
 
 ## 2. Prepare the Dev Container
 
-Invoke the [devcontainer skill](../devcontainer/SKILL.md) in `add` or `reconcile` mode. It owns
+Invoke the [Dev Container skill](../containers-devcontainer/SKILL.md) in `add` or `reconcile` mode. It owns
 image and Feature selection, lifecycle scripts, extension parity, lockfiles, Dependabot, and
 build approval. Preserve the repository's application toolchain; do not replace it with a
 Python-only image just to run Spec Kit.
@@ -135,5 +135,5 @@ Spec Kit tutorial.
   against the selected release; do not assume examples on the default branch match older pins.
 * Track generated Copilot locations, slash-command naming, helper-runtime choices, and overwrite
   behavior when upstream changes its templates or integration model.
-* Keep container integration delegated to the devcontainer skill; add deeper adoption guidance
+* Keep container integration delegated to the containers-devcontainer skill; add deeper adoption guidance
   only when actual repository use demonstrates a missing step.

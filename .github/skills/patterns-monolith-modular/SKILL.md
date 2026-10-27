@@ -1,5 +1,5 @@
 ---
-name: modular-monolith
+name: patterns-monolith-modular
 description: 'Design, implement, audit or troubleshoot .NET modular monoliths with one Dockerfile and release image serving multiple configured roles. Use for layered module boundaries, dependency direction, feature-selected modules, workers running singly or together, composition roots, controller/OpenAPI gating, run-once jobs, worker lifecycle, replica ownership, and role-aware health and deployment contracts.'
 argument-hint: '[design|apply|audit|diagnose] [module or runtime role]'
 user-invocable: true
@@ -17,15 +17,15 @@ entrypoint, Dockerfile, image or microservice.
 | Concern | Authority |
 | --- | --- |
 | Feature selection, module composition, worker/API boundaries and role contracts | This skill and [composition reference](./references/composition.md) |
-| Integration contracts, provider substitution and adapter semantics | [Ports and adapters](../ports-and-adapters/SKILL.md) |
+| Integration contracts, provider substitution and adapter semantics | [Ports and adapters](../patterns-ports-and-adapters/SKILL.md) |
 | Service lifetimes, factories, aliases and scoped operations | [.NET dependency injection](../dotnet-dependency-injection/SKILL.md) |
 | Bounded queues, backpressure, delivery and drain protocols | [.NET background pipelines](../dotnet-background-pipelines/SKILL.md) |
 | Finite-command dispatch, help/version and process exit status | [.NET CLI](../dotnet-cli/SKILL.md) |
 | Worker lifetime, completion, failure, readiness and role validation | [Lifecycle and operations](./references/lifecycle-and-operations.md) |
 | C# wiring, async work and shutdown | [C# instructions](../../instructions/dotnet.csharp.instructions.md) |
 | Startup configuration, secrets and reload policy | [Configuration instructions](../../instructions/dotnet.configuration.instructions.md) |
-| Dockerfile/profile/platform authoring | [Container images](../container-images/SKILL.md) |
-| Shared build and deployment entrypoints | [Container workflows](../container-workflows/SKILL.md) |
+| Dockerfile/profile/platform authoring | [Container images](../containers-images/SKILL.md) |
+| Shared build and deployment entrypoints | [Container workflows](../containers-workflows/SKILL.md) |
 | Workload/chart rendering and GitOps ownership | [Helm charts](../helm-charts/SKILL.md), [GitOps structure](../gitops-repository-structure/SKILL.md) |
 | Leader-only worker ownership | [Leadership election](../leadership-election/SKILL.md) |
 | Persistence and schema rollout | [EF Core data access](../dotnet-efcore/SKILL.md) |

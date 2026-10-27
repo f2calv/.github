@@ -3,7 +3,7 @@
 
 <#
 .SYNOPSIS
-    Runs the container-images skill PowerShell tests.
+    Runs the containers-images skill PowerShell tests.
 .PARAMETER TestPath
     Optional Pester test path.
 .EXAMPLE

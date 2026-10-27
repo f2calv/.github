@@ -1,5 +1,5 @@
 ---
-name: ports-and-adapters
+name: patterns-ports-and-adapters
 description: 'Design, implement, audit or troubleshoot ports-and-adapters and hexagonal architecture: application-owned contracts, dependency inversion, inbound/outbound adapters, provider substitution, anti-corruption mapping and shared contract tests. Use for external-system boundaries and replaceable integrations, not mandatory project splitting or one interface per class.'
 argument-hint: '[design|apply|audit] [capability or adapter boundary]'
 user-invocable: true
@@ -15,7 +15,7 @@ in its adapter. Use the boundary where it buys actual substitution, isolation or
 - Load [boundary contracts](./references/boundary-contracts.md) for ownership and semantic design,
   and the [provider substitution example](./examples/provider-substitution.md) for a concrete port,
   dependency graph and shared behavioral tests.
-- [Modular monolith](../modular-monolith/SKILL.md) owns module/role composition and layered project
+- [Modular monolith](../patterns-monolith-modular/SKILL.md) owns module/role composition and layered project
   boundaries. This skill owns the behavior across an integration seam; it does not require a
   monolith, multiple projects, physical tiers or a microservice deployment.
 - Use [DI](../dotnet-dependency-injection/SKILL.md) for provider selection,

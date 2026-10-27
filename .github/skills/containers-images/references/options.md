@@ -124,7 +124,7 @@ Dockerfile. When a registry takes a multi-architecture image's description from 
 | Different build inputs, such as sibling source trees instead of packages | `Dockerfile.Debug` with its own `Dockerfile.Debug.dockerignore`, so the shared `.dockerignore` stays narrow |
 | One-off investigation | A local, uncommitted `debug` target |
 
-`Dockerfile.Debug` is never published. The build scripts in the `container-workflows` skill select
+`Dockerfile.Debug` is never published. The build scripts in the `containers-workflows` skill select
 it for Debug builds and discover its sibling repositories from its `COPY deps/...` lines.
 
 ## Test Stage

@@ -77,14 +77,14 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Dependabot management](.github/skills/dependabot-management/SKILL.md) | Coverage, grouping and troubleshooting across dependency ecosystems |
 | [Pre-commit management](.github/skills/pre-commit-management/SKILL.md) | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](.github/skills/editorconfig-management/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
-| [Dev Containers](.github/skills/devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
+| [Dev Containers](.github/skills/containers-devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
-| [Container images](.github/skills/container-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
-| [Docker Compose](.github/skills/docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
-| [Container workflows](.github/skills/container-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
+| [Container images](.github/skills/containers-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Docker Compose](.github/skills/containers-docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
+| [Container workflows](.github/skills/containers-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
 | [File to ConfigMap](.github/skills/sync-file-to-configmap/SKILL.md) | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
-| [Modular monolith](.github/skills/modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
-| [Ports and adapters](.github/skills/ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
+| [Modular monolith](.github/skills/patterns-monolith-modular/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
+| [Ports and adapters](.github/skills/patterns-ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
 | [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
 | [.NET background pipelines](.github/skills/dotnet-background-pipelines/SKILL.md) | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
 | [.NET HTTP integrations](.github/skills/dotnet-http-integrations/SKILL.md) | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
@@ -105,7 +105,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Redis data access](.github/skills/redis-data-access/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [REST Client requests](.github/skills/rest-client-requests/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
 | [Helm charts](.github/skills/helm-charts/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
-| [Terraform IaC](.github/skills/terraform-iac/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
+| [Terraform IaC](.github/skills/iac-terraform/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [GitOps repository structure](.github/skills/gitops-repository-structure/SKILL.md) | Argo CD Application discovery, ownership and stateful migrations |
 | [NGINX ingress migration](.github/skills/nginx-ingress-migration/SKILL.md) | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [UniFi network management](.github/skills/unifi-network-management/SKILL.md) | Network discovery, VLANs, host networking and performance diagnostics |

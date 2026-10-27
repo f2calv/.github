@@ -1,5 +1,5 @@
 ---
-name: container-images
+name: containers-images
 description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints, debug variants and rules docker buildx build --check misses.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
 user-invocable: true
@@ -26,9 +26,9 @@ those.
 ## Quick Start
 
 ```text
-/container-images create Dockerfile for a Go service
-/container-images migrate ./Dockerfile
-/container-images audit the workspace
+/containers-images create Dockerfile for a Go service
+/containers-images migrate ./Dockerfile
+/containers-images audit the workspace
 ```
 
 | Mode | Contract |
@@ -118,7 +118,7 @@ docker buildx build --pull --platform linux/amd64,linux/arm64,linux/arm/v7 -f Do
   case-insensitive Windows and case-sensitive Linux file systems, where mixed case causes mismatches.
   Sanitise branch names, which contain `/`, before using them as tags.
 * The build workflow attaches `--provenance=mode=max --sbom=true` when attestations are enabled.
-* Use the `container-workflows` skill for the repository's scripted local builds.
+* Use the `containers-workflows` skill for the repository's scripted local builds.
 
 ## Parameters Reference
 

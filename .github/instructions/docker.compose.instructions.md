@@ -5,7 +5,7 @@ applyTo: '**/docker-compose*.yml,**/docker-compose*.yaml,**/compose*.yml,**/comp
 
 # Docker Compose
 
-Use the `docker-compose` skill for creation, workspace audits, troubleshooting and validation
+Use the `containers-docker-compose` skill for creation, workspace audits, troubleshooting and validation
 procedures; this file remains the authority for Compose conventions.
 
 Compose describes the **local development and demo environment**; it is never the deployment

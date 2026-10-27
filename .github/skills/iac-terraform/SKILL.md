@@ -1,5 +1,5 @@
 ---
-name: terraform-iac
+name: iac-terraform
 description: 'Create, extend, audit, refactor or retire Terraform IaC repositories: onion-layered deployment roots, lifecycle and state boundaries, local/private child modules, promotion to external module-per-repository releases, provider wiring, cost controls and safe deployment sequencing.'
 ---
 

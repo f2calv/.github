@@ -37,8 +37,8 @@ Describe 'Caller templates' -Tag 'Unit' {
         $root = Join-Path $TestDrive "$Operation-$Resolution"
         $caller = Join-Path $root 'caller with spaces'
         $homePath = Join-Path $root 'home'
-        $profileScripts = Join-Path $homePath '.copilot/skills/container-workflows/scripts'
-        $siblingScripts = Join-Path $root '.github/.github/skills/container-workflows/scripts'
+        $profileScripts = Join-Path $homePath '.copilot/skills/containers-workflows/scripts'
+        $siblingScripts = Join-Path $root '.github/.github/skills/containers-workflows/scripts'
         New-Item -ItemType Directory -Path $caller, $profileScripts, $siblingScripts -Force | Out-Null
         $entrypoint = Join-Path $caller "$($Operation.ToLowerInvariant()).ps1"
         $content = (Get-Content -LiteralPath (Join-Path $templates 'entrypoint.ps1.tmpl') -Raw).

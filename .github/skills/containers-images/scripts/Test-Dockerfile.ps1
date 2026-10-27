@@ -15,7 +15,7 @@
     from a shared runtime stage inherits its USER, ENTRYPOINT, ARG and LABEL instructions.
 
     Directories are searched recursively. `.git`, `.devcontainer`, `node_modules`, `bin`, `obj`,
-    `target` and `deps` are skipped: dev container Dockerfiles are owned by the devcontainer skill,
+    `target` and `deps` are skipped: dev container Dockerfiles are owned by the containers-devcontainer skill,
     and `deps` holds mirrored sibling repositories.
 .PARAMETER Path
     Dockerfiles or directories to audit. Defaults to the current directory.

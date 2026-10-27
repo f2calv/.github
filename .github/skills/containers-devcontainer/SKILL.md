@@ -1,5 +1,5 @@
 ---
-name: devcontainer
+name: containers-devcontainer
 description: 'Create, update, align and validate Dev Containers: images, Features, lifecycle scripts, mounts, lockfiles, extensions and host/editor sync across repositories. Use when adding tooling or diagnosing a Dev Container that fails to start.'
 argument-hint: 'mode={add|update|upgrade|reconcile|audit|align} [scope=repository-or-workspace]'
 user-invocable: true
@@ -36,12 +36,12 @@ These are selection guides, not templates to merge together.
 ## Quick Start
 
 ```text
-/devcontainer add to this repository
-/devcontainer upgrade the Terraform and Helm tools
-/devcontainer reconcile after adding PowerShell tests
-/devcontainer align the sibling repositories
-/devcontainer audit this workspace for drift
-/devcontainer diagnose why the container fails to start here
+/containers-devcontainer add to this repository
+/containers-devcontainer upgrade the Terraform and Helm tools
+/containers-devcontainer reconcile after adding PowerShell tests
+/containers-devcontainer align the sibling repositories
+/containers-devcontainer audit this workspace for drift
+/containers-devcontainer diagnose why the container fails to start here
 ```
 
 | Mode | Contract |

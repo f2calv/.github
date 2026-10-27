@@ -1,5 +1,5 @@
 ---
-name: docker-compose
+name: containers-docker-compose
 description: 'Create, update, audit or troubleshoot Docker Compose local development and demo stacks. Use for compose.yaml, docker-compose.yml, profiles, dependency readiness, networks, ports, volumes, secrets, interpolation, image compatibility, isolated test services and workspace-wide Compose reviews. Not for production deployment or Dockerfile-only authoring.'
 argument-hint: '[create|update|audit|diagnose] [repository, file or workspace]'
 user-invocable: true
@@ -21,9 +21,9 @@ Keep default IDE dependencies, optional applications/demos and test-data boundar
 - The [worked local stack](./examples/local-stack.md) explains the
   [Compose template](./assets/compose.yaml.tmpl), safe test targeting and acceptance cases.
   The template is illustrative; select supported image versions before adopting it.
-- Use [container images](../container-images/SKILL.md) for Dockerfiles/ignore files,
-  [container workflows](../container-workflows/SKILL.md) for shared build/deploy scripts,
-  [Dev Containers](../devcontainer/SKILL.md) for editor integration and
+- Use [container images](../containers-images/SKILL.md) for Dockerfiles/ignore files,
+  [container workflows](../containers-workflows/SKILL.md) for shared build/deploy scripts,
+  [Dev Containers](../containers-devcontainer/SKILL.md) for editor integration and
   [Dependabot](../dependabot-management/SKILL.md) for automated image updates.
 
 ## Modes and Safety

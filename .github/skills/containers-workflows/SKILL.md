@@ -1,5 +1,5 @@
 ---
-name: container-workflows
+name: containers-workflows
 description: 'Run and maintain centralized container build and GitOps deploy scripts used by repository-root shims.'
 argument-hint: '[build|deploy] [repository=path] [options...]'
 user-invocable: true
@@ -77,7 +77,7 @@ chart, manifest or deployment mode.
 
 ## Script Reference
 
-Repository shims resolve scripts from `~/.copilot/skills/container-workflows/scripts` first, then
+Repository shims resolve scripts from `~/.copilot/skills/containers-workflows/scripts` first, then
 from a sibling `.github` checkout. Run all centralized regressions after changing either script:
 
 ```powershell
