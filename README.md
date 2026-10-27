@@ -143,12 +143,12 @@ applying changes; unavailable plan-dependent capabilities are reported rather th
 
 ### Create a Repository
 
-The [repository creation script](.scripts/New-GitHubRepository.ps1) creates a GitHub repository,
+The [repository creation script](.github/skills/repository-baseline/scripts/New-GitHubRepository.ps1) creates a GitHub repository,
 applies the baseline and clones it locally. Choose visibility explicitly; the script defaults to
 public visibility.
 
 ```powershell
-.\.scripts\New-GitHubRepository.ps1 `
+.\.github\skills\repository-baseline\scripts\New-GitHubRepository.ps1 `
   -Name example `
   -Description 'Example repository' `
   -Visibility Private

@@ -27,9 +27,9 @@
 .PARAMETER Resume
     Continues setup when the remote repository or expected local clone exists.
 .EXAMPLE
-    ./.scripts/New-GitHubRepository.ps1 -Name example -Description 'Example repository'
+    ./.github/skills/repository-baseline/scripts/New-GitHubRepository.ps1 -Name example -Description 'Example repository'
 .EXAMPLE
-    ./.scripts/New-GitHubRepository.ps1 -Name example -TemplateRepository f2calv/template-dotnet -AddToWorkspace
+    ./.github/skills/repository-baseline/scripts/New-GitHubRepository.ps1 -Name example -TemplateRepository f2calv/template-dotnet -AddToWorkspace
 .NOTES
     Requires GitHub CLI authentication with repository creation access.
 #>
@@ -57,7 +57,7 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
-    [string]$CloneRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
+    [string]$CloneRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../../')),
 
     [Parameter(Mandatory = $false)]
     [switch]$NoClone,
@@ -189,7 +189,7 @@ function Invoke-NewGitHubRepository {
 
         [Parameter(Mandatory = $false)]
         [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
-        [string]$CloneRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
+        [string]$CloneRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../../')),
 
         [Parameter(Mandatory = $false)]
         [switch]$NoClone,
@@ -223,7 +223,7 @@ function Invoke-NewGitHubRepository {
 
     $BaselineScript = Join-Path `
         $PSScriptRoot `
-        '../.github/skills/repository-baseline/scripts/Set-RepositoryBaseline.ps1'
+        'Set-RepositoryBaseline.ps1'
     if (-not (Test-Path -LiteralPath $BaselineScript -PathType Leaf)) {
         throw "Repository baseline script was not found: $BaselineScript"
     }

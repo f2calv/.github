@@ -2,7 +2,7 @@
 
 BeforeAll {
     $script:ScriptPath = Join-Path $PSScriptRoot '..\Set-EditorConfig.ps1'
-    $script:FragmentRoot = Join-Path $PSScriptRoot '..\..\.config\editorconfig'
+    $script:FragmentRoot = Join-Path $PSScriptRoot '../../../../../.config/editorconfig'
     . $script:ScriptPath
 
     function New-TestRepository {
@@ -18,6 +18,15 @@ BeforeAll {
 }
 
 Describe 'Set-EditorConfigFile' -Tag 'Unit' {
+    It 'resolves the central fragments from the relocated command entry point' {
+        $RepositoryPath = New-TestRepository -Name 'entry-point'
+        & pwsh -NoLogo -NoProfile -File $script:ScriptPath -RepositoryPath $RepositoryPath -Profile Base
+        $LASTEXITCODE | Should -Be 0
+        & pwsh -NoLogo -NoProfile -File $script:ScriptPath -RepositoryPath $RepositoryPath -Profile Base -Check
+        $LASTEXITCODE | Should -Be 0
+        Test-Path -LiteralPath (Join-Path $RepositoryPath '.editorconfig') | Should -BeTrue
+    }
+
     It 'Generates the universal baseline as UTF-8 with LF endings' {
         $RepositoryPath = New-TestRepository -Name 'base'
 
@@ -115,7 +124,7 @@ Describe 'Set-EditorConfigFile' -Tag 'Unit' {
         $RepositoryPath = New-TestRepository -Name 'migration-example'
         $OverridePath = Join-Path $RepositoryPath '.config/editorconfig/overrides.editorconfig'
         New-Item -ItemType Directory -Path (Split-Path $OverridePath -Parent) -Force | Out-Null
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../.github/skills/editorconfig-management/templates/ef-migrations.editorconfig') `
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../../templates/ef-migrations.editorconfig') `
             -Destination $OverridePath
         $Parameters = @{
             RepositoryPath = $RepositoryPath

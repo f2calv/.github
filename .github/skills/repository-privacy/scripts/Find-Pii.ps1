@@ -46,22 +46,22 @@
     (useful for pre-commit / CI).
 
 .EXAMPLE
-    pwsh .scripts/Find-Pii.ps1
+    pwsh .github/skills/repository-privacy/scripts/Find-Pii.ps1
     Scan the working tree using seeds from the Local config files.
 
 .EXAMPLE
-    pwsh .scripts/Find-Pii.ps1 -IncludeHistory
+    pwsh .github/skills/repository-privacy/scripts/Find-Pii.ps1 -IncludeHistory
     Scan the working tree AND the entire git history. Use this to find PII that was
     committed and later removed from the working tree (still recoverable from history).
 
 .EXAMPLE
-    pwsh .scripts/Find-Pii.ps1 -IncludeHistory -OutFile pii-report.csv
+    pwsh .github/skills/repository-privacy/scripts/Find-Pii.ps1 -IncludeHistory -OutFile pii-report.csv
     Scan the working tree and full history, writing a CSV report.
     NOTE: the CSV contains the real PII values - it is gitignored (pii-report*.csv) and
     must never be committed.
 
 .EXAMPLE
-    pwsh .scripts/Find-Pii.ps1 -FailOnFind
+    pwsh .github/skills/repository-privacy/scripts/Find-Pii.ps1 -FailOnFind
     Scan and exit 1 if any high-confidence PII is found. Use in pre-commit hooks and CI
     to block leaks before they are committed.
 
@@ -73,13 +73,13 @@
     no hardcoded PII and needs no per-repository edits.
 
       # Run BEFORE every local git commit (working-tree scan):
-      pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo>
+      pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo>
 
       # Block the commit if real PII is present (recommended pre-commit gate):
-      pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -FailOnFind
+      pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -FailOnFind
 
       # Audit the full history (slow) and export a CSV for review:
-      pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -IncludeHistory -OutFile pii-report.csv
+      pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -IncludeHistory -OutFile pii-report.csv
 
     Pre-commit reminder: ALWAYS run this script (or have the agent run it) before any
     local `git commit` in a PUBLIC repository. Git-tracked configuration must contain only
@@ -98,7 +98,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = (Split-Path -Parent $PSScriptRoot),
+    [string]$RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../')),
     [string[]]$SeedFile = @(
         'appsettings.Local.json',
         'appsettings.Local.Development.json',

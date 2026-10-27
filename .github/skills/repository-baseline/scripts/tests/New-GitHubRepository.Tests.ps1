@@ -33,6 +33,14 @@ Describe 'Invoke-NewGitHubRepository' -Tag 'Unit' {
         Mock Write-Host {}
     }
 
+    It 'preserves the sibling clone default after relocation' {
+        Mock Invoke-NativeCommand { New-TestCommandResult }
+        $RepositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../../'))
+        $Result = Invoke-NewGitHubRepository -Name 'synthetic-repository' -Owner 'synthetic-owner' -NoClone -Resume -WhatIf
+        $Result.ClonePath | Should -Be (Join-Path (Split-Path -Parent $RepositoryRoot.TrimEnd('/\')) 'synthetic-repository')
+        Should -Invoke Invoke-NativeCommand -Times 0 -Exactly -ParameterFilter { $FileName -eq 'pwsh' }
+    }
+
     It 'Resolves the owner and plans every phase without invoking a mutation under WhatIf' {
         Mock Invoke-NativeCommand {
             if ($FileName -eq 'gh' -and $Arguments[0] -eq 'api') {

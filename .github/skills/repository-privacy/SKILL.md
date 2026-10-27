@@ -35,9 +35,9 @@ window is not a licence to reference it publicly.
 Run the scanner against the repository before committing:
 
 ```powershell
-pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo>
-pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -FailOnFind      # gate a commit
-pwsh ./.scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -IncludeHistory  # audit past commits
+pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo>
+pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -FailOnFind      # gate a commit
+pwsh ./.github/skills/repository-privacy/scripts/Find-Pii.ps1 -RepoRoot <path-to-repo> -IncludeHistory  # audit past commits
 ```
 
 It works two ways: it reads the repository's gitignored local configuration to learn the *real*

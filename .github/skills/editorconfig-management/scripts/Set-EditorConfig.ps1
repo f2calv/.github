@@ -16,9 +16,9 @@
 .PARAMETER Check
     Verifies that the tracked .editorconfig matches generated output without modifying it.
 .EXAMPLE
-    ./.scripts/Set-EditorConfig.ps1 -RepositoryPath ../signalizr -Profile DotNet
+    ./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../signalizr -Profile DotNet
 .EXAMPLE
-    ./.scripts/Set-EditorConfig.ps1 -RepositoryPath ../helm-charts -Profile Base -Check
+    ./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../helm-charts -Profile Base -Check
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -136,7 +136,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             throw 'RepositoryPath is required.'
         }
 
-        $FragmentRoot = Join-Path $PSScriptRoot '../.config/editorconfig'
+        $FragmentRoot = Join-Path $PSScriptRoot '../../../../.config/editorconfig'
         $Result = Set-EditorConfigFile `
             -RepositoryPath $RepositoryPath `
             -Profile $Profile `

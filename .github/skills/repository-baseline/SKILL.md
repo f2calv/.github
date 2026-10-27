@@ -216,7 +216,7 @@ npm run test:ps
 Use the repository helper from the central customization checkout:
 
 ```powershell
-./.scripts/New-GitHubRepository.ps1 `
+./.github/skills/repository-baseline/scripts/New-GitHubRepository.ps1 `
   -Name example `
   -Description 'Example repository'
 ```
