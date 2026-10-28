@@ -223,7 +223,8 @@ The generated site contains `<id>-<version>.zip`, its detached `.sha256` and `ca
 Catalog locations permit HTTPS or loopback HTTP, with no embedded credentials, query or fragment.
 The extension declares `==1.2.3` compatibility and `speckit.<id>.load`; Copilot skills-mode registration
 renders `/speckit-<id>-load`. The command explicitly reads installed guidance and relevant resources;
-copied instruction files do not acquire native `applyTo` activation. No packaged scripts execute.
+select declared instructions by their manifest `external-instruction` reason, not only a filename
+suffix. Copied instruction files do not acquire native `applyTo` activation. No packaged scripts execute.
 
 The [pilot validation guide](../../../specs/003-spec-kit-extension-pilot/quickstart.md) distinguishes
 real catalog discovery, exact-version installation, digest/conflict refusal and installed-byte checks

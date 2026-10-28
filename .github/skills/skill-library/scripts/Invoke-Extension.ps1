@@ -114,7 +114,10 @@ function Invoke-SkillExtension {
         requires = @{ speckit_version = '==1.2.3' }
         provides = @{ commands = @(@{ name = $Command; file = 'commands/load.md'; description = $Description }) }
     }
-    $Instructions = @($Manifest.Payload | Where-Object SourcePath -Like '*.instructions.md' | ForEach-Object { "- ``.specify/extensions/$($Root.Id)/resources/library/$($_.SourcePath)``" }) -join "`n"
+    $Instructions = @($Manifest.Payload | Where-Object {
+        $_.SourcePath -like '*.instructions.md' -or
+        @($_.Reasons | Where-Object Kind -CEQ 'external-instruction').Count -gt 0
+    } | ForEach-Object { "- ``.specify/extensions/$($Root.Id)/resources/library/$($_.SourcePath)``" }) -join "`n"
     $Body = @'
 ---
 description: __DESCRIPTION__

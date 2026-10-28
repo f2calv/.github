@@ -7,12 +7,12 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../Git-Process.ps1')
 
     function Set-ExtensionFixture {
-        param([string]$Path, [string]$Fault = '')
+        param([string]$Path, [string]$Fault = '', [string]$InstructionPath = '.github/instructions/example.instructions.md')
         $Native = '.github/skills/example'
         $Sources = [ordered]@{
             "$Native/SKILL.md" = "---`nname: example`ndescription: Synthetic example.`n---`n# Example`n"
             "$Native/references/detail.md" = "# Detail`nSynthetic resource.`n"
-            '.github/instructions/example.instructions.md' = "# Synthetic instruction`n"
+            $InstructionPath = "# Synthetic instruction`n"
             'LICENSE' = "Synthetic notice.`n"
         }
         $Payload = @(
@@ -22,7 +22,8 @@ BeforeAll {
                     SourcePath = $Source; MemberPath = "payload/$Source"; Mode = '100644'
                     Size = $Bytes.Length
                     Sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
-                    Owners = @('example'); Reasons = @()
+                    Owners = @('example')
+                    Reasons = @(if ($Source -ceq $InstructionPath) { @{ Kind = 'external-instruction' } })
                 }
             }
         )
@@ -95,6 +96,18 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
             }
             finally { $Reader.Dispose() }
             @($Zip.Entries | Where-Object FullName -Match 'optional|related').Count | Should -Be 0
+        }
+        finally { $Zip.Dispose() }
+    }
+
+    It 'loads declared external instructions without the conventional filename suffix' {
+        $Digest = Set-ExtensionFixture -Path $script:InputPath -InstructionPath 'docs/policy.md'
+        $Result = Invoke-SkillExtension -ArchivePath $script:InputPath -ArchiveSha256 $Digest -OutputDirectory $script:Destination -BaseUri 'http://127.0.0.1:8123/'
+        $Zip = [IO.Compression.ZipFile]::OpenRead($Result.ArchivePath)
+        try {
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('commands/load.md').Open())
+            try { $Reader.ReadToEnd() | Should -Match '\.specify/extensions/example/resources/library/docs/policy\.md' }
+            finally { $Reader.Dispose() }
         }
         finally { $Zip.Dispose() }
     }

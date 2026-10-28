@@ -26,6 +26,16 @@ wrong artifact digest, unsafe source evidence, optional selection, unexpected me
 linked output ancestry and non-loopback HTTP refusal. The root runner's unrelated container coverage
 table is not extension coverage. No unchanged broad repository regression is claimed.
 
+### Pre-PR Review Correction
+
+The owner approved a focused correction and test run after local review found that the loader
+selected instructions only by the `.instructions.md` suffix. A declared `docs/policy.md` fixture
+reproduced the omission: 12 tests passed and the new case failed. Selecting manifest
+`external-instruction` reasons as well as conventional filenames then passed all 13 adapter tests,
+with zero failures/skips through the same configured npm runner. The retained real pilot below was
+not rebuilt or reinstalled after this correction; its original digests and editor evidence remain
+specific to that recorded build.
+
 ## Static Validation
 
 All six applicable configured hooks passed after the EOF fixer normalized final newlines. The three
