@@ -99,8 +99,9 @@ compatibility note and follow-up, and remove claims made obsolete by later commi
 After creating a pull request, and again before merging it:
 
 1. Inspect the current-head GitHub Advanced Security and code-scanning alerts and the SonarQube
-   pull-request analysis. Pull-request code scanning reports against `refs/pull/<n>/merge`, not
-   `refs/pull/<n>/head`; querying the head ref returns nothing. A code-scanning annotation also
+   pull-request analysis. Tools may report against `refs/pull/<n>/merge` or `refs/pull/<n>/head`.
+   Inspect alert instances and correlate their refs and commit SHAs with the current pull request;
+   an empty query for one ref is not evidence that no findings exist. A code-scanning annotation also
    opens a review thread, which blocks merge when the ruleset requires resolved threads.
 2. Resolve every open critical or high finding (SonarQube `BLOCKER`/`HIGH`, or the equivalent GitHub
    severity), plus any lower-severity finding that fails a required check or Quality Gate.
