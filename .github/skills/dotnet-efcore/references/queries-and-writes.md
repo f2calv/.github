@@ -64,6 +64,12 @@ Official guidance:
   mutable fields, preserve concurrency values and avoid marking unrelated columns modified.
 - Propagate cancellation and dispose contexts/transactions asynchronously. Cancellation is not
   success and, after a write begins, is not proof that the database did not commit.
+- Define JSON identity before persisting hashes: PostgreSQL `jsonb` does not preserve property
+  order or whitespace. Keep an original raw-payload hash as receipt metadata, not a hash to
+  recompute from loaded JSONB text. For round-trip identity, specify and version a canonical or
+  typed representation, including numeric/dictionary behavior; test reordered nested objects.
+  Bind immutable receipt metadata and content across a projection/write boundary, and distinguish
+  offline formatting regressions from actual provider storage/concurrency acceptance.
 
 Official guidance:
 [transactions](https://learn.microsoft.com/en-us/ef/core/saving/transactions),
