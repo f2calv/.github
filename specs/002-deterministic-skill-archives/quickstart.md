@@ -76,6 +76,12 @@ is reconciled to 43 completed tasks and no pending tasks, using the original app
 the targeted convergence checks above. No unresolved recovery/source-check obligation is closed
 merely because an aggregate count passed.
 
+Pre-PR review found that the saved ledger still had T004-T040 unchecked despite the completion
+record above. Those 37 markers were reconciled against the recorded implementation and acceptance
+evidence; task descriptions were unchanged. A saved-file check verified exactly T001-T043 completed,
+with no pending or duplicate task IDs. No archive tests or real pilot were rerun for this bookkeeping
+correction; the 245-test result remains the previously recorded execution evidence.
+
 The follow-up review covers all 15 functional requirements and 6 success criteria using the
 existing traceability table plus the new targeted assertions, not aggregate counts alone. Required-only
 membership, deterministic headers, evidence and detached integrity remain covered by the existing
