@@ -944,7 +944,7 @@ with tempfile.TemporaryDirectory(prefix="archive-platform-test-") as temporary:
         $Guard = @'
 $OriginalProcess = (Get-Command Invoke-LibraryProcess).ScriptBlock
 $AllowedGit = (Get-Command git -CommandType Application -TotalCount 1).Source
-$AllowedPython = $env:SKILL_LIBRARY_TEST_PYTHON
+$AllowedPython = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
 Set-Item -Path Function:Invoke-LibraryProcess -Value {
     param([string]$Executable, [string[]]$Arguments, [byte[]]$InputBytes, [System.Collections.IDictionary]$Environment = @{})
     if ($Executable -ceq $AllowedGit) {
