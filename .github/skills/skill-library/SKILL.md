@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill-library metadata, defaults and exact dependencies; preview committed inventories, build deterministic required-only skill ZIP archives on Linux, and prepare explicit component versions. Use for metadata adoption, inventory/notice review, local archive builds, validation failures or version decisions. Installation and publication are not implemented.'
+description: 'Author and validate skill metadata, preview committed inventories, build deterministic required-only ZIPs, adapt one verified ZIP into a local Spec Kit extension/catalog pilot, and prepare component versions. Use for metadata, archive or extension-pilot work. General installation and publication are not implemented.'
 user-invocable: true
 ---
 
@@ -81,7 +81,7 @@ After schema edits, refresh the editor's YAML schema cache if diagnostics still 
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
 
 After explicit test approval, the [focused test entry point](./scripts/Invoke-Tests.ps1) runs only the
-adjacent synthetic metadata, preparation, inventory and archive suites using installed Pester 5.7.1 and the
+adjacent synthetic metadata, preparation, inventory, archive and extension suites using installed Pester 5.7.1 and the
 supplied `-PythonPath`. Each suite must execute nonzero tests. The repository's existing runner also
 discovers these suites; neither route installs prerequisites. Fixture Git mutations remain confined
 to minimal temporary repositories, never the source repository.
@@ -195,7 +195,46 @@ the matching empty directory; foreign additions, changed files, replacements and
 for deliberate recovery. Cleanup/finalization failures suppress success and identify recovery paths.
 Never recursively delete or automatically adopt those paths. Interruption can leave a marked or unmarked
 directory that retries must refuse. Partial files can be visible: neither atomic two-file visibility
-nor crash-atomic rollback is promised. Installation, publication and extension loading remain unimplemented.
+nor crash-atomic rollback is promised. The native archive writer does not install, publish or load
+extensions; the separate local extension pilot is described below.
+
+## Local Spec Kit Extension Pilot
+
+The [Invoke-SkillExtension adapter](./scripts/Invoke-Extension.ps1) converts an approved
+`skill-archive/1` build into a genuine Spec Kit 1.2.3 extension and one local catalog entry.
+It consumes that archive's expected SHA-256, preserves its required-only canonical resources beneath
+`resources/library/`, and adds a generated manifest, source/build evidence and thin read-only loading
+command. It does not resolve dependencies again, rewrite native guidance or include optional-only skills.
+
+```powershell
+./.github/skills/skill-library/scripts/Invoke-Extension.ps1 `
+   -ArchivePath /path/to/native/package.zip -ArchiveSha256 <expected-sha256> `
+   -OutputDirectory /path/to/new-site -BaseUri http://localhost:8123/
+```
+
+Use an existing trusted source archive from the approved builder, not arbitrary uploaded ZIPs.
+The Linux-only adapter limits source archives/total payload to 64 MiB and individual source members
+to 16 MiB. Output must be a new absolute directory under an existing unlinked trusted parent outside
+the source checkout. Exclusive reservation and file creation refuse existing output. After-reservation
+failure retains partial output for deliberate inspection; there is no recursive rollback, retry adoption,
+hostile-writer isolation or new atomicity guarantee. Preserve stable inputs and exclusive caller use.
+
+The generated site contains `<id>-<version>.zip`, its detached `.sha256` and `catalog.json`.
+Catalog locations permit HTTPS or loopback HTTP, with no embedded credentials, query or fragment.
+The extension declares `==1.2.3` compatibility and `speckit.<id>.load`; Copilot skills-mode registration
+renders `/speckit-<id>-load`. The command explicitly reads installed guidance and relevant resources;
+copied instruction files do not acquire native `applyTo` activation. No packaged scripts execute.
+
+The [pilot validation guide](../../../specs/003-spec-kit-extension-pilot/quickstart.md) distinguishes
+real catalog discovery, exact-version installation, digest/conflict refusal and installed-byte checks
+from actual editor invocation. Manual resource reads or generated command files are not proof that
+Copilot discovered/invoked the command in the consumer session. A discovered command may supply its
+loader as an automatic Copilot attachment; do not require a separate tool read of that loader. Confirm
+native command selection rather than manual file attachment, verify installed-only guidance reads,
+and distinguish owner-reported runtime evidence from independently inspected traces.
+Use Spec Kit's own installer for this
+pilot; general optional downloads, installer ownership/recovery, upgrades and publication remain future
+work. Local catalog integrity is not publisher authentication or redistribution approval.
 
 ## Version Preparation
 
@@ -321,6 +360,8 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
 - Recheck raw ZIP headers, canonical evidence, runtime fingerprints and complete-byte rebuilds when CPython's zipfile/json behavior changes; ASCII names use flag 0 and UTF-8 names use 0x0800 without private encoders.
 - Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source.
+- Recheck Spec Kit manifest/catalog fields, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; consumer fixtures need integration manifests as well as init options.
+- Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations when loading parameterized scripts.
 - Recheck descriptor-relative exclusive reservation, immediate ownership records, fault/race cases and scratch/finalization acknowledgments when changing Linux filesystem or process behavior; cleanup failures must never produce success.
 - Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
