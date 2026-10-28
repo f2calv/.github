@@ -101,7 +101,12 @@ Do not treat missing inputs, skipped checks or zero selected services as success
 
 When authorized, perform a bounded startup/readiness/connectivity check using approved project
 identity, standard ports and safe test data. Additional project/port isolation is conditional on
-the actual runtime requirement. Preserve existing workloads and data during cleanup.
+the actual runtime requirement. Before startup, record which services are already running.
+Stop services started for the task as soon as their last dependent check or operation finishes,
+including on failure; do not leave idle stacks running until the end of a longer task or session.
+Use scoped `docker compose stop <services>` cleanup to release local resources while preserving
+volumes. Leave pre-existing workloads running unless their shutdown is explicitly authorized,
+and keep services running only while they are still needed or the user requests it.
 
 For an audit report, include repository/file, line, finding category, impact, evidence, recommended
 change and validation status. Summarize reviewed files, roots without files, exclusions and blockers.

@@ -321,7 +321,7 @@ function Invoke-InventoryInspection {
     finally {
         if ($Scratch) {
             try { Remove-InventoryScratch $Scratch }
-            catch { throw 'Cleanup: Temporary inspection data could not be removed; deliberate local cleanup is required. No success is reported.' }
+            catch { throw "Cleanup: Temporary inspection data retained at $Scratch; deliberate local cleanup is required. No success is reported." }
         }
     }
     return $Result

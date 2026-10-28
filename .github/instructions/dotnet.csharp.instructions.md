@@ -192,6 +192,17 @@ preferences are suggestions, so apply both while writing:
 - Pass enum values and symbols as `nameof()` arguments, but do not add `nameof()` fields merely as
   labels: write `"{ClassName} ServiceFamily={ServiceFamily}"`, not
   `"{ClassName} {ServiceFamily}={ServiceFamilyValue}"`.
+- **Correlation scopes**: when a unit of work (a request, connection, session, message or job) spans
+  several methods or tasks, open `logger.BeginScope` once at its entry with its correlation IDs.
+  Take the scope keys from one constants class and name them like the matching template parameters
+  (`ConversationId`, `SessionId`). The scope flows through `await` and into tasks started within
+  it, reaches every logger in that flow, and is exported when the provider sets
+  `IncludeScopes = true`. Do not add a parameter to a method only so that it can log an ID.
+- Keep the correlation ID explicit in Warning, Error and Critical templates as well, so those lines
+  stand alone in plain-text output and where the scope did not flow.
+- Choose the level by who must act. Missing data or configuration that should exist (a file, a
+  registered handler, an expected template) is a Warning; a feature that is deliberately not
+  configured is Debug. Log routine per-item progress at Debug, not Information.
 - **Hot paths** (loops, channel readers, stream consumers, message processors) use source-generated
   `[LoggerMessage]`: `private static partial void` methods at the bottom of the partial class or in
   `{ClassName}.Logging.cs`, first parameter `ILogger logger`, called as `LogXxx(logger, ...)`. Leave

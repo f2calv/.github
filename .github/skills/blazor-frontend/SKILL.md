@@ -150,7 +150,7 @@ and `ShowMessageBoxAsync`.
 ### 8. Test
 
 Ask before running tests. Cover API authorization, cross-tenant access, antiforgery, 401/403 and
-validation with host tests; render-state and form logic with a small bUnit suite; and one or two
+validation with host tests; render-state and form logic with existing component-test tooling; and one or two
 end-to-end browser journeys with Playwright. Keep credentials out of tests.
 
 - Swap the cookie handler for a header-driven test handler by setting the scheme's `HandlerType` in
@@ -161,6 +161,9 @@ end-to-end browser journeys with Playwright. Keep credentials out of tests.
   validating it on a second host that uses the same key store.
 - When driving forms with browser automation, type into one field at a time; parallel input lands in
   whichever field has focus.
+- Use `HtmlRenderer` for static render checks when no component-test library exists. Query-bound
+  parameters are cascading inputs: register `AddSupplyValueFromQueryProvider` and set the test
+  `NavigationManager` URI rather than passing them through `ParameterView`.
 
 ### 9. Validate and Document
 

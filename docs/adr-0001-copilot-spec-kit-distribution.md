@@ -1,8 +1,8 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
-**Status:** In Progress. Metadata, local version preparation, committed inventory preview and Spec Kit adoption are implemented locally; remaining distribution decisions are proposed.
+**Status:** In Progress. Metadata, local version preparation, committed inventory preview, deterministic local archives and Spec Kit adoption are implemented locally; remaining distribution decisions are proposed.
 **Date:** 2026-10-26.
-**Last Updated:** 2026-10-27.
+**Last Updated:** 2026-10-28.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
 ## Context and Problem
@@ -42,7 +42,8 @@ prior research, not generated-extension runtime acceptance or a claim about late
 * Preserve native frontmatter, `applyTo`, workspace/profile use and discovery; coordinate any approved
   naming changes across folders, skill names, links, resources and invocation.
 * Author Markdown once; generate wrappers and payload copies only as build outputs.
-* Select components and optional dependencies explicitly, with complete required resource closure.
+* Package one explicit skill root and its complete required resource closure. Offer related optional
+  skills separately through future explicit selection, never as optional-only payloads in that archive.
 * Version each component independently, recording exact inputs, dependency snapshots and SHA-256.
 * Start with local PowerShell tooling and GitHub Release assets, without an Actions prerequisite.
 * Keep setup, tests, initialization, commits, pushes, tags and publication behind separate approvals.
@@ -89,9 +90,10 @@ Derive invariant native entrypoints and source origin at packaging, not from aut
 The user selected one YAML sidecar per skill as the storage
 strategy, replacing the earlier embedded JSON `## Skill Dependencies` proposal.
 A central index may reference authoritative records but must not repeat dependency declarations.
-The bounded metadata, local version-preparation and committed inventory-preview slices are implemented;
-ordinary Markdown links do not become graph edges. Archive creation, installation and publication
-remain unimplemented. Local inventory output is review evidence, not an immutable release record.
+The bounded metadata, local version-preparation, committed inventory-preview and deterministic local
+archive slices are implemented; ordinary Markdown links do not become graph edges. Installation,
+extension-loader integration and publication remain unimplemented. Local inventory and archive evidence
+are not immutable release records or rights approval.
 
 ### Metadata Contract
 
@@ -116,7 +118,7 @@ as recorded under [Handover](#handover).
 | Repository `license`, `notices` | Declare known repository terms once: currently `license: MIT` and `notices: [LICENSE]`. License is required; notices are optional. These defaults neither infer nor relicense third-party content and do not establish redistribution rights. |
 | Component `license`, `notices` | Optional genuine license override and additional root-relative notice paths. Component notices are additive to shared defaults, never replacements; inherited paths must not be repeated. A license override does not remove shared notices. |
 | `required` | Component edges each contain `id` and exact `version`; every selected component brings its required transitive closure. |
-| `optional` | Edges contain `id`, exact `version`, `selectionKey` and a succinct `reason` for the opt-in prompt. Exclude unless explicitly selected, then include their required closure. |
+| `optional` | Edges contain `id`, exact `version`, `selectionKey` and a succinct `reason` for the opt-in prompt. Preview includes their required closure only when explicitly selected. Archive builds reject optional selections and exclude optional-only payloads; a future installer offers separate artifacts. |
 | `externalFiles` | Explicit required external repository files contain `path`, `kind` (`instruction` or `notice`) and `loadingPurpose`. Internal skill-directory content is implicit; there is no `resources` field. |
 | `tooling` | Entries contain `id`, `versionRequirement`, `scope` and `required`. Scope is `build`, `authoring` or `consumer`; version grammar is only exact `X.Y.Z` or `>=X.Y.Z`, not general semver ranges. Advisory prerequisites are not payloads and never trigger installation. |
 
@@ -185,8 +187,9 @@ filters, hooks and advisory tooling remain inert; committed ignore rules determi
 Success is emitted only after temporary inspection cleanup, and local edits are excluded.
 
 This tooling remains owned by `skill-library`, not a second resolver under `.scripts/spec-kit/`.
-Future packaging and consumer selection must reuse its authoritative graph contract and resolution
-rules. Resource prerequisites must not stop at an instruction boundary. Deduplicate identical resolved nodes.
+Local archive building reuses its required-only inventory; future consumer selection must also reuse
+the authoritative graph contract and resolution rules. Resource prerequisites must not stop at an
+instruction boundary. Deduplicate identical resolved nodes.
 Missing selected content, cycles, version conflicts, traversal, symlink
 escapes, duplicate output paths and case-insensitive collisions must fail with a useful graph path.
 Local-link validation is a separate completeness check, not dependency inference.
@@ -204,6 +207,35 @@ version; historical rebuilds need the recorded inputs rather than today's workin
 The ignored native baseline captured for the initial review is only a compatibility comparison artifact.
 It inventories then-current working bytes, including the release-rule delta staged at that time.
 It is neither a distribution snapshot nor runtime discovery evidence.
+
+### Deterministic Local Archives
+
+The [local archive entry point](../.github/skills/skill-library/scripts/Invoke-Archive.ps1) and
+[isolated ZIP writer](../.github/skills/skill-library/scripts/Write-Archive.py) implement the
+[skill-archive/1 contract](../specs/002-deterministic-skill-archives/contracts/archive-build.md).
+Each invocation requires one explicit native root and packages its eligible committed required
+closure, external instructions and applicable notices exactly once. Optional-only targets and their
+dependencies are absent; independently required overlap remains included. Advisory optional declarations
+may remain in source metadata. The existing optional inventory preview remains independently useful.
+
+Output is a new directory containing `package.zip` and `package.zip.sha256`. The stored ZIP contains
+generated `manifest.json` and source files under `payload/<repository-relative-path>`. Evidence binds
+the source commit, component versions, file modes/digests, inclusion reasons and license/notice sources
+to the captured trusted builder and exact runtime identities. The detached digest avoids self-hashing;
+neither it nor the manifest establishes publisher authenticity, rights clearance or immutable release
+history. Historical payload code remains inert and local edits do not replace committed bytes.
+
+Linux CPython is the supported build platform. Exclusive output reservation, owned-entry rollback and
+scratch/finalization acknowledgments protect the documented stable-parent/exclusive-use boundary.
+Existing output is refused; ambiguous recovery material is retained and identified. Partial visibility
+and crash remnants are possible, not an atomic-pair or hostile-writer guarantee. Native Windows and
+other Python implementations are refused; cross-runtime byte equivalence remains unverified.
+
+The [validation guide](../specs/002-deterministic-skill-archives/quickstart.md#convergence-follow-up)
+records approved synthetic checks and an earlier separately approved real pilot/rebuild. These verify
+local archive behavior, not a Spec Kit extension payload: this ZIP has no generated `extension.yml`,
+registered command or installer. Extension adaptation, separate optional-skill downloads and consumer
+installation require their own contracts and observed acceptance.
 
 ### PR-Based Component Releases
 
@@ -321,7 +353,8 @@ mechanics remain design decisions and acceptance work, not guarantees of an exis
 
 ### Resource-Complete Generated Extensions
 
-Generate a root `extension.yml`, a thin declared command, the selected canonical sources beneath
+For a future extension-specific output, generate a root `extension.yml`, a thin declared command,
+the selected canonical sources beneath
 `resources/library/<original-repository-relative-path>`, a dependency snapshot and applicable
 license/notice material. Preserve source-relative layout and validate links within the selected
 closure. Include required references, examples, assets, scripts and instructions, not only `SKILL.md`.
@@ -332,10 +365,11 @@ under `.specify/` do not acquire native `applyTo` activation. Original native fi
 frontmatter and native route. Installation size, discovery metadata, loaded bodies and context
 cost are different measures; selective-loading or token-saving claims require observed evidence.
 
-Define deterministic archive ordering, timestamps, text encoding, serialization, file modes and
-compression/runtime policy; sorted inputs alone do not prove deterministic bytes. Record the archive
-digest outside the archive to avoid recursive hashing. Generate current and historical catalog
-records with exact URLs/digests using the pinned
+The local archive contract above controls ordering, timestamps, encoding, serialization, modes and
+compression/runtime policy. An extension-specific layout must establish and verify its own byte
+contract rather than inherit loader compatibility from that ZIP. Keep the final digest outside its
+archive. Future publication tooling would generate current and historical catalog records with exact
+URLs/digests using the pinned
 [version-selection contract](https://github.com/github/spec-kit/blob/5ea8b1cf0a38699340a38e00d02770308997d8c0/src/specify_cli/extensions/_catalog_versions.py).
 Catalog history must not rewrite prior identities or digests. Curated bundles remain opt-in;
 aggregate payload ownership must be agreed before aggregate publication.
@@ -351,7 +385,8 @@ Links and local Git authorship do not establish originality or third-party redis
 
 The root MIT choice and holder are settled, not a blanket clearance. Repository defaults record that
 choice without overriding third-party terms. No distribution-specific provenance record for this
-candidate was identified in the inspected material. Before distributing
+candidate was identified in the initial review. The later local manifest records source and declared
+terms, not a rights-review decision. Before distributing
 the positively selected closure, resolve each included source's origin/revision/path, applicable
 license and required notices; retain notices and exclude unresolved content. Adjacent linked skills
 were not audited or automatically selected. This review makes no legal compatibility determination.
@@ -434,22 +469,34 @@ Observed preparation is distinct from future acceptance:
 * [x] Complete approved container build/runtime preparation using the
   [configuration](../.devcontainer/devcontainer.json),
   [lifecycle](../.devcontainer/Initialize-DevContainer.ps1) and
-  [focused tests](../.scripts/tests/Initialize-DevContainer.Tests.ps1); see [Handover](#handover)
+  [focused tests](../.github/skills/containers-devcontainer/scripts/tests/Initialize-DevContainer.Tests.ps1); see [Handover](#handover)
   for observed results and their environment boundary.
 * [x] Adopt Spec Kit with separately approved initialization and conflict handling; adopt the
   [constitution](../.specify/memory/constitution.md) and complete a real authoring exercise through
   [the inventory feature](../specs/001-packaging-inventory-preview/spec.md), plan, tasks, analysis and
   implementation. This enhanced the existing `skill-library` skill and tooling, not a new unrelated
   skill. Standard Agent executed the Spec Kit workflow directly without HVE task-implementor orchestration.
-* [ ] Verify deterministic resource-complete archive builds, inventory-bound rights/privacy gates
-  and equal byte hashes from two builds of the same recorded inputs. Deterministic preview JSON
-  does not prove deterministic archive bytes or legal clearance.
+* [x] Implement required-only deterministic local archives through
+  [feature 002](../specs/002-deterministic-skill-archives/spec.md), with all
+  [43 tasks](../specs/002-deterministic-skill-archives/tasks.md) completed. The approved Linux regression
+  passed 245 tests: 84 metadata, 38 preparation, 49 inventory and 74 archive, with zero failures or
+  skips. Independent header/member/digest checks, repeat bytes, fault/race cases, retained inventory
+  scratch diagnostics, older commits, missing blobs and changed member bytes are recorded in the
+  [validation guide](../specs/002-deterministic-skill-archives/quickstart.md#convergence-follow-up).
+* [x] Complete the separately approved local pilot/rebuild with identical full ZIP bytes and detached
+  digests, including committed notices and external instructions but no optional-only payload.
+  The [pilot evidence](../specs/002-deterministic-skill-archives/quickstart.md#final-gates-and-pilot)
+  binds its original source/builder tuple; later helper edits do not relabel those artifacts.
+* [ ] Complete inventory-bound rights/privacy gates and verify any future extension-specific archive
+  layout against its actual loader. Native ZIP reproducibility is not redistribution approval,
+  extension compatibility or installation acceptance.
 * [ ] Demonstrate authorized published `1.0.0` and `1.1.0` exact install/upgrade/history, native
   compatibility and observed resource loading in representative Copilot sessions.
 
-Container preparation and the inventory authoring exercise do not demonstrate generated-extension runtime compatibility, deterministic
-archives, releases, legal clearance or context savings. Local link/structure checks and
-editor diagnostics are not configured CI lint. No archive packaging build has run.
+Container preparation, inventory authoring and verified local ZIP builds do not demonstrate
+generated-extension runtime compatibility, releases, legal clearance, installation or context savings.
+Local link/structure checks and editor diagnostics are not configured CI lint; the archive feature's
+configured scoped lint and approved runtime evidence are recorded separately.
 
 Later shared automation, Bash/Python parity, glossary/crosswalk/demo material and a minimal
 fresh-library scaffold remain separate planned work. Extract automation after the local contract
@@ -457,9 +504,30 @@ and two-version demonstration work; bootstrap a fresh library only after here-ad
 
 ## Handover
 
-### Current Progress (2026-10-27)
+### Current Progress (2026-10-28)
 
-The following work is committed locally, not pushed or released:
+The deterministic local archive feature is implemented in this checkout; this progress records local
+implementation, not a published release. Feature 002 has completed specification, planning,
+implementation and convergence follow-up;
+all 43 saved tasks are checked. The final approved 245-test regression and scoped configured lint
+passed. The subsequent read-only convergence assessment found no remaining feature-scope gaps and
+left its task ledger unchanged. No new tests or archive builds were run for this progress update.
+
+The local archive boundary is now implemented, not a proposed next increment. Native consumption and
+optional inventory preview remain available. The retained real pilot belongs to its recorded original
+builder tuple, while the later synthetic regression covers the cleanup/source-boundary follow-up.
+Installation, extension adaptation, catalog/release publication, rights clearance and native Windows
+verification remain outside this completed feature. No component versions, tags or releases were
+created, and this progress does not accept the remaining ADR decisions.
+
+Scope the next increment separately: settle the extension/loader contract, installation targets and
+consumer inventory/recovery behavior before implementing the dependency-aware command. Optional related
+skills must be offered as separate approved downloads/installations, not bundled into the chosen
+skill's required-only archive. Publication and the two-version consumer demonstration remain later gates.
+
+### Historical Implementation Handover (2026-10-27)
+
+At that handover, the following work was recorded as committed locally, not pushed or released:
 
 | Slice | Commit and evidence | Remaining boundary |
 | --- | --- | --- |
@@ -473,12 +541,12 @@ Spec Kit, with synthetic fixtures for graph cases absent from the three real opt
 The two accepted non-blocking analysis findings did not authorize broader planning changes.
 The completed exercise is distinct from generated-extension consumption and fresh-library bootstrap.
 
-The inventory feature is closed with its recorded native Windows limitation. Scope the next
-distribution slice separately rather than interpreting the remaining ADR checklist as implementation
-authorization. A proposed next increment is deterministic local archive creation from recorded
-committed inputs; define its format, build contract and provenance/rights boundaries through Spec Kit
-before implementation. Installation and publication remain excluded. Keep one task authority for an
-active feature; no second HVE tracking plan was maintained for this Spec Kit exercise.
+The inventory feature closed with its recorded native Windows limitation. At this handover,
+deterministic local archives were the proposed next increment, requiring a separate Spec Kit contract
+and implementation approval. Their later completion is recorded in
+[current progress](#current-progress-2026-10-28); installation and publication remain excluded.
+Keep one task authority for an active feature; no second HVE tracking plan was maintained for this
+Spec Kit exercise.
 
 The current checkout is the source of truth for branch and status. GitHub authentication was checked
 and unavailable during the commit handover; no login, credential mount or push was attempted.
@@ -520,8 +588,8 @@ is recorded above. The status remains In Progress, not blanket ADR acceptance.
 At the container handover GitHub authentication had not been checked and host credentials were not
 mounted. Before future GitHub CLI operations, inspect authentication privately; do not expose its
 output, log in or add credential mounts automatically. No standing commit or push approval exists.
-Packaging/installation tooling, exact-version demonstrations, provenance clearance and publishing
-remain pending; handover is neither ADR acceptance nor rights approval.
+At that historical point, packaging/installation tooling, exact-version demonstrations, provenance
+clearance and publishing remained pending; handover was neither ADR acceptance nor rights approval.
 
 ## Open Questions and Reconsideration
 
@@ -531,8 +599,8 @@ remain pending; handover is neither ADR acceptance nor rights approval.
 * Does a later pilot need a distinct newly authored skill in addition to the completed Spec Kit-authored
   inventory enhancement? The existing exercise validates local authoring, not a fresh-library scaffold
   or generated-extension consumption.
-* Which optional nodes and resources constitute the first positively selected pilot closure,
-  and what origin/notice evidence resolves its third-party rights?
+* What origin/notice evidence clears the first distributable closure? The local required-only pilot
+  does not resolve rights approval or the separate download/install plan for optional related skills.
 * In the validated pinned container, will the attached editor load the required extensions and
   discover shared customizations? Generated wrappers, native activation and consumer edit preservation
   still require observed session evidence; initialization alone does not establish them.

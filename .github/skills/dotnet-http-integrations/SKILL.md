@@ -60,6 +60,11 @@ Mutation tests must assert side-effect/attempt counts, not just the final HTTP s
 request content is replayable when retry is authorized. Live credentials, public endpoints and
 load/soak tests require separate authorization; a fake transport is not upstream conformance proof.
 
+For authorized live reads, exercise the production client from the intended workload's identity
+and network. Consume the bounded response body and verify applicable revision conditions; matching
+local credentials, response headers or opening a lazy SDK stream alone do not prove deployed
+content access.
+
 Report behavior changes, timeout/retry budgets, error mapping, tests run and external assumptions
 not verified. Do not introduce a new client framework for a single ordinary integration.
 

@@ -2,7 +2,7 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-Run only the skill-library synthetic metadata, preparation and inventory tests after approval.
+Run the skill-library synthetic metadata, preparation, inventory, archive and extension tests after approval.
 .DESCRIPTION
 Import pinned Pester and run the adjacent suite without provisioning or broad repository tests.
 .PARAMETER PythonPath
@@ -26,7 +26,9 @@ if ($MyInvocation.InvocationName -ne '.') {
         $Suites = @(
             (Join-Path $PSScriptRoot 'tests/Invoke-Validation.Tests.ps1'),
             (Join-Path $PSScriptRoot 'tests/Invoke-VersionPreparation.Tests.ps1'),
-            (Join-Path $PSScriptRoot 'tests/Invoke-InventoryPreview.Tests.ps1')
+            (Join-Path $PSScriptRoot 'tests/Invoke-InventoryPreview.Tests.ps1'),
+            (Join-Path $PSScriptRoot 'tests/Invoke-Archive.Tests.ps1'),
+            (Join-Path $PSScriptRoot 'tests/Invoke-Extension.Tests.ps1')
         )
         foreach ($Suite in $Suites) {
             $Container = New-PesterContainer -Path $Suite
