@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill-library metadata, defaults and exact dependencies; preview committed packaging inventories and prepare explicit component versions. Use for metadata adoption, inventory/notice review, validation failures or version decisions. Archive creation, installation and publication are not implemented.'
+description: 'Author and validate skill-library metadata, defaults and exact dependencies; preview committed inventories, build deterministic required-only skill ZIP archives on Linux, and prepare explicit component versions. Use for metadata adoption, inventory/notice review, local archive builds, validation failures or version decisions. Installation and publication are not implemented.'
 user-invocable: true
 ---
 
@@ -13,10 +13,7 @@ discovery name and description. Metadata adds distribution identity, not another
 ## Authoring
 
 1. Inspect the skill directory, native links and actual external prerequisites. Start from the
-   [minimal template](./examples/metadata.yaml.tmpl); replace its example identity. The
-   [complete synthetic example](./examples/metadata-full.yaml.tmpl) demonstrates every supported
-   optional field, not default prerequisites. Replace its synthetic dependencies and paths with
-   real reviewed inputs; omit the license override unless terms genuinely differ.
+   [valid synthetic template](./examples/metadata.yaml.tmpl); replace its example identity.
 2. Keep `id` explicit; it may differ from the aligned native folder/frontmatter name. Quote the exact
    plain `X.Y.Z` version. Keep distribution identity stable across source-folder/native-name renames
    by default; native folder/frontmatter alignment still applies. The three initial `1.0.0` values are
@@ -34,7 +31,7 @@ discovery name and description. Metadata adds distribution identity, not another
    not rights clearance; never infer or relicense third-party content from the repository license.
 4. Declare exact `required` edges only for real component prerequisites. Optional edges add a
    `selectionKey` and `reason`; conditional Markdown links alone do not declare dependency edges.
-5. All eligible committed files beneath the skill directory are intended future package content.
+5. All eligible committed files beneath the skill directory are implicit archive content.
    Do not enumerate internal references, examples, scripts or assets. There is no `resources` field.
    Declare only external repository files in `externalFiles`, with `path`, `kind` (`instruction` or
    `notice`) and `loadingPurpose`. An external declaration is required when the component is selected.
@@ -50,8 +47,8 @@ required; component `license` is an optional nonempty override. Unknown fields f
 The optional `$schema` is informational; validation always uses the bundled schemas and fetches no
 remote references. Native `SKILL.md` and the source folder are derived, not declarations. No
 `entrypoint`, `origin`, `provenanceStatus`, `schemaVersion`, hashes or resolved closure belong in
-authored metadata. Packaging will derive the repository identity and exact source revision from its
-verified source, not a sidecar claim.
+authored metadata. Archive building derives the exact source commit from local Git, not a sidecar
+claim. Local build evidence is not an immutable release or publisher-authenticity record.
 
 ## Local Validation
 
@@ -59,10 +56,6 @@ The [PowerShell entry point](./scripts/Invoke-Validation.ps1) requires PowerShel
 and the [pinned PyYAML prerequisite](./scripts/requirements.txt). The bundled
 [YAML reader](./scripts/Read-Metadata.py) parses metadata and native frontmatter. Supply an existing
 interpreter with PyYAML 6.0.3 through `-PythonPath` if `python3` lacks it; no setup runs automatically.
-The PowerShell callers pass bounded UTF-8 source bytes over standard input; the Python reader
-accepts no file paths and never opens metadata files itself. Both boundaries enforce the 1 MiB limit.
-The requirements file pins published wheel digests. CI requires those hashes and binary-only
-installation; source-distribution setup scripts are not permitted.
 
 From the repository root:
 
@@ -88,7 +81,7 @@ After schema edits, refresh the editor's YAML schema cache if diagnostics still 
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
 
 After explicit test approval, the [focused test entry point](./scripts/Invoke-Tests.ps1) runs only the
-adjacent synthetic metadata, preparation and inventory suites using installed Pester 5.7.1 and the
+adjacent synthetic metadata, preparation, inventory and archive suites using installed Pester 5.7.1 and the
 supplied `-PythonPath`. Each suite must execute nonzero tests. The repository's existing runner also
 discovers these suites; neither route installs prerequisites. Fixture Git mutations remain confined
 to minimal temporary repositories, never the source repository.
@@ -147,7 +140,62 @@ terminating object errors; cleanup failure suppresses success. No inventory file
 The preview creates no archive, installation, version edit, tag, release or publication. It is not
 immutable provenance, rights clearance or delivery approval. Linux synthetic validation is recorded in
 the feature's validation guide; native Windows verification remains required before claiming Windows
-support. Future packaging and redistribution require their own exact-content and rights review gates.
+support. Archive builds and redistribution have separate exact-content and rights review gates.
+
+## Local Skill Archives
+
+Use the [archive entry point](./scripts/Invoke-Archive.ps1) after approval for actual archive builds.
+It requires Linux, PowerShell 7.4+, local Git and an existing CPython 3.11+ interpreter with
+PyYAML 6.0.3. It does not install prerequisites. Native Windows and other Python implementations
+are refused; version minima are not proof of byte equivalence across runtime versions.
+
+```powershell
+$result = ./.github/skills/skill-library/scripts/Invoke-Archive.ps1 `
+   -SkillName patterns-ports-and-adapters -SourceRevision HEAD `
+   -OutputDirectory /tmp/new-skill-archive -PythonPath /path/to/python | ConvertFrom-Json
+$hash = (Get-FileHash -LiteralPath $result.ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($hash -cne $result.ArchiveSha256 -or
+      [IO.File]::ReadAllText($result.ChecksumPath) -cne "$hash  package.zip`n") {
+      throw 'Archive integrity comparison failed.'
+}
+```
+
+Exactly one explicit native folder is required. `-OptionalSelection` is not accepted. The unchanged
+inventory/validation API resolves the entire required closure once; optional-only skills and their
+dependencies never enter this archive. A future loader may offer related optional skills as separate
+downloads, not silently add them to this artifact. Native usage and optional inventory preview remain
+available independently. Dot-sourcing exposes `Invoke-SkillArchive`, returning an object without
+exiting the host. Repository/interpreter defaults follow the invoked tool, not caller location.
+
+The destination must be a new absolute directory under an existing stable trusted parent, outside
+the source repository and resolved Git administrative/common directories. Existing files, empty
+directories, dangling links, linked ancestry, missing parents and ambiguous path components fail.
+Scratch also stays outside those boundaries. Never edit inputs or output concurrently. The writer
+uses Linux descriptor-relative no-follow opens, exclusive reservation and an ownership/content ledger;
+this is not protection against a hostile same-user or privileged writer.
+
+Success returns one JSON object after scratch cleanup, writer finalization and a clean writer exit.
+The new directory contains exactly `package.zip` and `package.zip.sha256`. The stored ZIP contains
+`manifest.json` first, then eligible committed files under `payload/<repository-relative-path>`.
+Native path geometry, blob bytes and executable modes are preserved without executing payload code.
+Dirty, staged, deleted-local and untracked files never replace the frozen commit's inputs. Existing
+inventory path restrictions remain authoritative; Unicode content does not imply wider filename support.
+
+The manifest records the full source commit, root/version, required-only components, every payload's
+mode/size/SHA-256/owners/reasons, effective license/notice attribution and exact trusted builder/runtime
+identity. The captured invoked tool bundle is separate from historical source; only the captured
+trusted code executes. `skill-archive/1` fixes ZIP headers, ordering and canonical evidence encoding.
+The generated manifest has no self-hash or archive hash. The detached digest hashes the completed ZIP,
+with two spaces before `package.zip` and one LF. Digests enable integrity comparison, not publisher
+authentication, legal clearance or immutable release evidence. No authored versions or pins change.
+
+Failures emit a sanitized category and nonzero exit, or a terminating object error. No artifact digest
+or success object is returned on failure. Rollback removes only unchanged provably owned entries and
+the matching empty directory; foreign additions, changed files, replacements and hardlinks are retained
+for deliberate recovery. Cleanup/finalization failures suppress success and identify recovery paths.
+Never recursively delete or automatically adopt those paths. Interruption can leave a marked or unmarked
+directory that retries must refuse. Partial files can be visible: neither atomic two-file visibility
+nor crash-atomic rollback is promised. Installation, publication and extension loading remain unimplemented.
 
 ## Version Preparation
 
@@ -215,8 +263,8 @@ failure can require manual recovery. Windows filesystem behavior still needs nat
 
 ## Planned Release Flow
 
-Version preparation above is implemented; PR creation, packaging and publication remain separate
-future operations. Review the preparation before opening a PR and rerun after changed inputs or decisions.
+Version preparation and local archives above are implemented; PR creation and release publication remain
+separate operations. Review preparation before opening a PR and rerun after changed inputs or decisions.
 
 Reuse the [release-train version-decision policy](../dotnet-release-train/SKILL.md#release-version-decision),
 not an assumed reusable skill-version script: major for breaking public contracts, minor for compatible
@@ -247,8 +295,8 @@ human-readable inspection and debugging: it declares release intent before publi
 `<component-id>/X.Y.Z` tag identifies the released commit; the release gate must reject any mismatch
 between that tag and the committed metadata version. The generated exact-inventory record
 must bind that commit, reviewed rights evidence and artifact hashes; changed inputs at an unchanged
-released version must fail. No archive packaging, tag creation, publication, immutable release snapshots, catalogs,
-installer ownership/recovery, Spec Kit initialization or packaged runtime discovery is implemented here.
+released version must fail. Local archives do not implement tag creation, publication, immutable release
+snapshots, catalogs, installer ownership/recovery, Spec Kit initialization or packaged runtime discovery.
 
 ## Planned Identity Evolution
 
@@ -266,11 +314,15 @@ needs no ID migration, but still needs version-impact review and safe installed-
 ## Maintaining This Skill
 
 - Recheck draft 2020-12 behavior when PowerShell's `Test-Json` or JsonSchema.Net changes.
-- Recheck node/tag handling, scalar preservation, stdin limits and published wheel hashes when updating PyYAML or Python.
+- Recheck node/tag handling and scalar preservation when updating PyYAML or Python.
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
+- Recheck raw ZIP headers, canonical evidence, runtime fingerprints and complete-byte rebuilds when CPython's zipfile/json behavior changes; ASCII names use flag 0 and UTF-8 names use 0x0800 without private encoders.
+- Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source.
+- Recheck descriptor-relative exclusive reservation, immediate ownership records, fault/race cases and scratch/finalization acknowledgments when changing Linux filesystem or process behavior; cleanup failures must never produce success.
+- Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
 - Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
