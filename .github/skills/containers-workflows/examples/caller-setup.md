@@ -22,6 +22,11 @@ The Bash launchers require `pwsh` and replace themselves with it.
 Preserve existing caller-specific behavior; do not overwrite a custom shim blindly. Set executable
 mode on Bash launchers on platforms that require it.
 
+When changing the skill directory or caller contract, inventory callers across the actual active
+workspace roots and update every affected entry point and direct documentation reference, not
+only the repository that exposed the failure. Compare rendered callers with the current templates;
+preserve intentional caller-specific behavior.
+
 ## Configure Local Deployment
 
 Copy [the data example](../templates/deploy.local.psd1.example) into the caller's root as

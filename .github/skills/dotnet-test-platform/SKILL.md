@@ -51,8 +51,12 @@ into the target repository rather than copying over existing policy.
   `--coverage-output-format cobertura`. Never use VSTest `--filter`, `--collect`, `--logger` or
   coverlet MSBuild properties.
 - Use verified fully qualified class names or class-prefix filters such as
-  `--filter-class Example.Tests.Leadership*`. Do not assume interior wildcard or repeated-filter
-  semantics; verify a nonzero executed-test count before recording success.
+  `--filter-class Example.Tests.Leadership*`. Method selectors also require the fully qualified
+  method name, for example `--filter-method Example.Tests.AuthenticationTests.CachedSession`;
+  a bare method name can select zero tests even alongside a class filter. Verify narrow live-test
+  selectors with `--list-tests` before execution. To union several classes, repeat `--filter-class`;
+  do not join names with `|`. Verify the discovered selection against the repository's runner version,
+  and verify a nonzero executed-test count before recording success.
 
 ## Workflows and Actions
 

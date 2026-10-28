@@ -196,6 +196,13 @@ an isolated Redis container for integration; never validate against a shared or 
 
 Trace the symptom in order and stop at the first mismatch:
 
+- Confirm the effective endpoint and database before remote diagnostics; test overlays can replace
+  deployment settings with localhost or another database. Cluster-only DNS requires an authorized
+  network path, such as a temporary port-forward, not repeated connection attempts.
+- Inspect read helpers for side effects before using them diagnostically: credential stores may
+  delete malformed, mismatched or expired entries during load. For strictly read-only checks, use
+  GET/TTL to obtain a detached in-memory snapshot, validate it without renewal or deletion, and
+  never print or persist the payload.
 - **Stale data**: effective key, including `CacheKeyFormat` and database -> `PTTL` -> local copy and
   invalidation subscription -> writer ordering (authority before delete).
 - **Missing data**: key format and database -> `TTL` -> `INFO stats` `evicted_keys` and
