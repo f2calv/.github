@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill metadata, preview committed inventories, build deterministic required-only ZIPs, adapt one verified ZIP into a local Spec Kit extension/catalog pilot, and prepare component versions. Use for metadata, archive or extension-pilot work. General installation and publication are not implemented.'
+description: 'Author and validate skill metadata, preview committed inventories, preview or explicitly apply bounded workspace root/optional extensions, build deterministic required-only ZIPs, adapt a verified ZIP into a local Spec Kit extension/catalog pilot, and prepare component versions. Use for metadata, archive, extension-pilot or workspace-installer work. Linux Spec Kit 1.2.3 workspace apply has real-runtime validation; editor observations and publication retain separate gates.'
 user-invocable: true
 ---
 
@@ -234,8 +234,161 @@ loader as an automatic Copilot attachment; do not require a separate tool read o
 native command selection rather than manual file attachment, verify installed-only guidance reads,
 and distinguish owner-reported runtime evidence from independently inspected traces.
 Use Spec Kit's own installer for this
-pilot; general optional downloads, installer ownership/recovery, upgrades and publication remain future
-work. Local catalog integrity is not publisher authentication or redistribution approval.
+pilot; the workspace installer below adds bounded local optional selection and operation evidence.
+Remote acquisition, upgrades and publication remain deferred. Local catalog integrity is not publisher
+authentication or redistribution approval.
+
+## Read-Only Workspace Preview
+
+Use the [workspace entry point](./scripts/Invoke-WorkspaceInstall.ps1) to inspect one committed native
+root against existing local catalogs, prebuilt extension ZIPs and an initialized built-in Copilot
+skills-mode consumer. This Linux-only MVP requires PowerShell 7.4+, Git and an existing CPython 3.11+
+interpreter with PyYAML 6.0.3 and Spec Kit CLI 1.2.3. It never provisions prerequisites.
+
+```powershell
+$Preview = ./.github/skills/skill-library/scripts/Invoke-WorkspaceInstall.ps1 `
+   -RepoRoot /workspace/source -SourceRevision HEAD -SkillName example-root `
+   -WorkspacePath /workspace/consumer -CatalogPath /workspace/artifacts/catalog.json `
+   -ArtifactDirectory /workspace/artifacts -PythonPath /workspace/tools/bin/python
+$Preview | ConvertTo-Json -Depth 100
+```
+
+Source, consumer, catalog, artifact-directory and interpreter paths must be explicit, existing and
+absolute. Source and consumer cannot contain one another. Linked paths/ancestors fail; a leaf
+interpreter symlink is allowed and its resolved identity is bound. Supply stable trusted inputs and
+exclusive workspace use. Dot-sourcing defines functions without running inspection or exiting the
+host; `Invoke-SkillWorkspaceInstall` returns the same object. The script's `-Json` emits one JSON result.
+
+The existing committed validator owns dependency closure and explicit optional-key validation. Preview
+verifies each selected local `<id>-<version>.zip` against its unambiguous catalog record and required-only
+committed inventory at the same frozen source commit, including
+literal identity, notices, every resource byte/mode, generated loader and command-only manifest.
+Limits are 64 MiB per archive and uncompressed payload, 16 MiB per member and sixteen distinct extension
+roots. Catalog URLs are provenance only. Declined optional ZIPs are never opened; offers default off,
+and Markdown links do not create dependencies.
+
+`Ready: true` includes bound source/tool/runtime/catalog/artifact identities, consumer path snapshots,
+predicted command/registry/configuration effects and a canonical lowercase SHA-256 fingerprint.
+Registry prediction marks the runtime-generated installation timestamp rather than inventing a fixed
+timestamp. Existing registry/configuration must round-trip without unrelated changes. External or
+changed project adapters, hooks/events, unknown integration effects, collateral chmod, occupied targets
+and unresolved operation evidence block readiness, including retained upstream rescue staging for a
+selected extension. Canonical approval evidence is
+limited to 4 MiB before reservation; saved receipts use the existing 64 MiB evidence-file read limit.
+Missing/invalid inputs return `Ready: false`,
+structured `Blockers` and a null fingerprint; inspect the safe code/scope, resolve the cause deliberately
+and obtain a fresh preview. Exit codes are 0 for ready preview, 2 for blocked input and 4 for unexpected
+inspection failure. Do not delete locks/receipts or adopt existing targets to make a preview ready.
+
+Preview performs no consumer/profile writes, extraction, network access, manager construction or
+payload execution. Temporary committed-input inspection remains owned by the existing inventory
+helper. Preview `-ReviewedFingerprint` requests fail closed.
+Readiness is not publisher authentication, rights clearance, installation approval or real-runtime/
+editor acceptance. The [validation record](../../../specs/004-bounded-workspace-installer/quickstart.md)
+separates synthetic root/optional checks from real-runtime and editor gates.
+
+## Explicit Optional Selection
+
+Pass exact active `component-id/selectionKey` values through `-OptionalSelection`; the authoritative
+validator rejects duplicate supplied keys, unknown keys and keys declared by inactive components.
+Selections are sorted for approval. Newly active components expose their own offers, but those offers
+remain off unless explicitly selected too. No links, available artifacts or shared dependencies imply
+consent. Multiple active declarations may select the same target: retain every reason and pin, but
+install that target once. Duplicate dependency edges within a declaration remain invalid.
+
+Use the explicit inputs in the next section, including the peer's existing catalog and artifact
+directory. Add `OptionalSelection = @('example-root/related')` using a key actually offered by the
+selected root. Review a new complete ready preview after changing any choice; root-only approval cannot
+authorize a peer. Execution order is the original root followed by distinct selected optional targets
+sorted by ID. Every extension uses its own no-option required closure at the same frozen commit;
+choosing a peer never changes the root ZIP. Overlaps report source path/hash and owning extension IDs,
+but complete resources and notices are copied separately beneath each extension-owned tree. There is
+no physical deduplication, build, download or declined-artifact fallback.
+
+## Approved Workspace Installation
+
+Root and explicit optional first installation are implemented, synthetically exercised and verified
+through the real pinned runtime in a disposable Linux consumer. Obtain approval for each maintained
+consumer; demonstration success is not permission to mutate another workspace. Test approval never
+authorizes a real install, artifact build or editor demo. The validation guide separates the new
+consumer's editor acceptance from the earlier completed extension pilot.
+Use the same explicit local inputs as preview; review the full ready result and obtain approval for
+its exact fingerprint and consumer before invoking `-Apply`:
+
+```powershell
+$Installer = '/workspace/source/.github/skills/skill-library/scripts/Invoke-WorkspaceInstall.ps1'
+$Inputs = @{
+   RepoRoot = '/workspace/source'
+   SourceRevision = 'HEAD'
+   SkillName = 'example-root'
+   WorkspacePath = '/workspace/consumer'
+   CatalogPath = @('/workspace/artifacts/catalog.json')
+   ArtifactDirectory = @('/workspace/artifacts')
+   PythonPath = '/workspace/tools/bin/python'
+}
+$Preview = & $Installer @Inputs
+$Preview | ConvertTo-Json -Depth 100
+# Only after the separate approval and validation gates:
+$Applied = & $Installer @Inputs -Apply -ReviewedFingerprint $Preview.Fingerprint
+$Applied | ConvertTo-Json -Depth 100
+```
+
+Apply recomputes the complete preview from original arguments, never a caller-edited result object.
+Missing, uppercase, stale or blocked approval refuses before reservation. Existing payload, command
+or registered identity blocks even at the same version; there is no force, adoption, upgrade,
+uninstall or resume route. Catalog URLs stay inert and packaged code stays inert.
+
+Exclusive evidence lives beneath `.specify/skill-library-install`: `owner.json`, an operation `lock`,
+and `operations/<fingerprint>/operation.json` with private `scratch/`. Directories use 0700 and evidence
+files 0600. Prepared approval is flushed before revalidation; Attempting is flushed before delegation.
+A fresh `-I -B` Python child receives only a child-local `TMPDIR` pointing at that scratch. It passes
+the same regular single-link ZIP stream it hashed/inspected to Spec Kit 1.2.3's
+`install_from_archive`, with priority 10, force false and exact expected ID/version. No compatibility
+alias, custom production extractor, CLI refresh, scaffolding or profile/package configuration runs.
+
+Verified requires literal identity/version, every canonical byte/mode/notice, exact rendered command,
+expected registry/config additions and unchanged unrelated inspected state. For pinned Copilot
+skills-mode, `registered_commands` is an empty mapping and `registered_skills` contains the loader;
+`manifest_hash` binds raw manifest bytes and only the runtime's UTC installation timestamp varies.
+The runtime moves a private temporary directory into the extension root, preserving `0700`; ordinary
+new payload subdirectories are `0755`. These modes are predicted and verified, not repaired afterward.
+Warnings, skipped/missing registration, extra paths and incomplete checks suppress success. Raw
+upstream diagnostics are discarded; structured failure categories do not echo their content.
+
+Completed requires every selected extension Verified, a flushed final receipt and release of the unchanged owned lock.
+The completed receipt and empty private scratch remain evidence, never authority to adopt a target.
+Results separate completed, failed, unknown and pending entries, observed paths, recovery locations
+and the last durable step. Exit 0 means verified completion, 2 means pre-reservation refusal, 3 means
+a reserved failed/unknown operation, and 4 means unexpected failure.
+
+Any post-reservation failure/cancellation stops work and retains the lock, receipt and partial/ambiguous runtime
+paths; receipt-write failure cannot produce success. Do not delete locks or retry blindly. Preserve
+old evidence outside the active operation namespace, inspect runtime registration and caller content,
+then obtain separate approval for deliberate manual/runtime reconciliation. A fresh clean-target
+preview is still required. There is no automatic rollback or recursive cleanup. Stable trusted inputs
+and exclusive workspace use are required; this is neither a hostile-writer sandbox nor an atomic
+filesystem transaction or power-loss durability guarantee. Synthetic scratch/stream observations do
+not establish real upstream confinement or editor discovery/installed-only reads.
+
+Failure observations retain readable payload, command, registry and evidence paths even if another
+path cannot be inspected. An explicit unknown presence/error is not evidence that a write was absent;
+inspection is bounded and does not follow linked partial files. A lost child or malformed response
+triggers fresh read-only inspection, never a second install attempt. Reported KeyboardInterrupt marks
+the operation Cancelled and its unverified extension Unknown; unreported child loss remains Unknown.
+Unresolved-operation checks run before strict partial-tree parsing, so linked leftovers cannot hide
+an abandoned operation behind an ordinary ownership conflict.
+
+An entry remains Pending until its Attempting receipt flushes. Ordered selected steps revalidate before
+each call and stop on the first failure, cancellation or evidence-write failure, retaining earlier
+Verified entries and later Pending entries. Failure to persist Verified evidence does not erase a
+completed verification; report the older last durable step as well. A foreign same-byte lock is never
+released, even after a Completed receipt; that operation still returns Unknown and blocks retry.
+These boundaries have synthetic cancellation, child SIGKILL, malformed-output and persistence-fault
+coverage. A real root followed by a deliberately terminated peer child after durable intent also
+preserves Verified/Unknown outcomes and blocks retry. Whole-orchestrator termination, machine crash/
+power loss and interruption during actual upstream copying remain unverified. Between steps, earlier Verified bytes and the next absent targets must still match
+the last durable observation. A failed, cancelled or uncertain peer never erases a verified root;
+remaining entries stay Pending. Caller-edited plans cannot bypass full original-input recomputation.
 
 ## Version Preparation
 
@@ -361,10 +514,23 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
 - Recheck raw ZIP headers, canonical evidence, runtime fingerprints and complete-byte rebuilds when CPython's zipfile/json behavior changes; ASCII names use flag 0 and UTF-8 names use 0x0800 without private encoders.
 - Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source.
+- Refresh scripts/requirements-spec-kit.txt with the complete exact-version SHA-256 wheel closure when changing CI's pinned runtime; retain the shared PyYAML lock separately. Check strict pip parsing/downloads for CI's Python version and wheel payload parity with the reviewed upstream source, not only the package name/version.
 - Recheck Spec Kit manifest/catalog fields, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; consumer fixtures need integration manifests as well as init options.
+- Recheck workspace preview API, integration-state schemas, registry/config serialization and chmod traversal against the pinned installed runtime. Even command-only extensions update the installed list and empty-hook configuration; predict those writes without constructing a manager.
+- Exercise stock init-options, integration settings and hash-tracked Copilot manifests, not only reduced fixtures; reject changed recorded files and unknown adapter effects. Match the archive producer's full GeneratedMembers/Limitations manifest shape, and retain the runtime's observed 0700 extension-root mode in predictions and fixtures.
+- Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount.
+- Recheck the same-stream archive API and literal ID/version, Copilot's empty registered-command mapping, raw manifest hash and UTC timestamp when updating Spec Kit; preserve unrelated registration/configuration and bytes rather than accepting a successful return alone.
+- Keep unresolved-operation checks ahead of strict partial-tree parsing and occupied-target checks on retries; distinguish synthetic child loss from whole-orchestrator loss, real-runtime confinement and editor acceptance.
+- Exercise diagnostic capture with stdout/stderr output before raising a warning; warnings-as-errors make later probes unreachable. Keep reported cancellation distinct from an unverified extension outcome.
+- Advance live Attempting state only after its receipt flushes; test Pending on failed intent, retained Verified on later persistence failure and foreign same-byte lock refusal after completion evidence.
+- Preserve readable failure observations alongside explicit unknown records, including absolute ancestor snapshot paths. Assert present bytes/modes rather than a path-name match; reinspection after lost child output must not retry installation.
+- Exercise ordered revalidation with earlier verified bytes and actual next-target drift, cancellation on both sides of intent and a pending remainder. PowerShell may wrap cancellation exceptions; retain token state as evidence.
+- Keep combined optional validation authoritative and per-root no-option inventories on one frozen commit. Test duplicate target reasons across active declarations, not invalid duplicate edges within one declaration.
+- Recheck execution Position, indexed registry/config predictions and receipt outcomes together when changing multi-extension evidence; artifact records already carry Position. Preserve complete overlap copies and self-test selected/declined/nested ZIP tripwires.
+- Allow hardlinked read-only installed prerequisites when capturing runtime identity; retain single-link ownership checks for managed consumer/evidence files. Keep byte/RECORD hashes and symlink checks in both cases.
 - Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations when loading parameterized scripts.
 - Recheck descriptor-relative exclusive reservation, immediate ownership records, fault/race cases and scratch/finalization acknowledgments when changing Linux filesystem or process behavior; cleanup failures must never produce success.
-- Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; resolve the effective Python executable for both default and explicit interpreter selections. Historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
+- Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
 - Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.

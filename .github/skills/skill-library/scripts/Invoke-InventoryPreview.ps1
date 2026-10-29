@@ -467,6 +467,63 @@ function New-InventoryResult {
     }
 }
 
+function Get-SkillCommittedSelection {
+    param([string]$RepoRoot, [string]$SourceRevision = 'HEAD', [string]$SkillName, [string[]]$OptionalSelection = @(), [string]$PythonPath = 'python3')
+    Invoke-InventoryInspection -RepoRoot $RepoRoot -SourceRevision $SourceRevision -SkillName @($SkillName) -OptionalSelection $OptionalSelection -PythonPath $PythonPath -Inspect {
+        param($Snapshot)
+        $Inventory = New-InventoryResult $Snapshot
+        $RootId = $Snapshot.Validated.Folders[$Snapshot.Roots[0]]
+        $Root = [pscustomobject]@{
+            Id = $RootId; Version = $Snapshot.Validated.Catalog[$RootId].version; Folder = $Snapshot.Native[$RootId]
+        }
+        $Payload = @(
+            foreach ($File in $Inventory.Files) {
+                $Bytes = Invoke-InventoryGitRead $Snapshot @('cat-file', 'blob', $Snapshot.Entries[$File.Path].Object) -Bytes
+                [pscustomobject]@{
+                    SourcePath = $File.Path; MemberPath = "payload/$($File.Path)"; Mode = $File.Mode
+                    Size = $Bytes.LongLength; Sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
+                    Owners = @($File.Owners); Reasons = @($File.Reasons)
+                }
+            }
+        )
+        $Offers = @(
+            foreach ($Component in $Inventory.Components) {
+                $Record = $Snapshot.Validated.Catalog[$Component.Id]
+                for ($Index = 0; $Index -lt $Record.optional.Count; $Index++) {
+                    $Offer = $Record.optional[$Index]
+                    [pscustomobject]@{
+                        DeclaringId = $Component.Id; SelectionKey = $Offer.selectionKey
+                        Selection = "$($Component.Id)/$($Offer.selectionKey)"; TargetId = $Offer.id
+                        Version = $Offer.version; NativeFolder = $Snapshot.Native[$Offer.id]; Reason = $Offer.reason
+                        SourcePath = "$($Component.NativeFolder)/skill.metadata.yaml"; OptionalIndex = $Index; Selected = "$($Component.Id)/$($Offer.selectionKey)" -cin $Snapshot.OptionalSelections
+                    }
+                }
+            }
+        )
+        $ExtensionRoots = @($Root) + @(
+            foreach ($Id in (Get-InventoryOrder @($Offers | Where-Object Selected | Select-Object -ExpandProperty TargetId -Unique))) {
+                if ($Id -ceq $RootId) { continue }
+                [pscustomobject]@{ Id = $Id; Version = $Snapshot.Validated.Catalog[$Id].version; Folder = $Snapshot.Native[$Id] }
+            }
+        )
+        if ($ExtensionRoots.Count -gt 16) { throw 'At most 16 distinct extension roots may be selected.' }
+        $Tools = @(
+            foreach ($Relative in @('scripts/Invoke-Validation.ps1', 'scripts/Read-Metadata.py', 'scripts/Git-Process.ps1', 'skill-metadata.schema.json', 'repository-defaults.schema.json')) {
+                $Bytes = [IO.File]::ReadAllBytes((Join-Path $Snapshot.Rules $Relative))
+                [pscustomobject]@{
+                    Role = 'inventory-rule'; Path = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "../$Relative"))
+                    Sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
+                }
+            }
+        )
+        [pscustomobject]@{
+            SourceCommit = $Snapshot.Commit; Root = $Root; OptionalSelection = @($Snapshot.OptionalSelections)
+            ActiveComponents = @($Inventory.Components); ExtensionRoots = $ExtensionRoots
+            Inventory = $Inventory; Payload = $Payload; OptionalOffers = $Offers; Tools = $Tools
+        }
+    }
+}
+
 function Invoke-SkillInventoryPreview {
     param(
         [string]$RepoRoot = (Join-Path $PSScriptRoot '../../../..'), [string]$SourceRevision = 'HEAD',

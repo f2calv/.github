@@ -105,6 +105,10 @@ After creating a pull request, and again before merging it:
    opens a review thread, which blocks merge when the ruleset requires resolved threads.
 2. Resolve every open critical or high finding (SonarQube `BLOCKER`/`HIGH`, or the equivalent GitHub
    severity), plus any lower-severity finding that fails a required check or Quality Gate.
+   For a verified false positive, record a code-specific rationale within GitHub's 280-character
+   dismissal-comment limit and resolve only the matching review thread. Verify the source tool's
+   disposition as well as its GitHub mirror; synchronization is not proof that the Quality Gate has
+   been recalculated.
 3. Re-run affected analysis on the unchanged head. A result from a superseded commit is not evidence
    for the current pull request.
 4. Treat a missing expected build, test or SonarQube check as a coverage gap, not a pass. Apply the
