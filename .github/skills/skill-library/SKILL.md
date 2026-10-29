@@ -238,6 +238,29 @@ pilot; the workspace installer below adds bounded local optional selection and o
 Remote acquisition, upgrades and publication remain deferred. Local catalog integrity is not publisher
 authentication or redistribution approval.
 
+## Shared Library Bootstrap
+
+For a `skill-library` source archive, supply `-LibraryCatalogPath` with one to sixteen explicit
+existing release catalogs and their sibling ZIPs. The adapter bundles those exact packages, a local
+library index, the shared dispatcher, its installation verifier, the transitive strict YAML reader
+and both prerequisite lockfiles. No maintainer checkout or alternative catalog is needed at runtime;
+an existing CPython 3.11+ environment with PyYAML 6.0.3 and Spec Kit 1.2.3 is still required.
+
+The source/component ID and archive name remain `skill-library`. The generated bootstrap's runtime
+extension ID is `skill`, its canonical command is `speckit.skill.library`, and native Copilot
+skills-mode registration produces exactly `/speckit-skill-library`. The catalog key and generated
+backend path use that runtime ID; build evidence and adapter results expose `RuntimeExtensionId`
+separately from the source root. Spec Kit's extension listing therefore identifies the bootstrap as
+`skill`. Do not add aliases to shorten the command: the pinned registrar creates extra public entries.
+
+The [shared backend](./scripts/Invoke-Library.py) supports bundled discovery, details, installed-only
+listing and verified installed guidance loading. Its `install` operation currently resolves exact
+versions/digests into a read-only Selection, not a ready preview, write approval or completed install.
+Individual payload packages still use the pilot profile above. Native registration and bundled
+discovery have real-runtime validation; editor invocation, source-independent approved installation
+and CI component delivery remain separate acceptance gates. Preserve failed consumers and use a
+fresh approved disposable consumer after a bundle defect; never patch installed evidence in place.
+
 ## Read-Only Workspace Preview
 
 Use the [workspace entry point](./scripts/Invoke-WorkspaceInstall.ps1) to inspect one committed native
@@ -513,9 +536,9 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
 - Recheck raw ZIP headers, canonical evidence, runtime fingerprints and complete-byte rebuilds when CPython's zipfile/json behavior changes; ASCII names use flag 0 and UTF-8 names use 0x0800 without private encoders.
-- Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source.
+- Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source. Exercise the extracted bootstrap backend using its default bundled paths so checkout-local transitive helpers cannot hide missing runtime files.
 - Refresh scripts/requirements-spec-kit.txt with the complete exact-version SHA-256 wheel closure when changing CI's pinned runtime; retain the shared PyYAML lock separately. Check strict pip parsing/downloads for CI's Python version and wheel payload parity with the reviewed upstream source, not only the package name/version.
-- Recheck Spec Kit manifest/catalog fields, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; consumer fixtures need integration manifests as well as init options.
+- Recheck Spec Kit manifest/catalog fields, three-part canonical command names, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; aliases create extra public registrations. Consumer fixtures need integration manifests as well as init options.
 - Recheck workspace preview API, integration-state schemas, registry/config serialization and chmod traversal against the pinned installed runtime. Even command-only extensions update the installed list and empty-hook configuration; predict those writes without constructing a manager.
 - Exercise stock init-options, integration settings and hash-tracked Copilot manifests, not only reduced fixtures; reject changed recorded files and unknown adapter effects. Match the archive producer's full GeneratedMembers/Limitations manifest shape, and retain the runtime's observed 0700 extension-root mode in predictions and fixtures.
 - Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount.
