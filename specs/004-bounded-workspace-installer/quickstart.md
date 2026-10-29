@@ -447,9 +447,13 @@ Local pre-PR review identified and repaired three bounded issues:
 - The adjacent runner checks Pester's aggregate result and requires at least one passing case, so
   suite-level hook failures, skipped-only and empty suites cannot report success.
 
-CI's library test workflow also installs the pinned Spec Kit source revision before running the new
-workspace suite. Its previous PyYAML-only setup could not satisfy the suite's existing runtime probe;
-this prerequisite wiring is not per-skill release/versioning implementation.
+CI's library test workflow installs Spec Kit 1.2.3 and its complete pinned dependency closure as
+hash-verified wheels in the existing single pip installation. Its previous PyYAML-only setup could not
+satisfy the workspace suite's runtime probe. An initial separate source install violated the existing
+wheel-only/hash-lock policy; the focused policy suite now passes 6/6 without weakening that rule.
+Strict Python 3.11 wheel-only pip download validated all 41 requirements, and all 377 files in the
+published Spec Kit wheel match the previously validated runtime from the pinned source revision.
+This prerequisite wiring is not per-skill release/versioning implementation.
 
 The final focused run passed 10/10: those eight new cases plus neighboring root preview and optional
 apply. An initial runner-fixture assertion referenced an unavailable diagnostic property; correcting
