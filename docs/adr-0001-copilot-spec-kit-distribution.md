@@ -1,8 +1,9 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
-**Status:** In Progress. Metadata, local version preparation, committed inventory preview, deterministic local archives and Spec Kit adoption are implemented locally; remaining distribution decisions are proposed.
+**Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
+**Implementation Status:** In Progress. The bounded workspace installer foundation has a passing 366-test baseline and ten passing focused PR-review checks. The shared command, bootstrap extension and per-skill CI delivery remain unimplemented; foundation acceptance is not demo acceptance.
 **Date:** 2026-10-26.
-**Last Updated:** 2026-10-28.
+**Last Updated:** 2026-10-29.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
 ## Context and Problem
@@ -10,7 +11,9 @@
 The [native library contract](../.github/copilot-instructions.md#setup) supports workspace and
 profile-linked consumption of the canonical instruction and skill folders. Selective, versioned
 distribution must not require existing consumers to migrate or maintain a second Markdown source.
-Library maintainers and selective consumers are the proposed pilot audiences, not validated customers.
+Library maintainers and selective consumers are the pilot audiences. The required consumer experience
+is one library command with arguments, comparable to a CLI command tree, not a separate command to
+learn for every skill. The earlier per-extension loading pilot proves runtime integration only.
 
 Initial source inspection at commit `a161439e9696211c34c5a468a7811f8944c111da` recorded
 the following historical baseline; subsequent preparation is recorded under [Handover](#handover).
@@ -43,9 +46,12 @@ prior research, not generated-extension runtime acceptance or a claim about late
   naming changes across folders, skill names, links, resources and invocation.
 * Author Markdown once; generate wrappers and payload copies only as build outputs.
 * Package one explicit skill root and its complete required resource closure. Offer related optional
-  skills separately through future explicit selection, never as optional-only payloads in that archive.
+  skills separately through explicit selection, never as optional-only payloads in that archive.
 * Version each component independently, recording exact inputs, dependency snapshots and SHA-256.
-* Start with local PowerShell tooling and GitHub Release assets, without an Actions prerequisite.
+* Demonstrate CI-driven independent skill versioning and installable versioned artifacts, not only
+  repository GitVersion or local version preparation.
+* Install one library extension, then use its shared command to discover, install and load multiple
+  skill extensions with required resources and explicitly selected optional additions.
 * Keep setup, tests, initialization, commits, pushes, tags and publication behind separate approvals.
 
 Mandatory whole-library format migration, global instruction injection, automatic rights clearance
@@ -61,11 +67,100 @@ this proposal itself authorizes no further setup, tests, initialization or publi
 | Maintain a second categorized source tree | Simple packaging layout | Duplicated guidance and broken native paths | Reject |
 | Use upstream presets as arbitrary file installers | Appears to reuse a package mechanism | Pinned contract does not establish that behavior | Reject for resource-bearing capabilities |
 | Generate extensions from explicit local closure | One source, selective artifacts, auditable inputs | Requires resolver, snapshot and runtime validation | Recommend |
-| Add a dependency-aware extension command | Consumer selection reuses the packaging graph | Requires approval, ownership and recovery safeguards | User-chosen direction; runtime acceptance pending |
+| One library command with arguments | Scalable discovery, installation and loading; reuses the packaging graph | Requires bootstrap packaging, argument handling and bounded approval | Owner-selected demo interface; implementation pending |
+| One public command per skill | Simple isolated pilot and direct loading | Command proliferation does not scale to a large library | Retain historical evidence, reject as the target consumer interface |
 | Generate Agent Plugins from the same source | Alternative or additional client packaging | Different manifest and discovery contract | Evaluate; no second packager implemented |
 | Require hosted workflows or OCI first | Central automation and transport | Setup and release-train cost before proving the contract | Defer |
 
-## Proposed Decision
+## Decision and Delivery Boundary
+
+### Foundation Close-Off and Demo Scope
+
+The owner selected completion of the bounded installer foundation first, then clarified the required
+demo experience on 2026-10-29. Close and merge that foundation as a PR before implementing the shared
+command and CI delivery. Do not equate its passing tests with completion of those new deliverables.
+Native consumption remains supported and unchanged.
+
+The [extension pilot](../specs/003-spec-kit-extension-pilot/quickstart.md) completed real generation,
+catalog discovery, installation and owner-reported editor loading. The
+[bounded installer](../specs/004-bounded-workspace-installer/quickstart.md#real-runtime-demo)
+adds preview-bound local installation, separate optional packages and retained failure evidence.
+Its authoritative acceptance record distinguishes automated, real-runtime and editor observations.
+The current PR may close foundation implementation while its unobserved per-extension editor gate
+remains explicitly pending; the shared-command demo must earn its own fresh consumer evidence.
+
+The demo deadline is Monday 2026-11-02 at 13:00 in the owner's local time. No timezone is inferred.
+The five required outcomes are:
+
+| ID | Deliverable | Observable acceptance |
+| --- | --- | --- |
+| D1 | Consolidated repository structure | Show the prefixed canonical skill names and resource layout, preserving native discovery and one authored source. |
+| D2 | Metadata per demonstrated skill | Show independent ID/version, facets, required/optional edges, external instructions and notices without duplicating generated provenance. |
+| D3 | CI-driven skill versioning | Change one skill and then multiple skills; CI identifies affected components, produces or validates reviewed own-version/dependency-version edits and emits matching versioned artifacts. Unrelated skills do not bump; repeated runs do not bump again. |
+| D4 | Library bootstrap | Install one genuine `skill-library` Spec Kit extension into a compatible consumer and discover `/speckit-skill-library`. |
+| D5 | Multiple skill extensions through the library | Search/select and install multiple independent skill extensions through that command, then load their installed guidance through the same command. Verify required resources, explicit optional consent and absence of source/profile fallback. |
+
+Per-skill CI integration and the shared installation/loading command are required follow-on work, not
+deferred roadmap items. The current [CI entry point](../.github/workflows/ci.yml) versions the repository
+and runs [library tests](../.github/workflows/_skills-library-tests.yml); it does not yet version or
+publish individual skills. Local version preparation is reusable implementation, not evidence that D3
+has run. The bootstrap must package or explicitly provide its executable backend, trusted catalog and
+prerequisites; it must not conceal a dependency on the maintainer's source checkout or temporary paths.
+
+Persistent install pins, `upgrade-all`, individual upgrade/uninstall, renamed-ID migration, profile
+installs, automatic rollback/resume, cross-platform expansion, signing, generalized public catalog
+hosting and an install/upgrade-across-two-releases demonstration are deferred. They are not demo gates.
+CI artifact delivery for the selected demo packages is not deferred; broad publication infrastructure
+is. Any chosen distribution still requires exact-inventory rights/privacy clearance and applicable
+notices before publishing those artifacts. Local digests prove integrity, not publisher authentication
+or redistribution rights.
+
+Close the current Spec Kit dogfooding implementation exercise at this foundation boundary without
+fabricating completion of its remaining editor observation. Continue directly against D1-D5 with
+focused implementation and validation; no further specify/plan/tasks cycle is required. Spec Kit
+remains the extension runtime, not a mandatory development ceremony for the remaining demo work.
+
+### Single Library Command
+
+Use the canonical name `/speckit-skill-library` with deterministic argument parsing and a CLI-style
+command tree. The following is the selected interface direction, not a claim that commands exist:
+
+```text
+/speckit-skill-library
+/speckit-skill-library search architecture
+/speckit-skill-library architecture
+/speckit-skill-library install patterns-monolith-modular
+/speckit-skill-library install patterns-monolith-modular --version 1.0.0
+/speckit-skill-library list --installed
+/speckit-skill-library load patterns-monolith-modular <request>
+```
+
+No arguments show available operations. An exact bare skill ID shows its details and installation or
+loading choices; a non-command query searches IDs, names, descriptions and facets/tags. Search is
+case-insensitive, returns selectable matches and never installs a guessed match. For example,
+`architecture` must find `patterns-monolith-modular` through its declared facet. An unknown skill
+returns a clear not-found message, such as "Sorry, we can't find that skill", with no mutation.
+Search/discovery and install/load are distinct actions even when a short-form query is convenient.
+
+Installation defaults to the catalog's advertised current release; `--latest` may express that
+explicitly and `--version X.Y.Z` selects an exact available release. Resolve either choice to one
+exact version/digest before preview and approval; never reinterpret latest during apply. Reject
+conflicting version options or unavailable versions. Exact-version selection is not a persistent
+hold: persistent pins and their effect on future upgrades are deferred.
+
+Show the selected skill's required closure and explicitly offer optional additions. Require reviewed
+approval before installation; searching or choosing a match alone is not write consent. The same
+command loads installed canonical guidance and relevant resources without modifying files or silently
+installing missing skills. Payload extensions remain independently versioned and registered with
+Spec Kit, but the target adapter must stop generating per-skill public load commands. The library
+entry point replaces that command proliferation; these adapter/verifier changes are follow-on work.
+
+Pinned Spec Kit 1.2.3 already supports arguments in Copilot skills-mode and catalog search/current or
+exact-version lookup. Its `specify extension update <id>` updates one extension; omitting the ID checks
+all installed extensions and prompts before updating. These are inspected upstream capabilities, not
+our implemented upgrade contract. Reuse compatible upstream primitives when future upgrades are
+scoped, but first verify dependency constraints, local-edit protection and approval behavior. Do not
+advertise or dispatch `upgrade-all` in this demo merely because the upstream command exists.
 
 ### Canonical Sources and Selection
 
@@ -91,9 +186,9 @@ The user selected one YAML sidecar per skill as the storage
 strategy, replacing the earlier embedded JSON `## Skill Dependencies` proposal.
 A central index may reference authoritative records but must not repeat dependency declarations.
 The bounded metadata, local version-preparation, committed inventory-preview and deterministic local
-archive slices are implemented; ordinary Markdown links do not become graph edges. Installation,
-extension-loader integration and publication remain unimplemented. Local inventory and archive evidence
-are not immutable release records or rights approval.
+archive slices, extension adaptation and bounded workspace installation are implemented; ordinary
+Markdown links do not become graph edges. Publication remains deferred. Local inventory and archive
+evidence are not immutable release records or rights approval.
 
 ### Metadata Contract
 
@@ -118,7 +213,7 @@ as recorded under [Handover](#handover).
 | Repository `license`, `notices` | Declare known repository terms once: currently `license: MIT` and `notices: [LICENSE]`. License is required; notices are optional. These defaults neither infer nor relicense third-party content and do not establish redistribution rights. |
 | Component `license`, `notices` | Optional genuine license override and additional root-relative notice paths. Component notices are additive to shared defaults, never replacements; inherited paths must not be repeated. A license override does not remove shared notices. |
 | `required` | Component edges each contain `id` and exact `version`; every selected component brings its required transitive closure. |
-| `optional` | Edges contain `id`, exact `version`, `selectionKey` and a succinct `reason` for the opt-in prompt. Preview includes their required closure only when explicitly selected. Archive builds reject optional selections and exclude optional-only payloads; a future installer offers separate artifacts. |
+| `optional` | Edges contain `id`, exact `version`, `selectionKey` and a succinct `reason` for the opt-in prompt. Preview includes their required closure only when explicitly selected. Archive builds reject optional selections and exclude optional-only payloads; the workspace installer selects separate required-only artifacts. |
 | `externalFiles` | Explicit required external repository files contain `path`, `kind` (`instruction` or `notice`) and `loadingPurpose`. Internal skill-directory content is implicit; there is no `resources` field. |
 | `tooling` | Entries contain `id`, `versionRequirement`, `scope` and `required`. Scope is `build`, `authoring` or `consumer`; version grammar is only exact `X.Y.Z` or `>=X.Y.Z`, not general semver ranges. Advisory prerequisites are not payloads and never trigger installation. |
 
@@ -167,8 +262,9 @@ source commits, closure or resolved-version records. The entrypoint and source f
 native discovery; packaging derives repository identity and revision from verified committed inputs.
 Those facts belong in generated immutable provenance/release records; installed ownership, versions, hashes and recovery
 state belong in the consumer inventory. Do not duplicate schema identity in a `schemaVersion` field.
-Repository-local versus user-profile installation and inventory placement remain open decisions that
-block installer implementation, not this metadata design.
+The bounded installer uses repository-local `.specify/extensions` and Spec Kit's own registry, with
+separate approval/operation evidence under `.specify/skill-library-install`. Profile installation is
+deferred rather than an unresolved prerequisite for this implementation.
 
 Evaluate [Agent Plugins 1.0.0](https://agent-plugins.org/specification) as an alternative or additional
 generated output from that source. Its plugin manifest is not interchangeable with Spec Kit's
@@ -187,7 +283,7 @@ filters, hooks and advisory tooling remain inert; committed ignore rules determi
 Success is emitted only after temporary inspection cleanup, and local edits are excluded.
 
 This tooling remains owned by `skill-library`, not a second resolver under `.scripts/spec-kit/`.
-Local archive building reuses its required-only inventory; future consumer selection must also reuse
+Local archive building reuses its required-only inventory; workspace consumer selection also reuses
 the authoritative graph contract and resolution rules. Resource prerequisites must not stop at an
 instruction boundary. Deduplicate identical resolved nodes.
 Missing selected content, cycles, version conflicts, traversal, symlink
@@ -239,7 +335,8 @@ installation require their own contracts and observed acceptance.
 
 ### PR-Based Component Releases
 
-Local version preparation is implemented; the planned PR/publication flow publishes only after merge:
+Local version preparation is implemented; CI integration is required for D3 and remains pending.
+The planned flow separates reviewed version preparation from post-merge artifact publication:
 
 1. The [skill-library workflow](../.github/skills/skill-library/SKILL.md#version-preparation) owns
   version preparation through its [local PowerShell writer](../.github/skills/skill-library/scripts/Invoke-VersionPreparation.ps1).
@@ -263,7 +360,9 @@ Local version preparation is implemented; the planned PR/publication flow publis
 3. Compute a complete preview of baseline/target versions, reasons, paired own-version/exact-pin
   edits and matching immutable `<component-id>/X.Y.Z` tag names before writing. Require explicit apply
   approval with `-Apply -ReviewedFingerprint`, then recompute and write the consistent preparation for
-  PR review. Unpublished IDs need explicit bootstrap acknowledgement and retain their authored initial
+  PR review. CI must detect affected skills and generate or validate this complete reviewed preparation,
+  including a one-skill change, a multi-skill change and unchanged-input reruns; repository-level
+  versioning is not a substitute. Unpublished IDs need explicit bootstrap acknowledgement and retain their authored initial
   version. Every affected released ID needs an explicit impact decision, including reverse consumers.
   For example, if a PR edits skills A
   and B and A depends on B, A's metadata must
@@ -313,54 +412,55 @@ Each transition must identify the old ID and applicable exact historical version
 explicit version transition, reason/type (rename versus replacement), and compatibility/breaking action.
 A stable-ID source-path change needs no ID migration, but release provenance and the installed inventory
 must still support safe path replacement. Record explicit chains rather than guessing intermediate
-identities. Catalog serialization, storage paths and the installed-inventory schema remain undecided;
-this contract adds no fields to authored sidecars or an upstream catalog schema.
+identities. Migration-aware catalogs and replacement inventory remain deferred; the first-install-only
+workspace tool does not implement these transitions. This contract adds no fields to authored sidecars
+or an upstream catalog schema and does not block the bounded demo.
 
 ### Dependency-Aware Installation
 
-The user has chosen a namespaced custom command as the installation direction, not accepted its
-runtime implementation or this ADR. A custom Spec Kit extension would declare an agent/chat command
-that invokes a deterministic packaged PowerShell installer. Proposed example:
-`/speckit-library-install containers-docker-compose`; the final rendered name depends on actual registration.
-This is not a new terminal `specify` subcommand, a core-command override or an automatic install hook.
-Pinned Spec Kit `1.2.3` source provides integration evidence through
-[`register_commands_for_agent` and the manifest validator for `provides.scripts`](https://github.com/github/spec-kit/blob/5ea8b1cf0a38699340a38e00d02770308997d8c0/src/specify_cli/extensions/__init__.py)
-and [agent registration layouts](https://github.com/github/spec-kit/blob/5ea8b1cf0a38699340a38e00d02770308997d8c0/src/specify_cli/agents.py),
-not proof that this proposed command is registered or runs successfully.
+The [workspace entry point](../.github/skills/skill-library/scripts/Invoke-WorkspaceInstall.ps1)
+accepts one native root, explicit active optional keys, existing local catalogs/ZIPs and a compatible
+initialized Copilot skills-mode consumer. It reuses the authoritative graph, freezes one source commit
+and verifies a separate no-option required-only artifact for every selected extension. The root is
+first, distinct optional target IDs follow in ordinal order, and the bound is sixteen extensions.
+Overlapping resources remain complete independent copies; declining an offer opens no declined ZIP.
 
-Read and validate metadata and the trusted catalog snapshot before payload mutation. For upgrades,
-resolve migration history from the installed exact identity/version before selecting the latest
-allowed release; never cross an unapproved major. Reject ambiguous transitions, missing targets,
-cycles and any installed version with no supported transition. Resolve selected roots, migrated
-dependent references and required transitive dependencies into an exact-version, integrity-checked
-plan using the shared graph contract above. Automatic resolution is not automatic approval.
-Related optional skills require
-explicit opt-in; `containers-devcontainer` is illustrative, not an asserted dependency of
-`containers-docker-compose`.
-Preview deprecation and proposed replacement, complete roots/dependency/optional selections, version
-transitions, managed target paths, proposed deletions and conflicts, including an already-installed
-destination. Require explicit approval, especially for major changes, then stage and validate verified
-replacement payloads before writing installation targets.
+Preview is consumer-read-only. Apply recomputes the original inputs and requires the exact reviewed
+fingerprint before reserving private evidence. A fresh isolated Python child passes the same verified
+open archive stream to pinned Spec Kit 1.2.3 `ExtensionManager.install_from_archive`, with literal
+expected identity/version, priority 10 and force false. There is no custom production extractor,
+download, provisioning, core-command override or automatic installation hook.
 
-The proposed install inventory records exact distribution ID/version, installed native names, managed
-paths/hashes, ownership and source catalog provenance. Preserve local edits, shared ownership and
-unselected optionals. Retire only verified unchanged, owned old files after replacement staging and
-validation; shared files must not be deleted while another owner needs them. Reject concurrent mutation
-and recheck target state before writes. Failed or interrupted installs must retain a recoverable
-inventory for deliberate recovery/rollback without discarding local edits; staging does not imply
-atomic multi-file installation. Installation targets, inventory location/schema and concrete recovery
-mechanics remain design decisions and acceptance work, not guarantees of an existing installer.
+Spec Kit owns payloads, generated loading commands and registration. The operation receipt is separate
+approval/verification evidence, not another extension registry. Exact bytes, modes, notices, rendered
+commands and registry/configuration additions are checked after each call. Revalidation between steps
+protects earlier verified content and later absent targets. Existing same-version installations,
+local edits, conflicting commands and unresolved operations refuse without adoption or replacement.
+
+Stop on the first failure or cancellation, retain earlier Verified results and report Failed, Unknown
+and Pending entries accurately. Preserve locks, receipts, scratch and partial paths for deliberate
+manual reconciliation; do not retry an uncertain operation. Stable trusted inputs and exclusive use
+are required. This is not a hostile-writer sandbox, atomic transaction or power-loss guarantee.
+
+The per-extension loading commands are implemented pilot interfaces, not the selected demo interface.
+The shared library command must expose this foundation through a packaged backend and add discovery,
+version selection and installed-guidance routing. Its change to command generation/verification needs
+focused regression and fresh consumer evidence. Upgrade selection, migration chains, major-version
+approval and replacement/deletion policies remain outside this first-install foundation.
 
 ### Resource-Complete Generated Extensions
 
-For a future extension-specific output, generate a root `extension.yml`, a thin declared command,
+The implemented [extension adapter](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
+currently generates a root `extension.yml`, a thin per-extension declared command,
 the selected canonical sources beneath
 `resources/library/<original-repository-relative-path>`, a dependency snapshot and applicable
 license/notice material. Preserve source-relative layout and validate links within the selected
 closure. Include required references, examples, assets, scripts and instructions, not only `SKILL.md`.
-Do not execute included scripts merely to package them.
+Do not execute included scripts merely to package them. For the selected demo, revise this adapter
+and its exact verifier together so payload extensions do not each create a public command; the
+bootstrap library extension owns the single public entry point and installed-resource routing.
 
-The wrapper would request relevant resources on demand, not inline the library. Copied instructions
+The wrapper requests relevant resources on demand, not inline the library. Copied instructions
 under `.specify/` do not acquire native `applyTo` activation. Original native files retain their
 frontmatter and native route. Installation size, discovery metadata, loaded bodies and context
 cost are different measures; selective-loading or token-saving claims require observed evidence.
@@ -434,10 +534,15 @@ Observed preparation is distinct from future acceptance:
   checks and 28 previously approved automated structural checks. On 2026-10-27 the owner reported
   testing the skills successfully in another non-Dev-Container session; this is owner-reported native
   acceptance, not agent-observed discovery/invocation or packaged-route validation.
-* [ ] Settle installation targets, inventory/recovery contract and the first distributable pilot
-  closure; accept the remaining distribution decisions separately from bounded implementation progress.
-* [ ] Verify actual custom command registration and rendered name in the pinned Copilot integration,
-  invoking the packaged installer without overriding core commands or using automatic install hooks.
+* [x] Settle bounded workspace targets, runtime-owned registration and separate recovery evidence;
+  select the architecture root/optional pair for local demonstration. This is not redistribution clearance.
+* [x] Verify generated custom loading command registration and owner-reported invocation in the completed
+  extension pilot. Current installer-built peer invocation is recorded separately in feature 004.
+* [ ] D4: package and install the single `skill-library` extension and observe native discovery of
+  `/speckit-skill-library`; the current PowerShell installer is its foundation, not this deliverable.
+* [ ] D5: implement shared discovery/install/load arguments, latest/default and exact-version selection,
+  not-found behavior and optional consent; install multiple payload extensions without per-skill public
+  commands and observe actual installed-only guidance reads through the shared entry point.
 * [x] Demonstrate required transitive selection, explicit nested optional opt-in, shared ownership and
   notice provenance in a read-only committed inventory. The [validation guide](../specs/001-packaging-inventory-preview/quickstart.md#observed-checkpoints)
   records 163 passing focused tests (76 metadata, 38 preparation, 49 inventory), four passing owning-skill
@@ -451,15 +556,21 @@ Observed preparation is distinct from future acceptance:
   Python tooling stays in the dev container without Windows host provisioning. Native Windows
   behavior remains unverified; the waiver is not a test pass or support claim. The [feature tasks](../specs/001-packaging-inventory-preview/tasks.md)
   close with 39 completed tasks, one permanently skipped and none pending.
-* [ ] Demonstrate the packaged installer's resolved plan and separately approved payload mutation;
-  a successful read-only inventory does not establish installation behavior.
-* [ ] Verify negative resolver cases, including cycles, version/integrity and path conflicts, plus
-  install inventory, concurrent mutation rejection and interrupted-install/local-edit recovery.
+* [x] Demonstrate the workspace installer's resolved plan and approved real root/optional mutation;
+  both exact-version extensions pass complete post-install verification.
+* [x] Exercise negative resolver, integrity, local-edit, drift, conflict and interruption cases through
+  synthetic contracts and real retained failure/child-loss consumers. No automatic recovery or
+  hostile-writer/concurrent-install guarantee is claimed.
 * [x] Implement the skill-owned preview/explicit-apply version writer; verify numeric baselines,
   impact decisions, paired own-version/required and optional pin propagation, shared inputs, converging
   dependency graphs and once-per-preparation idempotent reruns through focused synthetic fixtures.
   No real component metadata, tags or releases were mutated during implementation.
-* [ ] Verify future renamed-ID upgrades and same-ID source/native-path changes, exact historical-version
+* [ ] D3: integrate affected-skill version preparation and exact versioned artifacts into CI; observe
+  single/multi-skill changes, reverse-dependency edits, unaffected skills and idempotent reruns on actual
+  workflow runs. Bootstrap versions alone and repository GitVersion do not satisfy this gate.
+* [ ] D1-D2: show the consolidated/prefixed repository and metadata for every demonstrated skill as part
+  of the final demo, rather than substituting earlier rename/schema checks for the presentation.
+* [ ] Deferred: verify renamed-ID upgrades and same-ID source/native-path changes, exact historical-version
   scope, explicit chains, cycles/ambiguity, missing or unsupported targets, unapproved major rejection,
   already-installed destination collisions, dependent references and repeated-run idempotence.
   Demonstrate local-edit/shared-ownership/unselected-optional protection and interruption/rollback
@@ -487,24 +598,59 @@ Observed preparation is distinct from future acceptance:
   digests, including committed notices and external instructions but no optional-only payload.
   The [pilot evidence](../specs/002-deterministic-skill-archives/quickstart.md#final-gates-and-pilot)
   binds its original source/builder tuple; later helper edits do not relabel those artifacts.
-* [ ] Complete inventory-bound rights/privacy gates and verify any future extension-specific archive
-  layout against its actual loader. Native ZIP reproducibility is not redistribution approval,
-  extension compatibility or installation acceptance.
-* [ ] Demonstrate authorized published `1.0.0` and `1.1.0` exact install/upgrade/history, native
-  compatibility and observed resource loading in representative Copilot sessions.
+* [x] Verify the extension-specific layout through real runtime installation and the completed pilot's
+  actual loading command; keep current peer editor acceptance distinct from historical evidence.
+* [ ] Before demo artifact distribution: complete exact-inventory rights/privacy clearance and retain
+  required notices for the chosen delivery. Signing and generalized public publication are deferred;
+  local integrity checks do not grant publication approval.
+* [ ] Deferred: demonstrate install/upgrade across published `1.0.0` and `1.1.0` releases, persistent
+  pins and `upgrade-all`. Independent versioned demo packages do not establish upgrade support.
 
-Container preparation, inventory authoring and verified local ZIP builds do not demonstrate
-generated-extension runtime compatibility, releases, legal clearance, installation or context savings.
+Container preparation and local ZIP checks alone do not demonstrate generated-extension runtime
+compatibility. The completed extension pilot and current real installer record provide their own
+bounded evidence; neither demonstrates releases, legal clearance, upgrades or context savings.
 Local link/structure checks and editor diagnostics are not configured CI lint; the archive feature's
 configured scoped lint and approved runtime evidence are recorded separately.
 
-Later shared automation, Bash/Python parity, glossary/crosswalk/demo material and a minimal
-fresh-library scaffold remain separate planned work. Extract automation after the local contract
-and two-version demonstration work; bootstrap a fresh library only after here-adoption and dogfood.
+Shared CI delivery and the bootstrap library extension are required demo work. Broader automation
+extraction, Bash/Python parity and a fresh-library scaffold remain deferred; no two-version upgrade
+demonstration or additional dogfooding cycle is a prerequisite for implementing D1-D5.
 
 ## Handover
 
-### Current Progress (2026-10-28)
+### Current Progress (2026-10-29)
+
+Feature 003 is complete for its local extension pilot, including real exact-version installation and
+owner-confirmed native command invocation/installed-only guidance reads. Feature 004 implements the
+workspace-only installer and has installed real `patterns-ports-and-adapters` and optional
+`patterns-monolith-modular`, both `1.0.0`, from commit `71fab57257908a6b5b7a23057479c5f201699105`.
+Both are Verified; the root ZIP is unchanged by optional selection and all sixteen canonical payload
+files match their separate manifests. The two shared sources remain independent physical copies.
+
+Real acceptance exposed and corrected three synthetic assumptions: stock initialization/manifest
+handling, full source-manifest fields and Spec Kit's private `0700` extension-root mode. A failed real
+consumer is retained, not repaired or reused. A later real child-loss case retains the Verified root,
+Unknown peer and blocked retry after durable peer intent. Successful-run syscall tracing observes
+extraction beneath private scratch, no runtime-child writes outside the consumer and no bytecode or
+internet calls. Source and inspected Spec Kit profile state remain unchanged.
+
+The [current validation record](../specs/004-bounded-workspace-installer/quickstart.md#real-runtime-demo)
+owns artifact identities, final regression and the new consumer's editor acceptance. Its unperformed
+gates remain explicit: the foundation ledger is 53/54 complete, with T053 pending. Preserve that
+historical result when closing the current work for PR review; do not mark it passed or reuse it as
+the future shared-command acceptance. The owner authorized preparing and merging the foundation PR
+on 2026-10-29, conditional on required current-head checks; artifact publication is a separate gate.
+
+Foundation integration/regression passed all 366 tests with no failures or skipped cases before
+pre-PR review. Later rescue-state preservation, approval-size and aggregate-runner repairs passed
+10 focused cases; that is not a full updated regression. The validation record distinguishes the
+local baseline from current-head CI. Scoped offline lint, local links and editor diagnostics passed.
+The next delivery is the shared
+library command, bootstrap and CI skill versioning described by D1-D5, not completion of deferred
+upgrade capabilities. Merge readiness for the current PR is independent of demo completion and must
+also satisfy its actual remote checks and security/quality gates.
+
+### Historical Archive Handover (2026-10-28)
 
 The deterministic local archive feature is implemented in this checkout; this progress records local
 implementation, not a published release. Feature 002 has completed specification, planning,
@@ -544,7 +690,7 @@ The completed exercise is distinct from generated-extension consumption and fres
 The inventory feature closed with its recorded native Windows limitation. At this handover,
 deterministic local archives were the proposed next increment, requiring a separate Spec Kit contract
 and implementation approval. Their later completion is recorded in
-[current progress](#current-progress-2026-10-28); installation and publication remain excluded.
+[historical archive handover](#historical-archive-handover-2026-10-28); installation and publication were excluded at that checkpoint.
 Keep one task authority for an active feature; no second HVE tracking plan was maintained for this
 Spec Kit exercise.
 
@@ -593,9 +739,14 @@ clearance and publishing remained pending; handover was neither ADR acceptance n
 
 ## Open Questions and Reconsideration
 
-* Should installed payloads be repository-local or user-profile, where will the ownership inventory
-  live, and what recovery contract will the revised plan validate?
-  Which further naming changes and generated output formats should the pilot use?
+* Choose the narrow artifact/catalog transport for D3-D5 and verify bootstrap backend/prerequisite
+  availability in the consumer. Generalized public hosting is not required, but a maintainer-only
+  temporary artifact path is not a reproducible installation experience.
+* Select the CI trigger and explicit impact-decision input while retaining reviewed version edits,
+  idempotence and post-merge immutable publication. The existing repository release workflow alone
+  does not implement component releases.
+* Reopen persistent pins, upgrades, migration, profile installs or broader publication only when
+  separately scoped. None is a reason to block the agreed shared-command and CI demo work.
 * Does a later pilot need a distinct newly authored skill in addition to the completed Spec Kit-authored
   inventory enhancement? The existing exercise validates local authoring, not a fresh-library scaffold
   or generated-extension consumption.
