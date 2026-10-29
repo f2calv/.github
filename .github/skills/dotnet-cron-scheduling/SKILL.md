@@ -62,7 +62,9 @@ minute hour day-of-month month day-of-week
 Use `CronExpression.Parse(expression)` for the standard format. A six-field expression requires
 explicit `CronFormat.IncludeSeconds`; never guess the dialect from a field count.
 Validate configured expressions at startup with the same parser/format used at runtime.
-Define behavior when an expression has no future occurrence.
+Define behavior when an expression has no future occurrence. For a required recurring worker,
+reject syntactically valid but impossible calendars at startup rather than silently leaving its
+schedule inactive.
 
 Do not assume Unix, Quartz, cloud scheduler and Cronos expressions are interchangeable.
 Verify day-of-week numbering, simultaneous day-of-month/day-of-week constraints and supported
