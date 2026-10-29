@@ -7,6 +7,10 @@ on:
         description: Runner label
         type: string
         default: ubuntu-24.04
+      spec-kit-source:
+        description: Pinned Spec Kit source for workspace tests
+        type: string
+        default: git+https://github.com/github/spec-kit.git@5ea8b1cf0a38699340a38e00d02770308997d8c0
 
 permissions: {}
 
@@ -34,6 +38,11 @@ jobs:
 
       - name: python -m pip install -r skill-library requirements
         run: 'python -m pip install --require-hashes --only-binary :all: -r .github/skills/skill-library/scripts/requirements.txt'
+
+      - name: python -m pip install pinned Spec Kit
+        env:
+          SPEC_KIT_SOURCE: ${{ inputs.spec-kit-source }}
+        run: python -m pip install "$SPEC_KIT_SOURCE"
 
       - name: verify local fixture tools
         shell: pwsh
