@@ -193,6 +193,8 @@ Lease loss, failure and host shutdown must all leave the active path.
 
 ### Coordinated Schedules and Delivery
 
+- Use [cron scheduling](../dotnet-cron-scheduling/SKILL.md) for expression dialects, UTC cursors,
+  startup/manual triggers, coalescing and reusable timing mechanics; keep ownership here.
 - For several independent long-lived schedules sharing one lease, defer starting them until the
   ownership callback is invoked. `Task.WhenAll` alone does not cancel siblings when one faults.
   Prefer existing framework supervision where it fits: `Parallel.ForEachAsync` with one execution

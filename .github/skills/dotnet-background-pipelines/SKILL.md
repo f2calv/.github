@@ -23,6 +23,8 @@ Treat a queue as an admission, ownership and lifecycle contract, not just a coll
   [gRPC](../dotnet-grpc/SKILL.md) for remote streaming, transport liveness and RPC acknowledgements,
   [EF Core](../dotnet-efcore/SKILL.md) for transaction/outbox boundaries and
   [performance](../dotnet-performance/SKILL.md) only for measured hot paths.
+- Use [cron scheduling](../dotnet-cron-scheduling/SKILL.md) for periodic/startup reconciliation
+  and manual schedule triggers; a timer does not replace durable admission or delivery.
 - Official [Channels documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/channels)
   explains bounded modes and reader/writer APIs; verify the target runtime.
 
