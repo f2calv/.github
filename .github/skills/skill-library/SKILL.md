@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill metadata, preview committed inventories, preview or explicitly apply bounded workspace root/optional extensions, build deterministic required-only ZIPs, adapt a verified ZIP into a local Spec Kit extension/catalog pilot, and prepare component versions. Use for metadata, archive, extension-pilot or workspace-installer work. Linux Spec Kit 1.2.3 workspace apply has real-runtime validation; editor observations and publication retain separate gates.'
+description: 'Author and validate skill metadata, preview committed inventories, apply approved workspace root/optional extensions, build deterministic required-only ZIPs and Spec Kit packages, prepare component versions and drive CI component artifacts. Use for metadata, packaging, version preparation, CI delivery or workspace installation. Linux Spec Kit 1.2.3 apply has real-runtime validation; editor invocation, CI-run evidence and publication retain separate gates.'
 user-invocable: true
 ---
 
@@ -498,6 +498,47 @@ This is not a filesystem-wide transaction, durable crash journal or protection a
 replacement/noncooperating native writers. Do not edit inputs concurrently; interruption or storage
 failure can require manual recovery. Windows filesystem behavior still needs native-host verification.
 
+## CI Component Delivery
+
+The [delivery entry point](./scripts/Invoke-ComponentDelivery.ps1) reuses version preparation without
+changing source, tags or releases. Default execution returns `skill-component-delivery/1` with the
+complete preparation, `Ready`, `BuildReady`, source commit and fingerprint. Use the same explicit
+`-ImpactJson` and `-BootstrapId` decisions as preparation. `BuildReady` requires complete decisions and
+no outstanding metadata edits. Review and apply preparation separately, then commit it before building.
+
+```powershell
+./.github/skills/skill-library/scripts/Invoke-ComponentDelivery.ps1 `
+   -ImpactJson '{"example-skill":"minor","example-consumer":"patch"}' `
+   -PythonPath /path/to/python -Build -OutputDirectory /tmp/new-component-delivery
+```
+
+Build requires clean committed Linux source and a new output directory outside source/Git storage.
+Only components with proposed tags are packaged, independently of repository GitVersion. Each has a
+required-only native ZIP and `components/<id>/<version>/<id>-<version>.zip`, detached digest and catalog.
+`delivery.json` records the preparation and exact artifact results; it is build evidence, not publication.
+Source is rechecked through build completion. Failed builds retain partial output for inspection;
+never adopt or overwrite it. Unchanged unrelated components receive no new package or version.
+
+The bootstrap builds last and bundles newly built payload catalogs first. Supply explicit existing
+`-LibraryCatalogPath` releases for unchanged skills or older exact dependency pins. Those existing
+catalogs and sibling ZIPs pass the bootstrap adapter's ordinary digest checks and release-count bounds.
+
+The reusable [delivery workflow](../../workflows/_skills-library-delivery.yml) offers `prepare` and `build`
+modes with `impact-json` and JSON-array `bootstrap-ids`. It fetches full history, installs hash-locked
+prerequisites and uploads `skill-components`, including the preparation report even when building fails.
+An explicit `previous-delivery-run` can supply prior same-repository artifacts for unchanged releases;
+it never selects a latest run implicitly. Its GitHub permissions are read-only; it creates no source
+commit, tag, release or public catalog. Preparation edits still require separate review and commit.
+Dispatch the registered [CI entry point](../../workflows/ci.yml) at the reviewed feature ref with
+`skill-delivery=prepare` or `skill-delivery=build` to run only this job, without release tagging or
+the normal CI suite. The default `off` retains normal CI, and dispatch controls cannot disable
+pull-request or default-branch push checks. A new standalone workflow may not be dispatchable until
+it exists on the default branch; the existing entry point avoids merging merely to test packaging.
+Local synthetic checks cover single/multiple changes, both reverse edge types, unchanged components,
+repeat artifact digests, CLI execution and exact bootstrap bundling. These are not evidence of an
+actual Actions run. Request authorization before pushing or dispatching CI; editor invocation and
+publication remain separate acceptance gates.
+
 ## Planned Release Flow
 
 Version preparation and local archives above are implemented; PR creation and release publication remain
@@ -573,10 +614,12 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Recheck passive template validation and empty payload command registrations against the real runtime. Keep ZIP evidence separate from generic tool hashes so approval revalidation preserves single-open, same-stream installation.
 - Recheck execution Position, indexed registry/config predictions and receipt outcomes together when changing multi-extension evidence; artifact records already carry Position. Preserve complete overlap copies and self-test selected/declined/nested ZIP tripwires.
 - Allow hardlinked read-only installed prerequisites when capturing runtime identity; retain single-link ownership checks for managed consumer/evidence files. Keep byte/RECORD hashes and symlink checks in both cases.
-- Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations when loading parameterized scripts.
+- Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations, catalog inputs and CLI defaults when loading parameterized scripts.
 - Recheck descriptor-relative exclusive reservation, immediate ownership records, fault/race cases and scratch/finalization acknowledgments when changing Linux filesystem or process behavior; cleanup failures must never produce success.
 - Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
+- Keep CI delivery on the same preparation and archive/adapter paths. Exercise prepared committed builds, true dirty-source refusal, independently named artifacts, unchanged components, repeat digests and bootstrap-last catalog ordering; a workflow parse or synthetic run is not actual CI evidence.
+- Keep limited delivery dispatch separate from normal CI/release gates. Reusable delivery concurrency must have its own suffix because the caller's `github.workflow` value is inherited; matching keys can cancel the caller.
 - Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
 - Verify native discovery before deepening folders; keep catalog migration history and installer recovery aligned.
