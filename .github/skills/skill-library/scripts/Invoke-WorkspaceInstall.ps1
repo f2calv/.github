@@ -24,6 +24,12 @@ Absolute existing generated local catalog paths.
 Absolute existing directories containing selected prebuilt extension ZIPs.
 .PARAMETER PythonPath
 Absolute existing interpreter with PyYAML 6.0.3 and Spec Kit CLI 1.2.3.
+.PARAMETER PackageIndexPath
+Explicit existing bundled library index; selects packaged evidence instead of a source repository.
+.PARAMETER PackageVersion
+Exact packaged root version; omitted resolves the index's advertised current release during preview.
+.PARAMETER LibraryRequest
+Read one bounded typed packaged-operation JSON request from standard input; requires Json output.
 .PARAMETER Apply
 Explicitly install the selected roots in order after a fresh ready preview and matching approval.
 .PARAMETER ReviewedFingerprint
@@ -41,7 +47,8 @@ param(
     [string]$RepoRoot, [string]$SourceRevision = 'HEAD', [string]$SkillName,
     [string[]]$OptionalSelection = @(), [string]$WorkspacePath, [string[]]$CatalogPath = @(),
     [string[]]$ArtifactDirectory = @(), [string]$PythonPath, [switch]$Apply,
-    [string]$ReviewedFingerprint, [switch]$Json
+    [string]$ReviewedFingerprint, [switch]$Json, [string]$PackageIndexPath, [string]$PackageVersion,
+    [switch]$LibraryRequest
 )
 
 #region Functions
@@ -128,24 +135,44 @@ function Get-WorkspaceCommittedSelection {
     Get-SkillCommittedSelection @Inputs
 }
 
-function Get-WorkspaceConsumerSnapshot {
-    param([string]$RepoRoot, [string]$WorkspacePath, [string]$PythonPath, [string]$RootId = '', [string[]]$RootIds = @(), [object[]]$IntendedWrites = @())
-    Invoke-WorkspaceBridge -PythonPath $PythonPath -Request @{ Action = 'probe'; RepoRoot = $RepoRoot; WorkspacePath = $WorkspacePath; RootId = $RootId; RootIds = $RootIds; AdditionalPaths = @($IntendedWrites | ForEach-Object Path) }
+function Get-WorkspacePackagedSelection {
+    param([string]$PackageIndexPath, [string]$ArtifactDirectory, [string]$SkillName, [string]$PackageVersion, [string[]]$OptionalSelection, [string]$PythonPath)
+    . (Join-Path $PSScriptRoot 'Git-Process.ps1')
+    $Arguments = @('-I', '-B', (Join-Path $PSScriptRoot 'Invoke-Library.py'), '--catalog', $PackageIndexPath, '--artifacts', $ArtifactDirectory, '--package-selection', '--', 'install', $SkillName)
+    if ($PackageVersion) { $Arguments += @('--version', $PackageVersion) }
+    foreach ($Key in $OptionalSelection) { $Arguments += @('--optional', $Key) }
+    $Process = Invoke-LibraryProcess -Executable $PythonPath -Arguments $Arguments
+    if ($Process.ExitCode -ne 0 -or $Process.Error) { throw 'Packaged selection did not return a clean verified response.' }
+    $Selection = [Text.UTF8Encoding]::new($false, $true).GetString($Process.Bytes) | ConvertFrom-Json -Depth 100
+    if ($Selection.SourceKind -cne 'packaged') { throw 'Packaged selection protocol mismatch.' }
+    & {
+        param($PackagedSelection, $Schema)
+        . (Join-Path $PSScriptRoot 'Invoke-Validation.ps1')
+        $Catalog = @{}
+        foreach ($Component in $PackagedSelection.ComponentMetadata) {
+            $Json = $Component.Metadata | ConvertTo-Json -Depth 64 -Compress
+            if (-not (Test-Json -Json $Json -SchemaFile $Schema -ErrorAction SilentlyContinue)) { throw 'Packaged metadata schema validation failed.' }
+            $Record = $Json | ConvertFrom-Json -AsHashtable -Depth 64
+            foreach ($Collection in @('required', 'optional')) {
+                if (-not $Record.ContainsKey($Collection)) { $Record[$Collection] = @() }
+            }
+            $Catalog[$Record.id] = $Record
+        }
+        $Available = $PackagedSelection.AvailableVersions | ConvertTo-Json -Depth 64 -Compress | ConvertFrom-Json -AsHashtable -Depth 64
+        $Graph = Resolve-SkillGraph -Catalog $Catalog -RootId @($PackagedSelection.Root.Id) -OptionalSelection @($PackagedSelection.OptionalSelection) -AvailableVersions $Available
+        if (@(Compare-Object @($Graph.SelectedIds | Sort-Object) @($Catalog.Keys | Sort-Object) -CaseSensitive).Count) { throw 'Packaged active closure does not match verified members.' }
+        foreach ($Inventory in $PackagedSelection.RequiredInventories) {
+            $Root = $PackagedSelection.ExtensionRoots[$Inventory.Position]
+            $Required = Resolve-SkillGraph -Catalog $Catalog -RootId @($Root.Id) -AvailableVersions $Available
+            if (@(Compare-Object @($Required.SelectedIds | Sort-Object) @($Inventory.Inventory.Components.Id | Sort-Object) -CaseSensitive).Count) { throw 'Packaged required-only closure does not match its manifest.' }
+        }
+    } $Selection (Join-Path $PSScriptRoot '../skill-metadata.schema.json')
+    return $Selection
 }
 
-function Get-WorkspaceExpectedLoader {
-    param([object]$Selection)
-    $Issues = $null
-    $Ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Invoke-Extension.ps1'), [ref]$null, [ref]$Issues)
-    if ($Issues.Count) { throw 'Trusted loader generator did not parse.' }
-    $Assignments = @($Ast.FindAll({ param($Node) $Node -is [Management.Automation.Language.AssignmentStatementAst] -and $Node.Left.Extent.Text -ceq '$Body' }, $true))
-    $Strings = @($Assignments[0].Right.FindAll({ param($Node) $Node -is [Management.Automation.Language.StringConstantExpressionAst] }, $true))
-    if ($Assignments.Count -lt 1 -or $Strings.Count -ne 1) { throw 'Trusted constant loader template changed; review its effects.' }
-    $Description = "Load the packaged $($Selection.Root.Id) skill and its required resources."
-    $Instructions = @($Selection.Payload | Where-Object {
-        $_.SourcePath -like '*.instructions.md' -or @($_.Reasons | Where-Object Kind -CEQ 'external-instruction').Count -gt 0
-    } | ForEach-Object { "- ``.specify/extensions/$($Selection.Root.Id)/resources/library/$($_.SourcePath)``" }) -join "`n"
-    return $Strings[0].Value.Replace('__DESCRIPTION__', ($Description | ConvertTo-Json -Compress)).Replace('__ID__', $Selection.Root.Id).Replace('__FOLDER__', $Selection.Root.Folder).Replace('__INSTRUCTIONS__', $Instructions).TrimEnd() + "`n"
+function Get-WorkspaceConsumerSnapshot {
+    param([string]$RepoRoot, [string]$WorkspacePath, [string]$PythonPath, [string]$RootId = '', [string[]]$RootIds = @(), [object[]]$IntendedWrites = @(), [string]$SourceKind = 'committed')
+    Invoke-WorkspaceBridge -PythonPath $PythonPath -Request @{ Action = 'probe'; RepoRoot = $RepoRoot; WorkspacePath = $WorkspacePath; RootId = $RootId; RootIds = $RootIds; AdditionalPaths = @($IntendedWrites | ForEach-Object Path); SourceKind = $SourceKind }
 }
 
 function Get-WorkspaceIntendedWrites {
@@ -153,7 +180,6 @@ function Get-WorkspaceIntendedWrites {
     $Writes = [Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
     $Files = @(
         foreach ($Member in $Extension.Members) { [pscustomobject]@{ Path = ".specify/extensions/$($Extension.RootId)/$($Member.MemberPath)"; Effect = 'create-payload'; Mode = $Member.Mode; Sha256 = $Member.Sha256 } }
-        [pscustomobject]@{ Path = $Extension.Command.Path; Effect = 'create-command'; Mode = '100644'; Sha256 = $Extension.Command.Sha256 }
         [pscustomobject]@{ Path = '.specify/extensions/.registry'; Effect = 'register-extension'; Mode = 'preserve-or-0644'; Sha256 = $null }
         [pscustomobject]@{ Path = '.specify/extensions.yml'; Effect = 'add-installed-extension-preserve-empty-hooks'; Mode = 'preserve-or-0644'; Sha256 = $null }
         [pscustomobject]@{ Path = '.specify/skill-library-install/owner.json'; Effect = 'create-if-absent-owner'; Mode = '0600'; Sha256 = $null }
@@ -237,7 +263,8 @@ function Write-WorkspaceOwnedFile {
 function New-WorkspaceOperationEvidence {
     param([object]$Context)
     Assert-WorkspaceApplyContext $Context
-    $Probe = Get-WorkspaceConsumerSnapshot -RepoRoot $Context.RepoRoot -WorkspacePath $Context.WorkspacePath -PythonPath $Context.PythonPath
+    $SourceKind = if ($Context.PSObject.Properties.Name -contains 'SourceKind') { $Context.SourceKind } else { 'committed' }
+    $Probe = Get-WorkspaceConsumerSnapshot -RepoRoot $Context.RepoRoot -WorkspacePath $Context.WorkspacePath -PythonPath $Context.PythonPath -SourceKind $SourceKind
     if ($Probe.Status -cne 'Inspected') { throw 'Unresolved or unsafe workspace state blocks reservation.' }
     if ($Context.PSObject.Properties.Name -notcontains 'OwnedFiles') {
         $Context | Add-Member -NotePropertyName OwnedFiles -NotePropertyValue ([Collections.Generic.Dictionary[string,string]]::new([StringComparer]::Ordinal))
@@ -358,6 +385,7 @@ function Invoke-WorkspaceRootApply {
     $Context = [pscustomobject]@{
         Mode = 'apply'; ApprovedInputs = $Approved; OperationId = $Approved.Fingerprint
         WorkspacePath = $Approved.ConsumerSnapshot.WorkspacePath; RepoRoot = $Approved.Selection.SourceRoot; PythonPath = $PythonPath
+        SourceKind = $(if ($Approved.Selection.PSObject.Properties.Name -contains 'SourceKind') { $Approved.Selection.SourceKind } else { 'committed' })
     }
     $Extensions = @($Approved.Extensions | ForEach-Object { [pscustomobject]@{ RootId = $_.RootId; State = 'Pending' } })
     $State = [pscustomobject]@{ Extensions = $Extensions; ReceiptHash = $null; Cancelled = $false }
@@ -373,6 +401,7 @@ function Invoke-WorkspaceRootApply {
         $Request = @{
             Action = 'validate-reservation'; RepoRoot = $Context.RepoRoot; WorkspacePath = $Context.WorkspacePath
             OperationPath = $OperationPath; ApprovedInputs = $Approved; OwnedFiles = $Context.OwnedFiles; ExpectedStep = 'Prepared'
+            SourceKind = $Context.SourceKind
         }
         $ValidateStep = {
             param($Index, $Entries, $Observed)
@@ -382,15 +411,11 @@ function Invoke-WorkspaceRootApply {
         }
         $InstallStep = {
             param($Index)
-            $Inventory = $Approved.Selection.RequiredInventories[$Index]
-            $Root = $Approved.Selection.ExtensionRoots[$Index]
-            $LoaderSelection = [pscustomobject]@{ Root = $Root; Payload = @($Inventory.Payload) }
             $InstallRequest = @{} + $Request
             $InstallRequest.Mode = 'apply'
             $InstallRequest.Action = 'install-root'
             $InstallRequest.Contract = 'skill-workspace-install/1'
             $InstallRequest.ExpectedStep = 'Attempting'
-            $InstallRequest.ExpectedLoader = Get-WorkspaceExpectedLoader $LoaderSelection
             Invoke-WorkspaceBridge -PythonPath $PythonPath -Request $InstallRequest -ScratchPath (Join-Path $OperationPath 'scratch')
         }
         Invoke-WorkspaceOrderedApply -Context $Context -Result $Result -State $State -ValidateStep $ValidateStep -InstallStep $InstallStep
@@ -406,7 +431,6 @@ function Invoke-WorkspaceRootApply {
             $Result.RecoveryLocations = @($Context.CreatedPaths.ToArray()) + @($OperationPath, (Join-Path $Context.WorkspacePath '.specify/skill-library-install/lock')) + @(
                 foreach ($Extension in $Approved.Extensions) {
                     Join-Path $Context.WorkspacePath ".specify/extensions/$($Extension.RootId)"
-                    Join-Path $Context.WorkspacePath $Extension.Command.Path
                 }
             )
             try {
@@ -449,7 +473,8 @@ function Invoke-SkillWorkspaceInstall {
         [string]$SkillName, [string[]]$OptionalSelection = @(),
         [string]$WorkspacePath, [string[]]$CatalogPath = @(),
         [string[]]$ArtifactDirectory = @(), [string]$PythonPath,
-        [switch]$Apply, [string]$ReviewedFingerprint, [switch]$Json
+        [switch]$Apply, [string]$ReviewedFingerprint, [switch]$Json,
+        [string]$PackageIndexPath, [string]$PackageVersion
     )
     $ErrorActionPreference = 'Stop'
     Set-StrictMode -Version 3.0
@@ -459,10 +484,16 @@ function Invoke-SkillWorkspaceInstall {
                 New-WorkspaceConflict ApprovalMismatch approval 'Supply the exact lowercase fingerprint from a ready preview.'
             )
         }
+        if ($PackageIndexPath -and $PackageVersion -cnotmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            return New-WorkspaceApplyResult -ReviewedFingerprint $ReviewedFingerprint -Blockers @(
+                New-WorkspaceConflict ApprovalMismatch version 'Apply requires the exact packaged root version resolved in the reviewed preview.'
+            )
+        }
         $PreviewArguments = @{
             RepoRoot = $RepoRoot; SourceRevision = $SourceRevision; SkillName = $SkillName; OptionalSelection = $OptionalSelection
             WorkspacePath = $WorkspacePath; CatalogPath = $CatalogPath
             ArtifactDirectory = $ArtifactDirectory; PythonPath = $PythonPath
+            PackageIndexPath = $PackageIndexPath; PackageVersion = $PackageVersion
         }
         $Approved = Invoke-SkillWorkspaceInstall @PreviewArguments
         if (-not $Approved.Ready) {
@@ -477,6 +508,17 @@ function Invoke-SkillWorkspaceInstall {
     }
     $Result = New-WorkspacePreview
     $Blockers = [Collections.Generic.List[object]]::new()
+    $Packaged = -not [string]::IsNullOrEmpty($PackageIndexPath)
+    if ($Packaged) {
+        try {
+            Assert-WorkspaceInputPath -Path $PackageIndexPath
+            $PackageRoot = [IO.Path]::GetDirectoryName($PackageIndexPath)
+            if (($RepoRoot -and $RepoRoot -cne $PackageRoot) -or ($CatalogPath.Count -and ($CatalogPath.Count -ne 1 -or $CatalogPath[0] -cne $PackageIndexPath)) -or $ArtifactDirectory.Count -ne 1) { throw 'Mixed provider inputs.' }
+            $RepoRoot = $PackageRoot
+            $CatalogPath = @($PackageIndexPath)
+        }
+        catch { $Blockers.Add((New-WorkspaceConflict Selection source 'Use one explicit packaged index and artifact directory without mixed repository or catalog inputs.')) }
+    }
     if ($PSBoundParameters.ContainsKey('ReviewedFingerprint')) { $Blockers.Add((New-WorkspaceConflict ApprovalMismatch preview 'A reviewed fingerprint is accepted only with a supported apply operation.')) }
     if (-not $IsLinux) { $Blockers.Add((New-WorkspaceConflict Prerequisite platform 'Linux is required.')) }
     foreach ($InputPath in @(@{ Path = $RepoRoot; Directory = $true; Code = 'Selection'; Scope = 'source' }, @{ Path = $WorkspacePath; Directory = $true; Code = 'Workspace'; Scope = 'consumer' }, @{ Path = $PythonPath; Directory = $false; Code = 'Prerequisite'; Scope = 'interpreter' })) {
@@ -494,7 +536,12 @@ function Invoke-SkillWorkspaceInstall {
                 if (-not $Seen.Add($Path)) { throw 'Duplicate input.' }
                 foreach ($Managed in @('.specify', '.github/skills')) {
                     $Prefix = Join-Path $WorkspacePath $Managed
-                    if ($Path -ceq $Prefix -or $Path.StartsWith("$Prefix/", [StringComparison]::Ordinal)) { throw 'Managed input.' }
+                    $LibraryRoot = Join-Path $WorkspacePath '.specify/extensions/skill/library'
+                    $OwnedPackageInput = $Packaged -and $RepoRoot -ceq $LibraryRoot -and (
+                        (-not $Group.Directory -and $Path -ceq (Join-Path $LibraryRoot 'catalog.json')) -or
+                        ($Group.Directory -and $Path -ceq (Join-Path $LibraryRoot 'packages'))
+                    )
+                    if (($Path -ceq $Prefix -or $Path.StartsWith("$Prefix/", [StringComparison]::Ordinal)) -and -not $OwnedPackageInput) { throw 'Managed input.' }
                 }
             }
             catch { $Blockers.Add((New-WorkspaceConflict $Group.Code inputs 'Use unique existing absolute unlinked inputs outside managed consumer trees.')) }
@@ -503,9 +550,14 @@ function Invoke-SkillWorkspaceInstall {
     $Selection = $null
     if (@($Blockers | Where-Object { $_.Scope -in @('source', 'root', 'interpreter') }).Count -eq 0) {
         try {
-            $Selection = Get-WorkspaceCommittedSelection -Inputs @{ RepoRoot = $RepoRoot; SourceRevision = $SourceRevision; SkillName = $SkillName; OptionalSelection = $OptionalSelection; PythonPath = $PythonPath }
+            $Selection = if ($Packaged) {
+                Get-WorkspacePackagedSelection -PackageIndexPath $PackageIndexPath -ArtifactDirectory $ArtifactDirectory[0] -SkillName $SkillName -PackageVersion $PackageVersion -OptionalSelection $OptionalSelection -PythonPath $PythonPath
+            }
+            else { Get-WorkspaceCommittedSelection -Inputs @{ RepoRoot = $RepoRoot; SourceRevision = $SourceRevision; SkillName = $SkillName; OptionalSelection = $OptionalSelection; PythonPath = $PythonPath } }
             $Tools = @($Selection.Tools)
-            foreach ($Relative in @('Invoke-InventoryPreview.ps1', 'Invoke-WorkspaceInstall.ps1', 'Invoke-SpecKitInstall.py', 'Invoke-Extension.ps1')) {
+            $WorkspaceTools = @('Invoke-WorkspaceInstall.ps1', 'Invoke-SpecKitInstall.py', 'Invoke-Extension.ps1', 'Git-Process.ps1')
+            if (-not $Packaged) { $WorkspaceTools += 'Invoke-InventoryPreview.ps1' }
+            foreach ($Relative in $WorkspaceTools) {
                 $Path = Join-Path $PSScriptRoot $Relative
                 Assert-WorkspaceInputPath $Path
                 $Tools += [pscustomobject]@{ Role = 'workspace-tool'; Path = $Path; Sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
@@ -518,15 +570,20 @@ function Invoke-SkillWorkspaceInstall {
                 ExtensionRoots = @(); RequiredInventories = @()
                 Tools = $Tools
             }
+            if ($Packaged) { $Result.Selection | Add-Member -NotePropertyName SourceKind -NotePropertyValue 'packaged' }
             $Result.OptionalOffers = @($Selection.OptionalOffers)
             for ($Position = 0; $Position -lt $Selection.ExtensionRoots.Count; $Position++) {
                 $Root = $Selection.ExtensionRoots[$Position]
-                $Required = if ($Selection.OptionalSelection.Count -eq 0) { $Selection } else {
+                $Required = if ($Packaged) {
+                    [pscustomobject]@{ Root = $Root; SourceCommit = $Selection.RequiredInventories[$Position].SourceCommit; Inventory = $Selection.RequiredInventories[$Position].Inventory; Payload = @($Selection.RequiredInventories[$Position].Payload) }
+                }
+                elseif ($Selection.OptionalSelection.Count -eq 0) { $Selection } else {
                     Get-WorkspaceCommittedSelection -Inputs @{ RepoRoot = $RepoRoot; SourceRevision = $Selection.SourceCommit; SkillName = [IO.Path]::GetFileName($Root.Folder); PythonPath = $PythonPath }
                 }
-                if ($Required.SourceCommit -cne $Selection.SourceCommit -or $Required.Root.Id -cne $Root.Id -or $Required.Root.Version -cne $Root.Version) { throw 'Required inventory identity changed.' }
-                $Result.Selection.ExtensionRoots += [pscustomobject]@{ Position = $Position; Id = $Root.Id; Version = $Root.Version; Folder = $Root.Folder }
-                $Result.Selection.RequiredInventories += [pscustomobject]@{ Position = $Position; Inventory = $Required.Inventory; Payload = @($Required.Payload) }
+                $ExpectedCommit = if ($Packaged) { $Root.SourceCommit } else { $Selection.SourceCommit }
+                if ($Required.SourceCommit -cne $ExpectedCommit -or $Required.Root.Id -cne $Root.Id -or $Required.Root.Version -cne $Root.Version) { throw 'Required inventory identity changed.' }
+                $Result.Selection.ExtensionRoots += [pscustomobject]@{ Position = $Position; Id = $Root.Id; Version = $Root.Version; Folder = $Root.Folder; SourceCommit = $Required.SourceCommit }
+                $Result.Selection.RequiredInventories += [pscustomobject]@{ Position = $Position; SourceCommit = $Required.SourceCommit; Inventory = $Required.Inventory; Payload = @($Required.Payload) }
             }
             $Resources = @(
                 for ($Position = 0; $Position -lt $Result.Selection.RequiredInventories.Count; $Position++) {
@@ -550,11 +607,11 @@ function Invoke-SkillWorkspaceInstall {
             for ($Position = 0; $Position -lt $Result.Selection.ExtensionRoots.Count; $Position++) {
                 $Root = $Result.Selection.ExtensionRoots[$Position]
                 $Required = $Result.Selection.RequiredInventories[$Position]
-                $ArtifactSelection = [pscustomobject]@{ Root = [pscustomobject]@{ Id = $Root.Id; Version = $Root.Version; Folder = $Root.Folder }; SourceCommit = $Selection.SourceCommit; Inventory = $Required.Inventory; Payload = @($Required.Payload) }
+                $ArtifactSelection = [pscustomobject]@{ Root = [pscustomobject]@{ Id = $Root.Id; Version = $Root.Version; Folder = $Root.Folder }; SourceCommit = $Required.SourceCommit; Inventory = $Required.Inventory; Payload = @($Required.Payload) }
         $Catalog = $null
         if (@($Blockers | Where-Object Code -CEQ 'Catalog').Count -eq 0) {
             try {
-                $Response = Invoke-WorkspaceBridge -PythonPath $PythonPath -Request @{ Action = 'catalog'; Root = $ArtifactSelection.Root; CatalogPath = @($CatalogPath) }
+                $Response = Invoke-WorkspaceBridge -PythonPath $PythonPath -Request @{ Action = 'catalog'; Root = $ArtifactSelection.Root; CatalogPath = @($CatalogPath); SourceKind = $(if ($Packaged) { 'packaged' } else { 'committed' }) }
                 if ($Response.Status -ceq 'Inspected') { $Catalog = $Response.Result } else { foreach ($Conflict in $Response.Blockers) { $Blockers.Add($Conflict) } }
             }
             catch { $Blockers.Add((New-WorkspaceConflict Catalog local 'Restore a unique strictly parsed generated local catalog.')) }
@@ -570,7 +627,6 @@ function Invoke-SkillWorkspaceInstall {
                 if ($Candidates.Count -ne 1) { throw 'Missing or duplicate selected candidate.' }
                 $Response = Invoke-WorkspaceBridge -PythonPath $PythonPath -Request @{
                     Action = 'verify'; Selection = $ArtifactSelection; Catalog = $Catalog.Record; ArchivePath = $Candidates[0]
-                    ExpectedLoader = Get-WorkspaceExpectedLoader $ArtifactSelection
                 }
                 if ($Response.Status -ceq 'Inspected') {
                     $Extension = $Response.Result
@@ -588,7 +644,7 @@ function Invoke-SkillWorkspaceInstall {
     }
     if (@($Blockers | Where-Object { $_.Scope -in @('consumer', 'interpreter', 'source') }).Count -eq 0) {
         try {
-            $SnapshotArguments = @{ RepoRoot = $RepoRoot; WorkspacePath = $WorkspacePath; PythonPath = $PythonPath; IntendedWrites = @($Result.IntendedWrites) }
+            $SnapshotArguments = @{ RepoRoot = $RepoRoot; WorkspacePath = $WorkspacePath; PythonPath = $PythonPath; IntendedWrites = @($Result.IntendedWrites); SourceKind = $(if ($Packaged) { 'packaged' } else { 'committed' }) }
             if ($Result.Selection) { $SnapshotArguments.RootIds = @($Result.Selection.ExtensionRoots.Id) }
             $Response = Get-WorkspaceConsumerSnapshot @SnapshotArguments
             if ($Response.Status -ceq 'Inspected') {
@@ -624,7 +680,25 @@ if ($MyInvocation.InvocationName -ne '.') {
     $ErrorActionPreference = 'Stop'
     Set-StrictMode -Version 3.0
     try {
-        $Result = Invoke-SkillWorkspaceInstall @PSBoundParameters
+        if ($LibraryRequest) {
+            if (-not $Json -or @($PSBoundParameters.Keys | Where-Object { $_ -cnotin @('LibraryRequest', 'Json') }).Count) { throw 'Structured request cannot be mixed with other inputs.' }
+            $Buffer = [char[]]::new(1MB + 1)
+            $Length = [Console]::In.ReadBlock($Buffer, 0, $Buffer.Length)
+            if ($Length -gt 1MB) { throw 'Structured request exceeds its bound.' }
+            $Request = [string]::new($Buffer, 0, $Length) | ConvertFrom-Json -AsHashtable -Depth 40
+            $Required = @('PackageIndexPath', 'SkillName', 'WorkspacePath', 'ArtifactDirectory', 'PythonPath')
+            $Allowed = $Required + @('PackageVersion', 'OptionalSelection', 'Apply', 'ReviewedFingerprint')
+            if ($Request -isnot [Collections.IDictionary] -or @($Request.Keys | Where-Object { $_ -cnotin $Allowed }).Count -or @($Required | Where-Object { -not $Request.ContainsKey($_) }).Count) { throw 'Invalid structured request fields.' }
+            foreach ($Key in @('PackageIndexPath', 'SkillName', 'WorkspacePath', 'PythonPath', 'PackageVersion', 'ReviewedFingerprint')) {
+                if ($Request.ContainsKey($Key) -and $Request[$Key] -isnot [string]) { throw 'Invalid structured scalar.' }
+            }
+            foreach ($Key in @('ArtifactDirectory', 'OptionalSelection')) {
+                if ($Request.ContainsKey($Key) -and ($Request[$Key] -isnot [array] -or @($Request[$Key] | Where-Object { $_ -isnot [string] }).Count)) { throw 'Invalid structured array.' }
+            }
+            if ($Request.ContainsKey('Apply') -and $Request.Apply -isnot [bool]) { throw 'Invalid structured apply flag.' }
+            $Result = Invoke-SkillWorkspaceInstall @Request
+        }
+        else { $Result = Invoke-SkillWorkspaceInstall @PSBoundParameters }
         if ($Json) { ConvertTo-Json -InputObject $Result -Depth 100 } else { $Result }
         exit (Get-WorkspaceExitCode $Result)
     }

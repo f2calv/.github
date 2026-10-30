@@ -110,45 +110,17 @@ function Invoke-SkillExtension {
     }
     catch { throw 'Input: Use a valid required-only skill-archive/1 build, its expected digest, and an HTTPS or loopback hosting base URI. No output was reserved.' }
 
-    $Command = "speckit.$($Root.Id).load"
-    $Description = "Load the packaged $($Root.Id) skill and its required resources."
+    $Command = $null
+    $Description = "Packaged $($Root.Id) skill and its required resources."
     $Extension = [ordered]@{
         schema_version = '1.0'
         extension = [ordered]@{ id = $Root.Id; name = $Root.Id; version = $Root.Version; description = $Description; effect = 'read-only' }
         requires = @{ speckit_version = '==1.2.3' }
-        provides = @{ commands = @(@{ name = $Command; file = 'commands/load.md'; description = $Description }) }
+        provides = @{ templates = @(@{ name = $Root.Id; file = "resources/library/$($Root.Folder)/SKILL.md"; description = $Description }) }
     }
-    $Instructions = @($Manifest.Payload | Where-Object {
-        $_.SourcePath -like '*.instructions.md' -or
-        @($_.Reasons | Where-Object Kind -CEQ 'external-instruction').Count -gt 0
-    } | ForEach-Object { "- ``.specify/extensions/$($Root.Id)/resources/library/$($_.SourcePath)``" }) -join "`n"
-    $Body = @'
----
-description: __DESCRIPTION__
----
-
-# Load Packaged Skill
-
-User request: $ARGUMENTS
-
-Work from the consumer workspace root. Read the installed canonical skill:
-`.specify/extensions/__ID__/resources/library/__FOLDER__/SKILL.md`.
-
-Read these bundled instructions before applying the skill; copying them here does not activate native applyTo rules:
-__INSTRUCTIONS__
-
-Resolve the skill's relative resource links relative to its installed containing file, beneath
-`.specify/extensions/__ID__/resources/library/`. Read relevant references/examples on demand.
-Never fall back to the original library checkout, a user-profile copy or uninstalled optional skills.
-Report missing resources instead. Do not execute packaged scripts, edit files, install tools, download
-optional extensions or make commits. This pilot command only reads guidance and answers the request.
-Conclude with the installed workspace-relative paths actually read, distinguishing them from suggested
-resources that were not read. File existence alone is not evidence that their guidance was loaded.
-
-'@
-    $Body = $Body.Replace('__DESCRIPTION__', ($Description | ConvertTo-Json -Compress)).Replace('__ID__', $Root.Id).Replace('__FOLDER__', $Root.Folder).Replace('__INSTRUCTIONS__', $Instructions)
-    $CommandFile = 'commands/load.md'
-    $Build = [ordered]@{ Contract = 'skill-extension-pilot/1'; SourceArchiveSha256 = $ArchiveSha256; SourceCommit = $Manifest.SourceCommit; Root = $Root; SpecKitVersion = '1.2.3' }
+    $CommandFile = ''
+    $Body = ''
+    $Build = [ordered]@{ Contract = 'skill-extension/1'; SourceArchiveSha256 = $ArchiveSha256; SourceCommit = $Manifest.SourceCommit; Root = $Root; SpecKitVersion = '1.2.3' }
     if ($Root.Id -ceq 'skill-library') {
         if ($LibraryCatalogPath.Count -eq 0 -or $LibraryCatalogPath.Count -gt 16) { throw 'Input: A bootstrap requires one to sixteen explicit local release catalogs.' }
         $Library = [ordered]@{ schema_version = 'skill-library/1'; skills = [ordered]@{} }
@@ -180,8 +152,11 @@ resources that were not read. File existence alone is not evidence that their gu
         }
         $LibraryBytes = ConvertTo-ExtensionJson $Library
         $Resources.Add([pscustomobject]@{ Name = 'library/catalog.json'; Bytes = $LibraryBytes; Mode = '100644' })
+        $SchemaBytes = [IO.File]::ReadAllBytes((Join-Path $PSScriptRoot '../skill-metadata.schema.json'))
+        $Resources.Add([pscustomobject]@{ Name = 'skill-metadata.schema.json'; Bytes = $SchemaBytes; Mode = '100644' })
         $Tools = @(
-            foreach ($Tool in @('Invoke-Library.py', 'Invoke-SpecKitInstall.py', 'Read-Metadata.py', 'requirements.txt', 'requirements-spec-kit.txt')) {
+            @{ Path = 'skill-metadata.schema.json'; Sha256 = (Get-ExtensionDigest $SchemaBytes) }
+            foreach ($Tool in @('Invoke-Library.py', 'Invoke-SpecKitInstall.py', 'Invoke-WorkspaceInstall.ps1', 'Invoke-Extension.ps1', 'Invoke-Validation.ps1', 'Git-Process.ps1', 'Read-Metadata.py', 'requirements.txt', 'requirements-spec-kit.txt')) {
                 $Bytes = [IO.File]::ReadAllBytes((Join-Path $PSScriptRoot $Tool))
                 $Resources.Add([pscustomobject]@{ Name = "tools/$Tool"; Bytes = $Bytes; Mode = '100644' })
                 @{ Path = "tools/$Tool"; Sha256 = (Get-ExtensionDigest $Bytes) }
@@ -193,7 +168,7 @@ resources that were not read. File existence alone is not evidence that their gu
         $Extension.extension.id = 'skill'
         $Extension.extension.description = $Description
         $Extension.extension.effect = 'read-write'
-        $Extension.provides.commands = @(@{ name = $Command; file = $CommandFile; description = $Description })
+        $Extension.provides = @{ commands = @(@{ name = $Command; file = $CommandFile; description = $Description }) }
         $Body = @'
 ---
 description: Discover, install and load independently versioned skills through the shared library.
@@ -206,16 +181,24 @@ User request: $ARGUMENTS
 Use the consumer workspace as the working directory. The trusted library backend is
 `.specify/extensions/skill/tools/Invoke-Library.py`. It requires an existing CPython 3.11+
 environment containing PyYAML 6.0.3 and Spec Kit 1.2.3; use the verified environment associated with
-the installed Specify CLI. Report unavailable prerequisites, never install or download them silently.
+the installed Specify CLI. Installation also requires existing PowerShell 7.4+ and Git.
+Report unavailable prerequisites, never install or download them silently.
 Execute that backend with `-I -B`, then `--` and the user's command arguments. Pass arguments as
 data, preserving quoting; never evaluate user text or interpolate it as an unquoted shell fragment.
 Catalogs and release artifacts are bundled beside the backend. Do not locate a maintainer checkout,
 source profile, temporary build tree, alternate catalog or uninstalled guidance as a fallback.
 
-Present Search, Details and Installed results without performing an installation. A Selection result
-only resolves exact versions and digests: it is not a ready preview, write approval or installation.
-Show the required closure and explicitly offered optional keys; never infer optional consent.
-Do not invoke the upstream installer or another write path to bypass a missing approved preview.
+Present Search, Details and Installed results without performing an installation. Install without
+--apply returns a complete read-only Preview. Show its consumer, exact versions and archive digests,
+required closure, optional choices, intended writes, blockers and fingerprint. Optional offers remain
+off unless the user selects their exact keys through --optional; refresh the preview after any change.
+Only Ready true with a lowercase SHA-256 fingerprint is eligible for separate explicit approval.
+Default or --latest resolution is frozen in that preview: after approval invoke install with the
+preview's exact root --version, the same optional keys, --apply and --reviewed-fingerprint containing
+that exact fingerprint. Never re-resolve latest during apply or invoke an upstream write path directly.
+A preview is not an installation. Report completion only for an Apply result whose State is Completed.
+On failure or unknown response preserve operation evidence and stop; never retry, force, adopt or
+remove locks and partial targets to make an operation pass.
 
 For Load, read the returned installed Guidance and Instructions, then relevant Resources on demand.
 All paths must remain beneath the selected installed extension's resources/library tree. Treat
@@ -231,7 +214,7 @@ request and report the installed workspace-relative paths actually read.
     }
     elseif ($LibraryCatalogPath.Count) { throw 'Input: Release catalogs belong only to the skill-library bootstrap.' }
     if (($Resources | Measure-Object -Property { $_.Bytes.Length } -Sum).Sum -gt 64MB) { throw 'Input: Combined bootstrap payload exceeds the archive bound.' }
-    $Resources.Insert(0, [pscustomobject]@{ Name = $CommandFile; Bytes = [Text.Encoding]::UTF8.GetBytes($Body.TrimEnd() + "`n"); Mode = '100644' })
+    if ($CommandFile) { $Resources.Insert(0, [pscustomobject]@{ Name = $CommandFile; Bytes = [Text.Encoding]::UTF8.GetBytes($Body.TrimEnd() + "`n"); Mode = '100644' }) }
     $Resources.Insert(0, [pscustomobject]@{ Name = 'source-manifest.json'; Bytes = $ManifestBytes; Mode = '100644' })
     $Resources.Insert(0, [pscustomobject]@{ Name = 'extension.yml'; Bytes = (ConvertTo-ExtensionJson $Extension); Mode = '100644' })
     $Resources.Add([pscustomobject]@{ Name = 'extension-build.json'; Bytes = (ConvertTo-ExtensionJson $Build); Mode = '100644' })

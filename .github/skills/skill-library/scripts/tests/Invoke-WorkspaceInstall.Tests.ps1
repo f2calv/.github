@@ -42,21 +42,12 @@ BeforeAll {
         return $Root
     }
 
-    function Get-FixtureLoader {
-        param([object]$Selection)
-        $Ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot '../Invoke-Extension.ps1'), [ref]$null, [ref]$null)
-        $Assignment = @($Ast.FindAll({ param($Node) $Node -is [Management.Automation.Language.AssignmentStatementAst] -and $Node.Left.Extent.Text -ceq '$Body' }, $true))[0]
-        $Template = @($Assignment.Right.FindAll({ param($Node) $Node -is [Management.Automation.Language.StringConstantExpressionAst] }, $true))[0].Value
-        $Description = "Load the packaged $($Selection.Root.Id) skill and its required resources."
-        return $Template.Replace('__DESCRIPTION__', ($Description | ConvertTo-Json -Compress)).Replace('__ID__', $Selection.Root.Id).Replace('__FOLDER__', $Selection.Root.Folder).Replace('__INSTRUCTIONS__', '').TrimEnd() + "`n"
-    }
-
     function Set-WorkspaceArtifact {
         param([string]$SourceRoot, [string]$Destination, [string]$SkillName = 'example')
         [void][IO.Directory]::CreateDirectory($Destination)
         $Selection = Get-SkillCommittedSelection -RepoRoot $SourceRoot -SkillName $SkillName -PythonPath $script:Python
         $Identity = $Selection.Root.Id
-        $Description = "Load the packaged $Identity skill and its required resources."
+        $Description = "Packaged $Identity skill and its required resources."
         $Manifest = [ordered]@{
             SchemaVersion = 1; SourceCommit = $Selection.SourceCommit; Root = $Selection.Root
             OptionalSelections = @(); Builder = @{ Contract = 'skill-archive/1' }
@@ -68,13 +59,12 @@ BeforeAll {
             schema_version = '1.0'
             extension = @{ id = $Identity; name = $Identity; version = '1.0.0'; description = $Description; effect = 'read-only' }
             requires = @{ speckit_version = '==1.2.3' }
-            provides = @{ commands = @(@{ name = "speckit.$Identity.load"; file = 'commands/load.md'; description = $Description }) }
+            provides = @{ templates = @(@{ name = $Identity; file = "resources/library/$($Selection.Root.Folder)/SKILL.md"; description = $Description }) }
         }
         $Members = [ordered]@{
             'extension.yml' = [Text.Encoding]::UTF8.GetBytes(($RuntimeManifest | ConvertTo-Json -Depth 40))
             'source-manifest.json' = [Text.Encoding]::UTF8.GetBytes(($Manifest | ConvertTo-Json -Depth 40))
-            'commands/load.md' = [Text.Encoding]::UTF8.GetBytes((Get-FixtureLoader $Selection))
-            'extension-build.json' = [Text.Encoding]::UTF8.GetBytes((@{ Contract = 'skill-extension-pilot/1'; SourceArchiveSha256 = 'a' * 64; SourceCommit = $Selection.SourceCommit; Root = $Selection.Root; SpecKitVersion = '1.2.3' } | ConvertTo-Json -Depth 10))
+            'extension-build.json' = [Text.Encoding]::UTF8.GetBytes((@{ Contract = 'skill-extension/1'; SourceArchiveSha256 = 'a' * 64; SourceCommit = $Selection.SourceCommit; Root = $Selection.Root; SpecKitVersion = '1.2.3' } | ConvertTo-Json -Depth 10))
         }
         foreach ($File in $Selection.Payload) {
             $Read = Invoke-LibraryGit -Root $SourceRoot -Arguments @('show', "$($Selection.SourceCommit):$($File.SourcePath)")
@@ -175,9 +165,6 @@ class SyntheticManager:
             if fault.startswith("kill-"):
                 os.kill(os.getpid(), signal.SIGKILL)
             raise KeyboardInterrupt("SYNTHETIC_UNSAFE_DETAIL")
-        command = self.root / extension["Command"]["Path"]
-        command.parent.mkdir(parents=True, exist_ok=True)
-        command.write_text(helpers["_render_command"]({"Id": identity}, (target / "commands/load.md").read_text()))
         registry_path = self.root / ".specify/extensions/.registry"
         registry = json.loads(registry_path.read_text()) if registry_path.exists() else {"schema_version": "1.0", "extensions": {}}
         addition = dict(extension["RegistryAddition"])
@@ -197,9 +184,11 @@ class SyntheticManager:
         if fault == "notice":
             (target / "resources/library/LICENSE").write_text("Synthetic corruption")
         elif fault == "command":
-            command.unlink()
+            command = self.root / f".github/skills/speckit-{identity}-load/SKILL.md"
+            command.parent.mkdir(parents=True, exist_ok=True)
+            command.write_text("Unapproved synthetic command")
         elif fault == "registry":
-            registry["extensions"][identity]["registered_skills"] = []
+            registry["extensions"][identity]["registered_skills"] = ["unexpected-synthetic-command"]
             registry_path.write_text(json.dumps(registry, indent=2))
         elif fault == "extra":
             (target / "unapproved.txt").write_text("Synthetic addition")
@@ -259,7 +248,7 @@ raise SystemExit(namespace["main"]())
                 'link' { $Zip.GetEntry('resources/library/LICENSE').ExternalAttributes = [Convert]::ToInt32('120777', 8) -shl 16 }
                 'raw-bytes' { $Zip.Comment = 'Synthetic bound header change.' }
                 default {
-                    $Name = if ($Fault -eq 'duplicate-json') { 'source-manifest.json' } elseif ($Fault -eq 'duplicate-yaml') { 'extension.yml' } elseif ($Fault -eq 'traversal') { '../escape' } elseif ($Fault -eq 'extra') { 'extra.txt' } elseif ($Fault -eq 'oversize-member') { 'large.bin' } else { 'commands/load.md' }
+                    $Name = if ($Fault -eq 'duplicate-json') { 'source-manifest.json' } elseif ($Fault -eq 'duplicate-yaml') { 'extension.yml' } elseif ($Fault -eq 'traversal') { '../escape' } elseif ($Fault -eq 'extra') { 'extra.txt' } elseif ($Fault -eq 'oversize-member') { 'large.bin' } else { 'extension.yml' }
                     $Original = $Zip.GetEntry($Name)
                     $Text = 'Synthetic changed content.'
                     if ($Original -and $Fault -ne 'duplicate-member') {
@@ -350,7 +339,7 @@ sys.stdout.write(json.dumps(response))
                     $Archive = @($script:Inputs.ArtifactDirectory | ForEach-Object { Join-Path $_ "$($Root.Id)-$($Root.Version).zip" } | Where-Object { Test-Path -LiteralPath $_ })
                     @{
                         Catalog = @{ Contract = 'skill-workspace-install/1'; Mode = 'inspect'; Action = 'catalog'; Root = $Required.Root; CatalogPath = $script:Inputs.CatalogPath }
-                        Verify = @{ Contract = 'skill-workspace-install/1'; Mode = 'inspect'; Action = 'verify'; Selection = $Required; ArchivePath = $Archive[0]; ExpectedLoader = Get-FixtureLoader $Required }
+                        Verify = @{ Contract = 'skill-workspace-install/1'; Mode = 'inspect'; Action = 'verify'; Selection = $Required; ArchivePath = $Archive[0] }
                     }
                 }
             )
@@ -387,6 +376,28 @@ Describe 'Bounded workspace root installation' -Tag 'Unit' {
         $script:SourceRoot = New-WorkspaceFixture
         $script:FixtureArtifacts = Join-Path $TestDrive 'prepared'
         Set-WorkspaceArtifact $script:SourceRoot $script:FixtureArtifacts
+        function Set-WorkspaceLibraryFixture {
+            param([string]$Directory)
+            $Catalog = Get-Content -LiteralPath $script:Inputs.CatalogPath[0] -Raw | ConvertFrom-Json -AsHashtable
+            $Packages = Join-Path $Directory 'packages'
+            [void][IO.Directory]::CreateDirectory($Packages)
+            [IO.File]::Copy((Join-Path $script:Inputs.ArtifactDirectory[0] 'example-1.0.0.zip'), (Join-Path $Packages 'example-1.0.0.zip'))
+            $IndexPath = Join-Path $Directory 'catalog.json'
+            $Index = @{ schema_version = 'skill-library/1'; skills = @{ example = @{
+                        current = '1.0.0'; releases = @{ '1.0.0' = @{ archive = 'example-1.0.0.zip'; catalog = $Catalog.extensions.example } }
+                    } } }
+            foreach ($Identity in @('peer', 'declined', 'nested')) {
+                $Record = @{
+                    name = $Identity; description = "Packaged $Identity skill and its required resources."
+                    version = '1.0.0'; download_url = "https://example.com/$Identity-1.0.0.zip"; sha256 = '0' * 64
+                    requires = @{ speckit_version = '==1.2.3' }
+                    provides = @{ templates = @(@{ name = $Identity; file = "resources/library/.github/skills/$Identity/SKILL.md"; description = "Packaged $Identity skill and its required resources." }) }
+                }
+                $Index.skills[$Identity] = @{ current = '1.0.0'; releases = @{ '1.0.0' = @{ archive = "$Identity-1.0.0.zip"; catalog = $Record } } }
+            }
+            [IO.File]::WriteAllText($IndexPath, ($Index | ConvertTo-Json -Depth 40))
+            return @{ PackageIndexPath = $IndexPath; SkillName = 'example'; WorkspacePath = $script:Inputs.WorkspacePath; ArtifactDirectory = @($Packages); PythonPath = $script:Inputs.PythonPath }
+        }
     }
 
     BeforeEach {
@@ -405,15 +416,28 @@ Describe 'Bounded workspace root installation' -Tag 'Unit' {
     It 'accepts stock pinned Copilot initialization and verifies its recorded integration files' {
         $Root = $script:Inputs.WorkspacePath
         Set-InventoryFile $Root '.specify/init-options.json' '{"ai":"copilot","ai_skills":true,"allow_symlinks":false,"feature_numbering":"sequential","here":true,"integration":"copilot","script":"ps","speckit_version":"1.2.3"}'
-        Set-InventoryFile $Root '.specify/integration.json' '{"version":"1.2.3","integration_state_schema":1,"installed_integrations":["copilot"],"integration_settings":{"copilot":{"script":"ps","invoke_separator":"-"}},"integration":"copilot","default_integration":"copilot"}'
+        Set-InventoryFile $Root '.specify/integration.json' '{"version":"1.2.3","integration_state_schema":1,"installed_integrations":["copilot"],"integration_settings":{"copilot":{"script":"ps","raw_options":"--skills","parsed_options":{"skills":true},"invoke_separator":"-"}},"integration":"copilot","default_integration":"copilot"}'
         Set-InventoryFile $Root '.github/skills/speckit-plan/SKILL.md' 'Synthetic pinned core command.'
         $Digest = (Get-FileHash (Join-Path $Root '.github/skills/speckit-plan/SKILL.md')).Hash.ToLowerInvariant()
         $Manifest = @{ integration = 'copilot'; version = '1.2.3'; installed_at = '2026-01-01T00:00:00+00:00'; files = @{ '.github/skills/speckit-plan/SKILL.md' = $Digest } }
         Set-InventoryFile $Root '.specify/integrations/copilot.manifest.json' ($Manifest | ConvertTo-Json -Depth 10)
+        $CoreManifest = @{ integration = 'speckit'; version = '1.2.3'; installed_at = '2026-01-01T00:00:00+00:00'; files = @{} }
+        foreach ($Path in @('.specify/scripts/powershell/setup-plan.ps1', '.specify/templates/plan-template.md', '.specify/.gitignore')) {
+            Set-InventoryFile $Root $Path 'Synthetic pinned core resource.'
+            $CoreManifest.files[$Path] = (Get-FileHash (Join-Path $Root $Path)).Hash.ToLowerInvariant()
+        }
+        Set-InventoryFile $Root '.specify/integrations/speckit.manifest.json' ($CoreManifest | ConvertTo-Json -Depth 10)
         $Before = Get-InventoryState $Root
         $Preview = Invoke-WorkspaceFixture
         $Preview.Ready | Should -BeTrue -Because ($Preview.Blockers | ConvertTo-Json -Depth 10)
         Get-InventoryState $Root | Should -BeExactly $Before
+        $CorePath = '.specify/templates/plan-template.md'
+        $CoreDigest = $CoreManifest.files[$CorePath]
+        $CoreManifest.files[$CorePath] = '0' * 64
+        Set-InventoryFile $Root '.specify/integrations/speckit.manifest.json' ($CoreManifest | ConvertTo-Json -Depth 10)
+        (Invoke-WorkspaceFixture).Ready | Should -BeFalse
+        $CoreManifest.files[$CorePath] = $CoreDigest
+        Set-InventoryFile $Root '.specify/integrations/speckit.manifest.json' ($CoreManifest | ConvertTo-Json -Depth 10)
         $Manifest.files['.github/skills/speckit-plan/SKILL.md'] = '0' * 64
         Set-InventoryFile $Root '.specify/integrations/copilot.manifest.json' ($Manifest | ConvertTo-Json -Depth 10)
         (Invoke-WorkspaceFixture).Ready | Should -BeFalse
@@ -432,9 +456,67 @@ Describe 'Bounded workspace root installation' -Tag 'Unit' {
         $Result.IntendedWrites.Path | Should -Contain ".specify/skill-library-install/operations/$($Result.Fingerprint)/operation.json"
         $Result.IntendedWrites.Path | Should -Contain '.specify/extensions.yml'
         $Result.ConsumerSnapshot.ConfigurationPrediction.AddedId | Should -BeExactly 'example'
-        $Result.Extensions[0].RegistryAddition.registered_skills | Should -HaveCount 1
+        $Result.Extensions[0].RegistryAddition.registered_skills | Should -HaveCount 0
+        @($Result.IntendedWrites | Where-Object Path -Like '.github/skills/*').Count | Should -Be 0
         Get-InventoryState $script:SourceRoot | Should -BeExactly $BeforeSource
         Get-InventoryState $script:Inputs.WorkspacePath | Should -BeExactly $BeforeConsumer
+    }
+
+    It 'previews a verified packaged root without consulting a source repository' {
+        $Inputs = Set-WorkspaceLibraryFixture -Directory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
+        $Before = Get-InventoryState $script:Inputs.WorkspacePath
+        $Result = Invoke-SkillWorkspaceInstall @Inputs
+        $Result.Ready | Should -BeTrue -Because ($Result.Blockers | ConvertTo-Json -Depth 10)
+        $Result.Selection.SourceKind | Should -BeExactly 'packaged'
+        $Result.Selection.SourceRoot | Should -BeExactly ([IO.Path]::GetDirectoryName($Inputs.PackageIndexPath))
+        $Result.Selection.ExtensionRoots[0].SourceCommit | Should -BeExactly $Result.Selection.RequiredInventories[0].SourceCommit
+        $Result.Extensions[0].CatalogOrigins[0].Path | Should -BeExactly $Inputs.PackageIndexPath
+        $Result.Fingerprint | Should -Match '^[0-9a-f]{64}$'
+        Get-InventoryState $script:Inputs.WorkspacePath | Should -BeExactly $Before
+    }
+
+    It 'enforces the installed bootstrap catalog boundary: <RuntimeId>, <Modified>' -ForEach @(
+        @{ RuntimeId = 'skill'; Modified = $false; ExpectedReady = $true }
+        @{ RuntimeId = 'other'; Modified = $false; ExpectedReady = $false }
+        @{ RuntimeId = 'skill'; Modified = $true; ExpectedReady = $false }
+    ) {
+        $Workspace = $script:Inputs.WorkspacePath
+        $Descriptor = '{"schema_version":"1.0","extension":{"id":"skill","name":"skill-library","version":"1.0.0"},"requires":{"speckit_version":"==1.2.3"}}'
+        Set-InventoryFile $Workspace '.specify/extensions/skill/extension.yml' $Descriptor
+        $Hash = (Get-FileHash -LiteralPath (Join-Path $Workspace '.specify/extensions/skill/extension.yml')).Hash.ToLowerInvariant()
+        $Registry = [ordered]@{ schema_version = '1.0'; extensions = @{ skill = @{ version = '1.0.0'; enabled = $true; manifest_hash = "sha256:$Hash" } } }
+        Set-InventoryFile $Workspace '.specify/extensions/.registry' ($Registry | ConvertTo-Json -Depth 10)
+        Set-InventoryFile $Workspace '.specify/extensions.yml' "installed:`n- skill`nsettings:`n  auto_execute_hooks: true`nhooks: {}`n"
+        if ($Modified) { [IO.File]::AppendAllText((Join-Path $Workspace '.specify/extensions/skill/extension.yml'), ' ') }
+        $Inputs = Set-WorkspaceLibraryFixture -Directory (Join-Path $Workspace ".specify/extensions/$RuntimeId/library")
+        $Before = Get-InventoryState $Workspace
+        $Result = Invoke-SkillWorkspaceInstall @Inputs
+        $Result.Ready | Should -Be $ExpectedReady -Because ($Result.Blockers | ConvertTo-Json -Depth 10)
+        Get-InventoryState $Workspace | Should -BeExactly $Before
+    }
+
+    It 'accepts only typed structured library requests: <Fault>' -ForEach @(
+        @{ Fault = 'valid' }, @{ Fault = 'unknown-field' }, @{ Fault = 'string-apply' }
+    ) {
+        $Inputs = Set-WorkspaceLibraryFixture -Directory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
+        $Request = @{} + $Inputs
+        $Request.Apply = $false
+        $Request.OptionalSelection = @()
+        if ($Fault -eq 'unknown-field') { $Request.Force = $true }
+        if ($Fault -eq 'string-apply') { $Request.Apply = 'false' }
+        $Before = Get-InventoryState $Inputs.WorkspacePath
+        $Process = Invoke-LibraryProcess -Executable (Get-Process -Id $PID).Path -Arguments @(
+            '-NoLogo', '-NoProfile', '-File', $script:WorkspaceScript, '-LibraryRequest', '-Json'
+        ) -InputBytes ([Text.Encoding]::UTF8.GetBytes(($Request | ConvertTo-Json -Depth 20 -Compress)))
+        if ($Fault -eq 'valid') {
+            $Process.ExitCode | Should -Be 0 -Because $Process.Error
+            $Result = [Text.Encoding]::UTF8.GetString($Process.Bytes) | ConvertFrom-Json -Depth 100
+            $Result.Mode | Should -BeExactly 'preview'
+            $Result.Ready | Should -BeTrue
+            $Result.Selection.SourceKind | Should -BeExactly 'packaged'
+        }
+        else { $Process.ExitCode | Should -Not -Be 0 }
+        Get-InventoryState $Inputs.WorkspacePath | Should -BeExactly $Before
     }
 
     It 'arms installer/network/extraction/write/declined spies and observes no invocation' {
@@ -787,6 +869,34 @@ Describe 'Bounded workspace root installation' -Tag 'Unit' {
             } -ParameterFilter { $Request.ContainsKey('Mode') -and $Request.Mode -ceq 'apply' }
         }
 
+        It 'applies packaged releases only with an exact version and matching approval: <Approval>' -ForEach @(
+            @{ Approval = 'missing-version'; ExpectedState = 'Blocked' }
+            @{ Approval = 'stale'; ExpectedState = 'Blocked' }
+            @{ Approval = 'matching'; ExpectedState = 'Completed' }
+        ) {
+            $Inputs = Set-WorkspaceLibraryFixture -Directory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
+            $Preview = Invoke-SkillWorkspaceInstall @Inputs
+            $Preview.Ready | Should -BeTrue -Because ($Preview.Blockers | ConvertTo-Json -Depth 10)
+            if ($Approval -ne 'missing-version') { $Inputs.PackageVersion = $Preview.Selection.Root.Version }
+            $Fingerprint = if ($Approval -eq 'stale') { '0' * 64 } else { $Preview.Fingerprint }
+            $Before = Get-InventoryState $Inputs.WorkspacePath
+            $Result = Invoke-SkillWorkspaceInstall @Inputs -Apply -ReviewedFingerprint $Fingerprint
+            $Result.State | Should -BeExactly $ExpectedState -Because ($Result | ConvertTo-Json -Depth 20)
+            if ($ExpectedState -eq 'Blocked') {
+                Get-InventoryState $Inputs.WorkspacePath | Should -BeExactly $Before
+                Should -Invoke Invoke-WorkspaceBridge -Times 0 -Exactly -ParameterFilter { $Request.ContainsKey('Mode') -and $Request.Mode -ceq 'apply' }
+            }
+            else {
+                $Result.CompletedExtensions.RootId | Should -BeExactly 'example'
+                $Result.LastDurableStep | Should -BeExactly 'Completed'
+                $Receipt = [IO.File]::ReadAllText((Join-Path $Result.OperationPath 'operation.json')) | ConvertFrom-Json -Depth 100
+                $Receipt.ApprovedInputs.Selection.SourceKind | Should -BeExactly 'packaged'
+                $Receipt.Extensions[0].State | Should -BeExactly 'Verified'
+                Test-Path (Join-Path $Inputs.WorkspacePath '.specify/skill-library-install/lock') | Should -BeFalse
+                Should -Invoke Invoke-WorkspaceBridge -Times 1 -Exactly -ParameterFilter { $Request.ContainsKey('Mode') -and $Request.Mode -ceq 'apply' }
+            }
+        }
+
         It 'flushes intent before the same-stream pinned call and completes only after exact postchecks' {
             $SourceBefore = Get-InventoryState $script:Inputs.RepoRoot
             $EnvironmentBefore = $env:TMPDIR
@@ -803,6 +913,7 @@ extensions.mkdir()
             $SeedResult.ExitCode | Should -Be 0 -Because $SeedResult.Error
             Set-InventoryFile $script:Inputs.WorkspacePath '.specify/extensions/other/preserve.txt' 'Preserve unrelated synthetic extension.'
             Set-InventoryFile $script:Inputs.WorkspacePath '.github/skills/unrelated/SKILL.md' 'Preserve unrelated synthetic command.'
+            Set-InventoryFile $script:Inputs.WorkspacePath '.github/skills/speckit-example-load/SKILL.md' 'Preserve unrelated pre-existing name.'
             $Preview = Invoke-WorkspaceFixture
             $Preview.Ready | Should -BeTrue
             $Preview.Extensions[0].Members[0].Sha256 = '0' * 64
@@ -821,6 +932,7 @@ extensions.mkdir()
             $Receipt.ApprovedInputs.Extensions[0].Members[0].Sha256 | Should -Not -BeExactly ('0' * 64)
             [IO.File]::ReadAllText((Join-Path $script:Inputs.WorkspacePath '.specify/extensions/other/preserve.txt')) | Should -BeExactly 'Preserve unrelated synthetic extension.'
             [IO.File]::ReadAllText((Join-Path $script:Inputs.WorkspacePath '.github/skills/unrelated/SKILL.md')) | Should -BeExactly 'Preserve unrelated synthetic command.'
+            [IO.File]::ReadAllText((Join-Path $script:Inputs.WorkspacePath '.github/skills/speckit-example-load/SKILL.md')) | Should -BeExactly 'Preserve unrelated pre-existing name.'
             Test-Path (Join-Path $script:Inputs.WorkspacePath '.specify/skill-library-install/lock') | Should -BeFalse
             Test-Path (Join-Path $Result.OperationPath 'scratch') -PathType Container | Should -BeTrue
             @(Get-ChildItem (Join-Path $Result.OperationPath 'scratch') -Force).Count | Should -Be 0
@@ -1284,7 +1396,7 @@ function Invoke-Pester {
     It 'blocks strict state/runtime refusal <Fault> and preserves evidence' -ForEach @(
         @{ Fault = 'duplicate-json' }, @{ Fault = 'duplicate-yaml' }, @{ Fault = 'wrong-integration' },
         @{ Fault = 'hooks' }, @{ Fault = 'config-comment' }, @{ Fault = 'integration-duplicate' }, @{ Fault = 'integration-external' }, @{ Fault = 'project-adapter' },
-        @{ Fault = 'collateral-mode' }, @{ Fault = 'occupied' }, @{ Fault = 'command' }, @{ Fault = 'linked' },
+        @{ Fault = 'collateral-mode' }, @{ Fault = 'occupied' }, @{ Fault = 'linked' },
         @{ Fault = 'owner' }, @{ Fault = 'lock' }, @{ Fault = 'Prepared' }, @{ Fault = 'Running' }, @{ Fault = 'Attempting' }, @{ Fault = 'Completed-inconsistent' }, @{ Fault = 'torn' }, @{ Fault = 'missing-receipt' }
     ) {
         $Root = $script:Inputs.WorkspacePath
@@ -1304,7 +1416,6 @@ function Invoke-Pester {
             'project-adapter' { Set-InventoryFile $Root '.specify/integrations/copilot/__init__.py' 'raise RuntimeError("Never import project code")' }
             'collateral-mode' { Set-InventoryFile $Root '.specify/scripts/example.sh' "#!/bin/sh`nexit 0`n"; [IO.File]::SetUnixFileMode((Join-Path $Root '.specify/scripts/example.sh'), [IO.UnixFileMode]420) }
             'occupied' { Set-InventoryFile $Root '.specify/extensions/example/local.txt' 'Preserve me.' }
-            'command' { Set-InventoryFile $Root '.github/skills/speckit-example-load/SKILL.md' 'Preserve me.' }
             'linked' { [void][IO.Directory]::CreateSymbolicLink((Join-Path $Root '.specify/extensions'), $script:FixtureArtifacts) }
             default {
                 $Namespace = Join-Path $Root '.specify/skill-library-install'

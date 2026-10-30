@@ -7,14 +7,19 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../Git-Process.ps1')
 
     function Set-ExtensionFixture {
-        param([string]$Path, [string]$Fault = '', [string]$InstructionPath = '.github/instructions/example.instructions.md', [string]$Identity = 'example')
+        param([string]$Path, [string]$Fault = '', [string]$InstructionPath = '.github/instructions/example.instructions.md', [string]$Identity = 'example', [string]$SourceCommit = ('1' * 40), [string]$MetadataSuffix = '', [hashtable]$RequiredMetadata = @{})
         $Native = ".github/skills/$Identity"
         $Sources = [ordered]@{
             "$Native/SKILL.md" = "---`nname: $Identity`ndescription: Synthetic example.`n---`n# Example`n"
-            "$Native/skill.metadata.yaml" = "id: $Identity`nversion: '1.0.0'`nfacets: [architecture]`n"
+            "$Native/skill.metadata.yaml" = "id: $Identity`nversion: '1.0.0'`nfacets: [architecture]`n$MetadataSuffix"
             "$Native/references/detail.md" = "# Detail`nSynthetic resource.`n"
             $InstructionPath = "# Synthetic instruction`n"
             'LICENSE' = "Synthetic notice.`n"
+        }
+        foreach ($RequiredId in $RequiredMetadata.Keys) {
+            $Folder = ".github/skills/$RequiredId"
+            $Sources["$Folder/SKILL.md"] = "---`nname: $RequiredId`ndescription: Synthetic required component.`n---`n# Required`n"
+            $Sources["$Folder/skill.metadata.yaml"] = "id: $RequiredId`nversion: '1.0.0'`n$($RequiredMetadata[$RequiredId])"
         }
         $Payload = @(
             foreach ($Source in $Sources.Keys) {
@@ -29,10 +34,15 @@ BeforeAll {
             }
         )
         $Manifest = [ordered]@{
-            SchemaVersion = 1; SourceCommit = ('1' * 40)
+            SchemaVersion = 1; SourceCommit = $SourceCommit
             Root = @{ Id = $Identity; Version = '1.0.0'; Folder = $Native }
             OptionalSelections = @(); Builder = @{ Contract = 'skill-archive/1' }
-            Components = @(@{ Id = $Identity; Version = '1.0.0'; NativeFolder = $Native; Reasons = @(@{ Kind = 'root' }) })
+            Components = @(
+                @{ Id = $Identity; Version = '1.0.0'; NativeFolder = $Native; Reasons = @(@{ Kind = 'root' }) }
+                foreach ($RequiredId in $RequiredMetadata.Keys) {
+                    @{ Id = $RequiredId; Version = '1.0.0'; NativeFolder = ".github/skills/$RequiredId"; Reasons = @(@{ Kind = 'required'; FromId = $Identity }) }
+                }
+            )
             Payload = $Payload
             GeneratedMembers = @(@{ Path = 'manifest.json'; Role = 'build-evidence'; Mode = '100644' })
             Limitations = @('Synthetic test evidence.')
@@ -76,7 +86,7 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
         $Result = Invoke-SkillExtension -ArchivePath $script:InputPath -ArchiveSha256 $Digest -OutputDirectory $script:Destination -BaseUri 'http://127.0.0.1:8123/'
         $Result.RootId | Should -BeExactly 'example'
         $Result.RootVersion | Should -BeExactly '1.0.0'
-        $Result.Command | Should -BeExactly 'speckit.example.load'
+        $Result.Command | Should -BeNullOrEmpty
         $Catalog = [IO.File]::ReadAllText($Result.CatalogPath) | ConvertFrom-Json -AsHashtable
         $Catalog.extensions.Count | Should -Be 1
         $Catalog.extensions.example.version | Should -BeExactly '1.0.0'
@@ -90,26 +100,37 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
             $Reader = [IO.StreamReader]::new($Zip.GetEntry('resources/library/LICENSE').Open())
             try { $Reader.ReadToEnd() | Should -BeExactly "Synthetic notice.`n" }
             finally { $Reader.Dispose() }
-            $Reader = [IO.StreamReader]::new($Zip.GetEntry('commands/load.md').Open())
+            $Zip.GetEntry('commands/load.md') | Should -BeNullOrEmpty
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('extension.yml').Open())
             try {
-                $Body = $Reader.ReadToEnd()
-                $Body | Should -Match '\.specify/extensions/example/resources/library/\.github/skills/example/SKILL.md'
-                $Body | Should -Match '\.github/instructions/example.instructions.md'
-                $Body.Contains($PSScriptRoot) | Should -BeFalse
+                $Manifest = $Reader.ReadToEnd() | ConvertFrom-Json -AsHashtable
+                $Manifest.provides.Keys | Should -Be @('templates')
+                $Manifest.provides.templates[0].file | Should -BeExactly 'resources/library/.github/skills/example/SKILL.md'
             }
             finally { $Reader.Dispose() }
             @($Zip.Entries | Where-Object FullName -Match 'optional|related').Count | Should -Be 0
         }
         finally { $Zip.Dispose() }
+        $Extracted = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        [IO.Compression.ZipFile]::ExtractToDirectory($Result.ArchivePath, $Extracted)
+        $Python = if ($env:SKILL_LIBRARY_TEST_PYTHON) { $env:SKILL_LIBRARY_TEST_PYTHON } else { 'python3' }
+        $Probe = 'import sys; from pathlib import Path; from specify_cli.extensions import ExtensionManifest; manifest = ExtensionManifest(Path(sys.argv[1]) / "extension.yml"); assert manifest.commands == []; assert not manifest.warnings'
+        $Cli = Invoke-LibraryProcess -Executable $Python -Arguments @('-I', '-B', '-c', $Probe, $Extracted)
+        $Cli.ExitCode | Should -Be 0 -Because $Cli.Error
     }
 
-    It 'loads declared external instructions without the conventional filename suffix' {
+    It 'preserves declared external instructions without the conventional filename suffix' {
         $Digest = Set-ExtensionFixture -Path $script:InputPath -InstructionPath 'docs/policy.md'
         $Result = Invoke-SkillExtension -ArchivePath $script:InputPath -ArchiveSha256 $Digest -OutputDirectory $script:Destination -BaseUri 'http://127.0.0.1:8123/'
         $Zip = [IO.Compression.ZipFile]::OpenRead($Result.ArchivePath)
         try {
-            $Reader = [IO.StreamReader]::new($Zip.GetEntry('commands/load.md').Open())
-            try { $Reader.ReadToEnd() | Should -Match '\.specify/extensions/example/resources/library/docs/policy\.md' }
+            $Zip.GetEntry('resources/library/docs/policy.md') | Should -Not -BeNullOrEmpty
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('source-manifest.json').Open())
+            try {
+                $Manifest = $Reader.ReadToEnd() | ConvertFrom-Json
+                $Instruction = @($Manifest.Payload | Where-Object SourcePath -CEQ 'docs/policy.md')
+                @($Instruction.Reasons | Where-Object Kind -CEQ 'external-instruction').Count | Should -Be 1
+            }
             finally { $Reader.Dispose() }
         }
         finally { $Zip.Dispose() }
@@ -132,7 +153,7 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
         $Cli.Error | Should -BeNullOrEmpty
         $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
         $Result.RootId | Should -BeExactly 'example'
-        $Result.Command | Should -BeExactly 'speckit.example.load'
+        $Result.Command | Should -BeNullOrEmpty
         Test-Path -LiteralPath $Result.CatalogPath -PathType Leaf | Should -BeTrue
     }
 
@@ -206,6 +227,18 @@ Describe 'Shared library command' -Tag 'Unit' {
                     '--artifacts', $script:LibrarySite, '--workspace', $script:LibraryWorkspace, '--'
                 ) + $CommandArguments)
         }
+            function Set-SharedReleaseFixture {
+                param([string]$Identity, [string]$SourceCommit = ('1' * 40), [string]$MetadataSuffix = '', [hashtable]$RequiredMetadata = @{})
+                $Source = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.zip')
+                $Digest = Set-ExtensionFixture -Path $Source -Identity $Identity -SourceCommit $SourceCommit -MetadataSuffix $MetadataSuffix -RequiredMetadata $RequiredMetadata
+                $Site = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+                $Package = Invoke-SkillExtension -ArchivePath $Source -ArchiveSha256 $Digest -OutputDirectory $Site -BaseUri 'http://127.0.0.1:8123/'
+                [IO.File]::Copy($Package.ArchivePath, (Join-Path $script:LibrarySite "$Identity-1.0.0.zip"), $true)
+                $Catalog = Get-Content -LiteralPath $Package.CatalogPath -Raw | ConvertFrom-Json -AsHashtable
+                $Index = Get-Content -LiteralPath $script:LibraryIndex -Raw | ConvertFrom-Json -AsHashtable
+                $Index.skills[$Identity] = @{ current = '1.0.0'; releases = @{ '1.0.0' = @{ archive = "$Identity-1.0.0.zip"; catalog = $Catalog.extensions[$Identity] } } }
+                [IO.File]::WriteAllText($script:LibraryIndex, ($Index | ConvertTo-Json -Depth 30))
+            }
     }
 
     It 'shows the shared command operations without a catalog or workspace mutation' {
@@ -254,13 +287,61 @@ Describe 'Shared library command' -Tag 'Unit' {
     It 'resolves an advertised or explicit release before installation: <Options>' -ForEach @(
         @{ Options = @() }, @{ Options = @('--latest') }, @{ Options = @('--version', '1.0.0') }
     ) {
+        $script:LibraryWorkspace = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $script:LibraryWorkspace '.specify'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $script:LibraryWorkspace '.github/skills'))
+        [IO.File]::WriteAllText((Join-Path $script:LibraryWorkspace '.specify/init-options.json'), '{"ai":"copilot","ai_skills":true}')
         $Cli = Invoke-SharedLibrary (@('install', 'example') + $Options)
-        $Cli.ExitCode | Should -Be 0 -Because $Cli.Error
         $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
-        $Result.Action | Should -BeExactly 'Selection'
-        $Result.RequiresPreview | Should -BeTrue
-        $Result.Selected[0].Version | Should -BeExactly '1.0.0'
-        $Result.Selected[0].Sha256 | Should -Match '^[a-f0-9]{64}$'
+        $Reason = if ($Result.Action -ceq 'Preview') { $Result.Preview.Blockers | ConvertTo-Json -Depth 10 -Compress } else { $Result.Message }
+        $Cli.ExitCode | Should -Be 0 -Because ($Cli.Error + $Reason)
+        $Result.Action | Should -BeExactly 'Preview'
+        $Result.RequiresApproval | Should -BeTrue
+        $Result.Preview.Ready | Should -BeTrue
+        $Result.Preview.Selection.Root.Version | Should -BeExactly '1.0.0'
+        $Result.Preview.Extensions[0].Archive.Sha256 | Should -Match '^[a-f0-9]{64}$'
+        $Result.Preview.Fingerprint | Should -Match '^[a-f0-9]{64}$'
+        Test-Path (Join-Path $script:LibraryWorkspace '.specify/extensions/example') | Should -BeFalse
+    }
+
+    It 'checks packaged required-component offers through the shared graph: <Fault>' -ForEach @(
+        @{ Fault = 'valid' }, @{ Fault = 'unknown-schema' }, @{ Fault = 'selected-cycle' }
+    ) {
+        $Shared = "optional: [{id: peer, version: '1.0.0', selectionKey: related, reason: 'Synthetic required-component offer.'}]`n"
+        if ($Fault -ceq 'unknown-schema') { $Shared += "unexpected: true`n" }
+        Set-SharedReleaseFixture -Identity example -MetadataSuffix "required: [{id: shared, version: '1.0.0'}]`n" -RequiredMetadata @{ shared = $Shared }
+        if ($Fault -ceq 'selected-cycle') {
+            Set-SharedReleaseFixture -Identity peer -MetadataSuffix "required: [{id: shared, version: '1.0.0'}]`n" -RequiredMetadata @{ shared = $Shared }
+        }
+        else { Set-SharedReleaseFixture -Identity peer }
+        $script:LibraryWorkspace = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $script:LibraryWorkspace '.specify'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $script:LibraryWorkspace '.github/skills'))
+        [IO.File]::WriteAllText((Join-Path $script:LibraryWorkspace '.specify/init-options.json'), '{"ai":"copilot","ai_skills":true}')
+        $Before = @(Get-ChildItem -LiteralPath $script:LibraryWorkspace -Force -Recurse | ForEach-Object FullName)
+        $Cli = Invoke-SharedLibrary @('install', 'example', '--optional', 'shared/related')
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        if ($Fault -ceq 'valid') {
+            $Cli.ExitCode | Should -Be 0 -Because ($Cli.Error + ($Result | ConvertTo-Json -Depth 20))
+            $Result.Preview.Ready | Should -BeTrue
+            @($Result.Preview.Selection.ExtensionRoots.Id) | Should -Be @('example', 'peer')
+            $Result.Preview.OptionalOffers[0].Selection | Should -BeExactly 'shared/related'
+            $Result.Preview.OptionalOffers[0].Selected | Should -BeTrue
+        }
+        else { $Cli.ExitCode | Should -Be 2 }
+        @(Get-ChildItem -LiteralPath $script:LibraryWorkspace -Force -Recurse | ForEach-Object FullName) | Should -Be $Before
+    }
+
+    It 'refuses shared apply without exact ready approval before catalog access: <Options>' -ForEach @(
+        @{ Options = @('--apply', '--reviewed-fingerprint', ('a' * 64)) }
+        @{ Options = @('--apply', '--version', '1.0.0') }
+        @{ Options = @('--version', '1.0.0', '--reviewed-fingerprint', ('a' * 64)) }
+    ) {
+        Remove-Item -LiteralPath $script:LibraryIndex
+        $Cli = Invoke-SharedLibrary (@('install', 'example') + $Options)
+        $Cli.ExitCode | Should -Be 2
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        $Result.Message | Should -Match '^Arguments:'
     }
 
     It 'rejects conflicting version selectors before catalog access' {
@@ -269,6 +350,62 @@ Describe 'Shared library command' -Tag 'Unit' {
         $Cli.ExitCode | Should -Be 2
         $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
         $Result.Message | Should -Match '^Arguments:'
+    }
+
+    It 'provides verified packaged selection without a source checkout or consumer mutation' {
+        $Before = @(Get-ChildItem -LiteralPath $script:LibraryWorkspace -Force -Recurse | ForEach-Object FullName)
+        $Cli = Invoke-LibraryProcess -Executable $script:LibraryPython -Arguments @(
+            '-I', '-B', $script:LibraryEntry, '--catalog', $script:LibraryIndex,
+            '--artifacts', $script:LibrarySite, '--workspace', $script:LibraryWorkspace,
+            '--package-selection', '--', 'install', 'example'
+        )
+        $Cli.ExitCode | Should -Be 0 -Because $Cli.Error
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        $Result.SourceKind | Should -BeExactly 'packaged'
+        $Result.Root.Id | Should -BeExactly 'example'
+        $Result.Root.Version | Should -BeExactly '1.0.0'
+        $Result.ExtensionRoots[0].SourceCommit | Should -BeExactly ('1' * 40)
+        $Result.RequiredInventories[0].SourceCommit | Should -BeExactly ('1' * 40)
+        $Result.RequiredInventories[0].Inventory.Components[0].Id | Should -BeExactly 'example'
+        @($Result.Tools | Where-Object Role -CEQ 'release-index').Count | Should -Be 1
+        @($Result.Tools | Where-Object Role -CEQ 'release-artifact').Count | Should -Be 0
+        @($Result.Artifacts).Count | Should -Be 1
+        $Result.Artifacts[0].RootId | Should -BeExactly 'example'
+        $Result.Artifacts[0].Sha256 | Should -Match '^[0-9a-f]{64}$'
+        @(Get-ChildItem -LiteralPath $script:LibraryWorkspace -Force -Recurse | ForEach-Object FullName) | Should -Be $Before
+    }
+
+    It 'preserves selected release commits without reading a declined peer: <SelectPeer>' -ForEach @(
+        @{ SelectPeer = $false }, @{ SelectPeer = $true }
+    ) {
+        Set-SharedReleaseFixture -Identity example -MetadataSuffix ('optional: [{id: peer, version: "1.0.0", selectionKey: related, reason: "Synthetic peer."}]' + "`n")
+        Set-SharedReleaseFixture -Identity peer -SourceCommit ('2' * 40)
+        $Arguments = @('-I', '-B', $script:LibraryEntry, '--catalog', $script:LibraryIndex, '--artifacts', $script:LibrarySite, '--package-selection', '--', 'install', 'example')
+        if ($SelectPeer) { $Arguments += @('--optional', 'example/related') }
+        else { Remove-Item -LiteralPath (Join-Path $script:LibrarySite 'peer-1.0.0.zip') }
+        $Cli = Invoke-LibraryProcess -Executable $script:LibraryPython -Arguments $Arguments
+        $Cli.ExitCode | Should -Be 0 -Because $Cli.Error
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        @($Result.ExtensionRoots).Count | Should -Be $(if ($SelectPeer) { 2 } else { 1 })
+        $Result.ExtensionRoots[0].SourceCommit | Should -BeExactly ('1' * 40)
+        $Result.OptionalOffers[0].Selected | Should -Be $SelectPeer
+        if ($SelectPeer) {
+            $Result.ExtensionRoots[1].Id | Should -BeExactly 'peer'
+            $Result.ExtensionRoots[1].SourceCommit | Should -BeExactly ('2' * 40)
+            $Result.RequiredInventories[1].SourceCommit | Should -BeExactly ('2' * 40)
+        }
+    }
+
+    It 'rejects a selected optional dependency cycle before producing packaged selection' {
+        Set-SharedReleaseFixture -Identity example -MetadataSuffix ('optional: [{id: peer, version: "1.0.0", selectionKey: related, reason: "Synthetic peer."}]' + "`n")
+        Set-SharedReleaseFixture -Identity peer -MetadataSuffix ('optional: [{id: example, version: "1.0.0", selectionKey: root, reason: "Synthetic cycle."}]' + "`n")
+        $Cli = Invoke-LibraryProcess -Executable $script:LibraryPython -Arguments @(
+            '-I', '-B', $script:LibraryEntry, '--catalog', $script:LibraryIndex, '--artifacts', $script:LibrarySite,
+            '--package-selection', '--', 'install', 'example', '--optional', 'example/related', '--optional', 'peer/root'
+        )
+        $Cli.ExitCode | Should -Be 2
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        $Result.Message | Should -Match '^Selection:.*cycle'
     }
 
     It 'reports an unknown skill without selecting or installing a guess' {
@@ -339,6 +476,9 @@ Describe 'Shared library command' -Tag 'Unit' {
             $Zip.GetEntry('tools/Invoke-Library.py') | Should -Not -BeNullOrEmpty
             $Zip.GetEntry('tools/Invoke-SpecKitInstall.py') | Should -Not -BeNullOrEmpty
             $Zip.GetEntry('tools/Read-Metadata.py') | Should -Not -BeNullOrEmpty
+            foreach ($Tool in @('Invoke-WorkspaceInstall.ps1', 'Invoke-Extension.ps1', 'Git-Process.ps1')) {
+                $Zip.GetEntry("tools/$Tool") | Should -Not -BeNullOrEmpty
+            }
             $Zip.GetEntry('library/packages/example-1.0.0.zip') | Should -Not -BeNullOrEmpty
             $Reader = [IO.StreamReader]::new($Zip.GetEntry('library/catalog.json').Open())
             try { $Index = $Reader.ReadToEnd() | ConvertFrom-Json -AsHashtable }
@@ -372,5 +512,21 @@ Describe 'Shared library command' -Tag 'Unit' {
         $Discovery.Action | Should -BeExactly 'Search'
         @($Discovery.Matches).Count | Should -Be 1
         $Discovery.Matches[0].Id | Should -BeExactly 'example'
+        $Consumer = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $Consumer '.specify'))
+        [void][IO.Directory]::CreateDirectory((Join-Path $Consumer '.github/skills'))
+        [IO.File]::WriteAllText((Join-Path $Consumer '.specify/init-options.json'), '{"ai":"copilot","ai_skills":true}')
+        $Before = @(Get-ChildItem -LiteralPath $Consumer -Force -Recurse | ForEach-Object FullName)
+        $Cli = Invoke-LibraryProcess -Executable $script:LibraryPython -Arguments @(
+            '-I', '-B', (Join-Path $Extracted 'tools/Invoke-Library.py'),
+            '--workspace', $Consumer, '--', 'install', 'example'
+        )
+        $Result = [Text.Encoding]::UTF8.GetString($Cli.Bytes) | ConvertFrom-Json
+        $Reason = if ($Result.Action -ceq 'Preview') { $Result.Preview.Blockers | ConvertTo-Json -Depth 10 -Compress } else { $Result.Message }
+        $Cli.ExitCode | Should -Be 0 -Because ($Cli.Error + $Reason)
+        $Result.Action | Should -BeExactly 'Preview'
+        $Result.Preview.Ready | Should -BeTrue
+        $Result.Preview.Fingerprint | Should -Match '^[a-f0-9]{64}$'
+        @(Get-ChildItem -LiteralPath $Consumer -Force -Recurse | ForEach-Object FullName) | Should -Be $Before
     }
 }

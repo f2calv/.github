@@ -89,6 +89,67 @@ function Assert-SkillTree {
     }
 }
 
+function Resolve-SkillGraph {
+    param([hashtable]$Catalog, [string[]]$RootId, [string[]]$OptionalSelection = @(), [hashtable]$AvailableVersions = @{})
+    if ($AvailableVersions.Count -eq 0) {
+        foreach ($Record in $Catalog.Values) { $AvailableVersions[$Record.id] = @($Record.version) }
+    }
+    $Selections = @{}
+    foreach ($Record in $Catalog.Values) {
+        $Edges = @{}
+        foreach ($Edge in @($Record.required) + @($Record.optional)) {
+            if ($Edges.ContainsKey($Edge.id)) { throw 'Duplicate dependency or required/optional overlap.' }
+            $Edges[$Edge.id] = $true
+            if (-not $AvailableVersions.ContainsKey($Edge.id)) { throw 'Missing dependency: opt in the target component with metadata.' }
+            if ($Edge.version -cnotin $AvailableVersions[$Edge.id]) { throw 'Dependency version mismatch: declare an available exact version.' }
+        }
+        foreach ($Edge in $Record.optional) {
+            $Key = "$($Record.id)/$($Edge.selectionKey)"
+            if ($Selections.ContainsKey($Key)) { throw 'Duplicate optional selection key.' }
+            $Selections[$Key] = $Edge.id
+        }
+    }
+    $Chosen = @{}
+    foreach ($Key in $OptionalSelection) {
+        if (-not $Selections.ContainsKey($Key) -or $Chosen.ContainsKey($Key)) { throw 'Unknown or duplicate optional selection: use component-id/selectionKey.' }
+        $Chosen[$Key] = $false
+    }
+    $State = @{}
+    $Resolved = [Collections.Generic.List[string]]::new()
+    function Resolve-SkillDependency {
+        param([string]$Id, [bool]$IncludeOptional)
+        if (-not $Catalog.ContainsKey($Id)) { throw 'Missing selected dependency metadata.' }
+        if ($State.ContainsKey($Id)) {
+            if ($State[$Id] -eq 'visiting') { throw 'Dependency cycle detected in selected closure.' }
+            return
+        }
+        $State[$Id] = 'visiting'
+        $Record = $Catalog[$Id]
+        foreach ($Edge in $Record.required) {
+            if (-not $Catalog.ContainsKey($Edge.id) -or $Catalog[$Edge.id].version -cne $Edge.version) { throw 'Selected dependency version mismatch.' }
+            Resolve-SkillDependency -Id $Edge.id -IncludeOptional $IncludeOptional
+        }
+        if ($IncludeOptional) {
+            foreach ($Edge in $Record.optional) {
+                $Key = "$Id/$($Edge.selectionKey)"
+                if ($Chosen.ContainsKey($Key)) {
+                    if (-not $Catalog.ContainsKey($Edge.id) -or $Catalog[$Edge.id].version -cne $Edge.version) { throw 'Selected dependency version mismatch.' }
+                    $Chosen[$Key] = $true
+                    Resolve-SkillDependency -Id $Edge.id -IncludeOptional $true
+                }
+            }
+        }
+        $State[$Id] = 'done'
+        $Resolved.Add($Id)
+    }
+    foreach ($Id in @($Catalog.Keys | Sort-Object)) { Resolve-SkillDependency -Id $Id -IncludeOptional $false }
+    $State.Clear()
+    $Resolved.Clear()
+    foreach ($Id in $RootId) { Resolve-SkillDependency -Id $Id -IncludeOptional $true }
+    if (@($Chosen.Values | Where-Object { -not $_ }).Count -gt 0) { throw 'Optional selection is not reachable from the selected roots.' }
+    return [ordered]@{ CatalogCount = $Catalog.Count; SelectedIds = $Resolved.ToArray() }
+}
+
 function Invoke-SkillValidation {
     param(
         [string]$RepoRoot, [string[]]$SkillName = @(), [string[]]$OptionalSelection = @(),
@@ -163,52 +224,6 @@ function Invoke-SkillValidation {
         $Folders[$Folder.Name] = $Record.id
     }
     if ($Catalog.Count -eq 0) { throw 'No opted-in skill.metadata.yaml records found.' }
-    $Selections = @{}
-    foreach ($Record in $Catalog.Values) {
-        $Edges = @{}
-        foreach ($Edge in @($Record.required) + @($Record.optional)) {
-            if ($Edges.ContainsKey($Edge.id)) { throw 'Duplicate dependency or required/optional overlap.' }
-            $Edges[$Edge.id] = $true
-            if (-not $Catalog.ContainsKey($Edge.id)) { throw 'Missing dependency: opt in the target component with metadata.' }
-            if ($Catalog[$Edge.id].version -cne $Edge.version) { throw 'Dependency version mismatch: declare an available exact version.' }
-        }
-        foreach ($Edge in $Record.optional) {
-            $Key = "$($Record.id)/$($Edge.selectionKey)"
-            if ($Selections.ContainsKey($Key)) { throw 'Duplicate optional selection key.' }
-            $Selections[$Key] = $Edge.id
-        }
-    }
-    $Chosen = @{}
-    foreach ($Key in $OptionalSelection) {
-        if (-not $Selections.ContainsKey($Key) -or $Chosen.ContainsKey($Key)) { throw 'Unknown or duplicate optional selection: use component-id/selectionKey.' }
-        $Chosen[$Key] = $false
-    }
-    $State = @{}
-    $Resolved = [System.Collections.Generic.List[string]]::new()
-    function Resolve-SkillDependency {
-        param([string]$Id, [bool]$IncludeOptional)
-        if ($State.ContainsKey($Id)) {
-            if ($State[$Id] -eq 'visiting') { throw 'Dependency cycle detected in selected closure.' }
-            return
-        }
-        $State[$Id] = 'visiting'
-        $Record = $Catalog[$Id]
-        foreach ($Edge in $Record.required) { Resolve-SkillDependency -Id $Edge.id -IncludeOptional $IncludeOptional }
-        if ($IncludeOptional) {
-            foreach ($Edge in $Record.optional) {
-                $Key = "$Id/$($Edge.selectionKey)"
-                if ($Chosen.ContainsKey($Key)) {
-                    $Chosen[$Key] = $true
-                    Resolve-SkillDependency -Id $Edge.id -IncludeOptional $true
-                }
-            }
-        }
-        $State[$Id] = 'done'
-        $Resolved.Add($Id)
-    }
-    foreach ($Id in @($Catalog.Keys | Sort-Object)) { Resolve-SkillDependency -Id $Id -IncludeOptional $false }
-    $State.Clear()
-    $Resolved.Clear()
     $Roots = @($Catalog.Keys | Sort-Object)
     if ($SkillName.Count -gt 0) {
         $Roots = @(foreach ($Name in $SkillName) {
@@ -216,9 +231,7 @@ function Invoke-SkillValidation {
             $Folders[$Name]
         })
     }
-    foreach ($Id in $Roots) { Resolve-SkillDependency -Id $Id -IncludeOptional $true }
-    if (@($Chosen.Values | Where-Object { -not $_ }).Count -gt 0) { throw 'Optional selection is not reachable from the selected roots.' }
-    $Result = [ordered]@{ CatalogCount = $Catalog.Count; SelectedIds = $Resolved.ToArray() }
+    $Result = Resolve-SkillGraph -Catalog $Catalog -RootId $Roots -OptionalSelection $OptionalSelection
     if ($IncludeCatalog) {
         $Result['Catalog'] = $Catalog
         $Result['Folders'] = $Folders
