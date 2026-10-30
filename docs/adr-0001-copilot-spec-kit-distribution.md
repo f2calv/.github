@@ -1,9 +1,9 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. The bounded workspace installer foundation has a passing 366-test baseline and ten passing focused PR-review checks. The shared command, bootstrap extension and per-skill CI delivery remain unimplemented; foundation acceptance is not demo acceptance.
+**Implementation Status:** In Progress, paused for complexity review. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. Current-head CI passes, but extension reproducibility, fresh shared-command consumer acceptance and permanent publication remain open. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
-**Last Updated:** 2026-10-29.
+**Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
 ## Context and Problem
@@ -67,7 +67,7 @@ this proposal itself authorizes no further setup, tests, initialization or publi
 | Maintain a second categorized source tree | Simple packaging layout | Duplicated guidance and broken native paths | Reject |
 | Use upstream presets as arbitrary file installers | Appears to reuse a package mechanism | Pinned contract does not establish that behavior | Reject for resource-bearing capabilities |
 | Generate extensions from explicit local closure | One source, selective artifacts, auditable inputs | Requires resolver, snapshot and runtime validation | Recommend |
-| One library command with arguments | Scalable discovery, installation and loading; reuses the packaging graph | Requires bootstrap packaging, argument handling and bounded approval | Owner-selected demo interface; implementation pending |
+| One library command with arguments | Scalable discovery, installation and loading; reuses the packaging graph | Requires bootstrap packaging, argument handling and bounded approval | Owner-selected demo interface; implemented, fresh demo acceptance pending |
 | One public command per skill | Simple isolated pilot and direct loading | Command proliferation does not scale to a large library | Retain historical evidence, reject as the target consumer interface |
 | Generate Agent Plugins from the same source | Alternative or additional client packaging | Different manifest and discovery contract | Evaluate; no second packager implemented |
 | Require hosted workflows or OCI first | Central automation and transport | Setup and release-train cost before proving the contract | Defer |
@@ -643,6 +643,49 @@ demonstration or additional dogfooding cycle is a prerequisite for implementing 
 
 ## Handover
 
+### Complexity Review Pause (2026-10-30)
+
+The owner reports losing visibility into the earlier Spec Kit implementation process and questions
+whether the resulting code and hundreds of tests are over-engineered for the intended demo.
+This concern is unresolved, not a finding that every test or protection is unnecessary. The passing
+repository-wide count below includes other tooling and later direct implementation; it is not a
+count of tests generated solely by Spec Kit. Neither passing tests nor completed task ledgers justify
+retaining complexity without a demonstrated requirement.
+
+Pause the requested serialization-fix, push, PR and merge sequence for a fresh/parallel review.
+The committed checkpoint is `8c0285c747b777cf32cc32d5272f5d0817dbbf19` on
+`f2calv/2026-10-updates6`, already pushed. The working tree was clean before this ADR-only update.
+The attempted serialization patch did not land; no new regression tests, artifact builds, commits,
+pushes, PR creation or merge followed that request. No background implementation or CI run is active
+in this session. This update does not restart them or create a parallel checkout/session.
+
+The owner subsequently authorized committing and pushing this checkpoint, creating its PR and merging
+only after current-head CI and security/quality gates pass. That authorization does not resume the
+serialization implementation or accept the design's complexity; the review below remains pending.
+
+The next review should begin read-only, without another Spec Kit planning or dogfooding cycle:
+
+* Restate the smallest Monday D1-D5 consumer journey and identify which existing layers directly
+  support it. Native consumption and one authored source remain the baseline alternatives.
+* Inspect the [library workflow](../.github/skills/skill-library/SKILL.md), its
+  [scripts and tests](../.github/skills/skill-library/scripts/),
+  [repository test runner](../.scripts/Invoke-Tests.ps1) and
+  [CI delivery](../.github/workflows/_skills-library-delivery.yml). Classify implementation and
+  coverage as necessary, duplicated, speculative or deferred; connect each recommendation to an
+  observable requirement or concrete failure rather than a test-count target.
+* Propose a smaller design and explicit deletion/consolidation candidates, including the behavior
+  and guarantees that would change. Do not silently drop integrity, explicit approval or protection
+  of existing consumer files merely to reduce lines or CI duration.
+* Present the proposed scope and tradeoffs to the owner before editing. Keep the serialization defect
+  below visible; do not mark it fixed, publish components or resume PR/merge work automatically.
+
+Only four components currently have opted-in distribution metadata. Their `1.0.0` values remain
+unpublished intent. Merging would invoke the existing repository-level GitVersion release workflow,
+not publish `1.0.0` for every skill; independent component publication is not wired. Historical
+foundation acceptance, including unperformed T053, remains unchanged. Verify the live branch and
+working tree before acting in another session; this checkpoint is not permission to overwrite
+concurrent work.
+
 ### Current-Head CI Evidence (2026-10-30)
 
 At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
@@ -651,16 +694,21 @@ calculation, .NET example tests and the required Pester gate. Pester reported 99
 and zero failed; its job took 18m17s and test execution took 1064.67 seconds. Summed per-test durations
 were 619.8 seconds for workspace installation and 220.0 seconds for version preparation, together
 about 79% of test execution. Coverage setup and report processing took 830 ms and 853 ms; these
-figures do not measure instrumentation overhead during tests. Parallelizing the dominant suites is
-the measured optimization candidate; dependency-aware changed-file selection remains proposed.
+figures do not measure instrumentation overhead during tests. These serial timings are the baseline
+for the parallel run below; dependency-aware changed-file selection remains proposed.
 
-The local test workflow now partitions that full suite into independent `workspace-install`,
+The test workflow now partitions that full suite into independent `workspace-install`,
 `version-preparation` and `remaining` matrix jobs, with fail-fast disabled and the existing required
 aggregate gate retained. All 27 focused runner/workflow-contract tests pass, including exhaustive,
 non-overlapping file selection and failed/empty execution guards. Ordinary local runs still select
-the complete suite. The parallel layout has not yet run in CI; the serial timings above are its
-baseline, not evidence of an achieved speedup. No prebuilt toolchain image or changed-file filter
-was introduced.
+the complete suite. At commit `8c0285c747b777cf32cc32d5272f5d0817dbbf19`,
+[parallel CI](https://github.com/f2calv/.github/actions/runs/41041632583) passed lint, version
+calculation, .NET examples, all three Pester shards and the aggregate gate. Workspace installation
+reported 125 passes in an 11m30s job; version preparation reported 48 in 4m18s; remaining suites
+reported 836 passes and one skip in 3m19s. Together they reported 1,009 passed, one skipped and zero
+failed or NotRun, retaining the baseline plus ten new runner/workflow checks. The longest Pester job
+fell from 18m17s to 11m30s, about 37%; this measures wall-clock improvement, not reduced complexity
+or coverage adequacy. No prebuilt toolchain image, changed-file filter or test exclusion was introduced.
 
 [Preparation](https://github.com/f2calv/.github/actions/runs/41036426592) was Ready and BuildReady,
 with no metadata edits. The four unpublished components retained `1.0.0`:
