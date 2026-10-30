@@ -103,7 +103,7 @@ Describe 'Persistent .NET example validation' -Tag 'Unit' {
         $job.'runs-on' | Should -Be 'ubuntu-24.04'
         $job.permissions.contents | Should -Be 'read'
         $job.defaults.run.'working-directory' | Should -Be $fixtureRelativePath
-        $job.ContainsKey('if') | Should -BeFalse
+        $job['if'] | Should -BeExactly "github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'"
         $workflow.jobs.release.needs | Should -Contain 'dotnet-examples'
         ($job.steps | Where-Object { $_.ContainsKey('uses') -and $_.uses -like 'actions/setup-dotnet@*' }).with.'dotnet-version' |
             Should -Be '10.0.x'
@@ -120,6 +120,28 @@ Describe 'Persistent .NET example validation' -Tag 'Unit' {
         ($runs -join "`n") | Should -Not -Match 'dotnet run|BenchmarkSwitcher|--filter "\*CountParsingBenchmarks'
         $global = Get-Content -LiteralPath (Join-Path $fixtureRoot 'global.json') -Raw | ConvertFrom-Json
         $global.test.runner | Should -Be 'Microsoft.Testing.Platform'
+    }
+
+    It 'runs .NET examples for <EventName> with skill delivery <DeliveryMode>: <ExpectedRun>' -TestCases @(
+        @{ EventName = 'pull_request'; DeliveryMode = ''; ExpectedRun = $true }
+        @{ EventName = 'pull_request'; DeliveryMode = 'off'; ExpectedRun = $true }
+        @{ EventName = 'pull_request'; DeliveryMode = 'prepare'; ExpectedRun = $true }
+        @{ EventName = 'pull_request'; DeliveryMode = 'build'; ExpectedRun = $true }
+        @{ EventName = 'push'; DeliveryMode = ''; ExpectedRun = $true }
+        @{ EventName = 'push'; DeliveryMode = 'off'; ExpectedRun = $true }
+        @{ EventName = 'push'; DeliveryMode = 'prepare'; ExpectedRun = $true }
+        @{ EventName = 'push'; DeliveryMode = 'build'; ExpectedRun = $true }
+        @{ EventName = 'workflow_dispatch'; DeliveryMode = 'off'; ExpectedRun = $true }
+        @{ EventName = 'workflow_dispatch'; DeliveryMode = 'prepare'; ExpectedRun = $false }
+        @{ EventName = 'workflow_dispatch'; DeliveryMode = 'build'; ExpectedRun = $false }
+    ) {
+        param($EventName, $DeliveryMode, $ExpectedRun)
+        $condition = [regex]::Match($workflow.jobs['dotnet-examples']['if'],
+            "\Agithub\.event_name != '(?<ManualEvent>[^']+)' \|\| inputs\.skill-delivery == '(?<NormalMode>[^']+)'\z")
+        $condition.Success | Should -BeTrue
+        $shouldRun = ($EventName -cne $condition.Groups['ManualEvent'].Value) -or
+            ($DeliveryMode -ceq $condition.Groups['NormalMode'].Value)
+        $shouldRun | Should -Be $ExpectedRun
     }
 
     It 'updates only the maintained runnable package root, not illustrative package fragments' {

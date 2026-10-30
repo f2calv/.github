@@ -654,10 +654,12 @@ Source/link validation is not editor-discovery or generated-extension acceptance
 
 Local validation exposed a pre-existing CI-contract mismatch in
 [the coverage suite](../.scripts/tests/SkillValidationCoverage.Tests.ps1): the persistent .NET
-example test requires its CI job to have no `if` key, but the committed workflow already has one.
-The naming batches do not change that workflow or weaken the assertion. Review intended event
-gating and reconcile the workflow or test before claiming the complete suite passes; this is deferred
-here to keep CI behavior changes separate from source renaming.
+example test incorrectly required its CI job to have no `if` key. The workflow intentionally skips
+normal CI jobs only for manual skill-delivery preparation or builds. The test now checks that exact
+predicate and an event/input matrix: pull requests and pushes always run the example job, normal
+manual CI runs it, and manual `prepare`/`build` deliveries skip it. All 17 tests in the affected
+coverage suite pass locally. The workflow and release fan-in remain unchanged; this is not evidence
+of a complete repository regression or a new remote CI run.
 
 ### Current Progress (2026-10-29)
 
