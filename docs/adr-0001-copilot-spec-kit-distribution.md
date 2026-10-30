@@ -120,6 +120,27 @@ fabricating completion of its remaining editor observation. Continue directly ag
 focused implementation and validation; no further specify/plan/tasks cycle is required. Spec Kit
 remains the extension runtime, not a mandatory development ceremony for the remaining demo work.
 
+### Published Archive Retention
+
+On 2026-10-30 the owner required indefinite availability of every published extension archive,
+including superseded versions. Expiring Actions artifacts are build handoff only, never the permanent
+installation source. Publishing a newer version must not delete, overwrite or expire older archives,
+their checksums, exact-version catalog records or associated source/provenance evidence. Preserve
+immutable `<component-id>/X.Y.Z` tags without floating aliases.
+
+GitHub Release assets are the recommended primary ZIP transport, distinct from Actions artifacts.
+Use [immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+to lock assets and tags: assemble and verify every asset on a draft before publishing. Release
+publication, immutable-release configuration and remote installer acquisition are not implemented by
+the current artifact-only workflow or bundled-catalog installer.
+
+Permanent retention requires no automated release cleanup and an independent retained backup of the
+actual ZIP bytes, catalogs, checksums and evidence, with verified restoration. Git history alone does
+not back up attached release assets. No hosting provider guarantees literal perpetual service;
+repository/account deletion, service loss or mandatory removal remain availability risks. Backup and
+recovery arrangements must be established before claiming the retention requirement is met. A package
+registry may be evaluated as an alternative transport, but does not itself satisfy this requirement.
+
 ### Single Library Command
 
 Use the canonical name `/speckit-skill-library` with deterministic argument parsing and a CLI-style
@@ -177,6 +198,9 @@ Current native layout and metadata discovery remain flat, with immediate-folder 
 Future directory deepening requires verified native-host discovery and supporting tooling changes;
 this proposal does not claim nested folders work. A same-ID source/native-command rename needs no ID
 migration, but still requires public-compatibility and version-impact assessment.
+Upstream-generated `speckit-*` skill folders are owned and maintained by Spec Kit, not this library.
+Exclude them from component metadata enrollment, normalization, independent versioning and release tags;
+preserve their native runtime use without republishing them as library-owned components.
 
 Define one format-neutral authoritative metadata contract for component identity, independent
 version, optional facets and license/notice exceptions, required/optional dependencies,
