@@ -19,6 +19,13 @@
 5. Inspect translation using `ToQueryString` where supported and sanitized command diagnostics.
    Never solve a translation failure by pulling an unbounded table into memory. Confirm
    provider-specific methods execute server-side and maintain the expected null/culture semantics.
+   A CLR string mapped as JSONB can translate member access as JSON traversal rather than text
+   operations. Verify explicit text conversion before length predicates/projections on Npgsql;
+   the same conversion may not translate on SQLite. Keep provider-specific expressions deliberate,
+   and ensure width preflights select lengths rather than client-evaluating full payloads.
+   Successful translation does not prove native reader/type compatibility. Execute representative
+   materialization against the actual provider; when synthetic defaults need no SQL evaluation,
+   add them after materializing the bounded persisted-field projection.
 6. Fix query shape, indexing and result volume before adding caching, raw SQL or compiled queries.
    Parameterize dynamic query values rather than building new constant-shaped expression trees
    that defeat query/plan caching. Compiled queries and models need measurements and version checks.

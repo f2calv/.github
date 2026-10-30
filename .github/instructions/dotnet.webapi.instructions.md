@@ -40,6 +40,10 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**
 - **Logging lives in the service**: domain-specific, request-specific logging belongs in the service
   method. Remove `ILogger` from a controller whose methods only delegate; inject it only for work that
   cannot be delegated, such as a streaming loop with `LogTrace`.
+- **Private source content is not cacheable by default**: emit `Cache-Control: no-store` on private
+  document/source responses unless an explicit access- and retention-aware caching policy requires
+  otherwise. Cookie authorization alone is not a cache policy. Verify headers on actual content
+  responses, not only endpoint attributes.
 - **Typed service methods**: never call generic base-class methods (`GetEntities<T>(tableName, ...)`,
   `Enqueue<T>(obj, ...)`) from a controller. Add typed service methods that own table names, queue
   keys and domain logging, keeping controllers ignorant of infrastructure.

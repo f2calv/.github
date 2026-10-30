@@ -12,6 +12,31 @@
    and rollback/recovery before changing a populated/shared database. Scaffolding and applying
    are separate actions.
 
+### Remedy Older EF Tools Warnings
+
+When EF reports that its tools are older than the runtime, resolve the mismatch rather than
+repeatedly accepting or suppressing the warning:
+
+1. From the repository root, inspect `dotnet ef --version`, the applicable local tool manifests,
+   global/custom-path installation and the project's resolved EF Core runtime and Design packages.
+   The installed global tool is not necessarily the tool the repository invokes.
+2. Update the existing owning installation to the exact resolved EF Core runtime version when
+   available. Stay on the project's supported release line; do not install an unqualified latest
+   version, introduce a new manifest, upgrade application/provider packages or change SDK selection
+   merely to remove the warning. If that version is unavailable or incompatible, report the
+   blocker and agree a compatible version rather than silently proceeding.
+3. Use `dotnet tool update dotnet-ef --tool-manifest <absolute-manifest-path> --version <version>`
+   for a repository-local tool. For a global or custom-path installation, confirm the shared-machine
+   impact before using `--global` or `--tool-path <absolute-tool-directory>` with the same explicit
+   version. Preserve the existing installation scope; do not update unrelated tools.
+4. Align directly related CI, container or setup pins that supply this repository's EF tool.
+   Verify `dotnet ef --version` through the original invocation path, then repeat an approved
+   offline model check or SQL-generation command and require the warning to disappear.
+   Never rerun a live database update merely to verify tooling; build/test approvals still apply.
+
+Record the old/new versions and changed pins. If updating is blocked or declined, state that
+explicitly and obtain a decision before further migration work.
+
 ## Scaffold and Inspect
 
 - Change the model/mapping first. Scaffold from current compiled code; let `migrations add` build

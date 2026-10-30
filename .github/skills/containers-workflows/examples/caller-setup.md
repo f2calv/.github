@@ -78,6 +78,11 @@ also removes the generated caller `deps/` directory during cleanup. The script c
 the supported `Application`/`ApplicationSet` single-source shapes and the shared chart's
 `_shared` image contract; validate those prerequisites rather than assuming arbitrary manifests work.
 
+When launching a new `pwsh -File` process through the untyped root shim, omit disabled switches
+instead of forwarding values such as `-Chart:$false`. A false value can bind as a positional
+argument while enabling the switch. Pass the intended `-Tag` explicitly, keep `-NoCommit`, and
+verify the chart revision and digest-qualified image before a separately authorized commit/push.
+
 ## Check the Result
 
 Before real execution, parse the rendered shims, import the data example with

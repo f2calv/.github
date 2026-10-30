@@ -54,9 +54,11 @@ into the target repository rather than copying over existing policy.
   `--filter-class Example.Tests.Leadership*`. Method selectors also require the fully qualified
   method name, for example `--filter-method Example.Tests.AuthenticationTests.CachedSession`;
   a bare method name can select zero tests even alongside a class filter. Verify narrow live-test
-  selectors with `--list-tests` before execution. To union several classes, repeat `--filter-class`;
-  do not join names with `|`. Verify the discovered selection against the repository's runner version,
-  and verify a nonzero executed-test count before recording success.
+  selectors with `--list-tests` before execution. To union several classes, pass multiple patterns
+  after one `--filter-class`; do not repeat the option or join names with `|`. Class wildcards belong
+  only at the beginning and/or end of each pattern. Prefer explicit classes when a broad prefix
+  would also select separately gated infrastructure/live cases. Verify the discovered selection
+  against the repository's runner version and require a nonzero executed-test count.
 
 ## Workflows and Actions
 
