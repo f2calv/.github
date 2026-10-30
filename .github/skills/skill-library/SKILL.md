@@ -37,6 +37,8 @@ discovery name and description. Metadata adds distribution identity, not another
    `notice`) and `loadingPurpose`. An external declaration is required when the component is selected.
 6. Declare advisory `tooling` with `id`, exact or `>=X.Y.Z` `versionRequirement`, `scope` (`build`,
    `authoring`, `consumer`) and boolean `required`. Validation does not execute or install these tools.
+   Mark a tool optional only when the supported operation works without it; a different shell
+   launcher does not eliminate the underlying runtime requirement. Declare each implemented scope.
 7. With test approval, maintain focused synthetic coverage alongside the validator. Validate metadata
    and native links separately; local links are not an inferred graph or a complete redistribution audit.
 
@@ -76,6 +78,16 @@ notices, component notices and external declarations fail. Required cycles fail 
 Optional edges enter closure only when their `component-id/selectionKey` is explicitly selected and
 reachable; selected optional cycles fail. Success returns catalog count and dependency-first selected IDs.
 Failures return nonzero without echoing YAML contents or interpreter stderr.
+
+The optional repository-root `.skillsignore` owns distribution exclusions. It accepts exact native
+folder names or trailing `prefix-*` patterns, one per line; blank lines and whole-line `#` comments
+are allowed. Paths, negation, other glob syntax and duplicate patterns fail. The repository excludes
+`speckit-*` because those generated skills belong to upstream Spec Kit. Excluded folders remain
+available to native VS Code discovery but never enter library metadata validation, inventory,
+version preparation or structural skill checks, even if a sidecar appears. Explicit selection or
+dependencies on excluded skills fail. Structural checks and the library share the same reader;
+committed inventory reads the policy from its chosen revision, and preparation fingerprints it.
+Do not use this ownership policy to suppress unrelated lint or whitespace checks.
 
 After schema edits, refresh the editor's YAML schema cache if diagnostics still require removed
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
@@ -242,12 +254,22 @@ authentication or redistribution approval.
 
 ## Shared Library Bootstrap
 
-For a `skill-library` source archive, supply `-LibraryCatalogPath` with one to sixteen explicit
+For a `skill-library` source archive, supply `-LibraryCatalogPath` with one to 256 explicit
 existing release catalogs and their sibling ZIPs. The adapter bundles those exact packages, a local
 library index, dispatcher, approval worker, verifier, shared metadata schema/graph validator, strict
 YAML reader, transitive helpers and both prerequisite lockfiles. No maintainer checkout or alternative
 catalog is needed at runtime. Existing CPython 3.11+ with PyYAML 6.0.3 and Spec Kit 1.2.3 is required;
 installation also requires PowerShell 7.4+ and Git. Never provision prerequisites silently.
+The catalog bound is independent of the sixteen-root installation transaction bound. Keep old
+published releases available; this bundled subset is not the permanent release archive.
+
+The Monday demo keeps the existing Python/PowerShell implementation rather than parallel Python,
+PowerShell and Bash engines. Native guidance can be read without executing its helpers, but the
+bootstrap's current installer cannot run without its declared runtimes. Alternative engines are
+deferred until after the demo: select real target environments, compare dependency and maintenance
+costs, and require shared behavior and failure-contract coverage before claiming interchangeability.
+Git remains an installation prerequisite in this guide; its minimum supported version has not yet
+been established, so do not invent a numeric sidecar requirement merely to fill the schema.
 
 The source/component ID and archive name remain `skill-library`. The generated bootstrap's runtime
 extension ID is `skill`, its canonical command is `speckit.skill.library`, and native Copilot
@@ -543,6 +565,9 @@ publication remain separate acceptance gates.
 
 Version preparation and local archives above are implemented; PR creation and release publication remain
 separate operations. Review preparation before opening a PR and rerun after changed inputs or decisions.
+Follow the [published archive retention contract](../../../docs/adr-0001-copilot-spec-kit-distribution.md#published-archive-retention):
+expiring CI artifacts are not permanent releases. Retain every published exact version and its evidence;
+publication storage, immutable-release protections and independent backups remain separate setup gates.
 
 Reuse the [release-train version-decision policy](../dotnet-release-train/SKILL.md#release-version-decision),
 not an assumed reusable skill-version script: major for breaking public contracts, minor for compatible
@@ -594,6 +619,8 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Recheck draft 2020-12 behavior when PowerShell's `Test-Json` or JsonSchema.Net changes.
 - Recheck node/tag handling and scalar preservation when updating PyYAML or Python.
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
+- Keep `.skillsignore` semantics aligned across structural checks, committed inventory and preparation; exclude upstream metadata before parsing and bind policy changes into reviewed fingerprints.
+- Exercise bootstrap catalog-capacity boundaries independently of installation transaction bounds and permanent release retention.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
@@ -620,6 +647,6 @@ needs no ID migration, but still needs version-impact review and safe installed-
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
 - Keep CI delivery on the same preparation and archive/adapter paths. Exercise prepared committed builds, true dirty-source refusal, independently named artifacts, unchanged components, repeat digests and bootstrap-last catalog ordering; a workflow parse or synthetic run is not actual CI evidence.
 - Keep limited delivery dispatch separate from normal CI/release gates. Reusable delivery concurrency must have its own suffix because the caller's `github.workflow` value is inherited; matching keys can cancel the caller.
-- Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
+- Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits. Freeze the trusted library tree during fingerprint tests; concurrent edits intentionally invalidate their source snapshots.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
 - Verify native discovery before deepening folders; keep catalog migration history and installer recovery aligned.

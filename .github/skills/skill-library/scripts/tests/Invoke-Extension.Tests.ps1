@@ -459,6 +459,45 @@ Describe 'Shared library command' -Tag 'Unit' {
         [IO.File]::ReadAllText($Entrypoint) | Should -Match 'Changed$'
     }
 
+    It 'bundles <ReleaseCount> independent release catalogs without expanding install transactions' -ForEach @(
+        @{ ReleaseCount = 46 }
+        @{ ReleaseCount = 256 }
+    ) {
+        $CatalogPaths = @(
+            foreach ($ReleaseIndex in 1..$ReleaseCount) {
+                $Source = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.zip')
+                $Digest = Set-ExtensionFixture -Path $Source -Identity "example-$ReleaseIndex"
+                $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+                $Package = Invoke-SkillExtension -ArchivePath $Source -ArchiveSha256 $Digest -OutputDirectory $Destination -BaseUri 'http://127.0.0.1:8123/'
+                $Package.CatalogPath
+            }
+        )
+        $Source = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.zip')
+        $Digest = Set-ExtensionFixture -Path $Source -Identity 'skill-library'
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Package = Invoke-SkillExtension -ArchivePath $Source -ArchiveSha256 $Digest -OutputDirectory $Destination -BaseUri 'http://127.0.0.1:8123/' -LibraryCatalogPath $CatalogPaths
+        $Zip = [IO.Compression.ZipFile]::OpenRead($Package.ArchivePath)
+        try {
+            @($Zip.Entries | Where-Object FullName -Like 'library/packages/*.zip').Count | Should -Be $ReleaseCount
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('library/catalog.json').Open())
+            try { $Index = $Reader.ReadToEnd() | ConvertFrom-Json -AsHashtable }
+            finally { $Reader.Dispose() }
+            $Index.skills.Count | Should -Be $ReleaseCount
+            $Index.skills["example-$ReleaseCount"].current | Should -BeExactly '1.0.0'
+        }
+        finally { $Zip.Dispose() }
+    }
+
+    It 'rejects more than 256 release catalogs before reserving bootstrap output' {
+        $Source = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.zip')
+        $Digest = Set-ExtensionFixture -Path $Source -Identity 'skill-library'
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        {
+            Invoke-SkillExtension -ArchivePath $Source -ArchiveSha256 $Digest -OutputDirectory $Destination -BaseUri 'http://127.0.0.1:8123/' -LibraryCatalogPath (@('missing-catalog.json') * 257)
+        } | Should -Throw '*one to 256*'
+        Test-Path -LiteralPath $Destination | Should -BeFalse
+    }
+
     It 'packages a genuine shared-command bootstrap with its backend and exact release artifacts' {
         $Source = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '.zip')
         $Digest = Set-ExtensionFixture -Path $Source -Identity 'skill-library'

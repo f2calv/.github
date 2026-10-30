@@ -57,6 +57,18 @@ Describe 'Skill version preparation' -Tag 'Unit' {
         Save-VersionFixture
     }
 
+    It 'fingerprints the exclusion policy without versioning excluded skill content' {
+        [IO.File]::WriteAllText((Join-Path $script:Root '.skillsignore'), "speckit-*`n")
+        Set-VersionFixtureSkill -Id 'speckit-example'
+        Save-VersionFixture
+        $Plan = Invoke-VersionFixture -Bootstrap example
+        @($Plan.Components.Id) | Should -Be @('example')
+        Add-VersionFixtureChange -Id 'speckit-example'
+        (Invoke-VersionFixture -Bootstrap example).Fingerprint | Should -BeExactly $Plan.Fingerprint
+        [IO.File]::AppendAllText((Join-Path $script:Root '.skillsignore'), "# Ownership policy.`n")
+        (Invoke-VersionFixture -Bootstrap example).Fingerprint | Should -Not -BeExactly $Plan.Fingerprint
+    }
+
     It 'shares byte-safe process input and drains stderr independently' {
         $Bytes = [byte[]]@(0, 255, 13, 10, 128)
         $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source

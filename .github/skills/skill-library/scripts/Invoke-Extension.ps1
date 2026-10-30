@@ -16,6 +16,7 @@ New absolute directory under an existing trusted parent outside the source check
 Hosting base URI for the generated catalog: HTTPS or loopback HTTP, without credentials or queries.
 .PARAMETER LibraryCatalogPath
 Explicit existing package catalogs bundled by the skill-library bootstrap, with their sibling ZIPs.
+Supply one to 256 catalogs. This is separate from the per-install extension-root limit.
 .EXAMPLE
 ./Invoke-Extension.ps1 -ArchivePath /tmp/native/package.zip -ArchiveSha256 <digest> -OutputDirectory /tmp/site -BaseUri http://127.0.0.1:8123/
 .NOTES
@@ -122,7 +123,7 @@ function Invoke-SkillExtension {
     $Body = ''
     $Build = [ordered]@{ Contract = 'skill-extension/1'; SourceArchiveSha256 = $ArchiveSha256; SourceCommit = $Manifest.SourceCommit; Root = $Root; SpecKitVersion = '1.2.3' }
     if ($Root.Id -ceq 'skill-library') {
-        if ($LibraryCatalogPath.Count -eq 0 -or $LibraryCatalogPath.Count -gt 16) { throw 'Input: A bootstrap requires one to sixteen explicit local release catalogs.' }
+        if ($LibraryCatalogPath.Count -eq 0 -or $LibraryCatalogPath.Count -gt 256) { throw 'Input: A bootstrap requires one to 256 explicit local release catalogs.' }
         $Library = [ordered]@{ schema_version = 'skill-library/1'; skills = [ordered]@{} }
         foreach ($Location in $LibraryCatalogPath) {
             $CatalogFile = Get-Item -LiteralPath $Location -Force -ErrorAction Stop

@@ -15,3 +15,19 @@ tooling:
     versionRequirement: '6.0.3'
     scope: authoring
     required: true
+  - id: powershell
+    versionRequirement: '>=7.4.0'
+    scope: consumer
+    required: true
+  - id: python
+    versionRequirement: '>=3.11.0'
+    scope: consumer
+    required: true
+  - id: pyyaml
+    versionRequirement: '6.0.3'
+    scope: consumer
+    required: true
+  - id: spec-kit
+    versionRequirement: '1.2.3'
+    scope: consumer
+    required: true

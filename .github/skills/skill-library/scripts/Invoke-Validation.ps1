@@ -44,6 +44,32 @@ function Read-SkillInputBytes {
     finally { $Stream.Dispose() }
 }
 
+function Read-SkillExclusions {
+    param([string]$Root)
+    $Path = Join-Path $Root '.skillsignore'
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    [void](Assert-LibraryPath -Root $Root -Relative '.skillsignore')
+    $Patterns = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $Text = [Text.UTF8Encoding]::new($false, $true).GetString((Read-SkillInputBytes -Path $Path))
+    foreach ($Line in $Text -split '\r?\n') {
+        $Pattern = $Line.Trim()
+        if (-not $Pattern -or $Pattern.StartsWith('#')) { continue }
+        if ($Pattern -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*(?:-\*)?$') {
+            throw 'Invalid .skillsignore: use exact lowercase skill folders or prefix-* patterns, one per line.'
+        }
+        if (-not $Patterns.Add($Pattern)) { throw 'Duplicate .skillsignore pattern.' }
+    }
+    foreach ($Pattern in $Patterns) { $Pattern }
+}
+
+function Test-SkillExcluded {
+    param([string]$Name, [string[]]$Patterns = @())
+    foreach ($Pattern in $Patterns) {
+        if ($Name -clike $Pattern) { return $true }
+    }
+    return $false
+}
+
 function Read-SkillYaml {
     param([string]$Path, [string]$PythonPath, [switch]$Frontmatter)
     try { $Executable = (Get-Command $PythonPath -CommandType Application -TotalCount 1).Source }
@@ -176,7 +202,9 @@ function Invoke-SkillValidation {
     $Catalog = @{}
     $Folders = @{}
     $Paths = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $Exclusions = @(Read-SkillExclusions -Root $Root)
     foreach ($Folder in Get-ChildItem -LiteralPath $SkillsRoot -Directory -Force | Sort-Object Name) {
+        if (Test-SkillExcluded -Name $Folder.Name -Patterns $Exclusions) { continue }
         $MetadataPath = Join-Path $Folder.FullName 'skill.metadata.yaml'
         if (-not (Test-Path -LiteralPath $MetadataPath)) { continue }
         $Relative = ".github/skills/$($Folder.Name)"

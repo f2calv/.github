@@ -168,6 +168,17 @@ Describe 'Inventory snapshot boundary' -Tag 'Unit' {
 
     BeforeEach { $script:Root = New-InventoryFixture }
 
+    It 'uses committed skill exclusions before reading upstream sidecars' {
+        Set-InventorySkill $script:Root 'speckit-example'
+        Set-InventoryFile $script:Root '.github/skills/speckit-example/skill.metadata.yaml' 'invalid: ['
+        Set-InventoryFile $script:Root '.skillsignore' "speckit-*`n"
+        [void](Save-InventoryFixture $script:Root)
+        Set-InventoryFile $script:Root '.skillsignore' 'invalid/**'
+        $Result = Invoke-SnapshotFixture
+        $Result.Paths | Should -Contain '.skillsignore'
+        @($Result.Paths | Where-Object { $_ -like '.github/skills/speckit-*/*' }).Count | Should -Be 0
+    }
+
     It 'reads committed binary bytes despite dirty, deleted and untracked files without changing source state' {
         Set-InventoryFile -Root $script:Root -Path '.github/skills/example/assets/data.bin' -Bytes ([byte[]]@(0, 255, 13, 10, 128))
         $Commit = Save-InventoryFixture $script:Root

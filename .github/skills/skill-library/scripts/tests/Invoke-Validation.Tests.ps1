@@ -47,6 +47,37 @@ Describe 'Skill metadata validation' -Tag 'Unit' {
         @($Result.SelectedIds).Count | Should -Be 1
     }
 
+    It 'excludes matching folders before reading even malformed metadata' {
+        Set-Content -LiteralPath (Join-Path $script:Root '.skillsignore') -Value "# Owned upstream.`n`nspeckit-*`nexcluded"
+        foreach ($Name in @('speckit-example', 'excluded')) {
+            [void](Set-FixtureSkill -Root $script:Root -Name $Name)
+            Set-Content -LiteralPath (Join-Path $script:Root ".github/skills/$Name/skill.metadata.yaml") -Value 'invalid: ['
+        }
+        [void](Set-FixtureSkill -Root $script:Root -Name 'speckitish-example')
+        (Invoke-FixtureValidation $script:Root).CatalogCount | Should -Be 2
+        { Invoke-FixtureValidation $script:Root -Names 'speckit-example' } | Should -Throw '*Selected native skill*'
+    }
+
+    It 'rejects dependencies on excluded skills' {
+        Set-Content -LiteralPath (Join-Path $script:Root '.skillsignore') -Value 'speckit-*'
+        [void](Set-FixtureSkill -Root $script:Root -Name 'speckit-example')
+        [void](Set-FixtureSkill -Root $script:Root -Changes @{ required = @(@{ id = 'speckit-example'; version = '1.0.0' }) })
+        { Invoke-FixtureValidation $script:Root } | Should -Throw '*Missing dependency*'
+    }
+
+    It 'rejects unsupported exclusion pattern <Pattern>' -ForEach @(
+        @{ Pattern = '../example' }
+        @{ Pattern = 'speckit/**' }
+        @{ Pattern = '!example' }
+        @{ Pattern = '*' }
+        @{ Pattern = 'Example' }
+        @{ Pattern = 'example?' }
+        @{ Pattern = "example`nexample" }
+    ) {
+        Set-Content -LiteralPath (Join-Path $script:Root '.skillsignore') -Value $Pattern
+        { Invoke-FixtureValidation $script:Root } | Should -Throw '*.skillsignore*'
+    }
+
     It 'preserves exact UTF-8 bytes including CRLF across the bounded input boundary' {
         $Path = Join-Path $TestDrive 'bytes.yaml'
         $Expected = [byte[]]@(0x23, 0x20, 0xc3, 0xa9, 0x0d, 0x0a)
