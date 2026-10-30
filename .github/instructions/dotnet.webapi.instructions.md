@@ -74,3 +74,6 @@ public Results<Ok<Widget>, NotFound> GetWidget(int id)
   For required query parameters, including struct-backed value objects, use binding validation such
   as `[BindRequired]`; test omission separately from empty and malformed values because omission
   can otherwise supply `default(T)` without a model-state error.
+  Validate integral bounds without floating-point rounding: a large `long` limit can select a
+  double-based `Range` overload and lose precision. Use typed integral bounds or explicit integer
+  validation, and test the exact accepted/rejected boundary values over HTTP.
