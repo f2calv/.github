@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress, paused for complexity review. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. Current-head CI passes, but extension reproducibility, fresh shared-command consumer acceptance and permanent publication remain open. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. The serialization follow-on has passing local regression evidence; fresh component CI rebuilds, shared-command consumer acceptance and permanent publication remain open. Broader complexity review remains pending. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -686,6 +686,21 @@ foundation acceptance, including unperformed T053, remains unchanged. Verify the
 working tree before acting in another session; this checkpoint is not permission to overwrite
 concurrent work.
 
+### Serialization Follow-On (2026-10-30)
+
+[PR #32](https://github.com/f2calv/.github/pull/32) merged as
+`17a830688b680681c187d05051130a69f9c28302` after current-head CI and SonarCloud passed.
+The owner then authorized a follow-on branch from the merged default branch and resumption of the
+serialization fix. This supersedes only that part of the earlier pause; broader complexity review
+and publication remain separate.
+
+The adapter now recursively orders JSON object keys ordinally while preserving array shapes/order,
+scalar types and UTF-8/LF output. One added regression and the extended existing CLI case failed
+against the previous serializer; all 42 extension/shared-command cases pass with the correction.
+Three fresh PowerShell processes produced identical synthetic extension ZIP and catalog hashes
+from the same input archive. This is local regression evidence, not a repeat of the four-component
+CI build, a consumer demo or release acceptance. No component versions or pins changed.
+
 ### Current-Head CI Evidence (2026-10-30)
 
 At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
@@ -724,9 +739,10 @@ CI run are synthetic regression evidence, not releases against real component ta
 four extension ZIP hashes differed. Comparing the cron package found only `extension.yml` changed;
 its template fields had identical values but different JSON key order. The
 [adapter's unordered nested hashtables](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
-permit fresh-process serialization differences that same-process repeat tests did not catch.
-Canonical extension serialization and a fresh-process regression are required before claiming
-reproducible extension delivery. No tags or releases were created; expiring CI artifacts and
+permitted fresh-process serialization differences that same-process repeat tests did not catch.
+The serialization follow-on above records the local correction; fresh component CI rebuilds remain
+required before claiming reproducible extension delivery. Those artifact-only runs created no tags
+or releases; expiring CI artifacts and
 placeholder catalog URLs do not satisfy permanent publication or reproducible consumer transport.
 
 ### Naming and Validation (2026-10-30)
