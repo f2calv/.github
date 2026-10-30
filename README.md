@@ -182,6 +182,12 @@ npm run test:ps
 npm run test:release-train
 ```
 
+The default `test:ps` command runs the complete suite. To run one non-overlapping shard, use
+`npm run test:ps -- -Shard workspace-install`. The other shard names are `version-preparation`
+and `remaining`; together the three cover every centrally discovered test file. Use `-TestPath`
+for other focused selections, not in combination with a named shard. Empty or failed runs return
+a nonzero exit code.
+
 Other skill-specific validation commands and dependencies are documented with the corresponding
 skill; invoking a skill does not require running every suite in this repository.
 The release-train command is a focused alternative, not a suite omitted by `test:ps`.

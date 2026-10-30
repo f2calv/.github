@@ -17,6 +17,27 @@ BeforeAll {
         }, $false)
     if ($null -eq $discovery) { throw 'Central test discovery block not found.' }
     $discoveryCode = [scriptblock]::Create($discovery.Extent.Text.Replace('$PSScriptRoot', '$RunnerRoot'))
+    $sharding = $runner.Find({
+            param($node)
+            $node -is [System.Management.Automation.Language.IfStatementAst] -and
+            $node.Extent.Text.StartsWith('if ($Shard -ne ''all'')')
+        }, $false)
+    if ($null -eq $sharding) { throw 'Central test sharding block not found.' }
+    $shardingCode = [scriptblock]::Create($sharding.Extent.Text.Replace('$PSScriptRoot', '$RunnerRoot'))
+    $selectionGuard = $runner.Find({
+            param($node)
+            $node -is [System.Management.Automation.Language.IfStatementAst] -and
+            $node.Extent.Text.StartsWith('if ($Shard -ne ''all'' -and $TestPath.Count -gt 0)')
+        }, $false)
+    if ($null -eq $selectionGuard) { throw 'Central shard/path guard not found.' }
+    $selectionGuardCode = [scriptblock]::Create($selectionGuard.Extent.Text)
+    $resultGuard = $runner.Find({
+            param($node)
+            $node -is [System.Management.Automation.Language.IfStatementAst] -and
+            $node.Extent.Text.StartsWith('if ($result.Result')
+        }, $true)
+    if ($null -eq $resultGuard) { throw 'Central executed-test result guard not found.' }
+    $resultGuardCode = [scriptblock]::Create($resultGuard.Clauses[0].Item1.Extent.Text)
 }
 
 Describe 'Central skill suite discovery' -Tag 'Unit' {
@@ -66,6 +87,97 @@ Describe 'Central skill suite discovery' -Tag 'Unit' {
                 $TestPath
             } $scriptsRoot $discoveryCode $selected)
         $paths | Should -Be @($selected)
+    }
+
+    It 'partitions every discovered test file exactly once across CI shards' {
+        $paths = @(& {
+                param($RunnerRoot, $Code)
+                $TestPath = @()
+                . $Code
+                $TestPath
+            } $scriptsRoot $discoveryCode)
+        $expected = @($paths | ForEach-Object {
+                Get-ChildItem -LiteralPath $_ -Filter '*.Tests.ps1' -File -Recurse
+            } | Select-Object -ExpandProperty FullName | Sort-Object -Unique)
+        $selected = @(foreach ($name in @('workspace-install', 'version-preparation', 'remaining')) {
+                & {
+                    param($RunnerRoot, $Code, $Paths, $Shard)
+                    $TestPath = $Paths
+                    . $Code
+                    $TestPath
+                } $scriptsRoot $shardingCode $paths $name
+            })
+        $selected.Count | Should -Be $expected.Count
+        @($selected | Sort-Object -Unique).Count | Should -Be $selected.Count
+        @($selected | Sort-Object) | Should -Be $expected
+    }
+
+    It 'isolates the expensive <Shard> suite' -ForEach @(
+        @{ Shard = 'workspace-install'; Filename = 'Invoke-WorkspaceInstall.Tests.ps1' }
+        @{ Shard = 'version-preparation'; Filename = 'Invoke-VersionPreparation.Tests.ps1' }
+    ) {
+        $paths = @(& {
+                param($RunnerRoot, $Discovery, $Selection, $Shard)
+                $TestPath = @()
+                . $Discovery
+                . $Selection
+                $TestPath
+            } $scriptsRoot $discoveryCode $shardingCode $Shard)
+        $paths.Count | Should -Be 1
+        [IO.Path]::GetFileName($paths[0]) | Should -BeExactly $Filename
+    }
+
+    It 'rejects explicit paths combined with a named shard' {
+        {
+            & {
+                param($Code)
+                $Shard = 'remaining'
+                $TestPath = @('synthetic.Tests.ps1')
+                . $Code
+            } $selectionGuardCode
+        } | Should -Throw '*not both*'
+    }
+
+    It 'fails closed when a dedicated test file disappears from discovery' {
+        {
+            & {
+                param($RunnerRoot, $Code, $Root)
+                $Shard = 'remaining'
+                $TestPath = @($Root)
+                . $Code
+            } $scriptsRoot $shardingCode $TestDrive
+        } | Should -Throw '*missing from central discovery*'
+    }
+
+    It 'rejects failed or empty test execution: <Outcome>, <PassedCount> passed' -ForEach @(
+        @{ Outcome = 'Passed'; PassedCount = 0; Reject = $true }
+        @{ Outcome = 'Failed'; PassedCount = 1; Reject = $true }
+        @{ Outcome = 'Failed'; PassedCount = 0; Reject = $true }
+        @{ Outcome = 'Passed'; PassedCount = 1; Reject = $false }
+    ) {
+        $result = [pscustomobject]@{ Result = $Outcome; PassedCount = $PassedCount }
+        (& $resultGuardCode) | Should -Be $Reject
+    }
+
+    It 'runs all shards independently and keeps the existing required fan-in' {
+        $json = & yq -o=json '.' (Join-Path $repositoryRoot '.github/workflows/_skills-library-tests.yml')
+        $LASTEXITCODE | Should -Be 0
+        $workflow = ($json -join "`n") | ConvertFrom-Json -AsHashtable
+        $job = $workflow.jobs.test
+        $job.strategy.'fail-fast' | Should -BeFalse
+        $job.strategy.matrix.shard | Should -Be @('workspace-install', 'version-preparation', 'remaining')
+        $step = @($job.steps | Where-Object { $_.ContainsKey('env') -and $_.env.ContainsKey('TEST_SHARD') })
+        $step.Count | Should -Be 1
+        $step[0].env.TEST_SHARD | Should -BeExactly '${{ matrix.shard }}'
+        $step[0].run | Should -BeExactly 'npm run test:ps -- -Shard "$TEST_SHARD"'
+        $json = & yq -o=json '.' (Join-Path $repositoryRoot '.github/workflows/ci.yml')
+        $LASTEXITCODE | Should -Be 0
+        $ci = ($json -join "`n") | ConvertFrom-Json -AsHashtable
+        $ci.jobs.test.needs | Should -Contain 'skills-library-tests'
+        $ci.jobs.test['if'] | Should -Match 'always\(\)'
+        $ci.jobs.test.steps[0].env.TEST_RESULT | Should -BeExactly '${{ needs.skills-library-tests.result }}'
+        $ci.jobs.test.steps[0].run | Should -Match '-ne ''success'''
+        $ci.jobs.release.needs | Should -Contain 'test'
     }
 }
 
