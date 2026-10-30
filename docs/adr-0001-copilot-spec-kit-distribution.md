@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. The shared command and bootstrap are implemented; repeat component CI builds are byte-identical. CI change/version-propagation acceptance and shared-command consumer/editor acceptance remain open. A registrar resource-path wording repair has passing local regressions and needs fresh artifacts. Permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both. Retained CI change/version-propagation evidence and actual native editor invocation remain open. Permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -717,6 +717,37 @@ the existing bootstrap regression covers the wording and all 42 focused cases pa
 consumer, rebuild and verify a separately approved fresh consumer; do not patch installed evidence.
 No payload installation or editor invocation is claimed by this checkpoint.
 
+### Shared-Command Consumer Follow-On (2026-10-30)
+
+At `2c8430d74503af67baf9d0705ae0d436dce19b34`, the corrected
+[artifact build](https://github.com/f2calv/.github/actions/runs/41073371747) and
+[independent repeat](https://github.com/f2calv/.github/actions/runs/41073686035) passed.
+All 20 downloaded deliverables again matched byte-for-byte, including the corrected bootstrap.
+Its SHA-256 was `c405cb8f18b5c105471e7464f9d1d203468209501141dc686b8ec87026c42d49`.
+
+After separate exact-artifact approval, a fresh Spec Kit 1.2.3 Copilot skills-mode consumer installed
+that bootstrap. Actual registration preserved the selected-payload loading boundary. A separately
+reviewed ready preview, with no blockers and an exact version/optional choice/fingerprint, then
+installed `patterns-ports-and-adapters@1.0.0` and optional `patterns-monolith-modular@1.0.0`.
+The durable operation receipt is Completed and both extensions are Verified. Installed-only listing
+reports both enabled; both load operations validate installed bytes and return their own canonical
+guidance, declared instructions and resources. The returned guidance and instructions, plus relevant
+boundary/composition references, were read from those installed payload trees, not source/profile
+copies. Neither payload registers a public command. An inspection wrapper initially expected the
+wrong response field; the saved receipt was inspected without repeating the mutation. This is
+backend/registration evidence, not an observed native editor invocation.
+
+The three existing version-preparation scenarios now optionally retain their reports and actual
+versioned packages; the existing CI shard uploads them as `skill-version-rehearsal`. Local retained
+reports cover one required input change, one optional input change and both together: changed inputs
+advance to `1.1.0`, the reverse consumer and its exact pins advance to `1.0.1`, and the unrelated
+component stays at `1.0.0`. Repeated previews match, prepared reruns have no edits, and copied package
+digests match. Every report explicitly identifies its baseline tags as local-only synthetic history.
+No scenario, execution framework, public component tag or release was added. Actual workflow upload
+and retained-artifact inspection remain pending; this rehearsal does not establish published
+component release-history acceptance. The owner's native command discovery/invocation observation
+and final D1-D2 presentation remain open.
+
 ### Current-Head CI Evidence (2026-10-30)
 
 At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
@@ -756,8 +787,8 @@ four extension ZIP hashes differed. Comparing the cron package found only `exten
 its template fields had identical values but different JSON key order. The
 [adapter's unordered nested hashtables](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
 permitted fresh-process serialization differences that same-process repeat tests did not catch.
-The serialization follow-on above records the local correction; fresh component CI rebuilds remain
-required before claiming reproducible extension delivery. Those artifact-only runs created no tags
+The serialization and consumer follow-ons above record the correction and successful repeat builds;
+this earlier failed run remains historical evidence. Those artifact-only runs created no tags
 or releases; expiring CI artifacts and
 placeholder catalog URLs do not satisfy permanent publication or reproducible consumer transport.
 

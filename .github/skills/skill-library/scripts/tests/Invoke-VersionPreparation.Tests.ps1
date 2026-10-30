@@ -152,6 +152,29 @@ Describe 'Skill version preparation' -Tag 'Unit' {
             [IO.Path]::GetFileName($Package.ArchivePath) | Should -BeExactly "$($Package.RootId)-$ExpectedVersion.zip"
         }
         (Get-VersionFixtureMetadata -Id unrelated).version | Should -BeExactly '1.0.0'
+        $EvidenceDirectory = [Environment]::GetEnvironmentVariable('SKILL_LIBRARY_VERSION_EVIDENCE')
+        if ($EvidenceDirectory) {
+            $CaseName = (@($Changed | Sort-Object) -join '-')
+            $CaseDirectory = Join-Path $EvidenceDirectory $CaseName
+            if (Test-Path -LiteralPath $CaseDirectory) { throw 'Version rehearsal evidence must use a new case directory.' }
+            [void][IO.Directory]::CreateDirectory($CaseDirectory)
+            Copy-Item -LiteralPath $Destination -Destination (Join-Path $CaseDirectory 'artifacts') -Recurse
+            $Evidence = [ordered]@{
+                Contract = 'synthetic-version-rehearsal/1'
+                BaselineScope = 'Local-only synthetic Git tags; no published component baselines.'
+                ChangedIds = @($Changed)
+                ImpactDecisions = $Impact
+                Before = $Plan.Preparation
+                After = $Prepared.Preparation
+                ConsumerMetadata = (Get-VersionFixtureMetadata -Id consumer)
+                UnrelatedMetadata = (Get-VersionFixtureMetadata -Id unrelated)
+                RepeatedPreviewMatched = ($Again.Fingerprint -ceq $Plan.Fingerprint)
+                PreparedRerunHadNoEdits = ($Prepared.Preparation.Changes.Count -eq 0)
+                Artifacts = @($Built.Artifacts)
+            }
+            [IO.File]::WriteAllText((Join-Path $CaseDirectory 'rehearsal.json'), ($Evidence | ConvertTo-Json -Depth 40) + "`n")
+            Write-Host "Version rehearsal evidence: $CaseName"
+        }
     }
 
     It 'refuses CI artifact output until source and preparation are committed' -ForEach @(
