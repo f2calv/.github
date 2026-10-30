@@ -8,8 +8,8 @@ BeforeAll {
 
 Describe 'REST collection example' -Tag 'Unit' {
     BeforeAll {
-        $collection = Get-Content -LiteralPath (Join-Path $skillsRoot 'rest-client-requests/assets/collection.http') -Raw
-        $dotenv = Get-Content -LiteralPath (Join-Path $skillsRoot 'rest-client-requests/assets/collection.env.example') -Raw
+        $collection = Get-Content -LiteralPath (Join-Path $skillsRoot 'tooling-rest-client/assets/collection.http') -Raw
+        $dotenv = Get-Content -LiteralPath (Join-Path $skillsRoot 'tooling-rest-client/assets/collection.env.example') -Raw
     }
 
     It 'uses exactly the declared dotenv inputs without literal authentication or response chaining' {
@@ -48,7 +48,7 @@ Describe 'Bounded Web API example' -Tag 'Unit' {
 
 Describe 'Retirement reporting example' -Tag 'Unit' {
     It 'keeps unverified mutation state distinct from archival and deletion' {
-        $example = Get-Content -LiteralPath (Join-Path $skillsRoot 'archive-repo/examples/partial-retirement.md') -Raw
+        $example = Get-Content -LiteralPath (Join-Path $skillsRoot 'github-repository-archive/examples/partial-retirement.md') -Raw
         $example | Should -Match 'one verified archive, one blocked before archival, one unverified outcome'
         $example | Should -Match 'Local clones and workspace entries: untouched'
         $example | Should -Match 'unresolved alerts are not described as fixed'

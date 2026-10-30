@@ -22,7 +22,7 @@ HTTP calls or wrapping every failure in an unbounded retry.
 - Use [ports/adapters](../patterns-ports-and-adapters/SKILL.md) for external contract boundaries,
   [.NET Web API](../dotnet-webapi/SKILL.md) for inbound endpoints,
   [.NET gRPC](../dotnet-grpc/SKILL.md) for HTTP/2 RPC clients and streaming recovery,
-  [REST Client requests](../rest-client-requests/SKILL.md) for manual request files and
+  [REST Client requests](../tooling-rest-client/SKILL.md) for manual request files and
   [performance](../dotnet-performance/SKILL.md) for measured transport hot paths.
 - Official [factory documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory)
   and [HTTP resilience](https://learn.microsoft.com/en-us/dotnet/core/resilience/http-resilience)

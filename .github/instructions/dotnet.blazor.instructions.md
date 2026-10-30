@@ -5,7 +5,7 @@ applyTo: '**/*.razor,**/*.razor.cs,**/*.razor.css,**/*.razor.js'
 
 # Blazor Components
 
-Use the [blazor-frontend skill](../skills/blazor-frontend/SKILL.md) to choose render modes, add a
+Use the [dotnet-blazor skill](../skills/dotnet-blazor/SKILL.md) to choose render modes, add a
 client project, wire authentication or validate a multi-replica deployment. This file owns component
 invariants. C#, Web API, configuration and testing rules stay in their own instruction files.
 

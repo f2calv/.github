@@ -1,6 +1,6 @@
 ---
 name: dotnet-cron-scheduling
-description: 'Create, extract, audit or troubleshoot .NET cron/crontab scheduling: Cronos expressions, UTC and time zones, startup runs, hourly jobs, missed-occurrence coalescing, non-overlap, manual triggers, injected clocks, cooperative deadlines and reusable schedule runners. Use for scheduled background services and periodic reconciliation; use leadership-election for distributed ownership and dotnet-background-pipelines for delivery guarantees.'
+description: 'Create, extract, audit or troubleshoot .NET cron/crontab scheduling: Cronos expressions, UTC and time zones, startup runs, hourly jobs, missed-occurrence coalescing, non-overlap, manual triggers, injected clocks, cooperative deadlines and reusable schedule runners. Use for scheduled background services and periodic reconciliation; use dotnet-leadership-election for distributed ownership and dotnet-background-pipelines for delivery guarantees.'
 argument-hint: '[apply|audit|diagnose] [schedule or worker]'
 user-invocable: true
 ---
@@ -16,7 +16,7 @@ Keep timing mechanics reusable and business policy in the consuming application.
   injected time, disposal and logging, and
   [configuration instructions](../../instructions/dotnet.configuration.instructions.md) for binding
   and startup validation.
-- Use [leadership election](../leadership-election/SKILL.md) when replicas must coordinate.
+- Use [leadership election](../dotnet-leadership-election/SKILL.md) when replicas must coordinate.
   Do not duplicate its lease lifecycle, Redis configuration or downstream fencing rules.
 - Use [background pipelines](../dotnet-background-pipelines/SKILL.md) for durable admission,
   idempotency, acknowledgement and shutdown. A timer does not supply these guarantees.

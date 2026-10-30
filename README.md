@@ -65,14 +65,14 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | --- | --- |
 | [README authoring](.github/skills/docs-readme/SKILL.md) | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
 | [ADR authoring](.github/skills/docs-adr/SKILL.md) | Evidence-backed local architecture decisions, source deep links, proposal refinement and optional GitHub issues labelled adr |
-| [Repository baseline](.github/skills/repository-baseline/SKILL.md) | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
+| [Repository baseline](.github/skills/github-repository-baseline/SKILL.md) | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](.github/skills/repository-privacy/SKILL.md) | Checking public changes for personal data, credentials and private-system details |
 | [Issues and pull requests](.github/skills/github-issues-and-pull-requests/SKILL.md) | Issue quality, pull request descriptions, review findings and merge readiness |
-| [Archive repository](.github/skills/archive-repo/SKILL.md) | Explicitly requested retirement, archiving and optional local cleanup |
-| [Summarize for PR](.github/skills/summarize-for-pr/SKILL.md) | An explicitly requested temporary branch-change summary for review |
-| [Dependabot management](.github/skills/dependabot-management/SKILL.md) | Coverage, grouping and troubleshooting across dependency ecosystems |
-| [Pre-commit management](.github/skills/pre-commit-management/SKILL.md) | Configured lint hooks, pinned runtimes and native or Docker execution |
-| [EditorConfig management](.github/skills/editorconfig-management/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
+| [Archive repository](.github/skills/github-repository-archive/SKILL.md) | Explicitly requested retirement, archiving and optional local cleanup |
+| [Summarize for PR](.github/skills/repository-pr-summary/SKILL.md) | An explicitly requested temporary branch-change summary for review |
+| [Dependabot management](.github/skills/github-dependabot/SKILL.md) | Coverage, grouping and troubleshooting across dependency ecosystems |
+| [Pre-commit management](.github/skills/tooling-pre-commit/SKILL.md) | Configured lint hooks, pinned runtimes and native or Docker execution |
+| [EditorConfig management](.github/skills/tooling-editorconfig/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
 | [Dev Containers](.github/skills/containers-devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](.github/skills/spec-kit-guide/SKILL.md) | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
@@ -80,8 +80,8 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Container images](.github/skills/containers-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](.github/skills/containers-docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](.github/skills/containers-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |
-| [File to ConfigMap](.github/skills/sync-file-to-configmap/SKILL.md) | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
-| [Modular monolith](.github/skills/patterns-monolith-modular/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
+| [File to ConfigMap](.github/skills/kubernetes-configmap-sync/SKILL.md) | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
+| [Modular monolith](.github/skills/patterns-modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
 | [Ports and adapters](.github/skills/patterns-ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
 | [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
 | [.NET background pipelines](.github/skills/dotnet-background-pipelines/SKILL.md) | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
@@ -92,21 +92,21 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [EF Core data access](.github/skills/dotnet-efcore/SKILL.md) | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [.NET Web API](.github/skills/dotnet-webapi/SKILL.md) | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [.NET gRPC](.github/skills/dotnet-grpc/SKILL.md) | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
-| [Blazor frontend](.github/skills/blazor-frontend/SKILL.md) | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [OIDC app registration](.github/skills/oidc-app-registration/SKILL.md) | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
+| [Blazor frontend](.github/skills/dotnet-blazor/SKILL.md) | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
+| [OIDC app registration](.github/skills/identity-oidc-registration/SKILL.md) | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [.NET MCP](.github/skills/dotnet-mcp/SKILL.md) | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [.NET performance](.github/skills/dotnet-performance/SKILL.md) | Measured hot-path, allocation and parsing improvements |
 | [.NET upgrade](.github/skills/dotnet-upgrade/SKILL.md) | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [.NET release train](.github/skills/dotnet-release-train/SKILL.md) | Dependency-ordered NuGet updates, releases and consumer propagation |
 | [.NET test platform](.github/skills/dotnet-test-platform/SKILL.md) | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Leadership election](.github/skills/leadership-election/SKILL.md) | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
-| [Redis data access](.github/skills/redis-data-access/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
-| [REST Client requests](.github/skills/rest-client-requests/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
-| [Helm charts](.github/skills/helm-charts/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
-| [Terraform IaC](.github/skills/iac-terraform/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
+| [Leadership election](.github/skills/dotnet-leadership-election/SKILL.md) | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
+| [Redis data access](.github/skills/dotnet-redis/SKILL.md) | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
+| [REST Client requests](.github/skills/tooling-rest-client/SKILL.md) | Structured HTTP requests, authentication examples and secret handling |
+| [Helm charts](.github/skills/kubernetes-helm/SKILL.md) | Chart contracts, values, dependencies, documentation and OCI packaging |
+| [Terraform IaC](.github/skills/terraform-infrastructure/SKILL.md) | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [GitOps repository structure](.github/skills/gitops-repository-structure/SKILL.md) | Argo CD Application discovery, ownership and stateful migrations |
-| [NGINX ingress migration](.github/skills/nginx-ingress-migration/SKILL.md) | Parallel controller rollout, compatibility mapping, cutover and rollback |
-| [UniFi network management](.github/skills/unifi-network-management/SKILL.md) | Network discovery, VLANs, host networking and performance diagnostics |
+| [NGINX ingress migration](.github/skills/kubernetes-nginx-migration/SKILL.md) | Parallel controller rollout, compatibility mapping, cutover and rollback |
+| [UniFi network management](.github/skills/network-unifi/SKILL.md) | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Repository Management
 
@@ -119,7 +119,7 @@ for the operation.
 Audit one repository without changing remote settings:
 
 ```powershell
-.\.github\skills\repository-baseline\scripts\Set-RepositoryBaseline.ps1 `
+.\.github\skills\github-repository-baseline\scripts\Set-RepositoryBaseline.ps1 `
   -Repository owner/example `
   -Mode Audit
 ```
@@ -127,25 +127,25 @@ Audit one repository without changing remote settings:
 Preview changes for the same repository:
 
 ```powershell
-.\.github\skills\repository-baseline\scripts\Set-RepositoryBaseline.ps1 `
+.\.github\skills\github-repository-baseline\scripts\Set-RepositoryBaseline.ps1 `
   -Repository owner/example `
   -Mode Apply `
   -WhatIf
 ```
 
-The [baseline policies](.github/skills/repository-baseline/scripts/policies/) define the settings:
+The [baseline policies](.github/skills/github-repository-baseline/scripts/policies/) define the settings:
 `<owner>.json` when present for the target owner, otherwise the generic `default.json`. Follow the
-[baseline workflow](.github/skills/repository-baseline/SKILL.md) before
+[baseline workflow](.github/skills/github-repository-baseline/SKILL.md) before
 applying changes; unavailable plan-dependent capabilities are reported rather than bypassed.
 
 ### Create a Repository
 
-The [repository creation script](.github/skills/repository-baseline/scripts/New-GitHubRepository.ps1) creates a GitHub repository,
+The [repository creation script](.github/skills/github-repository-baseline/scripts/New-GitHubRepository.ps1) creates a GitHub repository,
 applies the baseline and clones it locally. Choose visibility explicitly; the script defaults to
 public visibility.
 
 ```powershell
-.\.github\skills\repository-baseline\scripts\New-GitHubRepository.ps1 `
+.\.github\skills\github-repository-baseline\scripts\New-GitHubRepository.ps1 `
   -Name example `
   -Description 'Example repository' `
   -Visibility Private

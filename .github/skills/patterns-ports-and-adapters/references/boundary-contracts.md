@@ -12,7 +12,7 @@ An outbound adapter implements a needed external capability; it should not decid
 application policy. Some validation is provider-specific, but domain rules must not disappear when
 the provider is replaced by a fake or another implementation.
 
-Use the [modular monolith boundary example](../../patterns-monolith-modular/examples/layered-module-boundaries.md)
+Use the [modular monolith boundary example](../../patterns-modular-monolith/examples/layered-module-boundaries.md)
 for project-reference checks. Here also inspect:
 
 - SDK/EF types or `IQueryable` leaking through return values, callbacks or exceptions.

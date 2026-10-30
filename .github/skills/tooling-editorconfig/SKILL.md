@@ -1,0 +1,248 @@
+---
+name: tooling-editorconfig
+description: 'Audit, generate, align, tighten and validate .editorconfig files across repositories: shared language profiles, drift checks, .NET analyzer enforcement, formatting fallout and staged cross-repository rollouts.'
+argument-hint: '[repositories=current-workspace|path,...] [mode={audit|generate|check|tighten}] [profile={Base|DotNet|Go|Python|Rust|Terraform}]'
+user-invocable: true
+compatibility: 'Generation requires PowerShell 7.4. .NET tightening requires a compatible .NET SDK and repository build entry point.'
+---
+
+# EditorConfig Management
+
+Manage tracked root `.editorconfig` files from the central composable fragments. Keep the universal
+text policy consistent, preserve formatter ownership, and tighten analyzer policy in measured
+tranches whose complete fallout can be fixed and validated together.
+
+## Scope And Safety
+
+- Limit fleet operations to explicit repository paths or the active workspace folders. Never infer
+  scope by enumerating a parent clone directory.
+- Treat every Git repository independently. Inspect its instructions, active branch, working tree,
+  build entry point, language manifests, and existing `.editorconfig` before editing.
+- Never overwrite or stage unrelated changes. Preserve existing user edits and generate into the
+  current working tree only after identifying the intended profile and exceptions.
+- Audit before editing. Report missing files, profile drift, deliberate overrides, text-hygiene
+  violations, build-policy gaps, and expected cleanup surface.
+- Generated `.editorconfig` files remain tracked in each repository. EditorConfig has no import
+  mechanism, so consumers must not depend on the central checkout at editor startup.
+- Do not install hooks or format an entire repository speculatively. Apply mechanical cleanup only
+  after measuring violations and keep it separate from behavioral changes.
+- Obtain any approval required by the workspace rules before running builds or tests.
+
+## Central Sources
+
+The central repository owns:
+
+| Path | Purpose |
+| --- | --- |
+| [fragments/base.editorconfig](./fragments/base.editorconfig) | Universal encoding, LF, indentation, and whitespace policy |
+| [fragments/dotnet.editorconfig](./fragments/dotnet.editorconfig) | .NET and C# conventions plus staged analyzer severity |
+| [fragments/go.editorconfig](./fragments/go.editorconfig) | Go and `gofmt`-compatible indentation |
+| [fragments/python.editorconfig](./fragments/python.editorconfig) | Python and TOML editor settings |
+| [fragments/rust.editorconfig](./fragments/rust.editorconfig) | Rust and `rustfmt`-compatible settings |
+| [fragments/terraform.editorconfig](./fragments/terraform.editorconfig) | Terraform and HCL indentation |
+| `.github/skills/tooling-editorconfig/scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
+| `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
+| `.github/skills/tooling-editorconfig/scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
+| `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
+
+Change policy in the fragments, not in generated consumer files. Regenerate every affected
+repository after a fragment change. Keep the fragments inside this skill and resolve them relative
+to the generator so a standalone skill copy does not require the central checkout.
+
+## .NET Reference Baseline
+
+Designate one public .NET repository whose analyzer fallout has been fixed across a multi-target
+library and test suite, and use its tracked root `.editorconfig` as the proven reference for future
+audits and rollouts. For f2calv repositories this is `CasCap.Common`.
+
+The central fragments remain the source of truth: never hand-copy or edit the reference file as
+policy. Before rolling out to another .NET repository, run the generator `-Check` against the
+reference repository and stop if it has drifted. Inspect its current generated file to understand
+the accepted rules and exclusions, then generate the target repository from the same central profile.
+
+## Profile Selection
+
+Every profile includes `Base`; select one additional profile from owned tracked source:
+
+| Evidence | Profile |
+| --- | --- |
+| C# source, project files, or a .NET solution | `DotNet` |
+| Go module or Go source | `Go` |
+| Python project or Python source | `Python` |
+| Cargo workspace or Rust source | `Rust` |
+| Terraform/OpenTofu roots or HCL | `Terraform` |
+| Workflows, actions, Helm, Markdown, JSON, YAML, or mixed text without a supported language profile | `Base` |
+
+For a repository spanning multiple profiled languages, choose the primary profile and append a
+small repository-owned override fragment for the additional language sections. Do not copy an
+entire central profile into an override.
+
+## Required Workflow
+
+### 1. Establish The Repository Set
+
+1. Resolve roots from explicit inputs or active workspace folders.
+2. Confirm each root with Git metadata and record its current branch and working-tree state.
+3. Read repository-specific instructions that apply to `.editorconfig`, build files, source cleanup,
+   workflows, documentation, commits, and publication.
+4. Record repository visibility before any commit, push, issue, or pull-request operation.
+
+### 2. Audit Existing Policy
+
+For each repository:
+
+1. Detect the language profile from tracked manifests and source files.
+2. For .NET, verify and inspect the reference baseline repository first. Inspect the target root
+   `.editorconfig`, if present, and compare effective sections with that generated profile.
+3. Inspect formatter configuration, `.gitattributes`, pre-commit hooks, and build properties for
+   conflicting ownership.
+4. For .NET, inspect `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, analyzer severities,
+   `NoWarn`, and `WarningsNotAsErrors`. A suppression that defeats central policy is drift.
+5. Measure missing final newlines, trailing whitespace outside Markdown, and JSON/YAML indentation.
+   Do not rewrite files during the audit.
+6. Classify differences as `Missing`, `Generated drift`, `Policy drift`, `Hygiene violation`, or
+   `Intentional override` with its documented rationale.
+
+### 3. Generate Or Check
+
+From the central repository root, generate a tracked file:
+
+```powershell
+./.github/skills/tooling-editorconfig/scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile>
+```
+
+Perform a read-only drift check:
+
+```powershell
+./.github/skills/tooling-editorconfig/scripts/Set-EditorConfig.ps1 -RepositoryPath <repository-path> -Profile <profile> -Check
+```
+
+Preview a write with `-WhatIf`. Pass one or more `-OverridePath` values only for documented,
+durable repository exceptions. After generation, immediately run `-Check`; a generated file that
+does not pass its own drift check is a failure.
+
+The [scoped override example](./examples/scoped-override.md) pairs a narrow migration fragment with
+identical preview/generate/check inputs and expected effective severities. Keep the override list
+and its order consistent; a more specific section does not beat a later matching broad section.
+
+### 4. Apply Mechanical Cleanup
+
+1. Add one LF byte only to tracked text files missing a final newline.
+2. Format JSON with the repository's pinned Prettier pre-commit hook, which preserves comments and
+   reads `.editorconfig`; never reserialize comment-bearing files through a strict JSON parser.
+3. Preserve Markdown trailing spaces because two spaces encode a hard line break.
+4. Use the language's native formatter where it owns syntax: `dotnet format`, `gofmt`, `rustfmt`,
+   Terraform formatting, or the repository's pinned Python formatter.
+5. In multi-target .NET repositories, never apply fixes solution-wide. Run `dotnet format` once per
+   project and diagnostic family, then verify at solution scope. Roslyn can otherwise merge
+   target-specific edits into literal conflict markers or duplicate expressions.
+6. Route `IDE*` diagnostics through `dotnet format <project> style --diagnostics ...` and `CA*`
+   diagnostics through `dotnet format <project> analyzers --diagnostics ...`. Verify with the same
+   subcommand plus `--verify-no-changes`; the wrong subcommand can exit successfully while silently
+   skipping the requested diagnostics. Prefer the central helper for repeatable repository passes:
+
+   ```powershell
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040
+   ./.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1 `
+      -RepositoryPath <repository-path> `
+      -Diagnostic IDE0040 `
+      -Check
+   ```
+
+7. Scope formatting to measured violations. Review large generated or dashboard diffs separately.
+8. Run `git diff --check` and parse every changed structured file.
+
+### 5. Tighten .NET Enforcement
+
+The current build-breaking tranche covers:
+
+- unused private members and unread private fields;
+- formatting and explicit interface-member accessibility;
+- interface/type and method/event naming;
+- safe expression, pattern, collection, deconstruction, inference and primary-constructor
+   modernizations;
+- guard clauses, avoidable allocations, logging argument cost and xUnit assertion-result reuse.
+
+The canonical DotNet fragment is the exact rule list. Keep `IDE0058` and `IDE0130` disabled, and do
+not promote `IDE0056` or `IDE0057` while supported libraries target `netstandard2.0`. Property
+naming remains a suggestion until legacy published contracts have versioned migrations.
+
+Require both build properties in the root `Directory.Build.props`:
+
+```xml
+<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+```
+
+Remove contradictory `NoWarn` or `WarningsNotAsErrors` entries. Fix dead code, formatting, and
+naming at the source; do not weaken severity to make a build pass. A documented wire-contract
+naming exception may remain narrowly suppressed when renaming would break the external schema.
+
+When the user explicitly defers a large cleanup, a temporary relaxation is permitted only in the
+repository's `-OverridePath` fragment. Lower the affected rules to `suggestion`, never `none`, and
+mark the section with a `TODO` naming the backlog and the restore order. Place a broad `[*.cs]`
+relaxation before narrower sections such as `[**/Migrations/*.cs]`, because the later matching
+EditorConfig section wins. Measure the full backlog first with `-p:TreatWarningsAsErrors=false`;
+analyzer errors otherwise surface one project-dependency layer at a time.
+
+EF migrations are generated code: exempt `CA1861` with a `[**/Migrations/*.cs]` override section
+rather than editing migration files.
+
+A relaxation silences the build only. SonarQube still imports the relaxed diagnostics, so code
+written after the relaxation must satisfy them or the Quality Gate fails on new issues.
+
+Keep other shared style preferences standardized as suggestions until their fleet fallout has been
+measured. Promote only a small related tranche at a time. Namespace, public API and architecture
+changes require their own reviewable tranche rather than being hidden inside formatting cleanup.
+
+### 6. Validate
+
+For every affected repository:
+
+1. Run the generator with `-Check`.
+2. Confirm UTF-8 without BOM, LF endings, one final newline, and no forbidden trailing whitespace.
+3. Parse changed JSON, YAML, XML, TOML, and project files with repository-approved tooling.
+4. Run the repository's authoritative lint or pre-commit command; `git diff --check` alone does not
+   prove hooks such as `end-of-file-fixer` are satisfied.
+5. For .NET, build the complete solution across every target framework. Where Debug and Release
+   solutions use different project/package graphs, validate both. Fix every warning promoted to an
+   error. A missing platform workload is an environment blocker, not evidence that policy passes.
+6. Run `git diff --check`.
+7. Run the focused generator Pester suite after generator or fragment changes.
+8. Re-run the inventory and prove every repository is either drift-free or has a documented
+   override.
+
+### 7. Commit And Publish
+
+1. Keep central fragment/generator changes separate from generated consumer rollouts.
+2. Keep mechanical text cleanup separate from behavioral changes when either diff is large.
+3. Before committing to a public repository, run the central privacy skill and scanner.
+4. Follow repository branch conventions and local safe-hour rules. Never commit directly to a
+   default branch unless a repository-specific exception explicitly permits it.
+5. Push and create pull requests only with explicit authorization. Public pull-request text must not
+   identify private repositories or private implementation details.
+6. Verify each pull request's base, head, labels, assignee, checks, and complete branch diff.
+
+## Reporting
+
+Report:
+
+- repositories and profiles audited, generated, or checked;
+- policy and hygiene drift found and corrected;
+- deliberate overrides retained and why;
+- .NET diagnostics promoted and source fixes required;
+- validation performed, build blockers, and checks not run;
+- branch, commit, push, and pull-request state when publication is requested.
+
+Keep public reports free of private repository names, coordinates, paths, topology, and operational
+details.
+
+## Maintaining This Skill
+
+- The .NET reference baseline and profile contents whenever analyzer severities are promoted.
+- Formatting fallout and rollout steps learned in each cross-repository tranche.
+- Keep the scoped example and its generator regression aligned; verify effective analyzer scope
+  separately from generated-file equality.
+- Preserve standalone generation for every profile when moving the generator or its fragments.

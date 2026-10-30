@@ -616,6 +616,13 @@ defines version-scoped transitions, immutable history and installer safeguards. 
 tags and catalog entries; never reassign retired IDs to unrelated content. A stable-ID source rename
 needs no ID migration, but still needs version-impact review and safe installed-path handling.
 
+For example, the native folder/name `patterns-modular-monolith` keeps the component ID
+`patterns-monolith-modular` in its [metadata](../patterns-modular-monolith/skill.metadata.yaml).
+Update native links and source paths, but preserve ID-based install/load commands and dependency
+pins. Validate the real catalog after a rename instead of assuming every old-name occurrence is stale.
+Scope replacements to skill references; identical repository or product names can have independent
+meanings and must not be renamed incidentally.
+
 ### Skill Folder Naming
 
 Prefer lowercase kebab-case `<domain>-<topic>` names in the flat skill directory. A domain prefix
@@ -661,7 +668,7 @@ folder rename alone is not evidence that native discovery or installed-path hand
 - Recheck Spec Kit manifest/catalog fields, three-part canonical command names, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; aliases create extra public registrations. Consumer fixtures need integration manifests as well as init options.
 - Recheck workspace preview API, integration-state schemas, registry/config serialization and chmod traversal against the pinned installed runtime. Even command-only extensions update the installed list and empty-hook configuration; predict those writes without constructing a manager.
 - Exercise stock init-options, combined raw/parsed integration options, and both hash-tracked Copilot and core manifests, not only reduced fixtures; reject changed recorded files and unknown adapter effects. Match the archive producer's full GeneratedMembers/Limitations manifest shape, and retain the runtime's observed 0700 extension-root mode in predictions and fixtures.
-- Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount.
+- Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount. Filtered Pester totals include unselected cases; validate PassedCount, FailedCount and NotRunCount explicitly.
 - Recheck the same-stream archive API and literal ID/version, Copilot's empty registered-command mapping, raw manifest hash and UTC timestamp when updating Spec Kit; preserve unrelated registration/configuration and bytes rather than accepting a successful return alone.
 - Keep unresolved-operation checks ahead of strict partial-tree parsing and occupied-target checks on retries; distinguish synthetic child loss from whole-orchestrator loss, real-runtime confinement and editor acceptance.
 - Exercise diagnostic capture with stdout/stderr output before raising a warning; warnings-as-errors make later probes unreachable. Keep reported cancellation distinct from an unverified extension outcome.

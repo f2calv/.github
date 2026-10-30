@@ -117,6 +117,6 @@ Where a tool generates interface documentation (inputs, outputs, providers, reso
 ## Markdown Linting
 
 The CI `lint` job is authoritative. Run the repository's pre-commit configuration from its root so
-hook arguments and exclusions apply. Use the `pre-commit-management` skill for native execution,
+hook arguments and exclusions apply. Use the `tooling-pre-commit` skill for native execution,
 the pinned Docker fallback, hook/runtime updates, fleet alignment, and troubleshooting; do not
 bypass the configuration with a direct linter during normal validation.

@@ -8,7 +8,7 @@ updates:
       time: "04:00"
 
   - package-ecosystem: docker
-    directory: /.github/skills/pre-commit-management
+    directory: /.github/skills/tooling-pre-commit
     schedule:
       interval: weekly
       time: "04:00"

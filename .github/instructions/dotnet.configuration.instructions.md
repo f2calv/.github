@@ -111,7 +111,7 @@ Do not run a real application or integration suite merely to validate build meta
 
 Local publish/package exclusion does not prevent a custom archive script from shipping `bin/`.
 Treat build output as potentially private. Deployment configuration is a separate approved workflow;
-use the central `sync-file-to-configmap` skill for reviewed non-secret files in a private GitOps
+use the central `kubernetes-configmap-sync` skill for reviewed non-secret files in a private GitOps
 repository, never as a route for credentials into a ConfigMap.
 
 ## Options Synchronisation

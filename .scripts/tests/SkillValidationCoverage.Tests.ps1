@@ -54,7 +54,7 @@ Describe 'Central skill suite discovery' -Tag 'Unit' {
         @($paths | Sort-Object) | Should -Be @($expected | Sort-Object)
         @($paths | Sort-Object -Unique).Count | Should -Be $paths.Count
         $paths | Should -Contain (Join-Path $repositoryRoot '.github/skills/dotnet-release-train/scripts/tests')
-        $paths | Should -Contain (Join-Path $repositoryRoot '.github/skills/pre-commit-management/scripts/tests')
+        $paths | Should -Contain (Join-Path $repositoryRoot '.github/skills/tooling-pre-commit/scripts/tests')
     }
 
     It 'preserves explicit focused selectors without widening execution' {
@@ -71,7 +71,7 @@ Describe 'Central skill suite discovery' -Tag 'Unit' {
 
 Describe 'Network evidence boundaries' -Tag 'Unit' {
     It 'keeps synthetic measurements distinct from failed client acceptance and actual network proof' {
-        $path = Join-Path $repositoryRoot '.github/skills/unifi-network-management/examples/change-evidence.md'
+        $path = Join-Path $repositoryRoot '.github/skills/network-unifi/examples/change-evidence.md'
         $text = Get-Content -LiteralPath $path -Raw
         foreach ($heading in @('Before the Change', 'Worked Observation Sequence', 'Comparable Measurements',
                 'Acceptance and Rollback', 'Handoff and Cleanup')) {

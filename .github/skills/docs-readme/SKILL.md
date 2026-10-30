@@ -211,7 +211,7 @@ null optional object from a populated object whose attributes receive defaults.
 3. Check badge alt text against its actual metric and link, not merely whether an image loads.
    Check diagram syntax and GitHub rendering when tooling is available; disclose unrendered diagrams.
 4. Follow the Markdown instructions for validation through the repository's pre-commit configuration.
-   Apply the `pre-commit-management` skill when running hooks. Hooks may change files; account for
+   Apply the `tooling-pre-commit` skill when running hooks. Hooks may change files; account for
    those changes. Do not run application tests for documentation-only edits unless documentation
    tests exist and execution is approved.
 5. Report changed READMEs, intentional exceptions, validation performed and blocked checks. For an

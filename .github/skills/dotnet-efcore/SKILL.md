@@ -21,7 +21,7 @@ code; verify generated SQL and database behavior rather than trusting LINQ or a 
 | Scaffolding, seeding, expand/contract, deployment and provider-backed validation | [Migrations and validation](./references/migrations-and-validation.md) |
 | Configuration and credentials | [Configuration instructions](../../instructions/dotnet.configuration.instructions.md) |
 | Test structure and execution approval | [Testing instructions](../../instructions/dotnet.testing.instructions.md) |
-| Redis cache implementation and invalidation | [Redis data access](../redis-data-access/SKILL.md) |
+| Redis cache implementation and invalidation | [Redis data access](../dotnet-redis/SKILL.md) |
 | Major-version release research and package propagation | [.NET upgrade](../dotnet-upgrade/SKILL.md), [.NET release train](../dotnet-release-train/SKILL.md) |
 
 Load only the relevant references. Keep MCP/HTTP authorization and output contracts, deployment

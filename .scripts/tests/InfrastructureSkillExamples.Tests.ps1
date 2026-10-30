@@ -125,7 +125,7 @@ Describe 'Single-cluster GitOps example' -Tag 'Unit' {
 
 Describe 'Helm chart contract example' -Tag 'Unit' {
     BeforeAll {
-        $chart = Join-Path $skillsRoot 'helm-charts/examples/example-message'
+        $chart = Join-Path $skillsRoot 'kubernetes-helm/examples/example-message'
     }
 
     It 'lints and renders <Fixture> with the expected resource shape' -TestCases @(
@@ -229,15 +229,15 @@ Describe 'Helm chart contract example' -Tag 'Unit' {
     It 'limits the generic YAML lint exclusion to the actual Go-template directory' {
         $config = @(Read-ExampleDocuments (Join-Path $PSScriptRoot '../../.pre-commit-config.yaml'))[0]
         $yamlHook = @($config.repos.hooks | Where-Object { $_.id -eq 'check-yaml' })[0]
-        '.github/skills/helm-charts/examples/example-message/templates/configmap.yaml' | Should -Match $yamlHook.exclude
-        '.github/skills/helm-charts/examples/example-message/values.yaml' | Should -Not -Match $yamlHook.exclude
+        '.github/skills/kubernetes-helm/examples/example-message/templates/configmap.yaml' | Should -Match $yamlHook.exclude
+        '.github/skills/kubernetes-helm/examples/example-message/values.yaml' | Should -Not -Match $yamlHook.exclude
         '.github/skills/gitops-repository-structure/templates/single-cluster/src/bootstrap.yaml' | Should -Not -Match $yamlHook.exclude
     }
 }
 
 Describe 'Parallel NGINX route example' -Tag 'Unit' {
     BeforeAll {
-        $ingressRoot = Join-Path $skillsRoot 'nginx-ingress-migration/templates'
+        $ingressRoot = Join-Path $skillsRoot 'kubernetes-nginx-migration/templates'
     }
 
     It 'uses distinct non-default class identities that match the route selection' {

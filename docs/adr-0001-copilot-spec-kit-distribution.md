@@ -187,10 +187,11 @@ advertise or dispatch `upgrade-all` in this demo merely because the upstream com
 
 Keep one canonical Copilot source and generate target layouts through scripts, not a second authored
 tree. Broad-to-specific coordinated names are permitted only when folder/name alignment,
-links/resources and native discovery remain valid. The owner approved a first batch of seven flat
-native skill renames, including `patterns-monolith-modular`; further taxonomy proposals remain
-unapproved. No retired native source shims are required; distribution migrations still need the
-catalog history below. Preserve other source paths and links until an approved move occurs.
+links/resources and native discovery remain valid. The owner approved 21 flat native skill renames,
+implemented in reviewed batches. The modular-monolith native name becomes
+`patterns-modular-monolith` while its distribution ID remains `patterns-monolith-modular`.
+No retired native source shims are required; distribution migrations still need the catalog history
+below. Preserve other source paths and links until an approved move occurs.
 Distribution ID, source path, aligned native folder/frontmatter name and generated command name are
 distinct. Keep the distribution ID stable across source/native renames by default. The initial metadata
 uses the existing native skill names as distribution IDs; it creates no duplicate architecture guidance.
@@ -257,7 +258,7 @@ payload inputs; `loadingPurpose` describes when to load them, not automatic inst
 The three local sidecars demonstrate this contract:
 [skill-library](../.github/skills/skill-library/skill.metadata.yaml),
 [ports and adapters](../.github/skills/patterns-ports-and-adapters/skill.metadata.yaml) and
-[modular monolith](../.github/skills/patterns-monolith-modular/skill.metadata.yaml).
+[modular monolith](../.github/skills/patterns-modular-monolith/skill.metadata.yaml).
 Internal references/examples need no duplicate inventory. Shared C# and configuration instructions
 are explicit external files. Ports and adapters offers one optional modular-monolith relationship for
 module composition; other conditional specialization links are not blanket graph edges. These examples
@@ -641,6 +642,22 @@ extraction, Bash/Python parity and a fresh-library scaffold remain deferred; no 
 demonstration or additional dogfooding cycle is a prerequisite for implementing D1-D5.
 
 ## Handover
+
+### Naming and Validation (2026-10-30)
+
+The approved 21-skill native-name mapping is applied in domain batches under the
+[library naming rationale](../.github/skills/skill-library/SKILL.md#skill-folder-naming).
+The modular-monolith component retains ID `patterns-monolith-modular` and its existing dependency
+pin despite the native name `patterns-modular-monolith`. Upstream `speckit-*` remains untouched;
+first-party `spec-kit-guide` and `spec-kit-bootstrap` remain eligible for library enrollment.
+Source/link validation is not editor-discovery or generated-extension acceptance.
+
+Local validation exposed a pre-existing CI-contract mismatch in
+[the coverage suite](../.scripts/tests/SkillValidationCoverage.Tests.ps1): the persistent .NET
+example test requires its CI job to have no `if` key, but the committed workflow already has one.
+The naming batches do not change that workflow or weaken the assertion. Review intended event
+gating and reconcile the workflow or test before claiming the complete suite passes; this is deferred
+here to keep CI behavior changes separate from source renaming.
 
 ### Current Progress (2026-10-29)
 

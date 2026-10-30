@@ -10,7 +10,7 @@ BeforeAll {
 
     function Read-YamlExample {
         param([Parameter(Mandatory)][string]$Name)
-        $path = Join-Path $skillsRoot "dependabot-management/templates/$Name"
+        $path = Join-Path $skillsRoot "github-dependabot/templates/$Name"
         $json = & yq -o=json '.' $path
         if ($LASTEXITCODE -ne 0) { throw "Could not parse Dependabot template '$Name'." }
         return ($json -join "`n") | ConvertFrom-Json -AsHashtable

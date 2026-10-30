@@ -169,7 +169,7 @@ Official guidance:
 ## Database, Cache and Event Boundaries
 
 - Identify the authoritative store and required freshness. Keep cache mechanics in the
-  [Redis data-access skill](../../redis-data-access/SKILL.md); do not hide an inefficient query
+  [Redis data-access skill](../../dotnet-redis/SKILL.md); do not hide an inefficient query
   behind a new cache or keep tracked entities alive in cache entries.
 - Commit authoritative state before invalidating/updating derived caches. Account for racing
   readers, stale repopulation and all writer paths; a cache outage must not turn an uncommitted
