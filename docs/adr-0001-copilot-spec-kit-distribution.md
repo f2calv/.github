@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both. Retained CI change/version-propagation evidence and actual native editor invocation remain open. Permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both, with owner-provided screenshots confirming native editor invocation and guidance use. Controlled CI versioning rehearsals and retained artifacts are verified. Final D1-D2 presentation, published component-release history, permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -744,9 +744,31 @@ advance to `1.1.0`, the reverse consumer and its exact pins advance to `1.0.1`, 
 component stays at `1.0.0`. Repeated previews match, prepared reruns have no edits, and copied package
 digests match. Every report explicitly identifies its baseline tags as local-only synthetic history.
 No scenario, execution framework, public component tag or release was added. Actual workflow upload
-and retained-artifact inspection remain pending; this rehearsal does not establish published
-component release-history acceptance. The owner's native command discovery/invocation observation
-and final D1-D2 presentation remain open.
+and retained-artifact inspection subsequently passed at
+`0fcdf062ace6fdc3891928cc7c4cc7e5cbd62657` in
+[normal CI](https://github.com/f2calv/.github/actions/runs/41082231631): 48 version-preparation,
+837 remaining and 125 workspace-install cases passed, with one skipped and zero failed or NotRun.
+The downloaded `skill-version-rehearsal` artifact contains all three reports and seven extension
+packages; all fourteen native/extension ZIP checksums, exact propagated pins, unchanged unrelated
+versions and no-edit reruns were independently checked. This rehearsal does not establish published
+component release-history acceptance. Final D1-D2 presentation remains open.
+
+The owner subsequently supplied screenshots confirming native `/speckit-skill-library` invocation
+in the fresh consumer. The editor verified existing CPython 3.13.5, PyYAML 6.0.3, Spec Kit 1.2.3,
+PowerShell 7.6.9 and Git 2.56.0, then listed both enabled `1.0.0` payloads without installing or
+downloading anything. Separate load requests applied ports/adapters and module-composition guidance
+to the requested conceptual review. Both responses reported installed-file reads: the selected
+SKILL.md, declared C# instructions and relevant references/examples; the monolith additionally read
+the configuration instructions. They correctly distinguished conceptual guidance from findings on
+an application implementation and reported no builds, tests, payload-script execution or changes.
+This closes D4/D5's native invocation/loading observation as owner-provided editor evidence, alongside
+the independently verified installed-byte/backend evidence above; it is not an independently captured
+editor tool trace or a claim that the entire ADR is complete.
+
+The exact four-component demo inventories retain the repository-default MIT attribution and
+committed LICENSE bytes. All three peer ZIPs bundled in the corrected bootstrap match their
+standalone ZIPs byte-for-byte. This technical inventory/notice review is not generalized legal
+clearance or authorization to publish component releases.
 
 ### Current-Head CI Evidence (2026-10-30)
 
