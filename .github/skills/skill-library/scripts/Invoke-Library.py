@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from types import ModuleType
 
+SKILL_ID_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+
 
 class LibraryError(ValueError):
     """Report a safe library-command failure at the process boundary."""
@@ -76,10 +78,14 @@ def parse_arguments(arguments: Sequence[str]) -> LibraryRequest:
     else:
         parser.add_argument("query", nargs=argparse.REMAINDER)
     parsed = parser.parse_args(tail)
-    if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", parsed.identity) is None:
+    if re.fullmatch(SKILL_ID_PATTERN, parsed.identity) is None:
         raise LibraryError("Arguments: Select an exact lowercase skill ID.")
     if operation == "load":
         return LibraryRequest("Load", identity=parsed.identity, query=tuple(parsed.query))
+    return _install_request(parsed)
+
+
+def _install_request(parsed: argparse.Namespace) -> LibraryRequest:
     if parsed.version is not None and re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", parsed.version) is None:
         raise LibraryError("Arguments: An exact X.Y.Z version is required.")
     if len(set(parsed.optional)) != len(parsed.optional):
@@ -103,6 +109,24 @@ def _bridge() -> ModuleType:
     return sys.modules[name]
 
 
+def _validate_catalog_release(identity: str, version: str, release: Any) -> None:
+    if re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", version) is None:
+        raise LibraryError("Catalog: Invalid release version.")
+    if not isinstance(release, dict) or set(release) != {"archive", "catalog"} or release["archive"] != f"{identity}-{version}.zip":
+        raise LibraryError("Catalog: Invalid artifact location.")
+    if not isinstance(release["catalog"], dict) or release["catalog"].get("version") != version:
+        raise LibraryError("Catalog: Inconsistent release identity.")
+
+
+def _validate_catalog_skill(identity: str, record: Any) -> None:
+    if re.fullmatch(SKILL_ID_PATTERN, identity) is None or not isinstance(record, dict) or set(record) != {"current", "releases"}:
+        raise LibraryError("Catalog: Invalid skill identity.")
+    if not isinstance(record["releases"], dict) or not record["releases"] or len(record["releases"]) > 100 or record["current"] not in record["releases"]:
+        raise LibraryError("Catalog: The advertised current release is unavailable.")
+    for version, release in record["releases"].items():
+        _validate_catalog_release(identity, version, release)
+
+
 def _catalog(path: Path) -> dict[str, Any]:
     bridge = _bridge()
     catalog = bridge._read_json(bridge._bytes(bridge._safe_path(str(path))).decode("utf-8"))
@@ -111,18 +135,28 @@ def _catalog(path: Path) -> dict[str, Any]:
     if not isinstance(catalog["skills"], dict) or len(catalog["skills"]) > 1000:
         raise LibraryError("Catalog: Invalid skill collection.")
     for identity, record in catalog["skills"].items():
-        if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", identity) is None or not isinstance(record, dict) or set(record) != {"current", "releases"}:
-            raise LibraryError("Catalog: Invalid skill identity.")
-        if not isinstance(record["releases"], dict) or not record["releases"] or len(record["releases"]) > 100 or record["current"] not in record["releases"]:
-            raise LibraryError("Catalog: The advertised current release is unavailable.")
-        for version, release in record["releases"].items():
-            if re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", version) is None:
-                raise LibraryError("Catalog: Invalid release version.")
-            if not isinstance(release, dict) or set(release) != {"archive", "catalog"} or release["archive"] != f"{identity}-{version}.zip":
-                raise LibraryError("Catalog: Invalid artifact location.")
-            if not isinstance(release["catalog"], dict) or release["catalog"].get("version") != version:
-                raise LibraryError("Catalog: Inconsistent release identity.")
+        _validate_catalog_skill(identity, record)
     return catalog
+
+
+def _read_release_metadata(archive: zipfile.ZipFile, manifest: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    bridge = _bridge()
+    component_metadata = {}
+    if not isinstance(manifest["Components"], list) or not 1 <= len(manifest["Components"]) <= 1000:
+        raise LibraryError("Artifact: Invalid required component collection.")
+    for component in manifest["Components"]:
+        record = bridge._read_yaml(archive.read(f"resources/library/{component['NativeFolder']}/skill.metadata.yaml").decode("utf-8"))
+        if not isinstance(record, dict) or record.get("id") != component["Id"] or record.get("version") != component["Version"] or component["Id"] in component_metadata:
+            raise LibraryError("Artifact: Inconsistent required component metadata.")
+        component_metadata[component["Id"]] = {"Id": component["Id"], "NativeFolder": component["NativeFolder"], "Metadata": record}
+    prefix = f"resources/library/{manifest['Root']['Folder']}/"
+    native = archive.read(prefix + "SKILL.md").decode("utf-8").splitlines()
+    if not native or native[0] != "---" or "---" not in native[1:]:
+        raise LibraryError("Artifact: Missing canonical discovery metadata.")
+    end = native.index("---", 1)
+    frontmatter = bridge._read_yaml("\n".join(native[1:end]))
+    metadata = bridge._read_yaml(archive.read(prefix + "skill.metadata.yaml").decode("utf-8"))
+    return frontmatter, metadata, component_metadata
 
 
 def _release(catalog: dict[str, Any], artifacts: Path, identity: str, version: str | None = None) -> dict[str, Any]:
@@ -147,22 +181,8 @@ def _release(catalog: dict[str, Any], artifacts: Path, identity: str, version: s
             raise LibraryError("Artifact: Release identity mismatch.")
         selection = {"Root": manifest["Root"], "SourceCommit": manifest["SourceCommit"], "Inventory": {"Components": manifest["Components"]}, "Payload": manifest["Payload"]}
         verified = bridge._verify_artifact({"Selection": selection, "Catalog": release["catalog"], "ArchivePath": str(archive_path)}, stream)
-        component_metadata = {}
         with zipfile.ZipFile(stream) as archive:
-            if not isinstance(manifest["Components"], list) or not 1 <= len(manifest["Components"]) <= 1000:
-                raise LibraryError("Artifact: Invalid required component collection.")
-            for component in manifest["Components"]:
-                record = bridge._read_yaml(archive.read(f"resources/library/{component['NativeFolder']}/skill.metadata.yaml").decode("utf-8"))
-                if not isinstance(record, dict) or record.get("id") != component["Id"] or record.get("version") != component["Version"] or component["Id"] in component_metadata:
-                    raise LibraryError("Artifact: Inconsistent required component metadata.")
-                component_metadata[component["Id"]] = {"Id": component["Id"], "NativeFolder": component["NativeFolder"], "Metadata": record}
-            prefix = f"resources/library/{manifest['Root']['Folder']}/"
-            native = archive.read(prefix + "SKILL.md").decode("utf-8").splitlines()
-            if not native or native[0] != "---" or "---" not in native[1:]:
-                raise LibraryError("Artifact: Missing canonical discovery metadata.")
-            end = native.index("---", 1)
-            frontmatter = bridge._read_yaml("\n".join(native[1:end]))
-            metadata = bridge._read_yaml(archive.read(prefix + "skill.metadata.yaml").decode("utf-8"))
+            frontmatter, metadata, component_metadata = _read_release_metadata(archive, manifest)
     if metadata.get("id") != identity or metadata.get("version") != selected_version:
         raise LibraryError("Artifact: Inconsistent canonical metadata.")
     facets = metadata.get("facets", [])
@@ -209,6 +229,11 @@ def _selected_releases(request: LibraryRequest, catalog: dict[str, Any], artifac
             progressed = True
         if not progressed:
             raise LibraryError("Selection: An optional key is unknown or its declaring skill is inactive.")
+    _validate_selected_graph(selected, edges)
+    return [root, *[selected[key] for key in sorted(selected) if key != root["Id"]]]
+
+
+def _validate_selected_graph(selected: dict[str, Any], edges: dict[str, set[str]]) -> None:
     active = {identity: record for release in selected.values() for identity, record in release["_Metadata"].items()}
     for identity, record in active.items():
         edges.setdefault(identity, set()).update(edge["id"] for edge in record["Metadata"].get("required", []))
@@ -220,7 +245,21 @@ def _selected_releases(request: LibraryRequest, catalog: dict[str, Any], artifac
         if not leaves:
             raise LibraryError("Selection: The selected dependency graph contains a cycle.")
         remaining = {identity: dependencies - leaves for identity, dependencies in remaining.items() if identity not in leaves}
-    return [root, *[selected[key] for key in sorted(selected) if key != root["Id"]]]
+
+
+def _merge_required_records(releases: list[dict[str, Any]]) -> tuple[dict[str, Any], dict[str, Any]]:
+    components: dict[str, Any] = {}
+    metadata_records: dict[str, Any] = {}
+    for release in releases:
+        for component in release["Manifest"]["Components"]:
+            if component["Id"] in components and components[component["Id"]]["Version"] != component["Version"]:
+                raise LibraryError("Selection: Conflicting exact required versions.")
+            components[component["Id"]] = component
+        for identity, record in release["_Metadata"].items():
+            if identity in metadata_records and metadata_records[identity] != record:
+                raise LibraryError("Selection: Conflicting metadata for the same required component version.")
+            metadata_records[identity] = record
+    return components, metadata_records
 
 
 def _package_selection(request: LibraryRequest, catalog_path: Path, artifacts: Path) -> dict[str, Any]:
@@ -237,20 +276,11 @@ def _package_selection(request: LibraryRequest, catalog_path: Path, artifacts: P
     roots = []
     inventories = []
     release_artifacts = []
-    components: dict[str, Any] = {}
-    metadata_records: dict[str, Any] = {}
+    components, metadata_records = _merge_required_records(releases)
     for position, release in enumerate(releases):
         manifest = release["Manifest"]
         roots.append({**manifest["Root"], "SourceCommit": manifest["SourceCommit"]})
         inventories.append({"Position": position, "SourceCommit": manifest["SourceCommit"], "Inventory": {"Components": manifest["Components"]}, "Payload": manifest["Payload"]})
-        for component in manifest["Components"]:
-            if component["Id"] in components and components[component["Id"]]["Version"] != component["Version"]:
-                raise LibraryError("Selection: Conflicting exact required versions.")
-            components[component["Id"]] = component
-        for identity, record in release["_Metadata"].items():
-            if identity in metadata_records and metadata_records[identity] != record:
-                raise LibraryError("Selection: Conflicting metadata for the same required component version.")
-            metadata_records[identity] = record
         archive = release["_Verified"]["Archive"]
         path = bridge._safe_path(archive["Path"])
         if bridge._digest(bridge._bytes(path, bridge.MAX_ARCHIVE)) != archive["Sha256"]:
@@ -290,7 +320,7 @@ def _installed(workspace: Path) -> dict[str, Any]:
     if not isinstance(registry, dict) or set(registry) != {"schema_version", "extensions"} or registry["schema_version"] != "1.0" or not isinstance(registry["extensions"], dict):
         raise LibraryError("Workspace: Inspect the invalid extension registry before continuing.")
     for identity, record in registry["extensions"].items():
-        if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", identity) is None or not isinstance(record, dict) or not isinstance(record.get("version"), str) or type(record.get("enabled")) is not bool:
+        if re.fullmatch(SKILL_ID_PATTERN, identity) is None or not isinstance(record, dict) or not isinstance(record.get("version"), str) or type(record.get("enabled")) is not bool:
             raise LibraryError("Workspace: Inspect the invalid extension registration before continuing.")
     return registry["extensions"]
 
@@ -384,6 +414,17 @@ def dispatch(request: LibraryRequest, catalog_path: Path, artifacts: Path, works
     raise LibraryError("Workspace: This operation requires a compatible installed consumer.")
 
 
+def _result_exit_code(result: dict[str, Any]) -> int:
+    if result.get("Action") == "Preview":
+        return 0 if result["Preview"].get("Ready") is True else 2
+    if result.get("Action") != "Apply":
+        return 0
+    operation = result["Result"]
+    if operation.get("State") == "Completed":
+        return 0
+    return 3 if operation.get("MutationBegan") or operation.get("OperationPath") else 2
+
+
 def main() -> int:
     """Translate command failures into bounded JSON without raw diagnostics."""
     try:
@@ -399,12 +440,7 @@ def main() -> int:
         artifacts = configured.artifacts or configured.catalog.parent / "packages"
         result = _package_selection(request, configured.catalog, artifacts) if configured.package_selection else dispatch(request, configured.catalog, artifacts, configured.workspace)
         sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
-        if result.get("Action") == "Preview":
-            return 0 if result["Preview"].get("Ready") is True else 2
-        if result.get("Action") == "Apply":
-            operation = result["Result"]
-            return 0 if operation.get("State") == "Completed" else 3 if operation.get("MutationBegan") or operation.get("OperationPath") else 2
-        return 0
+        return _result_exit_code(result)
     except LibraryError as error:
         sys.stdout.write(json.dumps({"Action": "Unknown" if error.exit_code == 3 else "Blocked", "Message": str(error)}, separators=(",", ":")) + "\n")
         return error.exit_code

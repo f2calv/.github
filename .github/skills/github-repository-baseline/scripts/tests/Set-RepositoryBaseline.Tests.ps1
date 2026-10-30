@@ -212,70 +212,26 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
     }
 
     It 'Adds the approved status checks for <Repository>' -TestCases @(
-        @{
-            Repository = 'f2calv/SmartHaus'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'build / app-build-dotnet'
-        }
-        @{
-            Repository = 'f2calv/redis-dotnet'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'build / app-build-dotnet'
-        }
-        @{
-            Repository = 'f2calv/CasCap.Api.Example'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'build'
-        }
-        @{
-            Repository = 'f2calv/yamlizr'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'build'
-        }
-        @{
-            Repository = 'f2calv/dotnet-nuget-test'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'build'
-        }
-        @{
-            Repository = 'f2calv/gha-dotnet-nuget'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'validate'
-        }
-        @{
-            Repository = 'f2calv/gha-gitops-manifest-update'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'validate'
-        }
-        @{
-            Repository = 'f2calv/gha-sonarqube-dotnet'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'validate'
-        }
-        @{
-            Repository = 'f2calv/gha-release-versioning'
-            Versioning = 'versioning'
-            Validation = 'validate'
-        }
-        @{
-            Repository = 'f2calv/multi-arch-container-dotnet'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'app / app-build-dotnet'
-        }
-        @{
-            Repository = 'f2calv/multi-arch-container-go'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'app / app-build-go'
-        }
-        @{
-            Repository = 'f2calv/multi-arch-container-python'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'app / app-build-python'
-        }
-        @{
-            Repository = 'f2calv/multi-arch-container-rust'
-            Versioning = 'versioning / gha-release-versioning'
-            Validation = 'app / app-build-rust'
+        ([ordered]@{
+            'f2calv/SmartHaus' = 'build / app-build-dotnet'
+            'f2calv/redis-dotnet' = 'build / app-build-dotnet'
+            'f2calv/CasCap.Api.Example' = 'build'
+            'f2calv/yamlizr' = 'build'
+            'f2calv/dotnet-nuget-test' = 'build'
+            'f2calv/gha-dotnet-nuget' = 'validate'
+            'f2calv/gha-gitops-manifest-update' = 'validate'
+            'f2calv/gha-sonarqube-dotnet' = 'validate'
+            'f2calv/gha-release-versioning' = 'validate'
+            'f2calv/multi-arch-container-dotnet' = 'app / app-build-dotnet'
+            'f2calv/multi-arch-container-go' = 'app / app-build-go'
+            'f2calv/multi-arch-container-python' = 'app / app-build-python'
+            'f2calv/multi-arch-container-rust' = 'app / app-build-rust'
+        }).GetEnumerator() | ForEach-Object {
+            @{
+                Repository = $_.Key
+                Versioning = if ($_.Key -ceq 'f2calv/gha-release-versioning') { 'versioning' } else { 'versioning / gha-release-versioning' }
+                Validation = $_.Value
+            }
         }
     ) {
         param($Repository, $Versioning, $Validation)

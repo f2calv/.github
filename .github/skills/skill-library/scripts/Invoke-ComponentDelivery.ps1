@@ -44,6 +44,34 @@ $DeliveryInputs = @{
 }
 . (Join-Path $PSScriptRoot 'Invoke-VersionPreparation.ps1') -RepoRoot $RepoRoot -ImpactJson $ImpactJson -BootstrapId $BootstrapId -PythonPath $PythonPath
 
+function Get-ComponentDeliveryDestination {
+    param([string]$Root, [string]$OutputDirectory)
+    if (-not $IsLinux -or -not [IO.Path]::IsPathFullyQualified($OutputDirectory) -or $OutputDirectory.Contains('\') -or
+        @($OutputDirectory.Substring(1).Split('/') | Where-Object { $_ -in @('', '.', '..') }).Count) { throw 'Use a new unambiguous absolute Linux output directory.' }
+    $Destination = $OutputDirectory.TrimEnd('/')
+    $Parent = Get-Item -LiteralPath ([IO.Path]::GetDirectoryName($Destination)) -Force
+    if (-not $Parent.PSIsContainer -or (Test-Path -LiteralPath $Destination)) { throw 'Output must be absent beneath an existing trusted directory.' }
+    while ($null -ne $Parent) {
+        if ($Parent.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Linked output ancestry is not supported.' }
+        $Parent = $Parent.Parent
+    }
+    $Boundaries = @($Root)
+    foreach ($Argument in @('--absolute-git-dir', '--git-common-dir')) {
+        $Boundary = Invoke-PreparationGit -Root $Root -Arguments @('rev-parse', '--path-format=absolute', $Argument)
+        $Boundaries += $Boundary.TrimEnd('/')
+    }
+    foreach ($Boundary in $Boundaries) {
+        if ($Destination -ceq $Boundary -or $Destination.StartsWith("$Boundary/", [StringComparison]::Ordinal) -or $Boundary.StartsWith("$Destination/", [StringComparison]::Ordinal)) { throw 'Output overlaps source or Git administrative storage.' }
+    }
+    return $Destination
+}
+
+function Assert-ComponentDeliverySource {
+    param([string]$Root, [string]$SourceCommit)
+    if ((Invoke-PreparationGit -Root $Root -Arguments @('rev-parse', 'HEAD')) -cne $SourceCommit -or
+        (Invoke-PreparationGit -Root $Root -Arguments @('status', '--porcelain', '--untracked-files=all'))) { throw 'Committed source changed during delivery.' }
+}
+
 function Invoke-SkillComponentDelivery {
     param(
         [string]$RepoRoot = (Join-Path $PSScriptRoot '../../../..'), [string]$ImpactJson = '{}', [string[]]$BootstrapId = @(), [string]$PythonPath = 'python3',
@@ -64,23 +92,7 @@ function Invoke-SkillComponentDelivery {
     if (-not $Result.BuildReady) { throw 'Commit the complete reviewed version preparation before building.' }
     $Root = (Resolve-Path -LiteralPath $RepoRoot).Path.TrimEnd('/')
     if (Invoke-PreparationGit -Root $Root -Arguments @('status', '--porcelain', '--untracked-files=all')) { throw 'Build requires clean committed source.' }
-    if (-not $IsLinux -or -not [IO.Path]::IsPathFullyQualified($OutputDirectory) -or $OutputDirectory.Contains('\') -or
-        @($OutputDirectory.Substring(1).Split('/') | Where-Object { $_ -in @('', '.', '..') }).Count) { throw 'Use a new unambiguous absolute Linux output directory.' }
-    $Destination = $OutputDirectory.TrimEnd('/')
-    $Parent = Get-Item -LiteralPath ([IO.Path]::GetDirectoryName($Destination)) -Force
-    if (-not $Parent.PSIsContainer -or (Test-Path -LiteralPath $Destination)) { throw 'Output must be absent beneath an existing trusted directory.' }
-    while ($null -ne $Parent) {
-        if ($Parent.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Linked output ancestry is not supported.' }
-        $Parent = $Parent.Parent
-    }
-    $Boundaries = @($Root)
-    foreach ($Argument in @('--absolute-git-dir', '--git-common-dir')) {
-        $Boundary = Invoke-PreparationGit -Root $Root -Arguments @('rev-parse', '--path-format=absolute', $Argument)
-        $Boundaries += $Boundary.TrimEnd('/')
-    }
-    foreach ($Boundary in $Boundaries) {
-        if ($Destination -ceq $Boundary -or $Destination.StartsWith("$Boundary/", [StringComparison]::Ordinal) -or $Boundary.StartsWith("$Destination/", [StringComparison]::Ordinal)) { throw 'Output overlaps source or Git administrative storage.' }
-    }
+    $Destination = Get-ComponentDeliveryDestination -Root $Root -OutputDirectory $OutputDirectory
     $Candidates = @($Preparation.Components | Where-Object { $null -ne $_.ProposedTag })
     if ($Candidates.Count -eq 0) { throw 'There are no affected components to package.' }
     . (Join-Path $PSScriptRoot 'Invoke-Archive.ps1') -RepoRoot $Root -OutputDirectory $Destination -PythonPath $PythonPath
@@ -94,8 +106,7 @@ function Invoke-SkillComponentDelivery {
         [void][IO.Directory]::CreateDirectory($ComponentRoot)
         $Catalogs = [Collections.Generic.List[string]]::new()
         foreach ($Component in @($Candidates | Sort-Object @{ Expression = { $_.Id -ceq 'skill-library' } }, Id)) {
-            if ((Invoke-PreparationGit -Root $Root -Arguments @('rev-parse', 'HEAD')) -cne $Preparation.SourceCommit -or
-                (Invoke-PreparationGit -Root $Root -Arguments @('status', '--porcelain', '--untracked-files=all'))) { throw 'Committed source changed during delivery.' }
+            Assert-ComponentDeliverySource -Root $Root -SourceCommit $Preparation.SourceCommit
             $Folder = [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($Component.Path))
             $Archive = Invoke-SkillArchive -RepoRoot $Root -SourceRevision $Preparation.SourceCommit -SkillName $Folder -OutputDirectory (Join-Path $NativeRoot $Component.Id) -PythonPath $PythonPath
             $ComponentDirectory = Join-Path $ComponentRoot $Component.Id
@@ -110,8 +121,7 @@ function Invoke-SkillComponentDelivery {
             $Result.Artifacts += $Package
             $Catalogs.Add($Package.CatalogPath)
         }
-        if ((Invoke-PreparationGit -Root $Root -Arguments @('rev-parse', 'HEAD')) -cne $Preparation.SourceCommit -or
-            (Invoke-PreparationGit -Root $Root -Arguments @('status', '--porcelain', '--untracked-files=all'))) { throw 'Committed source changed during delivery.' }
+        Assert-ComponentDeliverySource -Root $Root -SourceCommit $Preparation.SourceCommit
         $Evidence = Join-Path $Destination 'delivery.json'
         $Stream = [IO.File]::Open($Evidence, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
         try { $Stream.Write([Text.Encoding]::UTF8.GetBytes(($Result | ConvertTo-Json -Depth 100) + "`n")); $Stream.Flush($true) }

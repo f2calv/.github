@@ -145,6 +145,12 @@ function Get-WorkspacePackagedSelection {
     if ($Process.ExitCode -ne 0 -or $Process.Error) { throw 'Packaged selection did not return a clean verified response.' }
     $Selection = [Text.UTF8Encoding]::new($false, $true).GetString($Process.Bytes) | ConvertFrom-Json -Depth 100
     if ($Selection.SourceKind -cne 'packaged') { throw 'Packaged selection protocol mismatch.' }
+    Assert-WorkspacePackagedSelection -Selection $Selection
+    return $Selection
+}
+
+function Assert-WorkspacePackagedSelection {
+    param([object]$Selection)
     & {
         param($PackagedSelection, $Schema)
         . (Join-Path $PSScriptRoot 'Invoke-Validation.ps1')
@@ -167,7 +173,6 @@ function Get-WorkspacePackagedSelection {
             if (@(Compare-Object @($Required.SelectedIds | Sort-Object) @($Inventory.Inventory.Components.Id | Sort-Object) -CaseSensitive).Count) { throw 'Packaged required-only closure does not match its manifest.' }
         }
     } $Selection (Join-Path $PSScriptRoot '../skill-metadata.schema.json')
-    return $Selection
 }
 
 function Get-WorkspaceConsumerSnapshot {
@@ -287,12 +292,13 @@ function New-WorkspaceOperationEvidence {
     $Operations = Join-Path $Namespace 'operations'
     $OperationPath = Join-Path $Operations $Context.OperationId
     $Context | Add-Member -NotePropertyName OperationPath -NotePropertyValue $OperationPath
-    foreach ($Directory in @($Operations, $OperationPath, (Join-Path $OperationPath 'scratch'))) {
-        if ($Directory -ceq $Operations -and [IO.Directory]::Exists($Directory)) {
-            Assert-WorkspaceInputPath -Path $Directory -Directory
-            if ([IO.File]::GetUnixFileMode($Directory) -ne [IO.UnixFileMode]448) { throw 'Private operations directory mode changed.' }
-            continue
-        }
+    $Directories = @($OperationPath, (Join-Path $OperationPath 'scratch'))
+    if ([IO.Directory]::Exists($Operations)) {
+        Assert-WorkspaceInputPath -Path $Operations -Directory
+        if ([IO.File]::GetUnixFileMode($Operations) -ne [IO.UnixFileMode]448) { throw 'Private operations directory mode changed.' }
+    }
+    else { $Directories = @($Operations) + $Directories }
+    foreach ($Directory in $Directories) {
         $Reservation = Invoke-LibraryProcess -Executable $Mkdir -Arguments @('-m', '700', '--', $Directory)
         if ($Reservation.ExitCode -ne 0) { throw 'Exclusive operation directory creation failed; preserve existing state.' }
         $Context.MutationBegan = $true

@@ -115,6 +115,22 @@ function Assert-SkillTree {
     }
 }
 
+function Add-SkillRecordSelections {
+    param([hashtable]$Record, [hashtable]$AvailableVersions, [hashtable]$Selections)
+    $Edges = @{}
+    foreach ($Edge in @($Record.required) + @($Record.optional)) {
+        if ($Edges.ContainsKey($Edge.id)) { throw 'Duplicate dependency or required/optional overlap.' }
+        $Edges[$Edge.id] = $true
+        if (-not $AvailableVersions.ContainsKey($Edge.id)) { throw 'Missing dependency: opt in the target component with metadata.' }
+        if ($Edge.version -cnotin $AvailableVersions[$Edge.id]) { throw 'Dependency version mismatch: declare an available exact version.' }
+    }
+    foreach ($Edge in $Record.optional) {
+        $Key = "$($Record.id)/$($Edge.selectionKey)"
+        if ($Selections.ContainsKey($Key)) { throw 'Duplicate optional selection key.' }
+        $Selections[$Key] = $Edge.id
+    }
+}
+
 function Resolve-SkillGraph {
     param([hashtable]$Catalog, [string[]]$RootId, [string[]]$OptionalSelection = @(), [hashtable]$AvailableVersions = @{})
     if ($AvailableVersions.Count -eq 0) {
@@ -122,18 +138,7 @@ function Resolve-SkillGraph {
     }
     $Selections = @{}
     foreach ($Record in $Catalog.Values) {
-        $Edges = @{}
-        foreach ($Edge in @($Record.required) + @($Record.optional)) {
-            if ($Edges.ContainsKey($Edge.id)) { throw 'Duplicate dependency or required/optional overlap.' }
-            $Edges[$Edge.id] = $true
-            if (-not $AvailableVersions.ContainsKey($Edge.id)) { throw 'Missing dependency: opt in the target component with metadata.' }
-            if ($Edge.version -cnotin $AvailableVersions[$Edge.id]) { throw 'Dependency version mismatch: declare an available exact version.' }
-        }
-        foreach ($Edge in $Record.optional) {
-            $Key = "$($Record.id)/$($Edge.selectionKey)"
-            if ($Selections.ContainsKey($Key)) { throw 'Duplicate optional selection key.' }
-            $Selections[$Key] = $Edge.id
-        }
+        Add-SkillRecordSelections -Record $Record -AvailableVersions $AvailableVersions -Selections $Selections
     }
     $Chosen = @{}
     foreach ($Key in $OptionalSelection) {
@@ -155,15 +160,11 @@ function Resolve-SkillGraph {
             if (-not $Catalog.ContainsKey($Edge.id) -or $Catalog[$Edge.id].version -cne $Edge.version) { throw 'Selected dependency version mismatch.' }
             Resolve-SkillDependency -Id $Edge.id -IncludeOptional $IncludeOptional
         }
-        if ($IncludeOptional) {
-            foreach ($Edge in $Record.optional) {
-                $Key = "$Id/$($Edge.selectionKey)"
-                if ($Chosen.ContainsKey($Key)) {
-                    if (-not $Catalog.ContainsKey($Edge.id) -or $Catalog[$Edge.id].version -cne $Edge.version) { throw 'Selected dependency version mismatch.' }
-                    $Chosen[$Key] = $true
-                    Resolve-SkillDependency -Id $Edge.id -IncludeOptional $true
-                }
-            }
+        $OptionalEdges = @($Record.optional | Where-Object { $IncludeOptional -and $Chosen.ContainsKey("$Id/$($_.selectionKey)") })
+        foreach ($Edge in $OptionalEdges) {
+            if (-not $Catalog.ContainsKey($Edge.id) -or $Catalog[$Edge.id].version -cne $Edge.version) { throw 'Selected dependency version mismatch.' }
+            $Chosen["$Id/$($Edge.selectionKey)"] = $true
+            Resolve-SkillDependency -Id $Edge.id -IncludeOptional $true
         }
         $State[$Id] = 'done'
         $Resolved.Add($Id)
