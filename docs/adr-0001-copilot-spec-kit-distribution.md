@@ -643,6 +643,44 @@ demonstration or additional dogfooding cycle is a prerequisite for implementing 
 
 ## Handover
 
+### Current-Head CI Evidence (2026-10-30)
+
+At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
+[normal CI](https://github.com/f2calv/.github/actions/runs/41034015637) passed lint, version
+calculation, .NET example tests and the required Pester gate. Pester reported 999 passed, one skipped
+and zero failed; its job took 18m17s and test execution took 1064.67 seconds. Summed per-test durations
+were 619.8 seconds for workspace installation and 220.0 seconds for version preparation, together
+about 79% of test execution. Coverage setup and report processing took 830 ms and 853 ms; these
+figures do not measure instrumentation overhead during tests. Parallelizing the dominant suites is
+the measured optimization candidate; dependency-aware changed-file selection remains proposed.
+
+The local test workflow now partitions that full suite into independent `workspace-install`,
+`version-preparation` and `remaining` matrix jobs, with fail-fast disabled and the existing required
+aggregate gate retained. All 27 focused runner/workflow-contract tests pass, including exhaustive,
+non-overlapping file selection and failed/empty execution guards. Ordinary local runs still select
+the complete suite. The parallel layout has not yet run in CI; the serial timings above are its
+baseline, not evidence of an achieved speedup. No prebuilt toolchain image or changed-file filter
+was introduced.
+
+[Preparation](https://github.com/f2calv/.github/actions/runs/41036426592) was Ready and BuildReady,
+with no metadata edits. The four unpublished components retained `1.0.0`:
+`dotnet-cron-scheduling`, `patterns-monolith-modular`, `patterns-ports-and-adapters` and `skill-library`.
+[The build](https://github.com/f2calv/.github/actions/runs/41036573060) passed in 37 seconds; all four
+downloaded ZIP hashes and detached checksums matched. The bootstrap contained the three exact
+separate payload ZIPs, exposed only `speckit.skill.library` and preserved the monolith's stable ID
+alongside its renamed native path. Reverse-propagation and unchanged-component checks in the normal
+CI run are synthetic regression evidence, not releases against real component tags.
+
+[A separate repeat build](https://github.com/f2calv/.github/actions/runs/41036808046) passed in
+44 seconds but exposed an open D3 acceptance failure: all four native ZIPs were identical while all
+four extension ZIP hashes differed. Comparing the cron package found only `extension.yml` changed;
+its template fields had identical values but different JSON key order. The
+[adapter's unordered nested hashtables](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
+permit fresh-process serialization differences that same-process repeat tests did not catch.
+Canonical extension serialization and a fresh-process regression are required before claiming
+reproducible extension delivery. No tags or releases were created; expiring CI artifacts and
+placeholder catalog URLs do not satisfy permanent publication or reproducible consumer transport.
+
 ### Naming and Validation (2026-10-30)
 
 The approved 21-skill native-name mapping is applied in domain batches under the
