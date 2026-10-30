@@ -535,6 +535,11 @@ Describe 'Shared library command' -Tag 'Unit' {
         $Zip = [IO.Compression.ZipFile]::OpenRead($Package.ArchivePath)
         try {
             $Zip.GetEntry('commands/library.md') | Should -Not -BeNullOrEmpty
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('commands/library.md').Open())
+            try { $Command = $Reader.ReadToEnd() }
+            finally { $Reader.Dispose() }
+            $Command | Should -Match "selected installed payload extension's canonical resource tree"
+            $Command | Should -Not -Match 'resources/library'
             $Zip.GetEntry('commands/load.md') | Should -BeNullOrEmpty
             $Zip.GetEntry('tools/Invoke-Library.py') | Should -Not -BeNullOrEmpty
             $Zip.GetEntry('tools/Invoke-SpecKitInstall.py') | Should -Not -BeNullOrEmpty

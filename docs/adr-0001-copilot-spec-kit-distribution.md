@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. The serialization follow-on has passing local regression evidence; fresh component CI rebuilds, shared-command consumer acceptance and permanent publication remain open. Broader complexity review remains pending. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. The shared command and bootstrap are implemented; repeat component CI builds are byte-identical. CI change/version-propagation acceptance and shared-command consumer/editor acceptance remain open. A registrar resource-path wording repair has passing local regressions and needs fresh artifacts. Permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -700,6 +700,22 @@ against the previous serializer; all 42 extension/shared-command cases pass with
 Three fresh PowerShell processes produced identical synthetic extension ZIP and catalog hashes
 from the same input archive. This is local regression evidence, not a repeat of the four-component
 CI build, a consumer demo or release acceptance. No component versions or pins changed.
+
+At `b7bcdff392c95169df3f87576b928302a42fb129`, [artifact build](https://github.com/f2calv/.github/actions/runs/41069397025)
+and [independent repeat](https://github.com/f2calv/.github/actions/runs/41069663420) passed.
+All 20 downloaded deliverables matched byte-for-byte: four native ZIPs, four extension ZIPs,
+four catalogs and eight detached checksums. Recorded extension digests matched the downloaded ZIPs.
+[Normal CI](https://github.com/f2calv/.github/actions/runs/41070473430) also passed. These bootstrap
+builds do not satisfy D3's single/multiple-change, reverse-propagation and unaffected-version gates.
+
+A separately approved disposable consumer was initialized with pinned Spec Kit 1.2.3 Copilot skills
+mode. Installing the verified bootstrap generated `/speckit-skill-library`; its installed-only backend
+returned a ready root/optional preview without blockers. Registration also exposed a loading-instruction
+defect: the runtime rewrites a literal relative resource path for the bootstrap command owner, not the
+selected payload. The generator now describes that boundary without the rewrite-triggering path;
+the existing bootstrap regression covers the wording and all 42 focused cases pass. Preserve the old
+consumer, rebuild and verify a separately approved fresh consumer; do not patch installed evidence.
+No payload installation or editor invocation is claimed by this checkpoint.
 
 ### Current-Head CI Evidence (2026-10-30)
 
