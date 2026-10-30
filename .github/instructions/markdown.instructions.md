@@ -9,7 +9,7 @@ Where these rules refer to a *project*, read it as the repository's primary unit
 
 ## Scope and Ownership
 
-Use the `readme-authoring` skill to create, restructure, update or audit READMEs. Its conditional
+Use the `docs-readme` skill to create, restructure, update or audit READMEs. Its conditional
 master template owns section selection and ordering; this file owns documentation conventions.
 The Mermaid instructions own diagram selection, styling and synchronization. Domain instructions
 and skills own technical contracts; reference them rather than copying their rules.

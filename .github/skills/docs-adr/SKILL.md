@@ -1,5 +1,5 @@
 ---
-name: adr-authoring
+name: docs-adr
 description: 'Create, refine, review and supersede architecture decision records (ADRs) and architecture design proposals. Use for evidence-backed decisions under docs/, local ADR drafts, GitHub issues labelled adr, alternatives and tradeoffs, source deep links, and turning a design discussion into a durable decision record.'
 ---
 

@@ -87,6 +87,8 @@ available to native VS Code discovery but never enter library metadata validatio
 version preparation or structural skill checks, even if a sidecar appears. Explicit selection or
 dependencies on excluded skills fail. Structural checks and the library share the same reader;
 committed inventory reads the policy from its chosen revision, and preparation fingerprints it.
+The first-party `spec-kit-guide` and `spec-kit-bootstrap` skills do not match `speckit-*` and remain
+eligible for library metadata enrollment; describing Spec Kit does not make a skill upstream-owned.
 Do not use this ownership policy to suppress unrelated lint or whitespace checks.
 
 After schema edits, refresh the editor's YAML schema cache if diagnostics still require removed
@@ -613,6 +615,35 @@ The [ADR migration contract](../../../docs/adr-0001-copilot-spec-kit-distributio
 defines version-scoped transitions, immutable history and installer safeguards. Preserve old releases,
 tags and catalog entries; never reassign retired IDs to unrelated content. A stable-ID source rename
 needs no ID migration, but still needs version-impact review and safe installed-path handling.
+
+### Skill Folder Naming
+
+Prefer lowercase kebab-case `<domain>-<topic>` names in the flat skill directory. A domain prefix
+groups related skills when browsing or completing names; the topic must still identify the actual
+operation. Some additional length is justified, but avoid redundant category layers such as
+`framework-dotnet-efcore` when `dotnet-efcore` conveys the same scope.
+
+- Use one primary domain based on the implemented scope, not every technology mentioned. Keep
+   `.NET`-specific guidance under `dotnet-*`; reserve `lang-csharp-*` for language-specific guidance
+   rather than renaming the whole .NET ecosystem after its implementation language.
+- Prefer specific domains such as `github-*`, `containers-*`, `terraform-*` and `gitops-*` over
+   a broad `devops-*` bucket. Use `gitops-*` for actual reconciliation or Git-owned deployment
+   workflows, not every Kubernetes-related skill.
+- Use a scripting prefix such as `script-pwsh-*` when scripting itself is the subject. A bundled
+   PowerShell helper does not make an otherwise domain-specific skill a scripting skill.
+- Keep useful existing domain names rather than renaming for cosmetic uniformity. Use concise,
+   recognizable terms; avoid arbitrary abbreviations and stacked prefixes. Express overlapping
+   categories through metadata facets and discovery descriptions instead of longer folder names.
+- Align the folder basename and native frontmatter `name`. Preserve an existing component `id`
+   by default; changing a source name must not silently change release identity or published tags.
+- Before bulk renaming, agree a complete current-to-proposed mapping with a reason for each entry,
+   including unchanged names. Implement approved changes with `git mv` in small domain batches,
+   starting with a low-coupling pilot; update references and review version impact in each batch.
+   Run focused checks with test approval before separately authorized commits. Leave upstream-owned
+   exclusions untouched and preserve the bootstrap's public command unless explicitly redesigned.
+
+These principles guide naming review; individual remappings remain proposals until approved. A
+folder rename alone is not evidence that native discovery or installed-path handling remains valid.
 
 ## Maintaining This Skill
 

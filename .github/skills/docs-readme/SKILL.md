@@ -1,5 +1,5 @@
 ---
-name: readme-authoring
+name: docs-readme
 description: 'Create, write, restructure, update and audit README.md files across simple and multi-project repositories. Use for public or private applications, CLIs, .NET and NuGet libraries, GitHub Marketplace Actions, reusable workflows, Helm charts, Terraform modules, badges, SonarQube coverage and README consistency.'
 argument-hint: 'mode={create|update|audit} [scope=repository|project|workspace] [path=...]'
 user-invocable: true

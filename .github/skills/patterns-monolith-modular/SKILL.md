@@ -29,7 +29,7 @@ entrypoint, Dockerfile, image or microservice.
 | Workload/chart rendering and GitOps ownership | [Helm charts](../helm-charts/SKILL.md), [GitOps structure](../gitops-repository-structure/SKILL.md) |
 | Leader-only worker ownership | [Leadership election](../leadership-election/SKILL.md) |
 | Persistence and schema rollout | [EF Core data access](../dotnet-efcore/SKILL.md) |
-| Architecture decisions and frontend/API contracts | [ADR authoring](../adr-authoring/SKILL.md), [Blazor frontend](../blazor-frontend/SKILL.md), [.NET Web API](../dotnet-webapi/SKILL.md) |
+| Architecture decisions and frontend/API contracts | [ADR authoring](../docs-adr/SKILL.md), [Blazor frontend](../blazor-frontend/SKILL.md), [.NET Web API](../dotnet-webapi/SKILL.md) |
 
 The [one-image role example](./examples/role-profiles.md) shows an API, worker, combined role and
 finite job with concrete startup selections and acceptance cases. It is synthetic guidance, not

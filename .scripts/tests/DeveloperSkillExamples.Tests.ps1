@@ -6,7 +6,7 @@ BeforeAll {
     $skillsRoot = Join-Path $PSScriptRoot '../../.github/skills'
     $performanceRoot = Join-Path $skillsRoot 'dotnet-performance/examples/utf8-count'
     $releaseRoot = Join-Path $skillsRoot 'dotnet-release-train'
-    $workflowRoot = Join-Path $skillsRoot 'readme-authoring/examples/reusable-workflow'
+    $workflowRoot = Join-Path $skillsRoot 'docs-readme/examples/reusable-workflow'
     $json = & yq -o=json '.' (Join-Path $workflowRoot '_report-label.yml.tmpl')
     if ($LASTEXITCODE -ne 0) { throw 'The workflow example is not valid YAML.' }
     $workflow = ($json -join "`n") | ConvertFrom-Json -AsHashtable

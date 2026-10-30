@@ -10,11 +10,7 @@ provides default GitHub issue forms, pull request templates and contribution gui
 2. In VS Code, use **File > Add Folder to Workspace** to add this repository, then save the workspace.
 3. Select the **Copilot** agent harness and run **Chat: Open Customizations** from the Command Palette.
    Confirm that the shared instructions and skills are available to that session.
-4. Ask for a relevant task, or invoke an available skill directly, for example:
-
-   ```text
-   /readme-authoring
-   ```
+4. Ask for a relevant task, or invoke an available skill directly, such as `/docs-readme`.
 
 The [shared instructions](.github/instructions/) contain language, tool and documentation
 conventions. [Skills](.github/skills/) supply task-specific workflows and supporting resources.
@@ -67,8 +63,8 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 
 | Skill | Use it for |
 | --- | --- |
-| [README authoring](.github/skills/readme-authoring/SKILL.md) | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
-| [ADR authoring](.github/skills/adr-authoring/SKILL.md) | Evidence-backed local architecture decisions, source deep links, proposal refinement and optional GitHub issues labelled adr |
+| [README authoring](.github/skills/docs-readme/SKILL.md) | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
+| [ADR authoring](.github/skills/docs-adr/SKILL.md) | Evidence-backed local architecture decisions, source deep links, proposal refinement and optional GitHub issues labelled adr |
 | [Repository baseline](.github/skills/repository-baseline/SKILL.md) | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](.github/skills/repository-privacy/SKILL.md) | Checking public changes for personal data, credentials and private-system details |
 | [Issues and pull requests](.github/skills/github-issues-and-pull-requests/SKILL.md) | Issue quality, pull request descriptions, review findings and merge readiness |
@@ -79,7 +75,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [EditorConfig management](.github/skills/editorconfig-management/SKILL.md) | Shared formatting profiles, analyzer rules and drift |
 | [Dev Containers](.github/skills/containers-devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
-| [Spec Kit session tutor](.github/skills/helper-spec-kit/SKILL.md) | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
+| [Spec Kit session tutor](.github/skills/spec-kit-guide/SKILL.md) | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](.github/skills/skill-library/SKILL.md) | YAML metadata authoring and local schema, repository defaults, dependency and safe-path validation |
 | [Container images](.github/skills/containers-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](.github/skills/containers-docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |

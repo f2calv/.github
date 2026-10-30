@@ -21,7 +21,7 @@ in its adapter. Use the boundary where it buys actual substitution, isolation or
 - Use [DI](../dotnet-dependency-injection/SKILL.md) for provider selection,
   [HTTP integrations](../dotnet-http-integrations/SKILL.md) for transport,
   [EF Core](../dotnet-efcore/SKILL.md) and [Redis](../redis-data-access/SKILL.md) for data semantics,
-  and [ADR authoring](../adr-authoring/SKILL.md) when the requested decision needs a durable record.
+   and [ADR authoring](../docs-adr/SKILL.md) when the requested decision needs a durable record.
 - Follow [C# instructions](../../instructions/dotnet.csharp.instructions.md) for interface and error
   conventions. The official
   [architecture guidance](https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/common-web-application-architectures)
