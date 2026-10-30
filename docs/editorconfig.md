@@ -6,7 +6,8 @@ unsupported EditorConfig imports or copying an opaque monolithic file by hand.
 
 ## Source Model
 
-The source fragments live under `.config/editorconfig/`:
+The source fragments live inside the
+[EditorConfig skill](../.github/skills/editorconfig-management/fragments/), alongside its generator:
 
 | Fragment | Purpose |
 | --- | --- |

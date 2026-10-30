@@ -2,7 +2,7 @@
 
 BeforeAll {
     $script:ScriptPath = Join-Path $PSScriptRoot '..\Set-EditorConfig.ps1'
-    $script:FragmentRoot = Join-Path $PSScriptRoot '../../../../../.config/editorconfig'
+    $script:FragmentRoot = Join-Path $PSScriptRoot '../../fragments'
     . $script:ScriptPath
 
     function New-TestRepository {
@@ -18,13 +18,25 @@ BeforeAll {
 }
 
 Describe 'Set-EditorConfigFile' -Tag 'Unit' {
-    It 'resolves the central fragments from the relocated command entry point' {
-        $RepositoryPath = New-TestRepository -Name 'entry-point'
-        & pwsh -NoLogo -NoProfile -File $script:ScriptPath -RepositoryPath $RepositoryPath -Profile Base
+    It 'resolves the <Profile> fragments from an isolated skill copy' -ForEach @(
+        @{ Profile = 'Base' }
+        @{ Profile = 'DotNet' }
+        @{ Profile = 'Go' }
+        @{ Profile = 'Python' }
+        @{ Profile = 'Rust' }
+        @{ Profile = 'Terraform' }
+    ) {
+        $RepositoryPath = New-TestRepository -Name "entry-point-$Profile"
+        $SkillPath = Join-Path $TestDrive "standalone-skill-$Profile"
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../..') -Destination $SkillPath -Recurse
+        $StandaloneScript = Join-Path $SkillPath 'scripts/Set-EditorConfig.ps1'
+        & pwsh -NoLogo -NoProfile -File $StandaloneScript -RepositoryPath $RepositoryPath -Profile $Profile
         $LASTEXITCODE | Should -Be 0
-        & pwsh -NoLogo -NoProfile -File $script:ScriptPath -RepositoryPath $RepositoryPath -Profile Base -Check
+        & pwsh -NoLogo -NoProfile -File $StandaloneScript -RepositoryPath $RepositoryPath -Profile $Profile -Check
         $LASTEXITCODE | Should -Be 0
         Test-Path -LiteralPath (Join-Path $RepositoryPath '.editorconfig') | Should -BeTrue
+        [IO.File]::ReadAllText((Join-Path $RepositoryPath '.editorconfig')) |
+            Should -BeExactly (Get-GeneratedEditorConfig -Profile $Profile -FragmentRoot $script:FragmentRoot)
     }
 
     It 'Generates the universal baseline as UTF-8 with LF endings' {

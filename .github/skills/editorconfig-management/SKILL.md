@@ -34,19 +34,20 @@ The central repository owns:
 
 | Path | Purpose |
 | --- | --- |
-| `.config/editorconfig/base.editorconfig` | Universal encoding, LF, indentation, and whitespace policy |
-| `.config/editorconfig/dotnet.editorconfig` | .NET and C# conventions plus staged analyzer severity |
-| `.config/editorconfig/go.editorconfig` | Go and `gofmt`-compatible indentation |
-| `.config/editorconfig/python.editorconfig` | Python and TOML editor settings |
-| `.config/editorconfig/rust.editorconfig` | Rust and `rustfmt`-compatible settings |
-| `.config/editorconfig/terraform.editorconfig` | Terraform and HCL indentation |
+| [fragments/base.editorconfig](./fragments/base.editorconfig) | Universal encoding, LF, indentation, and whitespace policy |
+| [fragments/dotnet.editorconfig](./fragments/dotnet.editorconfig) | .NET and C# conventions plus staged analyzer severity |
+| [fragments/go.editorconfig](./fragments/go.editorconfig) | Go and `gofmt`-compatible indentation |
+| [fragments/python.editorconfig](./fragments/python.editorconfig) | Python and TOML editor settings |
+| [fragments/rust.editorconfig](./fragments/rust.editorconfig) | Rust and `rustfmt`-compatible settings |
+| [fragments/terraform.editorconfig](./fragments/terraform.editorconfig) | Terraform and HCL indentation |
 | `.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1` | Idempotent generator and read-only drift checker |
 | `.github/skills/dotnet-cleanup/scripts/Invoke-DotNetFormatDiagnostics.ps1` | Project-scoped formatter routing and verification by diagnostic family |
 | `.github/skills/editorconfig-management/scripts/tests/Set-EditorConfig.Tests.ps1` | Generator regression coverage |
 | `docs/editorconfig.md` | Source model, enforcement strategy, rollout, and rollback rationale |
 
 Change policy in the fragments, not in generated consumer files. Regenerate every affected
-repository after a fragment change.
+repository after a fragment change. Keep the fragments inside this skill and resolve them relative
+to the generator so a standalone skill copy does not require the central checkout.
 
 ## .NET Reference Baseline
 
@@ -244,3 +245,4 @@ details.
 - Formatting fallout and rollout steps learned in each cross-repository tranche.
 - Keep the scoped example and its generator regression aligned; verify effective analyzer scope
   separately from generated-file equality.
+- Preserve standalone generation for every profile when moving the generator or its fragments.

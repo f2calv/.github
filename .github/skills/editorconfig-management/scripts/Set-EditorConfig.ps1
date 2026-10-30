@@ -136,7 +136,7 @@ if ($MyInvocation.InvocationName -ne '.') {
             throw 'RepositoryPath is required.'
         }
 
-        $FragmentRoot = Join-Path $PSScriptRoot '../../../../.config/editorconfig'
+        $FragmentRoot = Join-Path $PSScriptRoot '../fragments'
         $Result = Set-EditorConfigFile `
             -RepositoryPath $RepositoryPath `
             -Profile $Profile `
