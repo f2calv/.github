@@ -16,7 +16,7 @@ both live beneath a directory named `modules`.
   This skill owns repository construction, composition and the operational workflow.
 - Use [repository baseline](../repository-baseline/SKILL.md) and
   [Dependabot management](../dependabot-management/SKILL.md) for repository settings and dependency
-  coverage, and [README authoring](../readme-authoring/SKILL.md) for consumer documentation.
+  coverage, and [README authoring](../docs-readme/SKILL.md) for consumer documentation.
 - Use [GitOps repository structure](../gitops-repository-structure/SKILL.md) for Argo CD ownership
   and workload cleanup, not Terraform as a second owner of the same Kubernetes resources.
 - Check [repository privacy](../repository-privacy/SKILL.md) before public content. Generalize
@@ -189,14 +189,8 @@ publishing a module a prerequisite for testing it in its real caller.
    Use existing tests after approval; distinguish static validation, mocked plans and live checks.
    Verify that the intended cases actually ran: an unknown test-file filter can exit zero with
    no tests. Match platform-native test paths and reject zero-case success or filter warnings.
-2. Obtain permission for the exact cloud/state scope. Before cloud-backed initialization, verify
-   that both the target and state-backend subscriptions are enabled; a disabled backend can block
-   even storage-key lookup. An `Enabled` status alone is not proof of backend/service readiness:
-   if an operation still returns `ReadOnlyDisabledSubscription`, keep that root blocked and
-   preserve the contradiction as diagnostic evidence rather than changing authentication or
-   ownership to bypass it. Preserve the existing backend and generate a saved plan for the
-   smallest affected root. Changing deployment/state ownership requires an explicit decision,
-   not an automatic workaround.
+2. Obtain permission for the exact cloud/state scope. Confirm the account and existing backend,
+   then generate a saved plan for the smallest affected root.
 3. Review creates, updates, replacements and destroys individually, including nested modules and
    role assignments. Distinguish harmless deployment-tag updates from functional drift; do not
    accept unrelated changes because the plan is otherwise plausible.
@@ -206,13 +200,10 @@ publishing a module a prerequisite for testing it in its real caller.
    convergence using the same deployment metadata; explain expected metadata-only changes if the
    source revision changes. A zero-resource validation run is not runtime evidence.
 
-After a partial apply, inspect every attempted resource at its exact cloud ID as well as in state.
-A timed-out create can complete remotely without entering state. Verify its identity and configured
-properties, then obtain approval to import only matching untracked successes into their intended
-addresses; do not recreate or blindly adopt them. Some cloud APIs return deletion success before a
-service name is reusable: check completion/availability, use bounded backoff, and generate a new
-reviewed plan for the remaining approved actions. Do not reuse the stale plan, rename the service
-silently, or roll back successful unrelated operations.
+After a partial apply, inspect what actually succeeded before retrying. Some cloud APIs return
+deletion success before a service name is reusable: check completion/availability, use bounded
+backoff, and generate a new reviewed plan for the remaining approved actions. Do not reuse the
+stale plan, rename the service silently, or roll back successful unrelated operations.
 
 Successful role-assignment creation and dependency ordering do not prove service-side destination
 authorization. Check the actual principal, permissions, scope and network before blaming propagation.
