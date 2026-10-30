@@ -6,7 +6,7 @@ applyTo: '**'
 # GitHub
 
 Invariants for running a repository on GitHub. Use the `github-issues-and-pull-requests` skill to
-create, update, review or merge issues and pull requests, and the `repository-baseline` skill for
+create, update, review or merge issues and pull requests, and the `github-repository-baseline` skill for
 repository settings, required checks and SonarQube setup. How the agent works day to day belongs in
 `workflow.instructions.md`.
 

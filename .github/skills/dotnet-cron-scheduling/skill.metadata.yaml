@@ -1,0 +1,13 @@
+$schema: ../skill-library/skill-metadata.schema.json
+id: dotnet-cron-scheduling
+version: '1.0.0'
+facets:
+  - dotnet
+  - scheduling
+externalFiles:
+  - path: .github/instructions/dotnet.csharp.instructions.md
+    kind: instruction
+    loadingPurpose: C# cancellation, time, disposal and logging conventions.
+  - path: .github/instructions/dotnet.configuration.instructions.md
+    kind: instruction
+    loadingPurpose: Schedule configuration binding and startup validation.

@@ -4,6 +4,7 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '../Invoke-VersionPreparation.ps1')
+    . (Join-Path $PSScriptRoot '../Invoke-ComponentDelivery.ps1')
     $script:Python = if ($env:SKILL_LIBRARY_TEST_PYTHON) { $env:SKILL_LIBRARY_TEST_PYTHON } else { 'python3' }
     $script:PreparationScript = Join-Path $PSScriptRoot '../Invoke-VersionPreparation.ps1'
 
@@ -56,6 +57,18 @@ Describe 'Skill version preparation' -Tag 'Unit' {
         Save-VersionFixture
     }
 
+    It 'fingerprints the exclusion policy without versioning excluded skill content' {
+        [IO.File]::WriteAllText((Join-Path $script:Root '.skillsignore'), "speckit-*`n")
+        Set-VersionFixtureSkill -Id 'speckit-example'
+        Save-VersionFixture
+        $Plan = Invoke-VersionFixture -Bootstrap example
+        @($Plan.Components.Id) | Should -Be @('example')
+        Add-VersionFixtureChange -Id 'speckit-example'
+        (Invoke-VersionFixture -Bootstrap example).Fingerprint | Should -BeExactly $Plan.Fingerprint
+        [IO.File]::AppendAllText((Join-Path $script:Root '.skillsignore'), "# Ownership policy.`n")
+        (Invoke-VersionFixture -Bootstrap example).Fingerprint | Should -Not -BeExactly $Plan.Fingerprint
+    }
+
     It 'shares byte-safe process input and drains stderr independently' {
         $Bytes = [byte[]]@(0, 255, 13, 10, 128)
         $Executable = (Get-Command $script:Python -CommandType Application -TotalCount 1).Source
@@ -91,6 +104,154 @@ Describe 'Skill version preparation' -Tag 'Unit' {
         { Invoke-PreparationProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import sys; sys.stderr.write("SYNTHETIC_PRIVATE_DIAGNOSTIC"); sys.exit(7)') } | Should -Throw '*subprocess failed*'
         try { [void](Invoke-PreparationProcess -Executable $Executable -Arguments @('-I', '-B', '-c', 'import sys; sys.stderr.write("SYNTHETIC_PRIVATE_DIAGNOSTIC"); sys.exit(7)')) }
         catch { $_.Exception.Message | Should -Not -Match 'SYNTHETIC_PRIVATE_DIAGNOSTIC' }
+    }
+
+    It 'calculates CI delivery versions and propagation idempotently: <Changed>' -ForEach @(
+        @{ Changed = @('example') }, @{ Changed = @('peer') }, @{ Changed = @('example', 'peer') }
+    ) {
+        Set-VersionFixtureSkill -Id peer
+        Set-VersionFixtureSkill -Id unrelated
+        Set-VersionFixtureSkill -Id consumer -Fields @{
+            required = @(@{ id = 'example'; version = '1.0.0' })
+            optional = @(@{ id = 'peer'; version = '1.0.0'; selectionKey = 'related'; reason = 'Synthetic release propagation.' })
+        }
+        Save-VersionFixture -Tags @('example/1.0.0', 'peer/1.0.0', 'consumer/1.0.0', 'unrelated/1.0.0')
+        $Impact = @{ consumer = 'patch' }
+        foreach ($Identity in $Changed) {
+            Add-VersionFixtureChange -Id $Identity
+            $Impact[$Identity] = 'minor'
+        }
+        $Arguments = @{ RepoRoot = $script:Root; ImpactJson = ($Impact | ConvertTo-Json -Compress); PythonPath = $script:Python }
+        $Plan = Invoke-SkillComponentDelivery @Arguments
+        $Plan.Ready | Should -BeTrue
+        $Plan.BuildReady | Should -BeFalse
+        $Plan.Contract | Should -BeExactly 'skill-component-delivery/1'
+        ($Plan.Preparation.Components | Where-Object Id -CEQ consumer).Target | Should -BeExactly '1.0.1'
+        ($Plan.Preparation.Components | Where-Object Id -CEQ unrelated).Target | Should -BeExactly '1.0.0'
+        @(($Plan.Preparation.Components | Where-Object Id -CEQ unrelated).Reasons).Count | Should -Be 0
+        foreach ($Identity in $Changed) {
+            ($Plan.Preparation.Components | Where-Object Id -CEQ $Identity).Target | Should -BeExactly '1.1.0'
+            @($Plan.Preparation.Changes | Where-Object { $_.Path -eq '.github/skills/consumer/skill.metadata.yaml' -and $_.Field -like "*/$Identity/version" }).Count | Should -Be 1
+            (Get-VersionFixtureMetadata -Id $Identity).version | Should -BeExactly '1.0.0'
+        }
+        $Again = Invoke-SkillComponentDelivery @Arguments
+        $Again.Fingerprint | Should -BeExactly $Plan.Fingerprint
+        ($Again.Preparation.Changes | ConvertTo-Json -Depth 20 -Compress) | Should -BeExactly ($Plan.Preparation.Changes | ConvertTo-Json -Depth 20 -Compress)
+        [void](Invoke-VersionFixture -Impact $Impact -Apply -Fingerprint $Plan.Fingerprint)
+        Save-VersionFixture
+        $Prepared = Invoke-SkillComponentDelivery @Arguments
+        $Prepared.BuildReady | Should -BeTrue
+        $Prepared.Preparation.Changes.Count | Should -Be 0
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Built = Invoke-SkillComponentDelivery @Arguments -Build -OutputDirectory $Destination
+        $Built.Artifacts.Count | Should -Be ($Changed.Count + 1)
+        @($Built.Artifacts.RootId | Sort-Object) | Should -Be @(@($Changed) + @('consumer') | Sort-Object)
+        foreach ($Package in $Built.Artifacts) {
+            $ExpectedVersion = if ($Package.RootId -ceq 'consumer') { '1.0.1' } else { '1.1.0' }
+            $Package.RootVersion | Should -BeExactly $ExpectedVersion
+            [IO.Path]::GetFileName($Package.ArchivePath) | Should -BeExactly "$($Package.RootId)-$ExpectedVersion.zip"
+        }
+        (Get-VersionFixtureMetadata -Id unrelated).version | Should -BeExactly '1.0.0'
+    }
+
+    It 'refuses CI artifact output until source and preparation are committed' -ForEach @(
+        @{ Fault = 'dirty' }, @{ Fault = 'unprepared' }
+    ) {
+        Save-VersionFixture -Tags @('example/1.0.0')
+        Add-VersionFixtureChange
+        Save-VersionFixture
+        if ($Fault -ceq 'dirty') {
+            $Plan = Invoke-VersionFixture -Impact @{ example = 'patch' }
+            [void](Invoke-VersionFixture -Impact @{ example = 'patch' } -Apply -Fingerprint $Plan.Fingerprint)
+            Save-VersionFixture
+            [IO.File]::WriteAllText((Join-Path $script:Root 'unrelated.txt'), "Synthetic untracked content.`n")
+        }
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Message = if ($Fault -ceq 'dirty') { '*clean committed source*' } else { '*Commit the complete reviewed version preparation*' }
+        { Invoke-SkillComponentDelivery -RepoRoot $script:Root -ImpactJson '{"example":"patch"}' -PythonPath $script:Python -Build -OutputDirectory $Destination } | Should -Throw $Message
+        Test-Path -LiteralPath $Destination | Should -BeFalse
+        (Get-VersionFixtureMetadata).version | Should -BeExactly $(if ($Fault -ceq 'dirty') { '1.0.1' } else { '1.0.0' })
+    }
+
+    It 'builds independently named CI artifacts from exact clean committed versions' {
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Commit = Invoke-FixtureGit @('rev-parse', 'HEAD')
+        $Result = Invoke-SkillComponentDelivery -RepoRoot $script:Root -BootstrapId example -PythonPath $script:Python -Build -OutputDirectory $Destination
+        $Result.SourceCommit | Should -BeExactly $Commit
+        $Result.Artifacts.Count | Should -Be 1
+        $Result.Artifacts[0].RootVersion | Should -BeExactly '1.0.0'
+        [IO.Path]::GetFileName($Result.Artifacts[0].ArchivePath) | Should -BeExactly 'example-1.0.0.zip'
+        $Result.Artifacts[0].Command | Should -BeNullOrEmpty
+        (Get-FileHash -LiteralPath $Result.Artifacts[0].ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant() | Should -BeExactly $Result.Artifacts[0].ArchiveSha256
+        $Repeated = Invoke-SkillComponentDelivery -RepoRoot $script:Root -BootstrapId example -PythonPath $script:Python -Build -OutputDirectory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
+        $Repeated.Fingerprint | Should -BeExactly $Result.Fingerprint
+        $Repeated.Artifacts[0].ArchiveSha256 | Should -BeExactly $Result.Artifacts[0].ArchiveSha256
+        $Evidence = Get-Content -LiteralPath (Join-Path $Destination 'delivery.json') -Raw | ConvertFrom-Json
+        $Evidence.SourceCommit | Should -BeExactly $Commit
+        Invoke-FixtureGit @('status', '--porcelain', '--untracked-files=all') | Should -BeNullOrEmpty
+        { Invoke-SkillComponentDelivery -RepoRoot $script:Root -BootstrapId example -PythonPath $script:Python -Build -OutputDirectory $Destination } | Should -Throw
+    }
+
+    It 'builds CI bootstrap after payloads and bundles their exact release catalogs' {
+        Set-VersionFixtureSkill -Id skill-library
+        Save-VersionFixture
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Result = Invoke-SkillComponentDelivery -RepoRoot $script:Root -BootstrapId example,skill-library -PythonPath $script:Python -Build -OutputDirectory $Destination
+        $Result.Artifacts.RootId | Should -Be @('example', 'skill-library')
+        $Result.Artifacts[1].RuntimeExtensionId | Should -BeExactly 'skill'
+        $Archive = [IO.Compression.ZipFile]::OpenRead($Result.Artifacts[1].ArchivePath)
+        try {
+            $Reader = [IO.StreamReader]::new($Archive.GetEntry('library/catalog.json').Open())
+            try { $Index = $Reader.ReadToEnd() | ConvertFrom-Json -AsHashtable } finally { $Reader.Dispose() }
+            $Index.skills.example.current | Should -BeExactly '1.0.0'
+            $Record = $Index.skills.example.releases['1.0.0']
+            $Record.catalog.sha256 | Should -BeExactly $Result.Artifacts[0].ArchiveSha256
+            $Archive.GetEntry("library/packages/$($Record.archive)") | Should -Not -BeNullOrEmpty
+        }
+        finally { $Archive.Dispose() }
+    }
+
+    It 'runs CI delivery through the public CLI without losing explicit build inputs' {
+        $Destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $Executable = (Get-Command pwsh -CommandType Application -TotalCount 1).Source
+        $Bytes = Invoke-PreparationProcess -Executable $Executable -Arguments @('-NoLogo', '-NoProfile', '-File', (Join-Path $PSScriptRoot '../Invoke-ComponentDelivery.ps1'), '-RepoRoot', $script:Root, '-BootstrapId', 'example', '-PythonPath', $script:Python, '-Build', '-OutputDirectory', $Destination)
+        $Result = [Text.Encoding]::UTF8.GetString($Bytes) | ConvertFrom-Json
+        $Result.Contract | Should -BeExactly 'skill-component-delivery/1'
+        $Result.Artifacts.Count | Should -Be 1
+        Test-Path -LiteralPath (Join-Path $Destination 'delivery.json') | Should -BeTrue
+    }
+
+    It 'wires explicit CI component decisions to read-only preparation and versioned artifacts' {
+        $Workflow = Read-SkillYaml -Path (Join-Path $PSScriptRoot '../../../../workflows/_skills-library-delivery.yml') -PythonPath $script:Python
+        $Workflow['on'].Contains('workflow_dispatch') | Should -BeTrue
+        $Workflow['on'].Contains('workflow_call') | Should -BeTrue
+        $Workflow.concurrency.group | Should -BeExactly '${{ github.workflow }}-skill-delivery-${{ github.ref }}'
+        $Workflow.permissions.Count | Should -Be 0
+        $Workflow.jobs.delivery.permissions.contents | Should -BeExactly 'read'
+        $Workflow.jobs.delivery.permissions.actions | Should -BeExactly 'read'
+        $Steps = @($Workflow.jobs.delivery.steps)
+        @($Steps | Where-Object { $_.Contains('uses') -and $_.uses -like 'actions/checkout@*' })[0].with.'fetch-depth' | Should -Be 0
+        $Upload = @($Steps | Where-Object { $_.Contains('uses') -and $_.uses -like 'actions/upload-artifact@*' })
+        $Upload.Count | Should -Be 1
+        $Upload[0].uses | Should -BeExactly 'actions/upload-artifact@v4'
+        $Run = @($Steps | Where-Object { $_.Contains('name') -and $_.name -ceq 'prepare or build component delivery' })[0]
+        $Run.env.IMPACT_JSON | Should -BeExactly '${{ inputs.impact-json }}'
+        $Run.env.BOOTSTRAP_IDS | Should -BeExactly '${{ inputs.bootstrap-ids }}'
+        $Run.run | Should -Not -Match '\$\{\{'
+        { [scriptblock]::Create($Run.run) } | Should -Not -Throw
+        $Ci = Read-SkillYaml -Path (Join-Path $PSScriptRoot '../../../../workflows/ci.yml') -PythonPath $script:Python
+        $Ci['on'].Contains('pull_request') | Should -BeTrue
+        $Ci['on'].Contains('push') | Should -BeTrue
+        $Ci['on'].workflow_dispatch.inputs.'skill-delivery'.options | Should -Be @('off', 'prepare', 'build')
+        foreach ($Identity in @('lint', 'versioning', 'skills-library-tests', 'dotnet-examples')) {
+            $Ci.jobs[$Identity]['if'] | Should -BeExactly "github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'"
+        }
+        $Ci.jobs.test['if'] | Should -BeExactly "always() && (github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off')"
+        $Ci.jobs.release['if'] | Should -Match "inputs.skill-delivery == 'off'"
+        $Ci.jobs['skill-delivery']['if'] | Should -BeExactly "github.event_name == 'workflow_dispatch' && inputs.skill-delivery != 'off'"
+        $Ci.jobs['skill-delivery'].uses | Should -BeExactly './.github/workflows/_skills-library-delivery.yml'
+        $Ci.jobs['skill-delivery'].permissions.contents | Should -BeExactly 'read'
+        $Ci.jobs['skill-delivery'].permissions.actions | Should -BeExactly 'read'
     }
 
     It 'requires explicit bootstrap and retains initial intent without writes' {

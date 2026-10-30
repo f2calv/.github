@@ -5,9 +5,9 @@ applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*Cache*.cs,**/*.lua,**/appsettings*.j
 
 # Redis Key Naming
 
-Use the `redis-data-access` skill when classifying keys by role, caching reads, choosing
+Use the `dotnet-redis` skill when classifying keys by role, caching reads, choosing
 expirations, invalidating on write, consuming streams or placing keys on a Redis endpoint. Use the
-`leadership-election` skill when creating, changing or diagnosing Redlock-backed leader election,
+`dotnet-leadership-election` skill when creating, changing or diagnosing Redlock-backed leader election,
 lease renewal, leader-only workers or failover. This file owns Redis naming; the skills own those
 workflows.
 

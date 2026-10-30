@@ -15,13 +15,13 @@ in its adapter. Use the boundary where it buys actual substitution, isolation or
 - Load [boundary contracts](./references/boundary-contracts.md) for ownership and semantic design,
   and the [provider substitution example](./examples/provider-substitution.md) for a concrete port,
   dependency graph and shared behavioral tests.
-- [Modular monolith](../patterns-monolith-modular/SKILL.md) owns module/role composition and layered project
+- [Modular monolith](../patterns-modular-monolith/SKILL.md) owns module/role composition and layered project
   boundaries. This skill owns the behavior across an integration seam; it does not require a
   monolith, multiple projects, physical tiers or a microservice deployment.
 - Use [DI](../dotnet-dependency-injection/SKILL.md) for provider selection,
   [HTTP integrations](../dotnet-http-integrations/SKILL.md) for transport,
-  [EF Core](../dotnet-efcore/SKILL.md) and [Redis](../redis-data-access/SKILL.md) for data semantics,
-  and [ADR authoring](../adr-authoring/SKILL.md) when the requested decision needs a durable record.
+  [EF Core](../dotnet-efcore/SKILL.md) and [Redis](../dotnet-redis/SKILL.md) for data semantics,
+   and [ADR authoring](../docs-adr/SKILL.md) when the requested decision needs a durable record.
 - Follow [C# instructions](../../instructions/dotnet.csharp.instructions.md) for interface and error
   conventions. The official
   [architecture guidance](https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/common-web-application-architectures)

@@ -12,6 +12,11 @@ permissions: {}
 
 jobs:
   test:
+    name: test (${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [workspace-install, version-preparation, remaining]
     runs-on: ${{ inputs.runs-on }}
     permissions:
       contents: read
@@ -51,5 +56,8 @@ jobs:
           }
           Write-Host $yqVersion
 
-      - name: npm run test:ps
-        run: npm run test:ps
+      - name: npm run test:ps -- -Shard ${{ matrix.shard }}
+        shell: bash
+        env:
+          TEST_SHARD: ${{ matrix.shard }}
+        run: npm run test:ps -- -Shard "$TEST_SHARD"

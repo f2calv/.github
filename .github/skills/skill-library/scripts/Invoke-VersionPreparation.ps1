@@ -177,6 +177,7 @@ function Get-PreparationSourceState {
     param([string]$Root, [object]$Validated)
     $Paths = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     [void]$Paths.Add('.config/skill-library.yaml')
+    if (Test-Path -LiteralPath (Join-Path $Root '.skillsignore')) { [void]$Paths.Add('.skillsignore') }
     foreach ($Notice in $Validated.Defaults.notices) { [void]$Paths.Add($Notice) }
     foreach ($Record in $Validated.Catalog.Values) {
         foreach ($Notice in $Record.notices) { [void]$Paths.Add($Notice) }
@@ -184,7 +185,7 @@ function Get-PreparationSourceState {
     }
     $EligibleText = Invoke-PreparationGit -Root $Root -Arguments @('ls-files', '--cached', '--others', '--exclude-standard', '-z')
     foreach ($Path in $EligibleText.Split([char]0, [StringSplitOptions]::RemoveEmptyEntries)) {
-        if ($Path -match '^(\.github/skills/[^/]+)/' -and (Test-Path -LiteralPath (Join-Path $Root "$($Matches[1])/skill.metadata.yaml"))) {
+        if ($Path -match '^\.github/skills/([^/]+)/' -and $Validated.Folders.ContainsKey($Matches[1])) {
             if (Test-Path -LiteralPath (Join-Path $Root $Path) -PathType Leaf) { [void]$Paths.Add($Path) }
         }
     }

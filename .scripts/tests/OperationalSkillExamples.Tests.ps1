@@ -7,7 +7,7 @@ BeforeAll {
     $skillsRoot = Join-Path $repositoryRoot '.github/skills'
     . (Join-Path $skillsRoot 'dotnet-cleanup/scripts/Test-DotNetSourceConventions.ps1')
     . (Join-Path $skillsRoot 'dotnet-cleanup/scripts/Set-DotNetLogTemplateCasing.ps1')
-    . (Join-Path $skillsRoot 'repository-baseline/scripts/Set-RepositoryBaseline.ps1')
+    . (Join-Path $skillsRoot 'github-repository-baseline/scripts/Set-RepositoryBaseline.ps1')
     $cleanup = Get-Content -LiteralPath (Join-Path $skillsRoot 'dotnet-cleanup/examples/findings-and-fixes.md') -Raw
 
     function Get-ExampleSnippet {
@@ -91,7 +91,7 @@ Describe 'Cleanup worked snippets' -Tag 'Unit' {
 
 Describe 'Baseline policy and result examples' -Tag 'Unit' {
     BeforeAll {
-        $baselineRoot = Join-Path $skillsRoot 'repository-baseline'
+        $baselineRoot = Join-Path $skillsRoot 'github-repository-baseline'
         $policy = Get-Content -LiteralPath (Join-Path $baselineRoot 'scripts/policies/default.json') -Raw | ConvertFrom-Json -Depth 100
         $override = Get-Content -LiteralPath (Join-Path $baselineRoot 'templates/required-checks.override.json') -Raw | ConvertFrom-Json
         $policy.rulesetOverrides = @($override)

@@ -1,9 +1,9 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. The bounded workspace installer foundation has a passing 366-test baseline and ten passing focused PR-review checks. The shared command, bootstrap extension and per-skill CI delivery remain unimplemented; foundation acceptance is not demo acceptance.
+**Implementation Status:** In Progress, paused for complexity review. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. Current-head CI passes, but extension reproducibility, fresh shared-command consumer acceptance and permanent publication remain open. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
-**Last Updated:** 2026-10-29.
+**Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
 
 ## Context and Problem
@@ -67,7 +67,7 @@ this proposal itself authorizes no further setup, tests, initialization or publi
 | Maintain a second categorized source tree | Simple packaging layout | Duplicated guidance and broken native paths | Reject |
 | Use upstream presets as arbitrary file installers | Appears to reuse a package mechanism | Pinned contract does not establish that behavior | Reject for resource-bearing capabilities |
 | Generate extensions from explicit local closure | One source, selective artifacts, auditable inputs | Requires resolver, snapshot and runtime validation | Recommend |
-| One library command with arguments | Scalable discovery, installation and loading; reuses the packaging graph | Requires bootstrap packaging, argument handling and bounded approval | Owner-selected demo interface; implementation pending |
+| One library command with arguments | Scalable discovery, installation and loading; reuses the packaging graph | Requires bootstrap packaging, argument handling and bounded approval | Owner-selected demo interface; implemented, fresh demo acceptance pending |
 | One public command per skill | Simple isolated pilot and direct loading | Command proliferation does not scale to a large library | Retain historical evidence, reject as the target consumer interface |
 | Generate Agent Plugins from the same source | Alternative or additional client packaging | Different manifest and discovery contract | Evaluate; no second packager implemented |
 | Require hosted workflows or OCI first | Central automation and transport | Setup and release-train cost before proving the contract | Defer |
@@ -120,6 +120,27 @@ fabricating completion of its remaining editor observation. Continue directly ag
 focused implementation and validation; no further specify/plan/tasks cycle is required. Spec Kit
 remains the extension runtime, not a mandatory development ceremony for the remaining demo work.
 
+### Published Archive Retention
+
+On 2026-10-30 the owner required indefinite availability of every published extension archive,
+including superseded versions. Expiring Actions artifacts are build handoff only, never the permanent
+installation source. Publishing a newer version must not delete, overwrite or expire older archives,
+their checksums, exact-version catalog records or associated source/provenance evidence. Preserve
+immutable `<component-id>/X.Y.Z` tags without floating aliases.
+
+GitHub Release assets are the recommended primary ZIP transport, distinct from Actions artifacts.
+Use [immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+to lock assets and tags: assemble and verify every asset on a draft before publishing. Release
+publication, immutable-release configuration and remote installer acquisition are not implemented by
+the current artifact-only workflow or bundled-catalog installer.
+
+Permanent retention requires no automated release cleanup and an independent retained backup of the
+actual ZIP bytes, catalogs, checksums and evidence, with verified restoration. Git history alone does
+not back up attached release assets. No hosting provider guarantees literal perpetual service;
+repository/account deletion, service loss or mandatory removal remain availability risks. Backup and
+recovery arrangements must be established before claiming the retention requirement is met. A package
+registry may be evaluated as an alternative transport, but does not itself satisfy this requirement.
+
 ### Single Library Command
 
 Use the canonical name `/speckit-skill-library` with deterministic argument parsing and a CLI-style
@@ -166,10 +187,11 @@ advertise or dispatch `upgrade-all` in this demo merely because the upstream com
 
 Keep one canonical Copilot source and generate target layouts through scripts, not a second authored
 tree. Broad-to-specific coordinated names are permitted only when folder/name alignment,
-links/resources and native discovery remain valid. The owner approved a first batch of seven flat
-native skill renames, including `patterns-monolith-modular`; further taxonomy proposals remain
-unapproved. No retired native source shims are required; distribution migrations still need the
-catalog history below. Preserve other source paths and links until an approved move occurs.
+links/resources and native discovery remain valid. The owner approved 21 flat native skill renames,
+implemented in reviewed batches. The modular-monolith native name becomes
+`patterns-modular-monolith` while its distribution ID remains `patterns-monolith-modular`.
+No retired native source shims are required; distribution migrations still need the catalog history
+below. Preserve other source paths and links until an approved move occurs.
 Distribution ID, source path, aligned native folder/frontmatter name and generated command name are
 distinct. Keep the distribution ID stable across source/native renames by default. The initial metadata
 uses the existing native skill names as distribution IDs; it creates no duplicate architecture guidance.
@@ -177,6 +199,9 @@ Current native layout and metadata discovery remain flat, with immediate-folder 
 Future directory deepening requires verified native-host discovery and supporting tooling changes;
 this proposal does not claim nested folders work. A same-ID source/native-command rename needs no ID
 migration, but still requires public-compatibility and version-impact assessment.
+Upstream-generated `speckit-*` skill folders are owned and maintained by Spec Kit, not this library.
+Exclude them from component metadata enrollment, normalization, independent versioning and release tags;
+preserve their native runtime use without republishing them as library-owned components.
 
 Define one format-neutral authoritative metadata contract for component identity, independent
 version, optional facets and license/notice exceptions, required/optional dependencies,
@@ -233,7 +258,7 @@ payload inputs; `loadingPurpose` describes when to load them, not automatic inst
 The three local sidecars demonstrate this contract:
 [skill-library](../.github/skills/skill-library/skill.metadata.yaml),
 [ports and adapters](../.github/skills/patterns-ports-and-adapters/skill.metadata.yaml) and
-[modular monolith](../.github/skills/patterns-monolith-modular/skill.metadata.yaml).
+[modular monolith](../.github/skills/patterns-modular-monolith/skill.metadata.yaml).
 Internal references/examples need no duplicate inventory. Shared C# and configuration instructions
 are explicit external files. Ports and adapters offers one optional modular-monolith relationship for
 module composition; other conditional specialization links are not blanket graph edges. These examples
@@ -617,6 +642,110 @@ extraction, Bash/Python parity and a fresh-library scaffold remain deferred; no 
 demonstration or additional dogfooding cycle is a prerequisite for implementing D1-D5.
 
 ## Handover
+
+### Complexity Review Pause (2026-10-30)
+
+The owner reports losing visibility into the earlier Spec Kit implementation process and questions
+whether the resulting code and hundreds of tests are over-engineered for the intended demo.
+This concern is unresolved, not a finding that every test or protection is unnecessary. The passing
+repository-wide count below includes other tooling and later direct implementation; it is not a
+count of tests generated solely by Spec Kit. Neither passing tests nor completed task ledgers justify
+retaining complexity without a demonstrated requirement.
+
+Pause the requested serialization-fix, push, PR and merge sequence for a fresh/parallel review.
+The committed checkpoint is `8c0285c747b777cf32cc32d5272f5d0817dbbf19` on
+`f2calv/2026-10-updates6`, already pushed. The working tree was clean before this ADR-only update.
+The attempted serialization patch did not land; no new regression tests, artifact builds, commits,
+pushes, PR creation or merge followed that request. No background implementation or CI run is active
+in this session. This update does not restart them or create a parallel checkout/session.
+
+The owner subsequently authorized committing and pushing this checkpoint, creating its PR and merging
+only after current-head CI and security/quality gates pass. That authorization does not resume the
+serialization implementation or accept the design's complexity; the review below remains pending.
+
+The next review should begin read-only, without another Spec Kit planning or dogfooding cycle:
+
+* Restate the smallest Monday D1-D5 consumer journey and identify which existing layers directly
+  support it. Native consumption and one authored source remain the baseline alternatives.
+* Inspect the [library workflow](../.github/skills/skill-library/SKILL.md), its
+  [scripts and tests](../.github/skills/skill-library/scripts/),
+  [repository test runner](../.scripts/Invoke-Tests.ps1) and
+  [CI delivery](../.github/workflows/_skills-library-delivery.yml). Classify implementation and
+  coverage as necessary, duplicated, speculative or deferred; connect each recommendation to an
+  observable requirement or concrete failure rather than a test-count target.
+* Propose a smaller design and explicit deletion/consolidation candidates, including the behavior
+  and guarantees that would change. Do not silently drop integrity, explicit approval or protection
+  of existing consumer files merely to reduce lines or CI duration.
+* Present the proposed scope and tradeoffs to the owner before editing. Keep the serialization defect
+  below visible; do not mark it fixed, publish components or resume PR/merge work automatically.
+
+Only four components currently have opted-in distribution metadata. Their `1.0.0` values remain
+unpublished intent. Merging would invoke the existing repository-level GitVersion release workflow,
+not publish `1.0.0` for every skill; independent component publication is not wired. Historical
+foundation acceptance, including unperformed T053, remains unchanged. Verify the live branch and
+working tree before acting in another session; this checkpoint is not permission to overwrite
+concurrent work.
+
+### Current-Head CI Evidence (2026-10-30)
+
+At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
+[normal CI](https://github.com/f2calv/.github/actions/runs/41034015637) passed lint, version
+calculation, .NET example tests and the required Pester gate. Pester reported 999 passed, one skipped
+and zero failed; its job took 18m17s and test execution took 1064.67 seconds. Summed per-test durations
+were 619.8 seconds for workspace installation and 220.0 seconds for version preparation, together
+about 79% of test execution. Coverage setup and report processing took 830 ms and 853 ms; these
+figures do not measure instrumentation overhead during tests. These serial timings are the baseline
+for the parallel run below; dependency-aware changed-file selection remains proposed.
+
+The test workflow now partitions that full suite into independent `workspace-install`,
+`version-preparation` and `remaining` matrix jobs, with fail-fast disabled and the existing required
+aggregate gate retained. All 27 focused runner/workflow-contract tests pass, including exhaustive,
+non-overlapping file selection and failed/empty execution guards. Ordinary local runs still select
+the complete suite. At commit `8c0285c747b777cf32cc32d5272f5d0817dbbf19`,
+[parallel CI](https://github.com/f2calv/.github/actions/runs/41041632583) passed lint, version
+calculation, .NET examples, all three Pester shards and the aggregate gate. Workspace installation
+reported 125 passes in an 11m30s job; version preparation reported 48 in 4m18s; remaining suites
+reported 836 passes and one skip in 3m19s. Together they reported 1,009 passed, one skipped and zero
+failed or NotRun, retaining the baseline plus ten new runner/workflow checks. The longest Pester job
+fell from 18m17s to 11m30s, about 37%; this measures wall-clock improvement, not reduced complexity
+or coverage adequacy. No prebuilt toolchain image, changed-file filter or test exclusion was introduced.
+
+[Preparation](https://github.com/f2calv/.github/actions/runs/41036426592) was Ready and BuildReady,
+with no metadata edits. The four unpublished components retained `1.0.0`:
+`dotnet-cron-scheduling`, `patterns-monolith-modular`, `patterns-ports-and-adapters` and `skill-library`.
+[The build](https://github.com/f2calv/.github/actions/runs/41036573060) passed in 37 seconds; all four
+downloaded ZIP hashes and detached checksums matched. The bootstrap contained the three exact
+separate payload ZIPs, exposed only `speckit.skill.library` and preserved the monolith's stable ID
+alongside its renamed native path. Reverse-propagation and unchanged-component checks in the normal
+CI run are synthetic regression evidence, not releases against real component tags.
+
+[A separate repeat build](https://github.com/f2calv/.github/actions/runs/41036808046) passed in
+44 seconds but exposed an open D3 acceptance failure: all four native ZIPs were identical while all
+four extension ZIP hashes differed. Comparing the cron package found only `extension.yml` changed;
+its template fields had identical values but different JSON key order. The
+[adapter's unordered nested hashtables](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
+permit fresh-process serialization differences that same-process repeat tests did not catch.
+Canonical extension serialization and a fresh-process regression are required before claiming
+reproducible extension delivery. No tags or releases were created; expiring CI artifacts and
+placeholder catalog URLs do not satisfy permanent publication or reproducible consumer transport.
+
+### Naming and Validation (2026-10-30)
+
+The approved 21-skill native-name mapping is applied in domain batches under the
+[library naming rationale](../.github/skills/skill-library/SKILL.md#skill-folder-naming).
+The modular-monolith component retains ID `patterns-monolith-modular` and its existing dependency
+pin despite the native name `patterns-modular-monolith`. Upstream `speckit-*` remains untouched;
+first-party `spec-kit-guide` and `spec-kit-bootstrap` remain eligible for library enrollment.
+Source/link validation is not editor-discovery or generated-extension acceptance.
+
+Local validation exposed a pre-existing CI-contract mismatch in
+[the coverage suite](../.scripts/tests/SkillValidationCoverage.Tests.ps1): the persistent .NET
+example test incorrectly required its CI job to have no `if` key. The workflow intentionally skips
+normal CI jobs only for manual skill-delivery preparation or builds. The test now checks that exact
+predicate and an event/input matrix: pull requests and pushes always run the example job, normal
+manual CI runs it, and manual `prepare`/`build` deliveries skip it. All 17 tests in the affected
+coverage suite pass locally. The workflow and release fan-in remain unchanged; this is not evidence
+of a complete repository regression or a new remote CI run.
 
 ### Current Progress (2026-10-29)
 

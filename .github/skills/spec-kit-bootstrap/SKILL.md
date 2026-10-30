@@ -25,7 +25,7 @@ implementation merely because bootstrap was requested.
    rerunning initialization over customized files; use the upstream upgrade guide for upgrades.
 3. Default to GitHub Copilot unless the caller names another integration. Confirm any unresolved
    target path or agent choice. Creating a remote repository is separate from local initialization;
-   use the `repository-baseline` skill when remote creation is requested.
+   use the `github-repository-baseline` skill when remote creation is requested.
 4. Check the official installation guide and a published release before choosing the CLI version.
    Record an exact version in the container's installation source, not a floating Git branch.
    Verify that release's `specify init --help`; flags and generated command formats have changed.

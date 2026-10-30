@@ -27,6 +27,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Keep CI trigger filters sparse. Do not use `paths` or `paths-ignore`; lint, workflow, dependency, documentation and packaging changes must all exercise CI. Omit the default `pull_request` activity types (`opened`, `synchronize`, `reopened`).
 - Run `lint` on pull requests and default-branch pushes. Do not use a branch or event condition that skips lint on either path.
 - Start `lint`, version calculation and independent build or validation jobs in parallel. Add `needs` only where a job consumes another job's outputs or must wait for it.
+- When sharding tests, verify selections are exhaustive and non-overlapping. Fail missing or empty selections and zero executed tests. Keep a stable required aggregate gate that rejects failed, cancelled or unexpectedly skipped shards; disable fail-fast when every shard's outcome is needed.
 - Make the release-tagging job the final fan-in. Its `needs` must include `lint` and every build, test, validation, packaging or publication job required for a releasable commit.
 - Restrict release tagging to the default branch. Pull requests may calculate a version but never create a tag or release.
 - Do not ignore workflow, dependency automation or lint-configuration paths on `push`; those changes must pass lint before release tagging.

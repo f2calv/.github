@@ -18,7 +18,7 @@ MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negot
   logging and errors. Do not introduce an interface solely because a type is a service.
 - [Testing instructions](../../instructions/dotnet.testing.instructions.md) own test approval and
   fixtures. Use the test-platform skill for the repository's runner.
-- [REST Client skill](../rest-client-requests/SKILL.md) owns request-file layout and secret handling.
+- [REST Client skill](../tooling-rest-client/SKILL.md) owns request-file layout and secret handling.
 - [gRPC skill](../dotnet-grpc/SKILL.md) owns RPC contracts, HTTP/2 transport and stream recovery;
   HTTP result and OpenAPI conventions here do not apply to gRPC services.
 
@@ -153,7 +153,7 @@ Build the smallest affected project, then run approved focused tests. Verify:
   alone do not prove generated OpenAPI correctness.
 
 Update affected READMEs and request examples. Inventory the repository's collections and apply the
-[REST Client skill](../rest-client-requests/SKILL.md): reconcile methods/routes, authentication,
+[REST Client skill](../tooling-rest-client/SKILL.md): reconcile methods/routes, authentication,
 binding types, required fields, string enum tokens and domain validation with the current contract.
 Document expected status/content types, including empty, binary, streaming and Problem Details
 responses, plus creation Location behavior where relevant. Separate successful examples from

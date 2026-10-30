@@ -6,7 +6,8 @@ unsupported EditorConfig imports or copying an opaque monolithic file by hand.
 
 ## Source Model
 
-The source fragments live under `.config/editorconfig/`:
+The source fragments live inside the
+[EditorConfig skill](../.github/skills/tooling-editorconfig/fragments/), alongside its generator:
 
 | Fragment | Purpose |
 | --- | --- |
@@ -31,13 +32,13 @@ central repository at editor startup.
 Generate a baseline-only file:
 
 ```powershell
-./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-repository -Profile Base
+./.github/skills/tooling-editorconfig/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-repository -Profile Base
 ```
 
 Generate the strict .NET profile:
 
 ```powershell
-./.github/skills/editorconfig-management/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-dotnet-repository -Profile DotNet
+./.github/skills/tooling-editorconfig/scripts/Set-EditorConfig.ps1 -RepositoryPath ../example-dotnet-repository -Profile DotNet
 ```
 
 Perform a read-only drift check by adding `-Check`. The command exits nonzero when the tracked file

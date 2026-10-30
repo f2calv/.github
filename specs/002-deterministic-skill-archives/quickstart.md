@@ -248,7 +248,7 @@ failures/skips disclosed. Do not invent future counts. Required coverage include
 ## Static Checks And Evidence
 
 After implementation, run editor diagnostics and the configured root pre-commit hooks on the
-changed files using the [shared lint workflow](../../.github/skills/pre-commit-management/SKILL.md).
+changed files using the [shared lint workflow](../../.github/skills/tooling-pre-commit/SKILL.md).
 Review formatting changes and rerun once if needed. Do not replace configured lint with a direct
 linter. Public content must satisfy the existing privacy boundary before any future commit/push.
 

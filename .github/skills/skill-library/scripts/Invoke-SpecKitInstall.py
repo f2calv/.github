@@ -209,7 +209,11 @@ def _inspect_workspace(request: dict[str, Any], runtime: dict[str, Any]) -> dict
 
     root = _safe_path(request["WorkspacePath"])
     source = _safe_path(request["RepoRoot"])
-    _require(root.is_dir() and source.is_dir() and not root.is_relative_to(source) and not source.is_relative_to(root), "Workspace", "source-separation")
+    source_kind = request.get("SourceKind", "committed")
+    _require(source_kind in ("committed", "packaged"), "Selection", "source-provider")
+    _require(root.is_dir() and source.is_dir() and not root.is_relative_to(source), "Workspace", "source-separation")
+    nested = source.is_relative_to(root)
+    _require(not nested or (source_kind == "packaged" and source == root / ".specify/extensions/skill/library"), "Workspace", "source-separation")
     paths: dict[str, dict[str, Any]] = {}
 
     def capture(path: Path) -> dict[str, Any]:
@@ -249,6 +253,13 @@ def _inspect_workspace(request: dict[str, Any], runtime: dict[str, Any]) -> dict
         _require(isinstance(registry, dict) and set(registry) == {"schema_version", "extensions"} and registry["schema_version"] == "1.0" and isinstance(registry["extensions"], dict), "Workspace", "registry")
         _require(raw == json.dumps(registry, indent=2).encode(), "Workspace", "registry-format")
         _require(all(isinstance(key, str) and isinstance(value, dict) for key, value in registry["extensions"].items()), "Workspace", "registry-entries")
+    if nested:
+        registration = registry["extensions"].get("skill")
+        descriptor = _bytes(root / ".specify/extensions/skill/extension.yml")
+        metadata = _read_yaml(descriptor.decode("utf-8"))
+        extension = metadata.get("extension") if isinstance(metadata, dict) else None
+        _require(isinstance(extension, dict) and extension.get("id") == "skill" and extension.get("name") == "skill-library", "Ownership", "bootstrap-identity")
+        _require(isinstance(registration, dict) and registration.get("enabled") is True and registration.get("version") == extension.get("version") and registration.get("manifest_hash") == f"sha256:{_digest(descriptor)}", "Ownership", "bootstrap-registration")
     config = root / ".specify/extensions.yml"
     configuration = {"installed": [], "settings": {"auto_execute_hooks": True}, "hooks": {}}
     if config.exists():
@@ -267,7 +278,7 @@ def _inspect_workspace(request: dict[str, Any], runtime: dict[str, Any]) -> dict
         _require(type(integration_state.get("integration_state_schema", 1)) is int and integration_state.get("integration_state_schema", 1) == 1, "Prerequisite", "integration-schema")
         _require(integration_state.get("integration", "copilot") == "copilot" and integration_state.get("default_integration", "copilot") == "copilot" and integration_state.get("installed_integrations", ["copilot"]) == ["copilot"], "Prerequisite", "integration-identity")
         settings = integration_state.get("integration_settings", {})
-        _require(settings in ({}, {"copilot": {}}, {"copilot": {"parsed_options": {"skills": True}}}, {"copilot": {"script": "ps", "invoke_separator": "-"}}, {"copilot": {"script": "sh", "invoke_separator": "-"}}), "Prerequisite", "integration-settings")
+        _require(settings in ({}, {"copilot": {}}, {"copilot": {"parsed_options": {"skills": True}}}, {"copilot": {"script": "ps", "invoke_separator": "-"}}, {"copilot": {"script": "sh", "invoke_separator": "-"}}, {"copilot": {"script": "ps", "raw_options": "--skills", "parsed_options": {"skills": True}, "invoke_separator": "-"}}), "Prerequisite", "integration-settings")
     integration_root = root / ".specify/integrations"
     if integration_root.exists():
         for path in integration_root.rglob("*"):
@@ -278,13 +289,15 @@ def _inspect_workspace(request: dict[str, Any], runtime: dict[str, Any]) -> dict
                 _require(relative == "copilot/__init__.py" and _bytes(path) == _bytes(Path(runtime["Package"]) / "integrations/copilot/__init__.py"), "Prerequisite", "project-adapter")
             elif relative == "packages.json":
                 _require(_read_json(_bytes(path).decode()) == {"schema_version": "1.0", "packages": {}}, "Prerequisite", "external-integrations")
-            elif relative == "copilot.manifest.json":
+            elif relative in ("copilot.manifest.json", "speckit.manifest.json"):
                 manifest = _read_json(_bytes(path).decode("utf-8"))
                 _require(isinstance(manifest, dict) and set(manifest) == {"integration", "version", "installed_at", "files"}, "Prerequisite", "integration-manifest")
-                _require(manifest["integration"] == "copilot" and manifest["version"] == "1.2.3" and isinstance(manifest["files"], dict), "Prerequisite", "integration-manifest")
+                identity = relative.removesuffix(".manifest.json")
+                _require(manifest["integration"] == identity and manifest["version"] == "1.2.3" and isinstance(manifest["files"], dict), "Prerequisite", "integration-manifest")
                 _require(isinstance(manifest["installed_at"], str) and datetime.fromisoformat(manifest["installed_at"]).tzinfo is not None, "Prerequisite", "integration-manifest-time")
                 for name, digest in manifest["files"].items():
-                    _require(isinstance(name, str) and re.fullmatch(r"\.github/skills/speckit-[a-z][a-z-]*/SKILL\.md", name) is not None, "Prerequisite", "integration-manifest-path")
+                    pattern = r"\.github/skills/speckit-[a-z][a-z-]*/SKILL\.md" if identity == "copilot" else r"\.specify/(scripts/powershell/[a-z][a-z-]*\.ps1|templates/[a-z][a-z-]*\.md|\.gitignore)"
+                    _require(isinstance(name, str) and re.fullmatch(pattern, name) is not None, "Prerequisite", "integration-manifest-path")
                     record = capture(root / name)
                     _require(isinstance(digest, str) and record.get("Sha256") == digest, "Prerequisite", "integration-manifest-hash")
             elif relative.endswith(".json"):
@@ -300,7 +313,6 @@ def _inspect_workspace(request: dict[str, Any], runtime: dict[str, Any]) -> dict
         rescue_suffix = _digest(identity.encode("utf-8"))[:16]
         for relative, code in (
             (f".specify/extensions/{identity}", "Ownership"),
-            (f".github/skills/speckit-{identity}-load", "CommandConflict"),
             (f".specify/extensions/.rescue-staging-{rescue_suffix}", "OperationState"),
         ):
             record = capture(root / relative)
@@ -385,6 +397,13 @@ def _catalog(request: dict[str, Any]) -> dict[str, Any]:
         path = _safe_path(location)
         raw = _bytes(path)
         catalog = _read_json(raw.decode("utf-8"))
+        if request.get("SourceKind") == "packaged":
+            _require(isinstance(catalog, dict) and set(catalog) == {"schema_version", "skills"} and catalog["schema_version"] == "skill-library/1" and isinstance(catalog["skills"], dict), "Catalog", "library-shape")
+            skill = catalog["skills"].get(root["Id"])
+            _require(isinstance(skill, dict) and set(skill) == {"current", "releases"} and isinstance(skill["releases"], dict) and skill["current"] in skill["releases"], "Catalog", "library-skill")
+            release = skill["releases"].get(root["Version"])
+            _require(isinstance(release, dict) and set(release) == {"archive", "catalog"} and release["archive"] == f"{root['Id']}-{root['Version']}.zip", "Catalog", "library-release")
+            catalog = {"schema_version": "1.0", "extensions": {root["Id"]: release["catalog"]}}
         _require(isinstance(catalog, dict) and set(catalog) == {"schema_version", "extensions"} and catalog["schema_version"] == "1.0" and isinstance(catalog["extensions"], dict), "Catalog", "catalog-shape")
         origins.append({"Path": str(path), "Size": len(raw), "Sha256": _digest(raw)})
         if root["Id"] in catalog["extensions"]:
@@ -397,23 +416,6 @@ def _catalog(request: dict[str, Any]) -> dict[str, Any]:
     _require(isinstance(record["sha256"], str) and re.fullmatch(r"[a-f0-9]{64}", record["sha256"]) is not None, "Catalog", "catalog-digest")
     _require(isinstance(record["download_url"], str) and record["download_url"].startswith(("https://", "http://localhost:", "http://127.0.0.1:")) and not any(char in record["download_url"] for char in ("@", "?", "#")), "Catalog", "provenance-url")
     return {"Record": record, "CatalogOrigins": origins}
-
-
-def _render_command(root: dict[str, Any], loader: str) -> str:
-    from specify_cli._utils import dump_frontmatter
-    from specify_cli.agents import CommandRegistrar
-
-    lines = loader.splitlines(keepends=True)
-    _require(lines[0].strip() == "---", "Artifact", "loader-frontmatter")
-    end = next(index for index in range(1, len(lines)) if lines[index].strip() == "---")
-    frontmatter = _read_yaml("".join(lines[1:end]))
-    _require(set(frontmatter) == {"description"}, "Artifact", "loader-capabilities")
-    body = "".join(lines[end + 1:]).strip()
-    _require("__SPECKIT_" not in body and "{SCRIPT}" not in body, "Artifact", "loader-placeholders")
-    name = f"speckit-{root['Id']}-load"
-    metadata = CommandRegistrar.build_skill_frontmatter("copilot", name, frontmatter["description"], f"extension:{root['Id']}")
-    title = f"{root['Id']} load".replace(".", " ").replace("-", " ").title()
-    return f"---\n{dump_frontmatter(metadata)}\n---\n\n# {title} Skill\n\n{body}\n"
 
 
 def _verify_artifact(request: dict[str, Any], stream: BinaryIO | None = None) -> dict[str, Any]:
@@ -450,7 +452,7 @@ def _verify_artifact(request: dict[str, Any], stream: BinaryIO | None = None) ->
             _require(len(data) == info.file_size and len(data) <= MAX_MEMBER, "Artifact", "member-read")
             members[name] = data
             evidence.append({"MemberPath": name, "Mode": f"{mode:o}", "Size": len(data), "Sha256": _digest(data)})
-    expected_names = {"extension.yml", "source-manifest.json", "commands/load.md", "extension-build.json"} | {f"resources/library/{item['SourcePath']}" for item in selection["Payload"]}
+    expected_names = {"extension.yml", "source-manifest.json", "extension-build.json"} | {f"resources/library/{item['SourcePath']}" for item in selection["Payload"]}
     _require(set(members) == expected_names, "Artifact", "exact-membership")
     manifest = _read_json(members["source-manifest.json"].decode("utf-8"))
     _require(isinstance(manifest, dict) and set(manifest) == {"SchemaVersion", "SourceCommit", "Root", "OptionalSelections", "Builder", "Components", "Payload", "GeneratedMembers", "Limitations"}, "Artifact", "source-manifest-shape")
@@ -459,16 +461,16 @@ def _verify_artifact(request: dict[str, Any], stream: BinaryIO | None = None) ->
     _require(manifest.get("Builder", {}).get("Contract") == "skill-archive/1", "Artifact", "source-builder")
     _require(_canonical_bytes(manifest.get("Components")) == _canonical_bytes(selection["Inventory"]["Components"]) and _canonical_bytes(manifest.get("Payload")) == _canonical_bytes(selection["Payload"]), "Artifact", "committed-inventory")
     build = _read_json(members["extension-build.json"].decode("utf-8"))
-    _require(set(build) == {"Contract", "SourceArchiveSha256", "SourceCommit", "Root", "SpecKitVersion"} and build["Contract"] == "skill-extension-pilot/1" and build["SourceCommit"] == selection["SourceCommit"] and build["Root"] == root and build["SpecKitVersion"] == "1.2.3", "Artifact", "build-evidence")
+    _require(set(build) == {"Contract", "SourceArchiveSha256", "SourceCommit", "Root", "SpecKitVersion"} and build["Contract"] == "skill-extension/1" and build["SourceCommit"] == selection["SourceCommit"] and build["Root"] == root and build["SpecKitVersion"] == "1.2.3", "Artifact", "build-evidence")
     _require(isinstance(build["SourceArchiveSha256"], str) and re.fullmatch(r"[a-f0-9]{64}", build["SourceArchiveSha256"]) is not None, "Artifact", "source-archive-digest")
     runtime = _read_yaml(members["extension.yml"].decode("utf-8"))
-    description = f"Load the packaged {root['Id']} skill and its required resources."
-    command = {"name": f"speckit.{root['Id']}.load", "file": "commands/load.md", "description": description}
+    description = f"Packaged {root['Id']} skill and its required resources."
+    template = {"name": root["Id"], "file": f"resources/library/{root['Folder']}/SKILL.md", "description": description}
     expected_runtime = {
         "schema_version": "1.0", "extension": {"id": root["Id"], "name": root["Id"], "version": root["Version"], "description": description, "effect": "read-only"},
-        "requires": {"speckit_version": "==1.2.3"}, "provides": {"commands": [command]},
+        "requires": {"speckit_version": "==1.2.3"}, "provides": {"templates": [template]},
     }
-    _require(runtime == expected_runtime and catalog["requires"] == runtime["requires"] and catalog["provides"] == runtime["provides"] and catalog["name"] == root["Id"] and catalog["description"] == description, "Artifact", "command-only-profile")
+    _require(runtime == expected_runtime and catalog["requires"] == runtime["requires"] and catalog["provides"] == runtime["provides"] and catalog["name"] == root["Id"] and catalog["description"] == description, "Artifact", "passive-skill-profile")
     for record in selection["Payload"]:
         name = f"resources/library/{record['SourcePath']}"
         data = members[name]
@@ -477,16 +479,12 @@ def _verify_artifact(request: dict[str, Any], stream: BinaryIO | None = None) ->
         executable = name.endswith(".sh") and data.startswith(b"#!")
         _require(record["Mode"] == ("100755" if executable else "100644"), "Artifact", "canonical-mode-change")
     _require(all(item["Mode"] == "100644" for item in evidence if not item["MemberPath"].startswith("resources/library/")), "Artifact", "generated-mode")
-    loader = members["commands/load.md"].decode("utf-8")
-    _require(loader == request["ExpectedLoader"], "Artifact", "generated-loader")
-    rendered = _render_command(root, loader)
     return {
         "RootId": root["Id"], "Version": root["Version"], "Position": 0,
         "Archive": {"Path": str(path), "Size": len(raw), "Sha256": _digest(raw)},
         "CatalogUrl": catalog["download_url"], "BuildEvidence": build, "SourceManifest": manifest,
         "RuntimeManifest": runtime, "Members": evidence,
-        "Command": {"Id": command["name"], "Path": f".github/skills/speckit-{root['Id']}-load/SKILL.md", "Size": len(rendered.encode()), "Sha256": _digest(rendered.encode())},
-        "RegistryAddition": {"version": root["Version"], "source": "local", "manifest_hash": f"sha256:{_digest(members['extension.yml'])}", "enabled": True, "priority": 10, "registered_commands": {}, "registered_skills": [f"speckit-{root['Id']}-load"], "installed_at": "{runtime-utc-iso8601}"},
+        "RegistryAddition": {"version": root["Version"], "source": "local", "manifest_hash": f"sha256:{_digest(members['extension.yml'])}", "enabled": True, "priority": 10, "registered_commands": {}, "registered_skills": [], "installed_at": "{runtime-utc-iso8601}"},
     }
 
 
@@ -535,6 +533,7 @@ def _validate_reservation(request: dict[str, Any], runtime: dict[str, Any]) -> d
         write["Path"] = write["Path"].replace(f"/operations/{operation_id}", "/operations/{operation}")
     _require(_digest(_canonical_bytes(projection)) == operation_id, "ApprovalMismatch", "approved-fingerprint")
     _require(str(root) == approved["ConsumerSnapshot"]["WorkspacePath"] and request["RepoRoot"] == approved["Selection"]["SourceRoot"], "ApprovalMismatch", "workspace-identity")
+    _require(request.get("SourceKind", "committed") == approved["Selection"].get("SourceKind", "committed"), "ApprovalMismatch", "source-provider")
     _require(_canonical_bytes(runtime) == _canonical_bytes(approved["ConsumerSnapshot"]["Runtime"]), "ApprovalMismatch", "runtime-drift")
     for tool in approved["Selection"]["Tools"]:
         _require(_digest(_bytes(Path(tool["Path"]), MAX_ARCHIVE)) == tool["Sha256"], "ApprovalMismatch", "tool-drift")
@@ -588,7 +587,7 @@ def _verify_installation(root: Path, approved: dict[str, Any], before: list[dict
         write = writes[location]
         if write["Effect"] == "create-parent-if-absent":
             _require(record.get("Type") == "directory" and record["Mode"] == ("0700" if write["Mode"] == "0700" else "0755"), "VerificationFailure", "installed-parent")
-        elif write["Effect"] in ("create-payload", "create-command"):
+        elif write["Effect"] == "create-payload":
             _require(record.get("Type") == "file" and record["Mode"] == write["Mode"][-3:].rjust(4, "0") and record["Sha256"] == write["Sha256"], "VerificationFailure", "installed-content")
         else:
             _require(record.get("Type") == "file" and record["Mode"] == (previous["Mode"] if previous and previous["Presence"] == "present" else "0644"), "VerificationFailure", "installed-registration-mode")
@@ -599,8 +598,6 @@ def _verify_installation(root: Path, approved: dict[str, Any], before: list[dict
     for member in extension["Members"]:
         location = f".specify/extensions/{extension['RootId']}/{member['MemberPath']}"
         _require(after[location]["Size"] == member["Size"], "VerificationFailure", "installed-size")
-    command = after[extension["Command"]["Path"]]
-    _require(command["Size"] == extension["Command"]["Size"], "VerificationFailure", "installed-command")
     registry = _read_json(_bytes(root / ".specify/extensions/.registry").decode())
     addition = registry["extensions"][extension["RootId"]]
     timestamp = addition.get("installed_at")
@@ -649,12 +646,12 @@ def _apply_archive(request: dict[str, Any]) -> dict[str, Any]:
             extension = approved["Extensions"][index]
             inventory = approved["Selection"]["RequiredInventories"][index]
             selected_root = approved["Selection"]["ExtensionRoots"][index]
-            selection = {"Root": {key: selected_root[key] for key in ("Id", "Version", "Folder")}, "SourceCommit": approved["Selection"]["SourceCommit"], "Inventory": inventory["Inventory"], "Payload": inventory["Payload"]}
-            catalog = _catalog({"Root": selection["Root"], "CatalogPath": [origin["Path"] for origin in extension["CatalogOrigins"]]})
+            selection = {"Root": {key: selected_root[key] for key in ("Id", "Version", "Folder")}, "SourceCommit": selected_root.get("SourceCommit", approved["Selection"]["SourceCommit"]), "Inventory": inventory["Inventory"], "Payload": inventory["Payload"]}
+            catalog = _catalog({"Root": selection["Root"], "CatalogPath": [origin["Path"] for origin in extension["CatalogOrigins"]], "SourceKind": approved["Selection"].get("SourceKind", "committed")})
             _require(_canonical_bytes(catalog["CatalogOrigins"]) == _canonical_bytes(extension["CatalogOrigins"]), "ApprovalMismatch", "catalog-drift")
             path = _safe_path(extension["Archive"]["Path"])
             with path.open("rb") as stream:
-                verified = _verify_artifact({"Selection": selection, "Catalog": catalog["Record"], "ArchivePath": str(path), "ExpectedLoader": request["ExpectedLoader"]}, stream)
+                verified = _verify_artifact({"Selection": selection, "Catalog": catalog["Record"], "ArchivePath": str(path)}, stream)
                 expected = {key: value for key, value in extension.items() if key not in ("CatalogOrigins", "ArtifactOrigins")}
                 verified["Position"] = index
                 _require(_canonical_bytes(verified) == _canonical_bytes(expected), "ApprovalMismatch", "artifact-drift")

@@ -275,9 +275,16 @@ function Invoke-InventoryInspection {
         if ($Context.RawDefaults.ContainsKey('notices')) {
             foreach ($Path in $Context.RawDefaults.notices) { Add-InventorySourceFile $Context $Path }
         }
+        if ($null -ne (Get-InventorySourceEntry -Context $Context -Path '.skillsignore')) {
+            Add-InventorySourceFile -Context $Context -Path '.skillsignore'
+            [IO.File]::WriteAllBytes((Join-Path $Context.Data '.skillsignore'),
+                (Invoke-InventoryGitRead -Context $Context -Arguments @('cat-file', 'blob', $Context.Entries['.skillsignore'].Object) -Bytes))
+        }
+        $Exclusions = @(Read-SkillExclusions -Root $Context.Data)
         $Category = 'Inspection'
         foreach ($Folder in (Get-InventoryChildren $Context '.github/skills')) {
             if ($Context.Entries[$Folder].Mode -ne '040000') { continue }
+            if (Test-SkillExcluded -Name ($Folder.Split('/')[-1]) -Patterns $Exclusions) { continue }
             $Sidecar = "$Folder/skill.metadata.yaml"
             if ($null -eq (Get-InventorySourceEntry $Context $Sidecar)) { continue }
             Add-InventorySourceTree $Context $Folder

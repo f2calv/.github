@@ -22,7 +22,7 @@ features, obsolete APIs and behavior changes in the actual codebase.
   applicable to the files in scope. Preserve package holds, supported consumers and unrelated edits.
 - Use `dotnet-release-train` for producer ordering, publication and consumer propagation;
   `containers-images`, `containers-devcontainer` and `containers-workflows` for their respective surfaces;
-  `dotnet-test-platform` for runner changes; `blazor-frontend` and `dotnet-webapi` for frontend/API
+  `dotnet-test-platform` for runner changes; `dotnet-blazor` and `dotnet-webapi` for frontend/API
   migrations; `dotnet-efcore` for provider/model/query and schema migrations; and
   `dotnet-performance` for measured hot-path changes. Reuse these authorities
   rather than reimplementing their procedures here.

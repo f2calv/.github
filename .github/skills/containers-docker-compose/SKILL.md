@@ -24,7 +24,7 @@ Keep default IDE dependencies, optional applications/demos and test-data boundar
 - Use [container images](../containers-images/SKILL.md) for Dockerfiles/ignore files,
   [container workflows](../containers-workflows/SKILL.md) for shared build/deploy scripts,
   [Dev Containers](../containers-devcontainer/SKILL.md) for editor integration and
-  [Dependabot](../dependabot-management/SKILL.md) for automated image updates.
+  [Dependabot](../github-dependabot/SKILL.md) for automated image updates.
 
 ## Modes and Safety
 

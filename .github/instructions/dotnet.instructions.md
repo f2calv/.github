@@ -38,7 +38,7 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
   logging argument cost and the shared naming rules. With `TreatWarningsAsErrors`, promoted
   violations fail builds rather than remaining editor suggestions.
 - Treat unused-member and unread-field diagnostics as actionable dead code and remove the flagged members. Do not add them to `WarningsNotAsErrors`.
-- Promote other style preferences to warnings only through the `editorconfig-management` skill's
+- Promote other style preferences to warnings only through the `tooling-editorconfig` skill's
   measured tranches.
 - Write new code clean at `suggestion` severity too. SonarQube imports Roslyn suggestions such as
   CA1859, CA1873, IDE0037 and IDE0053 as issues, and the Quality Gate fails on any new issue even

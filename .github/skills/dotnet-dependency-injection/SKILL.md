@@ -18,10 +18,10 @@ container or adding an interface/factory for every class.
 - Load [lifetimes and factories](./references/lifetimes-and-factories.md) for selection, scopes,
   aliases and disposal. The [worked example](./examples/provider-selection-and-scopes.md) combines
   configuration-selected providers with one process-local broker and per-job scopes.
-- Use [modular monolith](../patterns-monolith-modular/SKILL.md) for module/role composition,
+- Use [modular monolith](../patterns-modular-monolith/SKILL.md) for module/role composition,
   [EF Core](../dotnet-efcore/SKILL.md) for context lifetimes,
   [background pipelines](../dotnet-background-pipelines/SKILL.md) for worker supervision and
-  [leadership election](../leadership-election/SKILL.md) for distributed ownership.
+  [leadership election](../dotnet-leadership-election/SKILL.md) for distributed ownership.
 - Verify framework behavior in the official
   [DI guidelines](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection/guidelines).
 

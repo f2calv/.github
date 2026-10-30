@@ -1,7 +1,25 @@
 name: ci
 
-on:
+'on':
   workflow_dispatch:
+    inputs:
+      skill-delivery:
+        description: Run only skill preparation or artifact packaging
+        type: choice
+        options: ['off', prepare, build]
+        default: 'off'
+      impact-json:
+        description: Explicit component version impacts as JSON
+        type: string
+        default: '{}'
+      bootstrap-ids:
+        description: Unpublished component IDs as a JSON array
+        type: string
+        default: '[]'
+      previous-delivery-run:
+        description: Prior artifact run supplying unchanged releases
+        type: string
+        default: ''
   push:
     branches: [main]
   pull_request:
@@ -15,11 +33,13 @@ permissions: {}
 
 jobs:
   lint:
+    if: github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
     permissions:
       contents: read
 
   versioning:
+    if: github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       tag-and-release: false
@@ -29,12 +49,13 @@ jobs:
       contents: read
 
   skills-library-tests:
+    if: github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'
     uses: ./.github/workflows/_skills-library-tests.yml
     permissions:
       contents: read
 
   test:
-    if: always()
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off')
     needs: [skills-library-tests]
     runs-on: ubuntu-24.04
     permissions: {}
@@ -49,6 +70,7 @@ jobs:
           }
 
   dotnet-examples:
+    if: github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -73,8 +95,20 @@ jobs:
           --configuration Release --no-build --filter-trait "Category=Parsing"
           --minimum-expected-tests 16
 
+  skill-delivery:
+    if: github.event_name == 'workflow_dispatch' && inputs.skill-delivery != 'off'
+    uses: ./.github/workflows/_skills-library-delivery.yml
+    with:
+      mode: ${{ inputs.skill-delivery }}
+      impact-json: ${{ inputs.impact-json }}
+      bootstrap-ids: ${{ inputs.bootstrap-ids }}
+      previous-delivery-run: ${{ inputs.previous-delivery-run }}
+    permissions:
+      contents: read
+      actions: read
+
   release:
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name != 'workflow_dispatch' || inputs.skill-delivery == 'off')
     needs: [lint, versioning, test, dotnet-examples]
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:

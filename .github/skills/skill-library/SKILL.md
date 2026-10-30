@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Author and validate skill metadata, preview committed inventories, preview or explicitly apply bounded workspace root/optional extensions, build deterministic required-only ZIPs, adapt a verified ZIP into a local Spec Kit extension/catalog pilot, and prepare component versions. Use for metadata, archive, extension-pilot or workspace-installer work. Linux Spec Kit 1.2.3 workspace apply has real-runtime validation; editor observations and publication retain separate gates.'
+description: 'Author and validate skill metadata, preview committed inventories, apply approved workspace root/optional extensions, build deterministic required-only ZIPs and Spec Kit packages, prepare component versions and drive CI component artifacts. Use for metadata, packaging, version preparation, CI delivery or workspace installation. Linux Spec Kit 1.2.3 apply has real-runtime validation; editor invocation, CI-run evidence and publication retain separate gates.'
 user-invocable: true
 ---
 
@@ -37,6 +37,8 @@ discovery name and description. Metadata adds distribution identity, not another
    `notice`) and `loadingPurpose`. An external declaration is required when the component is selected.
 6. Declare advisory `tooling` with `id`, exact or `>=X.Y.Z` `versionRequirement`, `scope` (`build`,
    `authoring`, `consumer`) and boolean `required`. Validation does not execute or install these tools.
+   Mark a tool optional only when the supported operation works without it; a different shell
+   launcher does not eliminate the underlying runtime requirement. Declare each implemented scope.
 7. With test approval, maintain focused synthetic coverage alongside the validator. Validate metadata
    and native links separately; local links are not an inferred graph or a complete redistribution audit.
 
@@ -76,6 +78,18 @@ notices, component notices and external declarations fail. Required cycles fail 
 Optional edges enter closure only when their `component-id/selectionKey` is explicitly selected and
 reachable; selected optional cycles fail. Success returns catalog count and dependency-first selected IDs.
 Failures return nonzero without echoing YAML contents or interpreter stderr.
+
+The optional repository-root `.skillsignore` owns distribution exclusions. It accepts exact native
+folder names or trailing `prefix-*` patterns, one per line; blank lines and whole-line `#` comments
+are allowed. Paths, negation, other glob syntax and duplicate patterns fail. The repository excludes
+`speckit-*` because those generated skills belong to upstream Spec Kit. Excluded folders remain
+available to native VS Code discovery but never enter library metadata validation, inventory,
+version preparation or structural skill checks, even if a sidecar appears. Explicit selection or
+dependencies on excluded skills fail. Structural checks and the library share the same reader;
+committed inventory reads the policy from its chosen revision, and preparation fingerprints it.
+The first-party `spec-kit-guide` and `spec-kit-bootstrap` skills do not match `speckit-*` and remain
+eligible for library metadata enrollment; describing Spec Kit does not make a skill upstream-owned.
+Do not use this ownership policy to suppress unrelated lint or whitespace checks.
 
 After schema edits, refresh the editor's YAML schema cache if diagnostics still require removed
 fields while bundled validation passes. Do not restore retired declarations to satisfy cached schemas.
@@ -203,8 +217,9 @@ extensions; the separate local extension pilot is described below.
 The [Invoke-SkillExtension adapter](./scripts/Invoke-Extension.ps1) converts an approved
 `skill-archive/1` build into a genuine Spec Kit 1.2.3 extension and one local catalog entry.
 It consumes that archive's expected SHA-256, preserves its required-only canonical resources beneath
-`resources/library/`, and adds a generated manifest, source/build evidence and thin read-only loading
-command. It does not resolve dependencies again, rewrite native guidance or include optional-only skills.
+`resources/library/`, and adds a generated manifest and source/build evidence. Ordinary skill packages
+declare their canonical `SKILL.md` as a passive template, not a public command. The adapter does not
+resolve dependencies again, rewrite native guidance or include optional-only skills.
 
 ```powershell
 ./.github/skills/skill-library/scripts/Invoke-Extension.ps1 `
@@ -221,10 +236,11 @@ hostile-writer isolation or new atomicity guarantee. Preserve stable inputs and 
 
 The generated site contains `<id>-<version>.zip`, its detached `.sha256` and `catalog.json`.
 Catalog locations permit HTTPS or loopback HTTP, with no embedded credentials, query or fragment.
-The extension declares `==1.2.3` compatibility and `speckit.<id>.load`; Copilot skills-mode registration
-renders `/speckit-<id>-load`. The command explicitly reads installed guidance and relevant resources;
-select declared instructions by their manifest `external-instruction` reason, not only a filename
-suffix. Copied instruction files do not acquire native `applyTo` activation. No packaged scripts execute.
+The extension declares `==1.2.3` compatibility and the `skill-extension/1` build contract. Its nonempty
+`provides.templates` satisfies the pinned runtime without registering per-skill commands. Load through
+the shared bootstrap below; select declared instructions by their manifest `external-instruction`
+reason, not only a filename suffix. Copied instruction files do not acquire native `applyTo`
+activation. No packaged scripts execute.
 
 The [pilot validation guide](../../../specs/003-spec-kit-extension-pilot/quickstart.md) distinguishes
 real catalog discovery, exact-version installation, digest/conflict refusal and installed-byte checks
@@ -237,6 +253,47 @@ Use Spec Kit's own installer for this
 pilot; the workspace installer below adds bounded local optional selection and operation evidence.
 Remote acquisition, upgrades and publication remain deferred. Local catalog integrity is not publisher
 authentication or redistribution approval.
+
+## Shared Library Bootstrap
+
+For a `skill-library` source archive, supply `-LibraryCatalogPath` with one to 256 explicit
+existing release catalogs and their sibling ZIPs. The adapter bundles those exact packages, a local
+library index, dispatcher, approval worker, verifier, shared metadata schema/graph validator, strict
+YAML reader, transitive helpers and both prerequisite lockfiles. No maintainer checkout or alternative
+catalog is needed at runtime. Existing CPython 3.11+ with PyYAML 6.0.3 and Spec Kit 1.2.3 is required;
+installation also requires PowerShell 7.4+ and Git. Never provision prerequisites silently.
+The catalog bound is independent of the sixteen-root installation transaction bound. Keep old
+published releases available; this bundled subset is not the permanent release archive.
+
+The Monday demo keeps the existing Python/PowerShell implementation rather than parallel Python,
+PowerShell and Bash engines. Native guidance can be read without executing its helpers, but the
+bootstrap's current installer cannot run without its declared runtimes. Alternative engines are
+deferred until after the demo: select real target environments, compare dependency and maintenance
+costs, and require shared behavior and failure-contract coverage before claiming interchangeability.
+Git remains an installation prerequisite in this guide; its minimum supported version has not yet
+been established, so do not invent a numeric sidecar requirement merely to fill the schema.
+
+The source/component ID and archive name remain `skill-library`. The generated bootstrap's runtime
+extension ID is `skill`, its canonical command is `speckit.skill.library`, and native Copilot
+skills-mode registration produces exactly `/speckit-skill-library`. The catalog key and generated
+backend path use that runtime ID; build evidence and adapter results expose `RuntimeExtensionId`
+separately from the source root. Spec Kit's extension listing therefore identifies the bootstrap as
+`skill`. Do not add aliases to shorten the command: the pinned registrar creates extra public entries.
+
+The [shared backend](./scripts/Invoke-Library.py) supports bundled discovery, details, installed-only
+listing and verified installed guidance loading. `install <id>` defaults to the catalog-advertised
+current release; `--latest` is explicit current selection and `--version X.Y.Z` selects exactly.
+The result is a complete read-only Preview from the existing approval/evidence engine. Show its exact
+versions, digests, consumer, required closure, optional choices, intended writes, blockers and
+fingerprint. Only a ready preview is eligible for separate explicit approval. Apply with its exact
+root `--version`, the same `--optional` keys, `--apply` and `--reviewed-fingerprint`; never reinterpret
+latest during apply. Closed typed JSON connects the dispatcher to the worker without shell evaluation.
+
+Native bootstrap registration, bundled discovery, source-independent approved two-extension
+installation and installed-only guidance reads have real pinned-runtime validation. Both payloads
+have empty command registrations. Actual editor invocation and CI component delivery remain separate
+acceptance gates. Preserve failed consumers and use a fresh approved disposable consumer after a
+bundle defect; never patch installed evidence in place.
 
 ## Read-Only Workspace Preview
 
@@ -254,21 +311,31 @@ $Preview | ConvertTo-Json -Depth 100
 ```
 
 Source, consumer, catalog, artifact-directory and interpreter paths must be explicit, existing and
-absolute. Source and consumer cannot contain one another. Linked paths/ancestors fail; a leaf
+absolute. Committed source and consumer cannot contain one another. Linked paths/ancestors fail; a leaf
 interpreter symlink is allowed and its resolved identity is bound. Supply stable trusted inputs and
 exclusive workspace use. Dot-sourcing defines functions without running inspection or exiting the
 host; `Invoke-SkillWorkspaceInstall` returns the same object. The script's `-Json` emits one JSON result.
 
-The existing committed validator owns dependency closure and explicit optional-key validation. Preview
+The existing validator owns dependency closure and explicit optional-key validation. Preview
 verifies each selected local `<id>-<version>.zip` against its unambiguous catalog record and required-only
 committed inventory at the same frozen source commit, including
-literal identity, notices, every resource byte/mode, generated loader and command-only manifest.
+literal identity, notices, every resource byte/mode and the exact passive extension manifest.
 Limits are 64 MiB per archive and uncompressed payload, 16 MiB per member and sixteen distinct extension
 roots. Catalog URLs are provenance only. Declined optional ZIPs are never opened; offers default off,
 and Markdown links do not create dependencies.
 
+For standalone packaged inputs, use `-PackageIndexPath`, exact `-PackageVersion`, one artifact
+directory and the same consumer/interpreter inputs instead of committed source inputs. Verified
+sidecars pass the bundled schema and the same graph resolver, including offers from required
+components and each required-only manifest. Independent releases retain their own source commits.
+The only permitted source nested inside a consumer is the exact enabled, manifest-hash-registered
+bootstrap library at `.specify/extensions/skill/library`, with its `catalog.json` and `packages`.
+Other managed locations and modified bootstrap descriptors fail; this is not a general containment
+exception. Catalog/tool hashes bind approval separately from ZIP evidence so apply retains the
+same verified archive stream rather than opening it through generic tool hashing.
+
 `Ready: true` includes bound source/tool/runtime/catalog/artifact identities, consumer path snapshots,
-predicted command/registry/configuration effects and a canonical lowercase SHA-256 fingerprint.
+predicted payload/registry/configuration effects and a canonical lowercase SHA-256 fingerprint.
 Registry prediction marks the runtime-generated installation timestamp rather than inventing a fixed
 timestamp. Existing registry/configuration must round-trip without unrelated changes. External or
 changed project adapters, hooks/events, unknown integration effects, collateral chmod, occupied targets
@@ -300,7 +367,8 @@ Use the explicit inputs in the next section, including the peer's existing catal
 directory. Add `OptionalSelection = @('example-root/related')` using a key actually offered by the
 selected root. Review a new complete ready preview after changing any choice; root-only approval cannot
 authorize a peer. Execution order is the original root followed by distinct selected optional targets
-sorted by ID. Every extension uses its own no-option required closure at the same frozen commit;
+sorted by ID. Every extension uses its own no-option required closure. Committed-source selections
+share a frozen commit; packaged releases retain their individual source commits;
 choosing a peer never changes the root ZIP. Overlaps report source path/hash and owning extension IDs,
 but complete resources and notices are copied separately beneath each extension-owned tree. There is
 no physical deduplication, build, download or declined-artifact fallback.
@@ -346,9 +414,9 @@ the same regular single-link ZIP stream it hashed/inspected to Spec Kit 1.2.3's
 `install_from_archive`, with priority 10, force false and exact expected ID/version. No compatibility
 alias, custom production extractor, CLI refresh, scaffolding or profile/package configuration runs.
 
-Verified requires literal identity/version, every canonical byte/mode/notice, exact rendered command,
+Verified requires literal identity/version, every canonical byte/mode/notice, no added public command,
 expected registry/config additions and unchanged unrelated inspected state. For pinned Copilot
-skills-mode, `registered_commands` is an empty mapping and `registered_skills` contains the loader;
+skills-mode payloads, `registered_commands` is an empty mapping and `registered_skills` is empty;
 `manifest_hash` binds raw manifest bytes and only the runtime's UTC installation timestamp varies.
 The runtime moves a private temporary directory into the extension root, preserving `0700`; ordinary
 new payload subdirectories are `0755`. These modes are predicted and verified, not repaired afterward.
@@ -454,10 +522,54 @@ This is not a filesystem-wide transaction, durable crash journal or protection a
 replacement/noncooperating native writers. Do not edit inputs concurrently; interruption or storage
 failure can require manual recovery. Windows filesystem behavior still needs native-host verification.
 
+## CI Component Delivery
+
+The [delivery entry point](./scripts/Invoke-ComponentDelivery.ps1) reuses version preparation without
+changing source, tags or releases. Default execution returns `skill-component-delivery/1` with the
+complete preparation, `Ready`, `BuildReady`, source commit and fingerprint. Use the same explicit
+`-ImpactJson` and `-BootstrapId` decisions as preparation. `BuildReady` requires complete decisions and
+no outstanding metadata edits. Review and apply preparation separately, then commit it before building.
+
+```powershell
+./.github/skills/skill-library/scripts/Invoke-ComponentDelivery.ps1 `
+   -ImpactJson '{"example-skill":"minor","example-consumer":"patch"}' `
+   -PythonPath /path/to/python -Build -OutputDirectory /tmp/new-component-delivery
+```
+
+Build requires clean committed Linux source and a new output directory outside source/Git storage.
+Only components with proposed tags are packaged, independently of repository GitVersion. Each has a
+required-only native ZIP and `components/<id>/<version>/<id>-<version>.zip`, detached digest and catalog.
+`delivery.json` records the preparation and exact artifact results; it is build evidence, not publication.
+Source is rechecked through build completion. Failed builds retain partial output for inspection;
+never adopt or overwrite it. Unchanged unrelated components receive no new package or version.
+
+The bootstrap builds last and bundles newly built payload catalogs first. Supply explicit existing
+`-LibraryCatalogPath` releases for unchanged skills or older exact dependency pins. Those existing
+catalogs and sibling ZIPs pass the bootstrap adapter's ordinary digest checks and release-count bounds.
+
+The reusable [delivery workflow](../../workflows/_skills-library-delivery.yml) offers `prepare` and `build`
+modes with `impact-json` and JSON-array `bootstrap-ids`. It fetches full history, installs hash-locked
+prerequisites and uploads `skill-components`, including the preparation report even when building fails.
+An explicit `previous-delivery-run` can supply prior same-repository artifacts for unchanged releases;
+it never selects a latest run implicitly. Its GitHub permissions are read-only; it creates no source
+commit, tag, release or public catalog. Preparation edits still require separate review and commit.
+Dispatch the registered [CI entry point](../../workflows/ci.yml) at the reviewed feature ref with
+`skill-delivery=prepare` or `skill-delivery=build` to run only this job, without release tagging or
+the normal CI suite. The default `off` retains normal CI, and dispatch controls cannot disable
+pull-request or default-branch push checks. A new standalone workflow may not be dispatchable until
+it exists on the default branch; the existing entry point avoids merging merely to test packaging.
+Local synthetic checks cover single/multiple changes, both reverse edge types, unchanged components,
+repeat artifact digests, CLI execution and exact bootstrap bundling. These are not evidence of an
+actual Actions run. Request authorization before pushing or dispatching CI; editor invocation and
+publication remain separate acceptance gates.
+
 ## Planned Release Flow
 
 Version preparation and local archives above are implemented; PR creation and release publication remain
 separate operations. Review preparation before opening a PR and rerun after changed inputs or decisions.
+Follow the [published archive retention contract](../../../docs/adr-0001-copilot-spec-kit-distribution.md#published-archive-retention):
+expiring CI artifacts are not permanent releases. Retain every published exact version and its evidence;
+publication storage, immutable-release protections and independent backups remain separate setup gates.
 
 Reuse the [release-train version-decision policy](../dotnet-release-train/SKILL.md#release-version-decision),
 not an assumed reusable skill-version script: major for breaking public contracts, minor for compatible
@@ -504,34 +616,75 @@ defines version-scoped transitions, immutable history and installer safeguards. 
 tags and catalog entries; never reassign retired IDs to unrelated content. A stable-ID source rename
 needs no ID migration, but still needs version-impact review and safe installed-path handling.
 
+For example, the native folder/name `patterns-modular-monolith` keeps the component ID
+`patterns-monolith-modular` in its [metadata](../patterns-modular-monolith/skill.metadata.yaml).
+Update native links and source paths, but preserve ID-based install/load commands and dependency
+pins. Validate the real catalog after a rename instead of assuming every old-name occurrence is stale.
+Scope replacements to skill references; identical repository or product names can have independent
+meanings and must not be renamed incidentally.
+
+### Skill Folder Naming
+
+Prefer lowercase kebab-case `<domain>-<topic>` names in the flat skill directory. A domain prefix
+groups related skills when browsing or completing names; the topic must still identify the actual
+operation. Some additional length is justified, but avoid redundant category layers such as
+`framework-dotnet-efcore` when `dotnet-efcore` conveys the same scope.
+
+- Use one primary domain based on the implemented scope, not every technology mentioned. Keep
+   `.NET`-specific guidance under `dotnet-*`; reserve `lang-csharp-*` for language-specific guidance
+   rather than renaming the whole .NET ecosystem after its implementation language.
+- Prefer specific domains such as `github-*`, `containers-*`, `terraform-*` and `gitops-*` over
+   a broad `devops-*` bucket. Use `gitops-*` for actual reconciliation or Git-owned deployment
+   workflows, not every Kubernetes-related skill.
+- Use a scripting prefix such as `script-pwsh-*` when scripting itself is the subject. A bundled
+   PowerShell helper does not make an otherwise domain-specific skill a scripting skill.
+- Keep useful existing domain names rather than renaming for cosmetic uniformity. Use concise,
+   recognizable terms; avoid arbitrary abbreviations and stacked prefixes. Express overlapping
+   categories through metadata facets and discovery descriptions instead of longer folder names.
+- Align the folder basename and native frontmatter `name`. Preserve an existing component `id`
+   by default; changing a source name must not silently change release identity or published tags.
+- Before bulk renaming, agree a complete current-to-proposed mapping with a reason for each entry,
+   including unchanged names. Implement approved changes with `git mv` in small domain batches,
+   starting with a low-coupling pilot; update references and review version impact in each batch.
+   Run focused checks with test approval before separately authorized commits. Leave upstream-owned
+   exclusions untouched and preserve the bootstrap's public command unless explicitly redesigned.
+
+These principles guide naming review; individual remappings remain proposals until approved. A
+folder rename alone is not evidence that native discovery or installed-path handling remains valid.
+
 ## Maintaining This Skill
 
 - Recheck draft 2020-12 behavior when PowerShell's `Test-Json` or JsonSchema.Net changes.
 - Recheck node/tag handling and scalar preservation when updating PyYAML or Python.
 - Extend focused negative cases when dependency selection, filesystem link behavior or schema fields change.
+- Keep `.skillsignore` semantics aligned across structural checks, committed inventory and preparation; exclude upstream metadata before parsing and bind policy changes into reviewed fingerprints.
+- Exercise bootstrap catalog-capacity boundaries independently of installation transaction bounds and permanent release retention.
 - Keep repository defaults, component overrides and additive notice checks aligned without treating declarations as rights clearance.
 - Reconcile the implicit-directory contract with committed-file inventory and rights evidence before packaging.
 - Recheck inert staging, isolated trusted imports, ordinal reasons, snapshot-only ignores and cleanup when Git, Python, PowerShell or filesystem behavior changes.
 - Recheck raw ZIP headers, canonical evidence, runtime fingerprints and complete-byte rebuilds when CPython's zipfile/json behavior changes; ASCII names use flag 0 and UTF-8 names use 0x0800 without private encoders.
-- Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source.
+- Keep archive capture/fixtures aligned with the complete trusted bundle, including scripts/requirements.txt; builder identity is distinct from the committed payload's source. Exercise the extracted bootstrap backend using its default bundled paths so checkout-local transitive helpers cannot hide missing runtime files.
 - Refresh scripts/requirements-spec-kit.txt with the complete exact-version SHA-256 wheel closure when changing CI's pinned runtime; retain the shared PyYAML lock separately. Check strict pip parsing/downloads for CI's Python version and wheel payload parity with the reviewed upstream source, not only the package name/version.
-- Recheck Spec Kit manifest/catalog fields, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; consumer fixtures need integration manifests as well as init options.
+- Recheck Spec Kit manifest/catalog fields, three-part canonical command names, exact-version/digest selection and Copilot skills registration against the pinned installed runtime; aliases create extra public registrations. Consumer fixtures need integration manifests as well as init options.
 - Recheck workspace preview API, integration-state schemas, registry/config serialization and chmod traversal against the pinned installed runtime. Even command-only extensions update the installed list and empty-hook configuration; predict those writes without constructing a manager.
-- Exercise stock init-options, integration settings and hash-tracked Copilot manifests, not only reduced fixtures; reject changed recorded files and unknown adapter effects. Match the archive producer's full GeneratedMembers/Limitations manifest shape, and retain the runtime's observed 0700 extension-root mode in predictions and fixtures.
-- Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount.
+- Exercise stock init-options, combined raw/parsed integration options, and both hash-tracked Copilot and core manifests, not only reduced fixtures; reject changed recorded files and unknown adapter effects. Match the archive producer's full GeneratedMembers/Limitations manifest shape, and retain the runtime's observed 0700 extension-root mode in predictions and fixtures.
+- Refuse selected-extension rescue staging before delegation: upstream may restore or delete it even on a first install. Bound approval size before reservation and keep receipt reads consistent with evidence writes. Test focused runner aggregate failures and zero passing cases, not just individual FailedCount. Filtered Pester totals include unselected cases; validate PassedCount, FailedCount and NotRunCount explicitly.
 - Recheck the same-stream archive API and literal ID/version, Copilot's empty registered-command mapping, raw manifest hash and UTC timestamp when updating Spec Kit; preserve unrelated registration/configuration and bytes rather than accepting a successful return alone.
 - Keep unresolved-operation checks ahead of strict partial-tree parsing and occupied-target checks on retries; distinguish synthetic child loss from whole-orchestrator loss, real-runtime confinement and editor acceptance.
 - Exercise diagnostic capture with stdout/stderr output before raising a warning; warnings-as-errors make later probes unreachable. Keep reported cancellation distinct from an unverified extension outcome.
 - Advance live Attempting state only after its receipt flushes; test Pending on failed intent, retained Verified on later persistence failure and foreign same-byte lock refusal after completion evidence.
 - Preserve readable failure observations alongside explicit unknown records, including absolute ancestor snapshot paths. Assert present bytes/modes rather than a path-name match; reinspection after lost child output must not retry installation.
 - Exercise ordered revalidation with earlier verified bytes and actual next-target drift, cancellation on both sides of intent and a pending remainder. PowerShell may wrap cancellation exceptions; retain token state as evidence.
-- Keep combined optional validation authoritative and per-root no-option inventories on one frozen commit. Test duplicate target reasons across active declarations, not invalid duplicate edges within one declaration.
+- Keep source and packaged selection on the same schema and graph resolver, including required-component offers and selected mixed cycles. Bind each release's source commit and required-only inventory; test duplicate target reasons across active declarations, not invalid duplicate edges within one declaration.
+- Recheck passive template validation and empty payload command registrations against the real runtime. Keep ZIP evidence separate from generic tool hashes so approval revalidation preserves single-open, same-stream installation.
 - Recheck execution Position, indexed registry/config predictions and receipt outcomes together when changing multi-extension evidence; artifact records already carry Position. Preserve complete overlap copies and self-test selected/declined/nested ZIP tripwires.
 - Allow hardlinked read-only installed prerequisites when capturing runtime identity; retain single-link ownership checks for managed consumer/evidence files. Keep byte/RECORD hashes and symlink checks in both cases.
-- Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations when loading parameterized scripts.
+- Keep extension-adapter binary stream and dot-source parameter regressions: preserve byte arrays as single return objects and explicitly retain caller destinations, catalog inputs and CLI defaults when loading parameterized scripts.
 - Recheck descriptor-relative exclusive reservation, immediate ownership records, fault/race cases and scratch/finalization acknowledgments when changing Linux filesystem or process behavior; cleanup failures must never produce success.
 - Keep prohibited-operation tripwires self-validating and arm them after synthetic fixture setup; historical payload code stays inert, and JSON evidence comparisons must ignore object-key order while preserving array order.
 - Recheck local-tag evidence, baseline decisions, fixed-point propagation and idempotence when changing preparation.
-- Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits.
+- Keep CI delivery on the same preparation and archive/adapter paths. Exercise prepared committed builds, true dirty-source refusal, independently named artifacts, unchanged components, repeat digests and bootstrap-last catalog ordering; a workflow parse or synthetic run is not actual CI evidence.
+- Keep limited delivery dispatch separate from normal CI/release gates. Test event/input behavior rather than requiring jobs to lack an `if` key: required pull-request and push checks must run even when dispatch inputs are absent or set. Reusable delivery concurrency must have its own suffix because the caller's `github.workflow` value is inherited; matching keys can cancel the caller.
+- Keep synthetic self-preparation coverage and its complete helper bundle: the component containing the writer is also an input, so post-write implementation binding must allow exactly its reviewed metadata scalar edits. Freeze the trusted library tree during fingerprint tests; concurrent edits intentionally invalidate their source snapshots.
 - Recheck scalar marks, input binding, cooperating-writer handles and guarded rollback on Python, Git, PowerShell or filesystem changes; local tags are not proof of remote completeness or historical immutability.
 - Verify native discovery before deepening folders; keep catalog migration history and installer recovery aligned.

@@ -9,7 +9,7 @@ Where these rules refer to a *project*, read it as the repository's primary unit
 
 ## Scope and Ownership
 
-Use the `readme-authoring` skill to create, restructure, update or audit READMEs. Its conditional
+Use the `docs-readme` skill to create, restructure, update or audit READMEs. Its conditional
 master template owns section selection and ordering; this file owns documentation conventions.
 The Mermaid instructions own diagram selection, styling and synchronization. Domain instructions
 and skills own technical contracts; reference them rather than copying their rules.
@@ -117,6 +117,6 @@ Where a tool generates interface documentation (inputs, outputs, providers, reso
 ## Markdown Linting
 
 The CI `lint` job is authoritative. Run the repository's pre-commit configuration from its root so
-hook arguments and exclusions apply. Use the `pre-commit-management` skill for native execution,
+hook arguments and exclusions apply. Use the `tooling-pre-commit` skill for native execution,
 the pinned Docker fallback, hook/runtime updates, fleet alignment, and troubleshooting; do not
 bypass the configuration with a direct linter during normal validation.
