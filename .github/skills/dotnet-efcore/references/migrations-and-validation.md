@@ -58,6 +58,15 @@ explicitly and obtain a decision before further migration work.
   non-routable placeholder through the approved configuration path; never borrow a real endpoint
   or print credentials. Do not assume every EF command is offline.
 
+## SQLite Migration Ownership
+
+SQLite has no independently permissioned schema. Verify prefix ownership in the generated SQL
+and test migrations against a file already containing an unrelated application table. A custom
+migration-history table does not rename EF's framework-owned `__EFMigrationsLock`; include that
+exception in the ownership inventory and serialize migrators sharing the file. Do not remove a
+lock while a migrator is running. SQLite cannot generate EF idempotent migration scripts; select
+the reviewed migration range or use an explicitly configured external migrator instead.
+
 ## Kubernetes Migration Ownership
 
 For applications deployed with multiple Kubernetes replicas, use one externally orchestrated,
@@ -82,6 +91,7 @@ one visible release operation.
 
 Retain migration history in EF and immutable application releases. A failed Job blocks rollout;
 application rollback and schema rollback remain separate decisions.
+
 ### Command Selection
 
 These are CLI shapes, not permission to execute them. Supply the repository's actual
