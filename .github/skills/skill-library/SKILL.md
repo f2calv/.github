@@ -56,10 +56,12 @@ replace generic `Linked from ...` reasons and move genuinely mandatory skills to
 
 `Test-SkillLibrary.ps1` runs in CI. It fails when a skill has no sidecar, sidecars are invalid,
 required skills form a cycle, a skill or its external files changed since its last `<id>/X.Y.Z` tag
-without a version bump, or a required pin differs from the required skill's version. Each error
-names the script that fixes it.
+without a version bump, a version is more than one patch, minor or major step past its last tag,
+or a required pin differs from the required skill's version. Each error names the script that fixes it.
 
-`Set-SkillVersion.ps1` bumps from the last released tag, so rerunning it is safe. It updates the pins
+A skill gets at most one bump per branch, however many times it changes before the pull request
+merges: `1.0.0` becomes `1.0.1`, not `1.0.3`. `Set-SkillVersion.ps1` bumps from the last released
+tag, so rerunning it during a long session is safe and never stacks bumps. It updates the pins
 in skills that require the bumped skill and gives released dependents a patch bump, recursively.
 Unreleased skills keep their authored version unless named. Use `major` for breaking guidance
 changes, `minor` for new capability and `patch` for fixes.

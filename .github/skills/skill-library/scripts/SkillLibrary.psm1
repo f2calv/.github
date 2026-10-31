@@ -185,7 +185,14 @@ function Test-SkillVersion {
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $Item.Id
         if ($null -ne $Released) {
             $Current = ConvertTo-SkillVersion $Item.Version
+            $Next = @(
+                [version]::new($Released.Major, $Released.Minor, $Released.Build + 1)
+                [version]::new($Released.Major, $Released.Minor + 1, 0)
+                [version]::new($Released.Major + 1, 0, 0))
             if ($Current -lt $Released) { $Errors.Add("$($Item.Id): version $Current is lower than released $Released.") }
+            elseif ($Current -ne $Released -and $Next -notcontains $Current) {
+                $Errors.Add("$($Item.Id): version $Current skips past one bump from released $Released; use one of $($Next -join ', ') via Set-SkillVersion.ps1 -Id $($Item.Id).")
+            }
             elseif ($Current -eq $Released -and (Test-SkillChanged -RepoRoot $RepoRoot -Component $Item -Released $Released)) {
                 $Errors.Add("$($Item.Id): changed since $($Item.Id)/$Released; run Set-SkillVersion.ps1 -Id $($Item.Id).")
             }
