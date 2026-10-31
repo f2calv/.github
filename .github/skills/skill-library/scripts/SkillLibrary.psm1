@@ -82,10 +82,25 @@ function Get-SkillComponent {
     return @($Components)
 }
 
+function Get-SkillWithoutMetadata {
+    <# Skill folders with a SKILL.md but no sidecar, excluding Git-ignored private skills. #>
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    $Skills = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/SKILL.md') -File |
+        Where-Object { -not (Test-Path -LiteralPath (Join-Path $_.DirectoryName 'skill.metadata.yaml')) })
+    if (-not $Skills.Count) { return @() }
+    Push-Location -LiteralPath $RepoRoot
+    try { $Ignored = @($Skills.FullName | & git check-ignore --stdin) }
+    finally { Pop-Location }
+    return @($Skills | Where-Object { $_.FullName -notin $Ignored } | ForEach-Object { $_.Directory.Name } | Sort-Object)
+}
+
 function Test-SkillComponent {
     <# Returns validation errors; an empty result means the catalog of components is consistent. #>
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object[]]$Component)
     $Errors = [Collections.Generic.List[string]]::new()
+    foreach ($Missing in Get-SkillWithoutMetadata -RepoRoot $RepoRoot) {
+        $Errors.Add("${Missing}: missing skill.metadata.yaml; run New-SkillMetadata.ps1 -Id $Missing.")
+    }
     $Ids = @{}
     foreach ($Item in $Component) { $Ids[$Item.Id] = $Item }
     $Schema = [IO.File]::ReadAllText($script:SchemaPath)
@@ -294,5 +309,5 @@ function New-SkillCatalog {
 }
 
 Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
-    Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
+    Get-SkillWithoutMetadata, Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
     New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog

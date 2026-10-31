@@ -6,6 +6,21 @@ BeforeAll {
     $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 }
 
+Describe 'PowerShell script test coverage' -Tag 'Unit' {
+    It 'pairs every script with a <Name>.Tests.ps1 file' {
+        Push-Location -LiteralPath $repositoryRoot
+        try { $files = @(git ls-files --cached --others --exclude-standard -- '*.ps1' '*.psm1') }
+        finally { Pop-Location }
+        $tests = @($files | Where-Object { $_ -like '*.Tests.ps1' } | ForEach-Object { [IO.Path]::GetFileName($_) -replace '\.Tests\.ps1$', '' })
+        # Test runners, shared helpers exercised through their callers, and test fixtures are exempt.
+        $missing = @($files | Where-Object {
+                $_ -notlike '*.Tests.ps1' -and $_ -notmatch '(^|/)tests/' -and
+                [IO.Path]::GetFileName($_) -notin @('Invoke-Tests.ps1') -and $_ -notlike '*.Common.ps1'
+            } | Where-Object { ([IO.Path]::GetFileNameWithoutExtension($_)) -notin $tests })
+        $missing | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Network evidence boundaries' -Tag 'Unit' {
     It 'keeps synthetic measurements distinct from failed client acceptance and actual network proof' {
         $path = Join-Path $repositoryRoot '.github/skills/network-unifi/examples/change-evidence.md'

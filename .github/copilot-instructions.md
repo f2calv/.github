@@ -65,6 +65,12 @@ Notes:
   the versions, tool behaviours, external APIs or steps most likely to go stale. Keep the general
   feedback-loop rule in `workflow.instructions.md`, not repeated per skill.
   `.scripts/tests/Skills.Tests.ps1` enforces the section in CI.
+- Every skill folder has a `skill.metadata.yaml` sidecar and an independent version. After adding or
+  changing a skill, follow the [skill library workflow](skills/skill-library/SKILL.md#validate-and-bump):
+  fetch tags, scaffold missing sidecars, bump changed skills and run `Test-SkillLibrary.ps1` before
+  committing. CI rejects missing sidecars and unbumped changes.
+- Every PowerShell script has a matching `<Name>.Tests.ps1`, except `Invoke-Tests.ps1` runners and
+  `*.Common.ps1` helpers tested through their callers.
 - For targeted structural checks, pass `SkillName` through `New-PesterContainer -Data` to that
   suite. Its data-driven Describe names are not expanded when Pester applies name filters;
   always check the executed test count instead of accepting a zero-test success.

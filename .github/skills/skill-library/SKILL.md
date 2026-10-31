@@ -36,15 +36,27 @@ externalFiles:
 
 ## Validate and Bump
 
+After adding or changing any skill, before committing:
+
 ```powershell
-./.github/skills/skill-library/scripts/Test-SkillLibrary.ps1
+git fetch --tags
+./.github/skills/skill-library/scripts/New-SkillMetadata.ps1                    # scaffold sidecars for new skills
 ./.github/skills/skill-library/scripts/Set-SkillVersion.ps1                     # patch every changed released skill
 ./.github/skills/skill-library/scripts/Set-SkillVersion.ps1 -Id dotnet-redis -Bump minor
+./.github/skills/skill-library/scripts/Test-SkillLibrary.ps1
 ```
 
-`Test-SkillLibrary.ps1` runs in CI. It fails when sidecars are invalid, required skills form a cycle,
-a skill or its external files changed since its last `<id>/X.Y.Z` tag without a version bump, or a
-required pin differs from the required skill's version.
+Fetch tags first: the checks compare against `<id>/X.Y.Z` tags that CI creates on GitHub. Without
+them every skill looks unreleased and the local check passes while CI fails.
+
+`New-SkillMetadata.ps1` seeds `version: 1.0.0`, a facet from the folder prefix, related skills from
+links to other skill folders and external files from links to other repository files. Review it:
+replace generic `Linked from ...` reasons and move genuinely mandatory skills to `required`.
+
+`Test-SkillLibrary.ps1` runs in CI. It fails when a skill has no sidecar, sidecars are invalid,
+required skills form a cycle, a skill or its external files changed since its last `<id>/X.Y.Z` tag
+without a version bump, or a required pin differs from the required skill's version. Each error
+names the script that fixes it.
 
 `Set-SkillVersion.ps1` bumps from the last released tag, so rerunning it is safe. It updates the pins
 in skills that require the bumped skill and gives released dependents a patch bump, recursively.
@@ -63,8 +75,9 @@ A build packages committed files only and refuses uncommitted changes. The ZIP c
 skill and its external files still resolve. Rebuilds are byte-identical.
 
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
-as GitHub Release `<id>/X.Y.Z`, then `catalog.json` on the rolling `skills-catalog` release is
-regenerated from all releases. Published releases are never changed.
+as GitHub Release `<id>/X.Y.Z`, which also creates that tag on the merge commit. Then `catalog.json`
+on the rolling `skills-catalog` release is regenerated from all releases. Published releases are
+never changed. Versions live only in sidecars and tags; `package.json` holds test scripts.
 
 The `skill` bootstrap extension lives in [src/skill-library-extension](../../../src/skill-library-extension/).
 It is versioned in its `extension.yml` and released as `skill/X.Y.Z` the same way.
@@ -86,6 +99,9 @@ Then use `/speckit-skill-library search architecture`, `/speckit-skill-library i
 `/speckit-skill-library load docs-adr`. The command plans the install, asks which related skills to
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each
 archive's SHA-256 from the catalog. Installed skills are read from `.specify/extensions/<id>/`.
+
+Every script in `scripts/` has a matching `tests/<Name>.Tests.ps1`; the consumer helper's tests live
+there too so they are not packaged into the bootstrap. A repository test enforces the pairing.
 
 ## Maintaining This Skill
 

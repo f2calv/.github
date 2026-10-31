@@ -35,7 +35,7 @@ $Errors = @(Test-SkillComponent -RepoRoot $RepoRoot -Component $Components)
 if (-not $Errors.Count) { $Errors = @(Test-SkillVersion -RepoRoot $RepoRoot -Component $Components) }
 if ($Errors.Count) { throw "Skill library checks failed:`n$($Errors -join "`n")" }
 
-$Sha = (Invoke-SkillTool git @('rev-parse', 'HEAD') -WorkingDirectory $RepoRoot)[0]
+$Sha = @(Invoke-SkillTool git @('rev-parse', 'HEAD') -WorkingDirectory $RepoRoot)[0]
 $Pending = @($Components | Where-Object {
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $_.Id
         $null -eq $Released -or (ConvertTo-SkillVersion $_.Version) -gt $Released
@@ -70,7 +70,7 @@ $Records = foreach ($Tag in Invoke-Gh @('release', 'list', '--limit', '1000', '-
     $Download = Join-Path $OutputDirectory "catalog/$Id/$Version"
     Invoke-Gh @('release', 'download', $Tag, '--pattern', '*.zip', '--dir', $Download, '--clobber') | Out-Null
     $Zip = Get-ChildItem -LiteralPath $Download -Filter '*.zip' | Select-Object -First 1
-    $Url = (Invoke-Gh @('release', 'view', $Tag, '--json', 'assets', '--jq', ".assets[] | select(.name == `"$($Zip.Name)`") | .url"))[0]
+    $Url = @(Invoke-Gh @('release', 'view', $Tag, '--json', 'assets', '--jq', ".assets[] | select(.name == `"$($Zip.Name)`") | .url"))[0]
     [pscustomobject]@{
         Id = $Id; Version = $Version; Url = $Url; Sha256 = (Get-FileHash -LiteralPath $Zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         Required = @($Metadata['required'] ?? @()); Related = @($Metadata['related'] ?? @()); Description = $Description; Facets = @($Metadata['facets'] ?? @())
