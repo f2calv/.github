@@ -148,6 +148,11 @@ Compare explicit shutdown timeouts and draining behavior across otherwise simila
 hosts. A missing timeout is an audit question, not automatically a defect: confirm configuration,
 worker drain needs, orchestrator grace period and existing defaults before aligning it.
 
+CasCap hosts use `CasCap:HostLifecycleConfig:ShutdownTimeoutMs` through
+`AddApplicationHostLifecycle`. Keep Kubernetes `terminationGracePeriodSeconds` longer than the host
+timeout, including any `PreStop` duration and a safety margin. Finite Jobs do not use the daemon
+shutdown budget; bound them through Job deadlines and retry policy.
+
 ### Failure and Process Results
 
 Trace effective process behavior rather than trusting a declared `Task<int>`. A host that wraps and

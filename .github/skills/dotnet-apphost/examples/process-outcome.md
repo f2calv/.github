@@ -6,7 +6,10 @@ flush.
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddApplicationExitState();
+builder.Configuration.AddStandardConfiguration(
+    builder.Environment.EnvironmentName,
+    typeof(Program).Assembly);
+builder.Services.AddApplicationHostLifecycle(builder.Configuration);
 builder.Services.AddFeatureFlagService(enabledFeatures);
 
 try
