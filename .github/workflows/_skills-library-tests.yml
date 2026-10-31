@@ -63,7 +63,7 @@ jobs:
           SKILL_LIBRARY_VERSION_EVIDENCE: ${{ runner.temp }}/skill-version-demo
         run: npm run test:ps -- -Shard "$TEST_SHARD"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ always() && matrix.shard == 'version-preparation' }}
         with:
           name: skill-version-rehearsal
