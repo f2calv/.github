@@ -60,7 +60,14 @@ function New-SkillComponent {
 function Get-SkillComponent {
     <# Returns every skill with a sidecar plus the bootstrap extension. #>
     param([Parameter(Mandatory)][string]$RepoRoot)
-    $Components = foreach ($Sidecar in Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/skill.metadata.yaml') -File | Sort-Object FullName) {
+    $Sidecars = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/skill.metadata.yaml') -File | Sort-Object FullName)
+    if ($Sidecars.Count) {
+        Push-Location -LiteralPath $RepoRoot
+        try { $Ignored = @($Sidecars.FullName | & git check-ignore --stdin) }
+        finally { Pop-Location }
+        $Sidecars = @($Sidecars | Where-Object { $_.FullName -notin $Ignored })
+    }
+    $Components = foreach ($Sidecar in $Sidecars) {
         $Id = $Sidecar.Directory.Name
         $Front = Get-SkillFrontmatter ([IO.File]::ReadAllText((Join-Path $Sidecar.DirectoryName 'SKILL.md')))
         New-SkillComponent -Id $Id -Kind 'skill' -Path ".github/skills/$Id" -ManifestPath ".github/skills/$Id/skill.metadata.yaml" `
