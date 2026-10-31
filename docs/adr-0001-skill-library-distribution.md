@@ -74,11 +74,15 @@ installation that Spec Kit already provides. It never published a release. Git h
 
 ## Handover
 
+Update this section at the end of every session, on any environment, and remove entries once
+they no longer apply. The checklist above is the source of truth for what remains open.
+
 **State on 2026-10-31.** [PR #37](https://github.com/f2calv/.github/pull/37) merged the slim
 workflow and published 47 releases at `1.0.0`. Its catalog step failed because `gh release create`
 makes tags on GitHub only and the job read them before fetching.
 [PR #38](https://github.com/f2calv/.github/pull/38) fixed that, and its merge published
 `skill-library/1.0.1` and the `skills-catalog` release listing 47 skills with version history.
+[PR #39](https://github.com/f2calv/.github/pull/39) recorded that state here (tag `1.6.2`).
 From the Dev Container, a fresh `specify init --script ps` consumer installed `skill` from the
 published catalog, then `install docs-adr -Related github-issues-and-pull-requests` installed
 `repository-privacy`, `docs-adr` and the related skill from GitHub Releases; `list` and `load` worked.
@@ -88,38 +92,49 @@ published catalog, then `install docs-adr -Related github-issues-and-pull-reques
 `specify init --script ps` copies into `.specify/scripts/powershell/`. The `specify` CLI itself,
 which provides `init` and `extension add`, is Python only, and its releases include no
 standalone executable. Where `uv` is unavailable, install it with pip into a virtual environment
-using the host's configured package index:
-`python -m venv ~/.venvs/specify` then `~/.venvs/specify/Scripts/python -m pip install specify-cli==1.2.3`.
-Work moved back to the Dev Container, so the Windows run is still open.
+using the host's configured package index: `python -m venv ~/.venvs/specify`, then
+`~/.venvs/specify/Scripts/python -m pip install specify-cli==1.2.3` on Windows
+(`bin/python` on Linux or macOS). The end-to-end consumer run on Windows has not started.
 
-**Next session (Dev Container first, then a Windows host).** In the Dev Container, release a change
-to a required skill to observe the pin cascade (see Known gaps). On a Windows host, install
-PowerShell 7.4+, Git, GitHub CLI, `yq` v4 (`winget install MikeFarah.yq`) and the Specify CLI
+**Next session, part 1: pin cascade (Dev Container).** `repository-privacy` is the only skill that
+`docs-adr` requires; `terraform-infrastructure` lists it as related only.
+
+1. Make a real change to `repository-privacy`, then run `git fetch --tags` and
+   `./.github/skills/skill-library/scripts/Set-SkillVersion.ps1 -Id repository-privacy`.
+2. Expect `repository-privacy` at `1.0.1`, and `docs-adr` patch-bumped past its latest tag with its
+   required pin updated. `terraform-infrastructure` must not change. Run `Test-SkillLibrary.ps1`.
+3. Merge, then confirm both new releases and their versions in the `skills-catalog` catalog. Tick
+   the pin-cascade box.
+
+**Next session, part 2: Windows consumer.** Install PowerShell 7.4+, Git, GitHub CLI, `yq` v4
+(`winget install MikeFarah.yq`) and the Specify CLI
 (`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3`, or the pip
 route above). Then:
 
 1. Confirm the catalog resolves:
    `https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json`.
-2. In a fresh demo repository run `specify init --here --integration copilot --script ps`, set
-   `$env:SPECKIT_CATALOG_URL` to that URL, run `specify extension add skill`, then clear the variable.
+2. In a fresh demo repository, follow
+   [Install in a Consumer](../.github/skills/skill-library/SKILL.md#install-in-a-consumer).
 3. Run `/speckit-skill-library install docs-adr` in Copilot Chat: expect `repository-privacy` as
    required and an offer of `github-issues-and-pull-requests`. Then `load docs-adr`, ask a question
    using it, and tick the Windows box.
 
-**Known gaps.** Windows is untested: the consumer helper should work, but the Pester fixtures use
-`chmod` and shebang fake commands, so run the repository tests in CI or Linux. A changed skill that
-others require (for example `repository-privacy`, required by `docs-adr`) has not yet been released,
-so the pin cascade is proven by tests only.
+**Known gaps.** The repository's Pester fixtures use `chmod` and shebang fake commands, so run the
+repository tests in CI or on Linux, not on a Windows host. The consumer helper has no such limit.
 
-**Pending skill changes from another session.** Merge `main` into that branch, then run
-`git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and `Test-SkillLibrary.ps1`
-as described in the [skill guide](../.github/skills/skill-library/SKILL.md#validate-and-bump).
-The PR gate fails with the script to run for any missing sidecar or unbumped change.
+**Skill branches started before PR #37.** Any such branch, on any environment, needs `main` merged
+in, then `git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and
+`Test-SkillLibrary.ps1` as described in the
+[skill guide](../.github/skills/skill-library/SKILL.md#validate-and-bump). The PR gate fails with
+the script to run for any missing sidecar or unbumped change. None remain in the Dev Container clone.
 
-**Open branch.** `f2calv/2026-10-updates11` carries this handover update and three PowerShell lessons
-in `shell.powershell.instructions.md`; it is committed locally but not yet pushed.
+**Unmerged branches.** `f2calv/2026-10-updates11` carries this handover update, three PowerShell
+lessons in `shell.powershell.instructions.md`, and `docs-adr/1.0.1`, which makes ADRs living
+documents with an optional handover section. It is not yet pushed. Push it and open a PR before
+starting the next session's work, then delete this entry.
 
 ## Open Questions
 
 - Should the catalog move to GitHub Pages after the demo?
-- Do upgrades or removal of installed skills need bootstrap support, or is `specify extension` enough?
+- Is `specify extension` enough for upgrading or removing installed skills, or does the bootstrap
+  need its own support? See Consequences for the current scope.
