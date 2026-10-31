@@ -23,6 +23,8 @@ namespace Example.Models;
 
 public sealed record SchedulerConfig
 {
+    public const string ConfigurationSectionName = "Scheduler";
+
     [Required, MinLength(1)]
     public required string Resource { get; init; }
 }
@@ -55,12 +57,12 @@ public sealed partial class SchedulerBgService(
         while (await timer.WaitForNextTickAsync(ownershipToken))
         {
             ownershipToken.ThrowIfCancellationRequested();
-            LogTick(logger);
+            LogTick(logger, nameof(SchedulerBgService));
         }
     }
 
-    [LoggerMessage(LogLevel.Information, "Owned scheduler tick")]
-    private static partial void LogTick(ILogger logger);
+    [LoggerMessage(LogLevel.Debug, "{ClassName} owned scheduler tick")]
+    private static partial void LogTick(ILogger logger, string className);
 }
 ```
 
@@ -75,7 +77,7 @@ After the application's existing `AddCasCapCaching(...)` call:
 
 ```csharp
 builder.Services.AddOptionsWithValidateOnStart<SchedulerConfig>()
-    .BindConfiguration("Scheduler")
+    .BindConfiguration(SchedulerConfig.ConfigurationSectionName)
     .ValidateDataAnnotations();
 builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddHostedService<SchedulerBgService>();

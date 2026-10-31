@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet, configuration, serialization]
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md

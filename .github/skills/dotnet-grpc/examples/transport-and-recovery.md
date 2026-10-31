@@ -8,14 +8,31 @@ existing dependency management. The numerical budgets are an example to agree wi
 server/proxy policies, not mandatory fleet-wide defaults.
 
 ```csharp
+using System.ComponentModel.DataAnnotations;
+
+namespace Example.Models;
+
+public sealed record UpdatesConfig
+{
+    public const string ConfigurationSectionName = "Example:Updates";
+
+    [Required]
+    public required Uri GrpcAddress { get; init; }
+}
+```
+
+```csharp
+using Example.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+builder.Services.AddOptionsWithValidateOnStart<UpdatesConfig>()
+    .BindConfiguration(UpdatesConfig.ConfigurationSectionName)
+    .ValidateDataAnnotations();
 
 builder.Services
-    .AddGrpcClient<Updates.UpdatesClient>(options =>
-    {
-        options.Address = new Uri(builder.Configuration["Updates:GrpcAddress"]
-            ?? throw new InvalidOperationException("Updates gRPC address is required."));
-    })
+    .AddGrpcClient<Updates.UpdatesClient>((serviceProvider, options) =>
+        options.Address = serviceProvider.GetRequiredService<IOptions<UpdatesConfig>>().Value.GrpcAddress)
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
     {
         ConnectTimeout = TimeSpan.FromSeconds(10),
@@ -27,7 +44,8 @@ builder.Services
 ```
 
 No automatic mutation retry, authentication, application heartbeat, durable replay or load balancing
-is added by this fragment. Configure those only from the actual contract. Keepalive applies to the
+is added by this fragment. Configure those only from the actual contract. A missing address fails
+startup through options validation rather than at the first call. Keepalive applies to the
 HTTP/2 connection, not a maximum stream lifetime. A responsive intermediary is not proof that its
 upstream application is processing work.
 
