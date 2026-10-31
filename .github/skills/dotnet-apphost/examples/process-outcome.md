@@ -12,8 +12,9 @@ builder.Services.AddFeatureFlagService(enabledFeatures);
 try
 {
     await using var app = builder.Build();
+    var exitState = app.Services.GetApplicationExitState();
     await app.RunAsync();
-    return app.Services.GetApplicationExitCode();
+    return exitState.ExitCode;
 }
 catch (Exception exception)
     when (exception is not OperationCanceledException and not TaskCanceledException)
@@ -28,9 +29,10 @@ finally
 }
 ```
 
-The feature supervisor marks `ApplicationExitState` before requesting `StopApplication` and
-rethrowing. .NET logs the unhandled `BackgroundService` exception and performs normal host shutdown;
-the AppHost reads the retained failure result after `RunAsync` completes.
+Resolve `ApplicationExitState` before `RunAsync`: host execution can dispose the service provider
+before returning. The feature supervisor marks the retained state before requesting
+`StopApplication` and rethrowing. .NET logs the unhandled `BackgroundService` exception and performs
+normal host shutdown; the AppHost reads the retained failure result afterward.
 
 Background services outside that supervisor must either use an equivalent owning supervisor or mark
 the same state before requesting shutdown. `BackgroundServiceExceptionBehavior.StopHost` alone does
@@ -43,3 +45,18 @@ establish a nonzero process result.
 
 For finite modes such as `--migrate`, return zero only after the operation and cleanup complete.
 Catch and log unexpected failures at the same process boundary and return one.
+
+## Process-Level Validation
+
+Build a credential-free fixture executable with synthetic modes, then launch its built DLL through
+`dotnet` from the test process. Assert the real child `ExitCode`, not only the in-process state:
+
+| Fixture mode | Expected |
+| --- | ---: |
+| Fatal supervised daemon feature | `1` |
+| Requested graceful shutdown | `0` |
+| Finite migration success | `0` |
+| Finite migration failure | `1` |
+
+Redirect stdout/stderr, use a bounded timeout, and kill only the owned child process tree after a
+test timeout. The fixture must not load credentials, contact services or apply a real migration.
