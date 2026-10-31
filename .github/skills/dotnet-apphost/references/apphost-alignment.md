@@ -171,6 +171,11 @@ Inventory direct `AddHostedService` registrations separately. A service outside 
 supervisor must mark the process outcome itself or use another owner that does; `StopHost` alone can
 still produce a successful AppHost result.
 
+Prefer `IBgFeature` for a long-running application worker when its registration is owned by an
+enabled feature or role. Conditional registration can use `IBgFeature.AlwaysEnabled` when the
+reusable worker should not depend on application feature-name constants. Keep startup initializers
+as direct `IHostedService` implementations so their failures prevent startup.
+
 Exact nonzero values are rarely useful for daemons; use one unless an external process contract
 requires more. Jobs depend on zero versus nonzero for completion and retry behavior.
 
