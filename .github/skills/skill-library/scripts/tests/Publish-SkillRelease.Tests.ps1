@@ -49,25 +49,36 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         Invoke-FixtureGit $Repo push -q origin main
         $env:FAKE_GH_STATE = Join-Path $TestDrive ([guid]::NewGuid())
         [void][IO.Directory]::CreateDirectory($env:FAKE_GH_STATE)
+        $Site = Join-Path $TestDrive ([guid]::NewGuid())
         function Get-Calls { @(Get-Content -LiteralPath (Join-Path $env:FAKE_GH_STATE 'calls.log') -ErrorAction SilentlyContinue) }
-        function Get-Catalog { Get-Content -Raw (Join-Path $env:FAKE_GH_STATE 'releases/skills-catalog/catalog.json') | ConvertFrom-Json -AsHashtable }
-        function Invoke-Publish([switch]$DryRun) { & $Script -RepoRoot $Repo -Repository 'owner/example' -OutputDirectory (Join-Path $TestDrive ([guid]::NewGuid())) -DryRun:$DryRun 6> $null }
+        function Get-Catalog { Get-Content -Raw (Join-Path $Site 'catalog.json') | ConvertFrom-Json -AsHashtable }
+        function Invoke-Publish([switch]$DryRun) { & $Script -RepoRoot $Repo -Repository 'owner/example' -OutputDirectory (Join-Path $TestDrive ([guid]::NewGuid())) -SiteDirectory $Site -DryRun:$DryRun 6> $null }
     }
 
     It 'reports pending releases without calling GitHub in a dry run' {
         Invoke-Publish -DryRun
         Get-Calls | Should -BeNullOrEmpty
+        $Site | Should -Not -Exist
     }
 
-    It 'publishes every unreleased skill and creates the catalog release' {
+    It 'publishes every unreleased skill and writes the catalog site' {
         Invoke-Publish
         $Calls = Get-Calls
         @($Calls | Where-Object { $_ -like 'release create alpha/1.0.0 *--latest=false' }).Count | Should -Be 1
-        @($Calls | Where-Object { $_ -like 'release create skills-catalog *' }).Count | Should -Be 1
+        @($Calls | Where-Object { $_ -like 'release create skills-catalog *' }).Count | Should -Be 0
         $Catalog = Get-Catalog
         $Catalog.extensions.Keys | Sort-Object | Should -Be @('alpha', 'beta', 'gamma')
         $Catalog.extensions['alpha'].download_url | Should -Be 'https://example.com/download/alpha/1.0.0/alpha-1.0.0.zip'
         $Catalog.extensions['alpha'].skill_library.required[0].id | Should -Be 'beta'
+        $Page = Get-Content -Raw (Join-Path $Site 'index.html')
+        $Page | Should -BeLike '*<code>alpha</code>*beta 1.0.0*'
+        $Page | Should -BeLike '*href="catalog.json"*'
+    }
+
+    It 'writes the site directory to the step output' {
+        $env:GITHUB_OUTPUT = Join-Path $TestDrive ([guid]::NewGuid())
+        try { Invoke-Publish; Get-Content $env:GITHUB_OUTPUT | Should -Be "site-directory=$Site" }
+        finally { Remove-Item Env:GITHUB_OUTPUT }
     }
 
     It 'publishes only bumped skills next time and keeps earlier versions in the catalog' {
@@ -77,8 +88,7 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         Invoke-FixtureGit $Repo commit -q -am bump
         Invoke-Publish
         $Created = @(Get-Calls | Where-Object { $_ -like 'release create *' } | ForEach-Object { ($_ -split ' ')[2] })
-        $Created | Should -Be @('alpha/1.0.0', 'beta/1.0.0', 'gamma/1.0.0', 'skills-catalog', 'alpha/1.0.1', 'beta/1.1.0')
-        @(Get-Calls | Where-Object { $_ -like 'release upload skills-catalog *--clobber' }).Count | Should -Be 1
+        $Created | Should -Be @('alpha/1.0.0', 'beta/1.0.0', 'gamma/1.0.0', 'alpha/1.0.1', 'beta/1.1.0')
         $Catalog = Get-Catalog
         $Catalog.extensions['beta'].version | Should -Be '1.1.0'
         $Catalog.extensions['alpha'].skill_library.required[0].version | Should -Be '1.1.0'

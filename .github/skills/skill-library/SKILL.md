@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Version, package, release and install skills as Spec Kit extensions: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, GitHub Releases with a rolling catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, or installing skills into a Spec Kit repository.'
+description: 'Version, package, release and install skills as Spec Kit extensions: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, or installing skills into a Spec Kit repository.'
 ---
 
 # Skill Library
@@ -79,8 +79,16 @@ skill and its external files still resolve. Rebuilds are byte-identical.
 
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
 as GitHub Release `<id>/X.Y.Z`, which also creates that tag on the merge commit. Then `catalog.json`
-on the rolling `skills-catalog` release is regenerated from all releases. Published releases are
+and an `index.html` listing every skill are regenerated from all releases and deployed to GitHub
+Pages at <https://f2calv.github.io/.github/>. The ZIPs stay on the releases. Published releases are
 never changed. Versions live only in sidecars and tags; `package.json` holds test scripts.
+
+Pages needs a one-time repository setting with the GitHub Actions source; the repository baseline
+does not manage it because only this repository publishes a site:
+
+```powershell
+gh api -X POST repos/f2calv/.github/pages -f build_type=workflow
+```
 
 The `skill` bootstrap extension lives in [src/skill-library-extension](../../../src/skill-library-extension/).
 It is versioned in its `extension.yml` and released as `skill/X.Y.Z` the same way.
@@ -93,7 +101,7 @@ directory on that port, and set `SPECKIT_CATALOG_URL` and `SKILL_LIBRARY_CATALOG
 
 ```powershell
 specify init --here --integration copilot --script ps
-$env:SPECKIT_CATALOG_URL = 'https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json'
+$env:SPECKIT_CATALOG_URL = 'https://f2calv.github.io/.github/catalog.json'
 specify extension add skill
 Remove-Item Env:SPECKIT_CATALOG_URL
 ```
@@ -102,6 +110,9 @@ Then use `/speckit-skill-library search architecture`, `/speckit-skill-library i
 `/speckit-skill-library load docs-adr`. The command plans the install, asks which related skills to
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each
 archive's SHA-256 from the catalog. Installed skills are read from `.specify/extensions/<id>/`.
+`/speckit-skill-library upgrade-all` moves every installed skill to its latest catalog version with
+`specify extension add --force`, required skills first; it does not upgrade the `skill` bootstrap,
+which `specify extension add skill --force` replaces.
 
 Every script in `scripts/` has a matching `tests/<Name>.Tests.ps1`; the consumer helper's tests live
 there too so they are not packaged into the bootstrap. A repository test enforces the pairing.
@@ -111,5 +122,6 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`
   format, `SPECKIT_CATALOG_URL` precedence and the catalog cache file naming used by the helper.
 - `yq` major versions: recheck `-i` comment preservation and YAML/JSON conversion.
-- GitHub release asset URLs for tags containing `/`.
-- Move the catalog to GitHub Pages if the rolling release becomes awkward.
+- GitHub release asset URLs for tags containing `/`, and the Pages URL for a dot-named repository.
+- `actions/upload-pages-artifact` and `actions/deploy-pages` major versions and permissions.
+- `specify extension add --force` semantics, which `upgrade-all` relies on.

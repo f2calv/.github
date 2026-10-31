@@ -132,4 +132,12 @@ Describe 'Catalog' -Tag 'Unit' {
         $Catalog.extensions['alpha'].skill_library.required[0].id | Should -Be 'beta'
         $Catalog.extensions['beta'].Contains('releases') | Should -BeFalse
     }
+
+    It 'renders an HTML page with encoded catalog text' {
+        $Release = @([pscustomobject]@{ Id = 'alpha'; Version = '1.0.0'; Url = 'https://example.com/a.zip'; Sha256 = ('a' * 64)
+                Description = 'Uses <script> & more.'; Facets = @(); Required = @(); Related = @() })
+        $Page = New-SkillCatalogPage -Catalog (New-SkillCatalog -Release $Release)
+        $Page | Should -BeLike '*Uses &lt;script&gt; &amp; more.*'
+        $Page | Should -Not -BeLike '*<script>*'
+    }
 }
