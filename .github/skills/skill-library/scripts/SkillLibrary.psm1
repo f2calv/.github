@@ -270,7 +270,7 @@ function New-SkillCatalog {
     $Extensions = [ordered]@{}
     foreach ($Group in $Release | Group-Object Id | Sort-Object Name) {
         $Ordered = @($Group.Group | Sort-Object { ConvertTo-SkillVersion $_.Version } -Descending)
-        $Records = foreach ($Item in $Ordered) {
+        $Records = @(foreach ($Item in $Ordered) {
             [ordered]@{
                 download_url  = $Item.Url
                 sha256        = $Item.Sha256
@@ -280,7 +280,7 @@ function New-SkillCatalog {
                     related  = @($Item.Related | ForEach-Object { [ordered]@{ id = $_.id; reason = $_.reason } })
                 }
             }
-        }
+        })
         $Current = $Ordered[0]
         $Entry = [ordered]@{ name = $Current.Id; description = $Current.Description; version = $Current.Version; tags = @($Current.Facets) }
         foreach ($Key in $Records[0].Keys) { $Entry[$Key] = $Records[0][$Key] }
