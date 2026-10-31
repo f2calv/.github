@@ -58,6 +58,30 @@ explicitly and obtain a decision before further migration work.
   non-routable placeholder through the approved configuration path; never borrow a real endpoint
   or print credentials. Do not assume every EF command is offline.
 
+## Kubernetes Migration Ownership
+
+For applications deployed with multiple Kubernetes replicas, use one externally orchestrated,
+finite migration Job:
+
+1. Run the same immutable application image as the daemon workloads.
+2. Select a dedicated `--migrate` mode before normal host role composition.
+3. Register only configuration, the required provider/context factory and the application migrator.
+4. Create an async DI scope, call `Database.MigrateAsync` with cancellation, dispose and exit.
+5. Do not start HTTP listeners, background workers, subscriptions, schedulers or ordinary
+   application initialization.
+6. Require the relational provider and required connection configuration; an in-memory/no-op
+   migration must fail rather than report success.
+7. Make the migration role exclusive with daemon roles.
+8. Disable application `MigrateOnStartup` behavior for ordinary pods.
+
+Render this mode as one Kubernetes Job with no Service or probes. An Argo CD PreSync hook or
+equivalent deployment gate should complete successfully before new daemon replicas roll out.
+Do not use a migration init container on every replica: replica scaling and rollout overlap can
+start concurrent migration owners, and init-container results are coupled to each pod rather than
+one visible release operation.
+
+Retain migration history in EF and immutable application releases. A failed Job blocks rollout;
+application rollback and schema rollback remain separate decisions.
 ### Command Selection
 
 These are CLI shapes, not permission to execute them. Supply the repository's actual
