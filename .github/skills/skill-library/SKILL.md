@@ -63,8 +63,8 @@ A skill gets at most one bump per branch, however many times it changes before t
 merges: `1.0.0` becomes `1.0.1`, not `1.0.3`. `Set-SkillVersion.ps1` bumps from the last released
 tag, so rerunning it during a long session is safe and never stacks bumps. It updates the pins
 in skills that require the bumped skill and gives released dependents a patch bump, recursively.
-Unreleased skills keep their authored version unless named. Use `major` for breaking guidance
-changes, `minor` for new capability and `patch` for fixes.
+Unreleased skills are never bumped: their first release uses the authored version. Use `major` for
+breaking guidance changes, `minor` for new capability and `patch` for fixes.
 
 ## Build and Release
 
