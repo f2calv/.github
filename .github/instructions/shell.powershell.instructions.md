@@ -22,6 +22,9 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - **Pin the number; never use `Latest`.** `Latest` is a moving target that silently adopts new rules when the PowerShell version changes, so a script that passes today can fail on a runner with a newer build. In PowerShell 7.6 the two are behaviourally identical, which is precisely why pinning costs nothing.
 - Versions above `3.0` are accepted by the parameter but define no additional checks. `3.0` is the strictest meaningful level.
 - Strict mode makes property access on loosely shaped JSON throw. Guard it with `ContainsKey()` on a hashtable, or `PSObject.Properties.Name -contains` on an object, rather than relaxing the mode.
+- Do not use member-access enumeration (`$items.Key`) over a collection of hashtables. Under strict
+  mode, older PowerShell builds on CI runners throw where 7.6 passes locally. Enumerate explicitly:
+  `$items | ForEach-Object { $_['Key'] }`.
 
 ## Error Handling
 
@@ -36,6 +39,8 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - Resolve one native executable with `Get-Command -CommandType Application -TotalCount 1`.
   Multiple matching PATH entries can otherwise turn `.Source` into an array instead of a process filename.
 - **Wrap in `@()` whenever a collection leaves an `if`, `switch`, or `foreach`.** A single-element array collapses to a bare object on assignment, which silently serialises as an object instead of an array and is rejected by REST APIs as an empty collection.
+- Wrap native command output in `@()` before indexing or counting it. One line of output is a bare
+  string, so `[0]` returns its first character and `.Count` is misleading.
 - Type a parameter that must be a collection as `[array]` or `[object[]]`.
 - Do not assume a REST response shape. Handle both a bare array and a `count`/`value` envelope.
 - `ConvertFrom-Json` can materialize ISO timestamps as `DateTime`. Convert typed timestamps directly
@@ -63,6 +68,8 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
   Windows and Unix; use literal separators only when testing that separator's handling.
 - Mock PowerShell commands with Pester. Wrap native executables behind functions or place synthetic
   executables earlier on `PATH` so tests do not contact external services or mutate real state.
+- Write a pass-through wrapper for a native executable without `param()` or `[CmdletBinding()]`,
+  forwarding `$args`. Otherwise native flags such as `git add -A` bind as PowerShell parameters.
 - Provide an `Invoke-Tests.ps1` entry point for a script package or skill with multiple tests. Pin its
   Pester import to 5.7.1 and return a nonzero exit code when tests fail.
 
