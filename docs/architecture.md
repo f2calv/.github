@@ -78,15 +78,16 @@ flowchart LR
     merge -- yes --> publish[Publish-SkillRelease.ps1]
     publish --> zip[Build deterministic ZIP<br/>per untagged version]
     zip --> release[(GitHub Release<br/>id/X.Y.Z)]
-    release --> catalog[(skills-catalog release<br/>catalog.json)]
+    release --> catalog[(GitHub Pages<br/>catalog.json and index.html)]
 
     classDef ci fill:#dcfce7,stroke:#15803d,color:#000
     class check,publish,zip ci
 ```
 
 On `main`, CI publishes each component whose version has no tag yet. Publishing the release creates
-the tag on the merge commit. The rolling `skills-catalog` release then receives a regenerated
-`catalog.json` listing every published version with its download URL and SHA-256 digest. Published
+the tag on the merge commit. CI then regenerates `catalog.json`, listing every published version with
+its download URL and SHA-256 digest, plus a browsable `index.html`, and deploys both to
+[GitHub Pages](https://f2calv.github.io/.github/). The ZIPs stay on the releases. Published
 releases are never changed or moved.
 
 ## Packaging
@@ -120,7 +121,7 @@ sequenceDiagram
     actor User
     participant Chat as Copilot Chat
     participant Cmd as /speckit-skill-library
-    participant Catalog as skills-catalog
+    participant Catalog as GitHub Pages catalog
     participant Specify as specify CLI
     participant Releases as GitHub Releases
 
@@ -138,6 +139,9 @@ sequenceDiagram
     Cmd->>User: list installed skills for load
 ```
 
+`/speckit-skill-library upgrade-all` follows the same path for every installed skill whose catalog
+version is newer, replacing it with `specify extension add --force`.
+
 ## Native and Versioned Routes Compared
 
 | Aspect | Native Copilot route | Spec Kit route |
@@ -145,5 +149,5 @@ sequenceDiagram
 | Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` |
 | Version | Whatever the clone has checked out | Exact published versions |
 | Selection | Every instruction and skill | Chosen skills plus their required closure |
-| Updates | `git pull` | Install a newer published version |
-| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Releases |
+| Updates | `git pull` | `/speckit-skill-library upgrade-all` |
+| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases |

@@ -32,7 +32,7 @@ flowchart LR
 
     subgraph speckit [Spec Kit route: optional]
         rel[(GitHub Releases<br/>id/X.Y.Z)]
-        cat[(skills-catalog)]
+        cat[(GitHub Pages<br/>catalog)]
         cmd(["/speckit-skill-library"])
     end
 
@@ -144,7 +144,13 @@ all under their original repository paths. See [Packaging](docs/architecture.md#
 ### When are new versions published?
 
 When a pull request merges to `main`, CI publishes a GitHub Release for every skill version that has
-no tag yet and refreshes the catalog. Published releases never change.
+no tag yet and redeploys the [catalog on GitHub Pages](https://f2calv.github.io/.github/). Published
+releases never change.
+
+### How do I upgrade installed skills?
+
+Run `/speckit-skill-library upgrade-all`. It moves every installed skill to its latest version,
+required skills first, and stops without changes if a pin cannot be met.
 
 ### Can I keep private or local-only skills?
 
@@ -158,7 +164,8 @@ covers the options.
 | --- | --- |
 | [How the repository works](docs/architecture.md) | Structure, versioning, packaging and installation, with diagrams |
 | [Skill catalogue](docs/skills.md) | Every skill, grouped by area |
-| [Versioned skills for Spec Kit](docs/spec-kit.md) | Optional versioned installation |
+| [Versioned skills for Spec Kit](docs/spec-kit.md) | Optional versioned installation and upgrades |
+| [End-to-end demos](docs/demo.md) | Scripted walkthroughs from Copilot use to publishing and upgrading skills |
 | [Repository management](docs/repository-management.md) | Baseline audits, repository creation and GitHub community defaults |
 | [Development](docs/development.md) | Tests and validation for changes to this repository |
 | [EditorConfig generation](docs/editorconfig.md) | Shared formatting and analyzer fragments and their generator |
