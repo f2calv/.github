@@ -132,6 +132,27 @@ function Get-SkillVersionPath {
     return @($Component.Path) + @($Component.ExternalFiles)
 }
 
+function Test-SkillChanged {
+    <# True when the component's files differ from the given release tag, including uncommitted edits. #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object]$Component, [Parameter(Mandatory)][version]$Released)
+    Push-Location -LiteralPath $RepoRoot
+    try { & git diff --quiet "$($Component.Id)/$Released" -- @(Get-SkillVersionPath $Component); return $LASTEXITCODE -ne 0 }
+    finally { Pop-Location }
+}
+
+function Set-SkillMetadataValue {
+    <# Edits one scalar in place with yq, preserving comments and layout. #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object]$Component, [Parameter(Mandatory)][string]$Version, [string]$DependencyId)
+    $Path = Join-Path $RepoRoot $Component.ManifestPath
+    $Expression = if ($DependencyId) { '(.required[] | select(.id == strenv(SKILL_DEPENDENCY))).version = strenv(SKILL_VERSION)' }
+    elseif ($Component.Kind -eq 'bootstrap') { '.extension.version = strenv(SKILL_VERSION)' }
+    else { '.version = strenv(SKILL_VERSION)' }
+    $env:SKILL_VERSION = $Version
+    $env:SKILL_DEPENDENCY = $DependencyId
+    try { & yq -i $Expression $Path; if ($LASTEXITCODE -ne 0) { throw "Could not update $Path." } }
+    finally { Remove-Item Env:SKILL_VERSION, Env:SKILL_DEPENDENCY -ErrorAction SilentlyContinue }
+}
+
 function Test-SkillVersion {
     <# Returns errors for skills changed since their last release without a bump, and for stale required pins. #>
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object[]]$Component)
@@ -143,11 +164,8 @@ function Test-SkillVersion {
         if ($null -ne $Released) {
             $Current = ConvertTo-SkillVersion $Item.Version
             if ($Current -lt $Released) { $Errors.Add("$($Item.Id): version $Current is lower than released $Released.") }
-            elseif ($Current -eq $Released) {
-                Push-Location -LiteralPath $RepoRoot
-                try { & git diff --quiet "$($Item.Id)/$Released" -- @(Get-SkillVersionPath $Item); $Changed = $LASTEXITCODE -ne 0 }
-                finally { Pop-Location }
-                if ($Changed) { $Errors.Add("$($Item.Id): changed since $($Item.Id)/$Released; run Set-SkillVersion.ps1 -Id $($Item.Id).") }
+            elseif ($Current -eq $Released -and (Test-SkillChanged -RepoRoot $RepoRoot -Component $Item -Released $Released)) {
+                $Errors.Add("$($Item.Id): changed since $($Item.Id)/$Released; run Set-SkillVersion.ps1 -Id $($Item.Id).")
             }
         }
         foreach ($Edge in $Item.Required) {
@@ -269,4 +287,5 @@ function New-SkillCatalog {
 }
 
 Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
-    Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillVersion, Get-SkillPackageFile, New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog
+    Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
+    New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog
