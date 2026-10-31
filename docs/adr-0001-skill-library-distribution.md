@@ -60,8 +60,8 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Delete the first implementation, its tests, delivery workflows and Spec Kit dogfooding folders.
 - [x] Add a sidecar to every skill and validate all sidecars with `yq` and PowerShell.
 - [x] Build a deterministic extension ZIP per skill with external files and `LICENSE`.
-- [ ] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
-- [ ] Build the `skill` bootstrap extension with `/speckit-skill-library`.
+- [x] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
+- [x] Build the `skill` bootstrap extension with `/speckit-skill-library`.
 - [ ] Publish missing `<id>/X.Y.Z` releases and the rolling catalog from `main`.
 - [ ] Cover validation, build, version checks, bump cascade and plan resolution with Pester.
 - [ ] Rewrite the `skill-library` skill and README for the new workflow.
