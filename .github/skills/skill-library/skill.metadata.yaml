@@ -1,8 +1,5 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
 version: 1.0.0
 facets: [authoring, metadata, spec-kit]
-related:
-  - id: dotnet-release-train
-    reason: Linked from SKILL.md.
-  - id: patterns-modular-monolith
-    reason: Linked from SKILL.md.
+externalFiles:
+  - docs/adr-0001-skill-library-distribution.md

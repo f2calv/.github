@@ -63,8 +63,8 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
 - [x] Build the `skill` bootstrap extension with `/speckit-skill-library`.
 - [ ] Publish missing `<id>/X.Y.Z` releases and the rolling catalog from `main`.
-- [ ] Cover validation, build, version checks, bump cascade and plan resolution with Pester.
-- [ ] Rewrite the `skill-library` skill and README for the new workflow.
+- [x] Cover validation, build, version checks, bump cascade and plan resolution with Pester.
+- [x] Rewrite the `skill-library` skill and README for the new workflow.
 - [ ] Install and load skills with related selection in a fresh `specify init --script ps` consumer.
 - [ ] Publish a real follow-on version of one skill and its required dependents.
 
