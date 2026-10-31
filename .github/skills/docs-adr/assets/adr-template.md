@@ -65,6 +65,7 @@ Do not present an open question as an already accepted choice.>
 | <Related/superseded ADR, if any> | <Decision relationship> |
 ```
 
-When the decision changes after acceptance, create a new record with a clear supersedes/superseded-by
-relationship rather than replacing the historical rationale. Add decision-owner/acceptance dates
-only when known. Keep issue open/closed state separate from ADR status.
+The record stays current: when the decision changes, update it in place and refresh the date. Create a
+superseding record only when the subject itself changes. Add an optional `## Handover` section after
+Validation and Delivery for work that spans sessions or environments. Add decision-owner/acceptance
+dates only when known. Keep issue open/closed state separate from ADR status.
