@@ -84,6 +84,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Modular monolith](.github/skills/patterns-modular-monolith/SKILL.md) | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
 | [Ports and adapters](.github/skills/patterns-ports-and-adapters/SKILL.md) | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
 | [.NET dependency injection](.github/skills/dotnet-dependency-injection/SKILL.md) | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
+| [.NET polymorphic configuration](.github/skills/dotnet-polymorphic-configuration/SKILL.md) | Discriminator-based DTO graphs, merged configuration bridges and derived-type startup validation |
 | [.NET background pipelines](.github/skills/dotnet-background-pipelines/SKILL.md) | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
 | [.NET HTTP integrations](.github/skills/dotnet-http-integrations/SKILL.md) | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
 | [.NET CLI](.github/skills/dotnet-cli/SKILL.md) | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |

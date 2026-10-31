@@ -55,6 +55,11 @@ An unpersisted item removed from a channel is lost after process failure unless 
 can reconstruct it. Do not promise exactly-once processing; use durable delivery plus idempotent
 effects when necessary.
 
+Classify interrupted reservations from durable intent, not only a process-local "submitted" flag.
+A database commit can succeed while its acknowledgement is lost or cancelled. Before requeueing,
+read the authoritative reservation; an unresolved external-mutation intent must not become an
+automatic replay merely because the caller never observed successful reservation.
+
 ## Retry and Progress
 
 Bound attempts, delay and total processing time. Retrying writes into the same full channel from

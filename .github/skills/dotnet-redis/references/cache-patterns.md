@@ -25,6 +25,9 @@ The default. Use it unless a measured problem rules it out.
   token yet; capture the caller's token in the closure.
 - A loader that returns `null` is not cached. Return an explicit empty value with a short absolute
   expiry when "not found" is common and expensive (negative caching).
+- A fixed absolute deadline can elapse while the loader runs. Test the elapsed-deadline store path
+  and handle it explicitly without renewing stale data; a logical-clock expiry test alone does not
+  prove that the shared cache accepts or rejects a physically expired deadline.
 
 ## Write Ordering
 

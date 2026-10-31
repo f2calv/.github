@@ -1,0 +1,14 @@
+$schema: ../skill-library/skill-metadata.schema.json
+id: dotnet-polymorphic-configuration
+version: '1.0.0'
+facets:
+  - dotnet
+  - configuration
+  - serialization
+externalFiles:
+  - path: .github/instructions/dotnet.configuration.instructions.md
+    kind: instruction
+    loadingPurpose: Configuration providers, options validation and snapshot policy.
+  - path: .github/instructions/dotnet.csharp.instructions.md
+    kind: instruction
+    loadingPurpose: C# DTO, error handling and implementation conventions.
