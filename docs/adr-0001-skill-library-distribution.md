@@ -63,21 +63,25 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
 - [x] Build the `skill` bootstrap extension with `/speckit-skill-library`.
 - [x] Publish missing `<id>/X.Y.Z` releases from `main`: 46 skills and `skill` at `1.0.0` (PR #37).
-- [ ] Publish the rolling `skills-catalog` release; the first run failed reading remote-only tags.
+- [x] Publish the rolling `skills-catalog` release (PR #38, after fetching remote-only tags).
 - [x] Cover validation, build, version checks, bump cascade and plan resolution with Pester.
 - [x] Rewrite the `skill-library` skill and README for the new workflow.
 - [x] Install and load skills with related selection in a fresh consumer from a local catalog.
-- [ ] Install and load skills from the published catalog in a fresh `specify init --script ps` consumer.
-- [ ] Publish a real follow-on version of one skill and its required dependents.
+- [x] Install and load skills from the published catalog in a fresh Linux consumer.
+- [ ] Repeat the published-catalog install and editor `load` on a Windows host.
+- [x] Publish a real follow-on version: `skill-library/1.0.1` after the PR gate flagged its change.
+- [ ] Publish a follow-on version of a skill with required dependents and observe the pin cascade.
 
 ## Handover
 
 **State on 2026-10-31.** [PR #37](https://github.com/f2calv/.github/pull/37) merged the slim
 workflow and published 47 releases at `1.0.0`. Its catalog step failed because `gh release create`
-makes tags on GitHub only and the job read them locally before fetching. The follow-up PR fetches
-tags first, decouples this ADR from the `skill-library` package and bumps `skill-library` to
-`1.0.1`; its merge should publish that first follow-on release and create `skills-catalog`.
-Check the `skill-releases` job of that merge and tick the catalog and follow-on boxes when green.
+makes tags on GitHub only and the job read them before fetching.
+[PR #38](https://github.com/f2calv/.github/pull/38) fixed that, and its merge published
+`skill-library/1.0.1` and the `skills-catalog` release listing 47 skills with version history.
+From the Dev Container, a fresh `specify init --script ps` consumer installed `skill` from the
+published catalog, then `install docs-adr -Related github-issues-and-pull-requests` installed
+`repository-privacy`, `docs-adr` and the related skill from GitHub Releases; `list` and `load` worked.
 
 **Next session (Windows host, not the Dev Container).** Install PowerShell 7.4+, Git, GitHub CLI,
 `yq` v4 (`winget install MikeFarah.yq`) and the Specify CLI
@@ -87,12 +91,14 @@ Check the `skill-releases` job of that merge and tick the catalog and follow-on 
    `https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json`.
 2. In a fresh demo repository run `specify init --here --integration copilot --script ps`, set
    `$env:SPECKIT_CATALOG_URL` to that URL, run `specify extension add skill`, then clear the variable.
-3. Run `/speckit-skill-library install docs-adr`: expect `repository-privacy` as required and an
-   offer of `github-issues-and-pull-requests`. Then `load docs-adr` and tick the consumer box.
+3. Run `/speckit-skill-library install docs-adr` in Copilot Chat: expect `repository-privacy` as
+   required and an offer of `github-issues-and-pull-requests`. Then `load docs-adr`, ask a question
+   using it, and tick the Windows box.
 
 **Known gaps.** Windows is untested: the consumer helper should work, but the Pester fixtures use
-`chmod` and shebang fake commands, so run the repository tests in CI or Linux. Release download URLs
-for tags containing `/` are taken from the GitHub API and are unverified in a real install.
+`chmod` and shebang fake commands, so run the repository tests in CI or Linux. A changed skill that
+others require (for example `repository-privacy`, required by `docs-adr`) has not yet been released,
+so the pin cascade is proven by tests only.
 
 **Pending skill changes from another session.** Merge `main` into that branch, then run
 `git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and `Test-SkillLibrary.ps1`
