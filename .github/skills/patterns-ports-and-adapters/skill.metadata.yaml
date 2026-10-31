@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.0
+version: 1.0.1
 facets: [architecture, integration, hexagonal, dotnet]
 related:
   - id: patterns-modular-monolith

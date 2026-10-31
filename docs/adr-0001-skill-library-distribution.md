@@ -129,9 +129,12 @@ in, then `git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and
 the script to run for any missing sidecar or unbumped change. None remain in the Dev Container clone.
 
 **Unmerged branches.** `f2calv/2026-10-updates11` carries this handover update, three PowerShell
-lessons in `shell.powershell.instructions.md`, and `docs-adr/1.0.1`, which makes ADRs living
-documents with an optional handover section. It is not yet pushed. Push it and open a PR before
-starting the next session's work, then delete this entry.
+lessons in `shell.powershell.instructions.md`, `docs-adr/1.0.1`, which makes ADRs living
+documents with an optional handover section, and a merge of `f2calv/2026-10-updates8`. That merge
+added `dotnet-apphost` and `dotnet-polymorphic-configuration`; the latter's sidecar used the retired
+first-implementation format and was rewritten. Sixteen skills got patch bumps, mostly because their
+external instruction files changed. It is not yet pushed. Push it and open a PR before starting the
+next session's work, then delete this entry.
 
 ## Open Questions
 
