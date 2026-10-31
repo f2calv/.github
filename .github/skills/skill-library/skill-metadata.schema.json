@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill metadata sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "version": { "$ref": "#/$defs/version" },
+    "facets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/slug" }
+    },
+    "required": {
+      "description": "Skills installed with this one, pinned to their exact current version.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version"],
+        "properties": {
+          "id": { "$ref": "#/$defs/slug" },
+          "version": { "$ref": "#/$defs/version" }
+        }
+      }
+    },
+    "related": {
+      "description": "Skills offered for explicit selection at their current catalog version.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason"],
+        "properties": {
+          "id": { "$ref": "#/$defs/slug" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "externalFiles": {
+      "description": "Repository-root-relative files outside the skill folder that the skill needs.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$" }
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" }
+  }
+}

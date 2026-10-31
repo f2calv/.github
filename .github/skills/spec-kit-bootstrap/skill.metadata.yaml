@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [spec-kit]
+related:
+  - id: containers-devcontainer
+    reason: Linked from SKILL.md.

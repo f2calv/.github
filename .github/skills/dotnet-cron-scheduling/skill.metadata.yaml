@@ -1,13 +1,15 @@
-$schema: ../skill-library/skill-metadata.schema.json
-id: dotnet-cron-scheduling
-version: '1.0.0'
-facets:
-  - dotnet
-  - scheduling
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet, scheduling]
+related:
+  - id: dotnet-leadership-election
+    reason: Linked from SKILL.md.
+  - id: dotnet-background-pipelines
+    reason: Linked from SKILL.md.
+  - id: dotnet-cli
+    reason: Linked from SKILL.md.
+  - id: dotnet-efcore
+    reason: Linked from SKILL.md.
 externalFiles:
-  - path: .github/instructions/dotnet.csharp.instructions.md
-    kind: instruction
-    loadingPurpose: C# cancellation, time, disposal and logging conventions.
-  - path: .github/instructions/dotnet.configuration.instructions.md
-    kind: instruction
-    loadingPurpose: Schedule configuration binding and startup validation.
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md

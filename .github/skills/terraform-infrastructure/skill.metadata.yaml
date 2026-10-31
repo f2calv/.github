@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [terraform]
+related:
+  - id: github-repository-baseline
+    reason: Linked from SKILL.md.
+  - id: github-dependabot
+    reason: Linked from SKILL.md.
+  - id: docs-readme
+    reason: Linked from SKILL.md.
+  - id: gitops-repository-structure
+    reason: Linked from SKILL.md.
+  - id: repository-privacy
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/iac.terraform.instructions.md

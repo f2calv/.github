@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [documentation, architecture]
+required:
+  - id: repository-privacy
+    version: 1.0.0
+related:
+  - id: github-issues-and-pull-requests
+    reason: Publish or track an ADR as a GitHub issue.
+externalFiles:
+  - .github/instructions/markdown.instructions.md
+  - .github/instructions/markdown.mermaid.instructions.md

@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: patterns-modular-monolith
+    reason: Linked from SKILL.md.
+  - id: dotnet-efcore
+    reason: Linked from SKILL.md.
+  - id: dotnet-background-pipelines
+    reason: Linked from SKILL.md.
+  - id: dotnet-leadership-election
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/workflow.instructions.md

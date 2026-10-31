@@ -57,8 +57,8 @@ installation that Spec Kit already provides. It never published a release. Git h
 ## Validation and Delivery
 
 - [x] Accept this minimal decision and delete the previous design record's history narrative.
-- [ ] Delete the first implementation, its tests, delivery workflows and Spec Kit dogfooding folders.
-- [ ] Add a sidecar to every skill and validate all sidecars with `yq` and PowerShell.
+- [x] Delete the first implementation, its tests, delivery workflows and Spec Kit dogfooding folders.
+- [x] Add a sidecar to every skill and validate all sidecars with `yq` and PowerShell.
 - [ ] Build a deterministic extension ZIP per skill with external files and `LICENSE`.
 - [ ] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
 - [ ] Build the `skill` bootstrap extension with `/speckit-skill-library`.
