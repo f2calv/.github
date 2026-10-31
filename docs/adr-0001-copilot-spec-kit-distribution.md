@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both, with owner-provided screenshots confirming native editor invocation and guidance use. Controlled CI versioning rehearsals and retained artifacts are verified. Final D1-D2 presentation, published component-release history, permanent publication and broader complexity review remain separate. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both, with owner-provided screenshots confirming native editor invocation and guidance use. The D1-D2 naming/metadata walkthrough and controlled CI versioning rehearsals are recorded. The owner requires real released-component history before closing D3; permanent release retention and publication need separate approvals. Broader lifecycle capabilities and complexity review remain separate. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -101,10 +101,11 @@ The five required outcomes are:
 | D5 | Multiple skill extensions through the library | Search/select and install multiple independent skill extensions through that command, then load their installed guidance through the same command. Verify required resources, explicit optional consent and absence of source/profile fallback. |
 
 Per-skill CI integration and the shared installation/loading command are required follow-on work, not
-deferred roadmap items. The current [CI entry point](../.github/workflows/ci.yml) versions the repository
-and runs [library tests](../.github/workflows/_skills-library-tests.yml); it does not yet version or
-publish individual skills. Local version preparation is reusable implementation, not evidence that D3
-has run. The bootstrap must package or explicitly provide its executable backend, trusted catalog and
+deferred roadmap items. The current [CI entry point](../.github/workflows/ci.yml) versions the repository,
+runs [library tests](../.github/workflows/_skills-library-tests.yml), and supports explicit per-component
+preparation/build dispatches. The shared-command follow-on below records actual artifact builds and
+retained controlled versioning rehearsals; these are not published component-release history.
+The bootstrap must package or explicitly provide its executable backend, trusted catalog and
 prerequisites; it must not conceal a dependency on the maintainer's source checkout or temporary paths.
 
 Persistent install pins, `upgrade-all`, individual upgrade/uninstall, renamed-ID migration, profile
@@ -360,8 +361,9 @@ installation require their own contracts and observed acceptance.
 
 ### PR-Based Component Releases
 
-Local version preparation is implemented; CI integration is required for D3 and remains pending.
-The planned flow separates reviewed version preparation from post-merge artifact publication:
+Version preparation and explicit CI preparation/build dispatches are implemented and exercised.
+The retained controlled rehearsal is distinct from real released-component history; post-merge
+publication remains separately authorized. The release flow separates reviewed preparation from publication:
 
 1. The [skill-library workflow](../.github/skills/skill-library/SKILL.md#version-preparation) owns
   version preparation through its [local PowerShell writer](../.github/skills/skill-library/scripts/Invoke-VersionPreparation.ps1).
@@ -593,8 +595,8 @@ Observed preparation is distinct from future acceptance:
 * [ ] D3: integrate affected-skill version preparation and exact versioned artifacts into CI; observe
   single/multi-skill changes, reverse-dependency edits, unaffected skills and idempotent reruns on actual
   workflow runs. Bootstrap versions alone and repository GitVersion do not satisfy this gate.
-* [ ] D1-D2: show the consolidated/prefixed repository and metadata for every demonstrated skill as part
-  of the final demo, rather than substituting earlier rename/schema checks for the presentation.
+* [x] D1-D2: present the canonical names, source/resource layout and independent metadata for all four
+  demo components in the naming walkthrough below, including explicit optional selection and notices.
 * [ ] Deferred: verify renamed-ID upgrades and same-ID source/native-path changes, exact historical-version
   scope, explicit chains, cycles/ambiguity, missing or unsupported targets, unapproved major rejection,
   already-installed destination collisions, dependent references and repeated-run idempotence.
@@ -751,7 +753,7 @@ and retained-artifact inspection subsequently passed at
 The downloaded `skill-version-rehearsal` artifact contains all three reports and seven extension
 packages; all fourteen native/extension ZIP checksums, exact propagated pins, unchanged unrelated
 versions and no-edit reruns were independently checked. This rehearsal does not establish published
-component release-history acceptance. Final D1-D2 presentation remains open.
+component release-history acceptance. The naming walkthrough below records D1-D2 presentation.
 
 The owner subsequently supplied screenshots confirming native `/speckit-skill-library` invocation
 in the fresh consumer. The editor verified existing CPython 3.13.5, PyYAML 6.0.3, Spec Kit 1.2.3,
@@ -769,6 +771,25 @@ The exact four-component demo inventories retain the repository-default MIT attr
 committed LICENSE bytes. All three peer ZIPs bundled in the corrected bootstrap match their
 standalone ZIPs byte-for-byte. This technical inventory/notice review is not generalized legal
 clearance or authorization to publish component releases.
+
+After reviewing this evidence, the owner explicitly required real released-component history before
+closing D3, rather than accepting the controlled rehearsal as its final gate. The next sequence is:
+
+1. Review and land the feature through a pull request with current-head required checks and quality
+  gates. Build baseline artifacts from the verified merged default-branch commit, not a feature head.
+2. Approve exact inventories, rights/notices, immutable release transport and an independent durable
+  backup with verified restoration under the published archive-retention requirement above.
+3. Review the initial exact component versions, artifacts and checksums, then obtain explicit
+  publication approval before creating immutable component tags/releases. The current delivery
+  workflow only builds artifacts; it does not implement this publication step.
+4. Make separately reviewed, genuine single-component and multiple-component changes against real
+  published baselines. Review explicit impact decisions and paired own-version/dependency-pin edits;
+  observe matching CI artifacts, unchanged unrelated versions and no-edit reruns. Publish any
+  follow-on release only under its own approval, preserving all prior bytes and evidence.
+
+No tags, releases, repository settings, backup resources or consumer upgrades are authorized by
+recording this sequence. A durable backup destination has not yet been selected; Actions artifacts
+and the disposable consumer are not substitutes. Install/upgrade across two releases remains deferred.
 
 ### Current-Head CI Evidence (2026-10-30)
 
@@ -822,6 +843,27 @@ The modular-monolith component retains ID `patterns-monolith-modular` and its ex
 pin despite the native name `patterns-modular-monolith`. Upstream `speckit-*` remains untouched;
 first-party `spec-kit-guide` and `spec-kit-bootstrap` remain eligible for library enrollment.
 Source/link validation is not editor-discovery or generated-extension acceptance.
+
+The D1-D2 walkthrough uses the existing native directories and their single authored SKILL.md, with
+internal examples/references/scripts colocated beneath that directory. The sidecar links below are the
+authored distribution metadata, not copies of generated manifests or provenance:
+
+| Canonical Native Name | Stable Component ID | Facets | Declared External Instructions |
+| --- | --- | --- | --- |
+| [dotnet-cron-scheduling](../.github/skills/dotnet-cron-scheduling/skill.metadata.yaml) | `dotnet-cron-scheduling` | dotnet, scheduling | C#, configuration |
+| [patterns-modular-monolith](../.github/skills/patterns-modular-monolith/skill.metadata.yaml) | `patterns-monolith-modular` | architecture, composition | C#, configuration |
+| [patterns-ports-and-adapters](../.github/skills/patterns-ports-and-adapters/skill.metadata.yaml) | `patterns-ports-and-adapters` | architecture, integration, hexagonal | C# |
+| [skill-library](../.github/skills/skill-library/skill.metadata.yaml) | `skill-library` | authoring, metadata | None |
+
+Each declares its own `1.0.0` authoring intent, with no required component edges. Ports/adapters alone
+declares the optional monolith edge, pinned to `1.0.0`, selected only through
+`patterns-ports-and-adapters/module-composition`. All four inherit MIT and LICENSE from
+[repository defaults](../.config/skill-library.yaml); the exact packaged notices were checked above.
+Native frontmatter owns discovery; metadata owns stable distribution identity. Builds preserve native
+resource geometry in separate extension-owned trees without introducing a second authored source.
+The generated bootstrap alone exposes `/speckit-skill-library`; the ordinary payloads add no public
+commands. The owner-observed consumer walkthrough above demonstrates that installed guidance loading
+works independently of the maintainer's source tree.
 
 Local validation exposed a pre-existing CI-contract mismatch in
 [the coverage suite](../.scripts/tests/SkillValidationCoverage.Tests.ps1): the persistent .NET
