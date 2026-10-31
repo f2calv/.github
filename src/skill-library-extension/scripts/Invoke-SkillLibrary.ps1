@@ -31,6 +31,7 @@ $BootstrapId = 'skill'
 $Related = @($Related | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
 function Get-Catalog {
+    if (Test-Path -LiteralPath $CatalogUrl -PathType Leaf) { return (Get-Content -LiteralPath $CatalogUrl -Raw | ConvertFrom-Json -AsHashtable).extensions }
     $Response = Invoke-WebRequest -Uri $CatalogUrl -UseBasicParsing
     $Content = if ($Response.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($Response.Content) } else { $Response.Content }
     return ($Content | ConvertFrom-Json -AsHashtable).extensions
