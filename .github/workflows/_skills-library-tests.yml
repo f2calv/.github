@@ -60,4 +60,13 @@ jobs:
         shell: bash
         env:
           TEST_SHARD: ${{ matrix.shard }}
+          SKILL_LIBRARY_VERSION_EVIDENCE: ${{ runner.temp }}/skill-version-demo
         run: npm run test:ps -- -Shard "$TEST_SHARD"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && matrix.shard == 'version-preparation' }}
+        with:
+          name: skill-version-rehearsal
+          path: ${{ runner.temp }}/skill-version-demo/
+          if-no-files-found: error
+          retention-days: 30

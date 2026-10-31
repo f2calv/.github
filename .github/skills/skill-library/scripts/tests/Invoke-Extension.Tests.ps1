@@ -81,6 +81,17 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
         Get-Command Invoke-SkillExtension -CommandType Function | Should -Not -BeNullOrEmpty
     }
 
+    It 'orders JSON object keys without changing array shapes or scalar values' {
+        $Value = [ordered]@{
+            z = @()
+            alpha = @(@{ z = 'last'; a = 1 }, @('only'), @(), $false, 0, 'text')
+            Beta = [pscustomobject][ordered]@{ z = $true; a = $null }
+        }
+        $Json = [Text.Encoding]::UTF8.GetString((ConvertTo-ExtensionJson $Value))
+        $Json | Should -BeExactly ('{"Beta":{"a":null,"z":true},"alpha":[{"a":1,"z":"last"},["only"],[],false,0,"text"],"z":[]}' + "`n")
+        @($Value.Keys) | Should -Be @('z', 'alpha', 'Beta')
+    }
+
     It 'preserves required bytes and generates a one-entry exact-version catalog' {
         $Digest = Set-ExtensionFixture $script:InputPath
         $Result = Invoke-SkillExtension -ArchivePath $script:InputPath -ArchiveSha256 $Digest -OutputDirectory $script:Destination -BaseUri 'http://127.0.0.1:8123/'
@@ -142,7 +153,7 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
         Test-Path -LiteralPath $script:Destination | Should -BeFalse
     }
 
-    It 'returns exactly one CLI JSON success without interpreter diagnostics' {
+    It 'returns one CLI JSON success and identical artifacts across fresh processes' {
         $Digest = Set-ExtensionFixture $script:InputPath
         $Cli = Invoke-LibraryProcess -Executable (Get-Process -Id $PID).Path -Arguments @(
             '-NoProfile', '-File', $script:Adapter, '-ArchivePath', $script:InputPath,
@@ -155,6 +166,19 @@ Describe 'Spec Kit extension adapter' -Tag 'Unit' {
         $Result.RootId | Should -BeExactly 'example'
         $Result.Command | Should -BeNullOrEmpty
         Test-Path -LiteralPath $Result.CatalogPath -PathType Leaf | Should -BeTrue
+        foreach ($Attempt in 1..2) {
+            $RepeatedDestination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+            $RepeatedCli = Invoke-LibraryProcess -Executable (Get-Process -Id $PID).Path -Arguments @(
+                '-NoProfile', '-File', $script:Adapter, '-ArchivePath', $script:InputPath,
+                '-ArchiveSha256', $Digest, '-OutputDirectory', $RepeatedDestination,
+                '-BaseUri', 'http://127.0.0.1:8123/'
+            )
+            $RepeatedCli.ExitCode | Should -Be 0 -Because $RepeatedCli.Error
+            $RepeatedCli.Error | Should -BeNullOrEmpty
+            $Repeated = [Text.Encoding]::UTF8.GetString($RepeatedCli.Bytes) | ConvertFrom-Json
+            (Get-FileHash -LiteralPath $Repeated.ArchivePath -Algorithm SHA256).Hash | Should -BeExactly (Get-FileHash -LiteralPath $Result.ArchivePath -Algorithm SHA256).Hash
+            (Get-FileHash -LiteralPath $Repeated.CatalogPath -Algorithm SHA256).Hash | Should -BeExactly (Get-FileHash -LiteralPath $Result.CatalogPath -Algorithm SHA256).Hash
+        }
     }
 
     It 'refuses linked output ancestry without writing through it' {
@@ -511,6 +535,11 @@ Describe 'Shared library command' -Tag 'Unit' {
         $Zip = [IO.Compression.ZipFile]::OpenRead($Package.ArchivePath)
         try {
             $Zip.GetEntry('commands/library.md') | Should -Not -BeNullOrEmpty
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('commands/library.md').Open())
+            try { $Command = $Reader.ReadToEnd() }
+            finally { $Reader.Dispose() }
+            $Command | Should -Match "selected installed payload extension's canonical resource tree"
+            $Command | Should -Not -Match 'resources/library'
             $Zip.GetEntry('commands/load.md') | Should -BeNullOrEmpty
             $Zip.GetEntry('tools/Invoke-Library.py') | Should -Not -BeNullOrEmpty
             $Zip.GetEntry('tools/Invoke-SpecKitInstall.py') | Should -Not -BeNullOrEmpty

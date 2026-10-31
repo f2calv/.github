@@ -1,7 +1,7 @@
 # ADR 0001: Local-First Copilot and Spec Kit Distribution
 
 **Decision Status:** The owner selected the single-command library experience and demo deliverables on 2026-10-29. Broader lifecycle capabilities remain deferred.
-**Implementation Status:** In Progress, paused for complexity review. The shared command and bootstrap are implemented; CI preparation/build delivery is partial. Current-head CI passes, but extension reproducibility, fresh shared-command consumer acceptance and permanent publication remain open. Passing tests are not evidence that the design is proportionate.
+**Implementation Status:** In Progress. Corrected repeat component CI builds are byte-identical, and a fresh consumer has installed and verified two independently packaged payloads through the shared bootstrap. Installed-only loading succeeds for both, with owner-provided screenshots confirming native editor invocation and guidance use. The D1-D2 naming/metadata walkthrough and controlled CI versioning rehearsals are recorded. The owner requires real released-component history before closing D3; permanent release retention and publication need separate approvals. Broader lifecycle capabilities and complexity review remain separate. Passing tests are not evidence that the design is proportionate.
 **Date:** 2026-10-26.
 **Last Updated:** 2026-10-30.
 **Scope:** Optional distribution of selected native customizations as independently versioned Spec Kit extensions with dependency-aware installation.
@@ -101,10 +101,11 @@ The five required outcomes are:
 | D5 | Multiple skill extensions through the library | Search/select and install multiple independent skill extensions through that command, then load their installed guidance through the same command. Verify required resources, explicit optional consent and absence of source/profile fallback. |
 
 Per-skill CI integration and the shared installation/loading command are required follow-on work, not
-deferred roadmap items. The current [CI entry point](../.github/workflows/ci.yml) versions the repository
-and runs [library tests](../.github/workflows/_skills-library-tests.yml); it does not yet version or
-publish individual skills. Local version preparation is reusable implementation, not evidence that D3
-has run. The bootstrap must package or explicitly provide its executable backend, trusted catalog and
+deferred roadmap items. The current [CI entry point](../.github/workflows/ci.yml) versions the repository,
+runs [library tests](../.github/workflows/_skills-library-tests.yml), and supports explicit per-component
+preparation/build dispatches. The shared-command follow-on below records actual artifact builds and
+retained controlled versioning rehearsals; these are not published component-release history.
+The bootstrap must package or explicitly provide its executable backend, trusted catalog and
 prerequisites; it must not conceal a dependency on the maintainer's source checkout or temporary paths.
 
 Persistent install pins, `upgrade-all`, individual upgrade/uninstall, renamed-ID migration, profile
@@ -360,8 +361,9 @@ installation require their own contracts and observed acceptance.
 
 ### PR-Based Component Releases
 
-Local version preparation is implemented; CI integration is required for D3 and remains pending.
-The planned flow separates reviewed version preparation from post-merge artifact publication:
+Version preparation and explicit CI preparation/build dispatches are implemented and exercised.
+The retained controlled rehearsal is distinct from real released-component history; post-merge
+publication remains separately authorized. The release flow separates reviewed preparation from publication:
 
 1. The [skill-library workflow](../.github/skills/skill-library/SKILL.md#version-preparation) owns
   version preparation through its [local PowerShell writer](../.github/skills/skill-library/scripts/Invoke-VersionPreparation.ps1).
@@ -593,8 +595,8 @@ Observed preparation is distinct from future acceptance:
 * [ ] D3: integrate affected-skill version preparation and exact versioned artifacts into CI; observe
   single/multi-skill changes, reverse-dependency edits, unaffected skills and idempotent reruns on actual
   workflow runs. Bootstrap versions alone and repository GitVersion do not satisfy this gate.
-* [ ] D1-D2: show the consolidated/prefixed repository and metadata for every demonstrated skill as part
-  of the final demo, rather than substituting earlier rename/schema checks for the presentation.
+* [x] D1-D2: present the canonical names, source/resource layout and independent metadata for all four
+  demo components in the naming walkthrough below, including explicit optional selection and notices.
 * [ ] Deferred: verify renamed-ID upgrades and same-ID source/native-path changes, exact historical-version
   scope, explicit chains, cycles/ambiguity, missing or unsupported targets, unapproved major rejection,
   already-installed destination collisions, dependent references and repeated-run idempotence.
@@ -686,6 +688,109 @@ foundation acceptance, including unperformed T053, remains unchanged. Verify the
 working tree before acting in another session; this checkpoint is not permission to overwrite
 concurrent work.
 
+### Serialization Follow-On (2026-10-30)
+
+[PR #32](https://github.com/f2calv/.github/pull/32) merged as
+`17a830688b680681c187d05051130a69f9c28302` after current-head CI and SonarCloud passed.
+The owner then authorized a follow-on branch from the merged default branch and resumption of the
+serialization fix. This supersedes only that part of the earlier pause; broader complexity review
+and publication remain separate.
+
+The adapter now recursively orders JSON object keys ordinally while preserving array shapes/order,
+scalar types and UTF-8/LF output. One added regression and the extended existing CLI case failed
+against the previous serializer; all 42 extension/shared-command cases pass with the correction.
+Three fresh PowerShell processes produced identical synthetic extension ZIP and catalog hashes
+from the same input archive. This is local regression evidence, not a repeat of the four-component
+CI build, a consumer demo or release acceptance. No component versions or pins changed.
+
+At `b7bcdff392c95169df3f87576b928302a42fb129`, [artifact build](https://github.com/f2calv/.github/actions/runs/41069397025)
+and [independent repeat](https://github.com/f2calv/.github/actions/runs/41069663420) passed.
+All 20 downloaded deliverables matched byte-for-byte: four native ZIPs, four extension ZIPs,
+four catalogs and eight detached checksums. Recorded extension digests matched the downloaded ZIPs.
+[Normal CI](https://github.com/f2calv/.github/actions/runs/41070473430) also passed. These bootstrap
+builds do not satisfy D3's single/multiple-change, reverse-propagation and unaffected-version gates.
+
+A separately approved disposable consumer was initialized with pinned Spec Kit 1.2.3 Copilot skills
+mode. Installing the verified bootstrap generated `/speckit-skill-library`; its installed-only backend
+returned a ready root/optional preview without blockers. Registration also exposed a loading-instruction
+defect: the runtime rewrites a literal relative resource path for the bootstrap command owner, not the
+selected payload. The generator now describes that boundary without the rewrite-triggering path;
+the existing bootstrap regression covers the wording and all 42 focused cases pass. Preserve the old
+consumer, rebuild and verify a separately approved fresh consumer; do not patch installed evidence.
+No payload installation or editor invocation is claimed by this checkpoint.
+
+### Shared-Command Consumer Follow-On (2026-10-30)
+
+At `2c8430d74503af67baf9d0705ae0d436dce19b34`, the corrected
+[artifact build](https://github.com/f2calv/.github/actions/runs/41073371747) and
+[independent repeat](https://github.com/f2calv/.github/actions/runs/41073686035) passed.
+All 20 downloaded deliverables again matched byte-for-byte, including the corrected bootstrap.
+Its SHA-256 was `c405cb8f18b5c105471e7464f9d1d203468209501141dc686b8ec87026c42d49`.
+
+After separate exact-artifact approval, a fresh Spec Kit 1.2.3 Copilot skills-mode consumer installed
+that bootstrap. Actual registration preserved the selected-payload loading boundary. A separately
+reviewed ready preview, with no blockers and an exact version/optional choice/fingerprint, then
+installed `patterns-ports-and-adapters@1.0.0` and optional `patterns-monolith-modular@1.0.0`.
+The durable operation receipt is Completed and both extensions are Verified. Installed-only listing
+reports both enabled; both load operations validate installed bytes and return their own canonical
+guidance, declared instructions and resources. The returned guidance and instructions, plus relevant
+boundary/composition references, were read from those installed payload trees, not source/profile
+copies. Neither payload registers a public command. An inspection wrapper initially expected the
+wrong response field; the saved receipt was inspected without repeating the mutation. This is
+backend/registration evidence, not an observed native editor invocation.
+
+The three existing version-preparation scenarios now optionally retain their reports and actual
+versioned packages; the existing CI shard uploads them as `skill-version-rehearsal`. Local retained
+reports cover one required input change, one optional input change and both together: changed inputs
+advance to `1.1.0`, the reverse consumer and its exact pins advance to `1.0.1`, and the unrelated
+component stays at `1.0.0`. Repeated previews match, prepared reruns have no edits, and copied package
+digests match. Every report explicitly identifies its baseline tags as local-only synthetic history.
+No scenario, execution framework, public component tag or release was added. Actual workflow upload
+and retained-artifact inspection subsequently passed at
+`0fcdf062ace6fdc3891928cc7c4cc7e5cbd62657` in
+[normal CI](https://github.com/f2calv/.github/actions/runs/41082231631): 48 version-preparation,
+837 remaining and 125 workspace-install cases passed, with one skipped and zero failed or NotRun.
+The downloaded `skill-version-rehearsal` artifact contains all three reports and seven extension
+packages; all fourteen native/extension ZIP checksums, exact propagated pins, unchanged unrelated
+versions and no-edit reruns were independently checked. This rehearsal does not establish published
+component release-history acceptance. The naming walkthrough below records D1-D2 presentation.
+
+The owner subsequently supplied screenshots confirming native `/speckit-skill-library` invocation
+in the fresh consumer. The editor verified existing CPython 3.13.5, PyYAML 6.0.3, Spec Kit 1.2.3,
+PowerShell 7.6.9 and Git 2.56.0, then listed both enabled `1.0.0` payloads without installing or
+downloading anything. Separate load requests applied ports/adapters and module-composition guidance
+to the requested conceptual review. Both responses reported installed-file reads: the selected
+SKILL.md, declared C# instructions and relevant references/examples; the monolith additionally read
+the configuration instructions. They correctly distinguished conceptual guidance from findings on
+an application implementation and reported no builds, tests, payload-script execution or changes.
+This closes D4/D5's native invocation/loading observation as owner-provided editor evidence, alongside
+the independently verified installed-byte/backend evidence above; it is not an independently captured
+editor tool trace or a claim that the entire ADR is complete.
+
+The exact four-component demo inventories retain the repository-default MIT attribution and
+committed LICENSE bytes. All three peer ZIPs bundled in the corrected bootstrap match their
+standalone ZIPs byte-for-byte. This technical inventory/notice review is not generalized legal
+clearance or authorization to publish component releases.
+
+After reviewing this evidence, the owner explicitly required real released-component history before
+closing D3, rather than accepting the controlled rehearsal as its final gate. The next sequence is:
+
+1. Review and land the feature through a pull request with current-head required checks and quality
+  gates. Build baseline artifacts from the verified merged default-branch commit, not a feature head.
+2. Approve exact inventories, rights/notices, immutable release transport and an independent durable
+  backup with verified restoration under the published archive-retention requirement above.
+3. Review the initial exact component versions, artifacts and checksums, then obtain explicit
+  publication approval before creating immutable component tags/releases. The current delivery
+  workflow only builds artifacts; it does not implement this publication step.
+4. Make separately reviewed, genuine single-component and multiple-component changes against real
+  published baselines. Review explicit impact decisions and paired own-version/dependency-pin edits;
+  observe matching CI artifacts, unchanged unrelated versions and no-edit reruns. Publish any
+  follow-on release only under its own approval, preserving all prior bytes and evidence.
+
+No tags, releases, repository settings, backup resources or consumer upgrades are authorized by
+recording this sequence. A durable backup destination has not yet been selected; Actions artifacts
+and the disposable consumer are not substitutes. Install/upgrade across two releases remains deferred.
+
 ### Current-Head CI Evidence (2026-10-30)
 
 At source commit `e3b861b46ad4b65be2d2d41024c467e123b927a1`,
@@ -724,9 +829,10 @@ CI run are synthetic regression evidence, not releases against real component ta
 four extension ZIP hashes differed. Comparing the cron package found only `extension.yml` changed;
 its template fields had identical values but different JSON key order. The
 [adapter's unordered nested hashtables](../.github/skills/skill-library/scripts/Invoke-Extension.ps1)
-permit fresh-process serialization differences that same-process repeat tests did not catch.
-Canonical extension serialization and a fresh-process regression are required before claiming
-reproducible extension delivery. No tags or releases were created; expiring CI artifacts and
+permitted fresh-process serialization differences that same-process repeat tests did not catch.
+The serialization and consumer follow-ons above record the correction and successful repeat builds;
+this earlier failed run remains historical evidence. Those artifact-only runs created no tags
+or releases; expiring CI artifacts and
 placeholder catalog URLs do not satisfy permanent publication or reproducible consumer transport.
 
 ### Naming and Validation (2026-10-30)
@@ -737,6 +843,27 @@ The modular-monolith component retains ID `patterns-monolith-modular` and its ex
 pin despite the native name `patterns-modular-monolith`. Upstream `speckit-*` remains untouched;
 first-party `spec-kit-guide` and `spec-kit-bootstrap` remain eligible for library enrollment.
 Source/link validation is not editor-discovery or generated-extension acceptance.
+
+The D1-D2 walkthrough uses the existing native directories and their single authored SKILL.md, with
+internal examples/references/scripts colocated beneath that directory. The sidecar links below are the
+authored distribution metadata, not copies of generated manifests or provenance:
+
+| Canonical Native Name | Stable Component ID | Facets | Declared External Instructions |
+| --- | --- | --- | --- |
+| [dotnet-cron-scheduling](../.github/skills/dotnet-cron-scheduling/skill.metadata.yaml) | `dotnet-cron-scheduling` | dotnet, scheduling | C#, configuration |
+| [patterns-modular-monolith](../.github/skills/patterns-modular-monolith/skill.metadata.yaml) | `patterns-monolith-modular` | architecture, composition | C#, configuration |
+| [patterns-ports-and-adapters](../.github/skills/patterns-ports-and-adapters/skill.metadata.yaml) | `patterns-ports-and-adapters` | architecture, integration, hexagonal | C# |
+| [skill-library](../.github/skills/skill-library/skill.metadata.yaml) | `skill-library` | authoring, metadata | None |
+
+Each declares its own `1.0.0` authoring intent, with no required component edges. Ports/adapters alone
+declares the optional monolith edge, pinned to `1.0.0`, selected only through
+`patterns-ports-and-adapters/module-composition`. All four inherit MIT and LICENSE from
+[repository defaults](../.config/skill-library.yaml); the exact packaged notices were checked above.
+Native frontmatter owns discovery; metadata owns stable distribution identity. Builds preserve native
+resource geometry in separate extension-owned trees without introducing a second authored source.
+The generated bootstrap alone exposes `/speckit-skill-library`; the ordinary payloads add no public
+commands. The owner-observed consumer walkthrough above demonstrates that installed guidance loading
+works independently of the maintainer's source tree.
 
 Local validation exposed a pre-existing CI-contract mismatch in
 [the coverage suite](../.scripts/tests/SkillValidationCoverage.Tests.ps1): the persistent .NET
