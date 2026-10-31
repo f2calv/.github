@@ -25,11 +25,13 @@ installation that Spec Kit already provides. It never published a release. Git h
 3. **One extension per skill.** A build packages the skill folder, its external files and `LICENSE`
    into a deterministic Spec Kit extension ZIP. Required skills are separate extensions, not bundled.
 4. **Versions are checked, not inferred.** A pull request fails when a skill changed since its last
-   `<id>/X.Y.Z` tag without a version bump, or when a required pin is stale. `Set-SkillVersion`
-   bumps a skill and cascades pin updates and patch bumps to skills that require it.
+   `<id>/X.Y.Z` tag without a version bump, when its version is more than one patch, minor or major
+   step past that tag, or when a required pin is stale. `Set-SkillVersion` bumps from the last tag,
+   so a skill is bumped at most once per branch, and cascades pin updates and patch bumps to skills
+   that require it. Unreleased skills are never bumped; their first release uses the authored version.
 5. **Releases on merge.** On `main`, each component without a matching tag is built and published
    as GitHub Release `<id>/X.Y.Z`. A rolling `skills-catalog` release holds one Spec Kit catalog
-   with every published version. GitHub Pages may replace the rolling release after the demo.
+   with every published version. GitHub Pages remains an option; see Open Questions.
 6. **One bootstrap command.** The `skill` extension provides `/speckit-skill-library`. Its
    PowerShell helper wraps the `specify` CLI: it searches the catalog, resolves the required
    closure, offers related skills for explicit selection, installs through `specify extension add`
@@ -70,6 +72,10 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Install and load skills from the published catalog in a fresh Linux consumer.
 - [ ] Repeat the published-catalog install and editor `load` on a Windows host.
 - [x] Publish a real follow-on version: `skill-library/1.0.1` after the PR gate flagged its change.
+- [x] Limit each skill to one bump per branch and refuse bumps of unreleased skills; 50 Pester tests
+      pass locally.
+- [x] Document the design for consumers: README overview and FAQ, [architecture](architecture.md)
+      with diagrams, [Spec Kit usage](spec-kit.md) and the [skill catalogue](skills.md).
 - [ ] Publish a follow-on version of a skill with required dependents and observe the pin cascade.
 
 ## Handover
@@ -86,6 +92,10 @@ makes tags on GitHub only and the job read them before fetching.
 From the Dev Container, a fresh `specify init --script ps` consumer installed `skill` from the
 published catalog, then `install docs-adr -Related github-issues-and-pull-requests` installed
 `repository-privacy`, `docs-adr` and the related skill from GitHub Releases; `list` and `load` worked.
+Later the same day, on `f2calv/2026-10-updates11`: the single-bump gate and unreleased-skill refusal
+were added and 50 skill-library Pester tests passed; `dotnet-*` examples were aligned with the
+strongly-typed configuration rule; the README was split into an overview with FAQ and diagrams plus
+`docs/` pages for architecture, Spec Kit use, the catalogue, repository management and development.
 
 **Windows host check (2026-10-31).** PowerShell 7.6, Git, GitHub CLI and `yq` v4 are present;
 `uv` and the Specify CLI are not. Spec Kit's PowerShell is only the project scripts that
@@ -95,6 +105,11 @@ standalone executable. Where `uv` is unavailable, install it with pip into a vir
 using the host's configured package index: `python -m venv ~/.venvs/specify`, then
 `~/.venvs/specify/Scripts/python -m pip install specify-cli==1.2.3` on Windows
 (`bin/python` on Linux or macOS). The end-to-end consumer run on Windows has not started.
+
+**Next session, part 0: publish this branch.** Push `f2calv/2026-10-updates11`, open a PR and merge
+once checks pass. Then confirm the publish job created `skill-library/1.0.2`, `docs-adr/1.0.1`,
+first releases of `dotnet-apphost/1.0.0` and `dotnet-polymorphic-configuration/1.0.0`, and the
+other patch releases, and that `catalog.json` lists them. Delete the Unmerged branches entry.
 
 **Next session, part 1: pin cascade (Dev Container).** `repository-privacy` is the only skill that
 `docs-adr` requires; `terraform-infrastructure` lists it as related only.
@@ -113,8 +128,7 @@ route above). Then:
 
 1. Confirm the catalog resolves:
    `https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json`.
-2. In a fresh demo repository, follow
-   [Install in a Consumer](../.github/skills/skill-library/SKILL.md#install-in-a-consumer).
+2. In a fresh demo repository, follow [Versioned Skills for Spec Kit](spec-kit.md).
 3. Run `/speckit-skill-library install docs-adr` in Copilot Chat: expect `repository-privacy` as
    required and an offer of `github-issues-and-pull-requests`. Then `load docs-adr`, ask a question
    using it, and tick the Windows box.
@@ -128,16 +142,18 @@ in, then `git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and
 [skill guide](../.github/skills/skill-library/SKILL.md#validate-and-bump). The PR gate fails with
 the script to run for any missing sidecar or unbumped change. None remain in the Dev Container clone.
 
-**Unmerged branches.** `f2calv/2026-10-updates11` carries this handover update, three PowerShell
-lessons in `shell.powershell.instructions.md`, `docs-adr/1.0.1`, which makes ADRs living
-documents with an optional handover section, and a merge of `f2calv/2026-10-updates8`. That merge
-added `dotnet-apphost` and `dotnet-polymorphic-configuration`; the latter's sidecar used the retired
-first-implementation format and was rewritten. Sixteen skills got patch bumps, mostly because their
-external instruction files changed. It is not yet pushed. Push it and open a PR before starting the
-next session's work, then delete this entry.
+**Unmerged branches.** `f2calv/2026-10-updates11` carries this session's work: the handover and
+living-ADR rule (`docs-adr/1.0.1`), three PowerShell lessons, a merge of `f2calv/2026-10-updates8`
+(adding `dotnet-apphost` and `dotnet-polymorphic-configuration`, with sixteen patch bumps), the
+single-bump gate (`skill-library/1.0.2`), strongly-typed `dotnet-*` examples and the README and
+`docs/` restructure. It is not yet pushed; see part 0.
 
 ## Open Questions
 
-- Should the catalog move to GitHub Pages after the demo?
+- Should the catalog move to GitHub Pages? It would need a Pages deployment job, a Pages-enabled
+  repository and a new default URL in the bootstrap helper, the skill guide and the docs; the ZIPs
+  stay on Releases. Gains: atomic deploys instead of clobbering a release asset, a URL independent
+  of releases and room for a browsable skill index. Costs: a second publishing path to keep in step
+  with Releases. Defer until the rolling release causes a real problem.
 - Is `specify extension` enough for upgrading or removing installed skills, or does the bootstrap
   need its own support? See Consequences for the current scope.
