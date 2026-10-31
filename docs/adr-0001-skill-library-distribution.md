@@ -83,9 +83,20 @@ From the Dev Container, a fresh `specify init --script ps` consumer installed `s
 published catalog, then `install docs-adr -Related github-issues-and-pull-requests` installed
 `repository-privacy`, `docs-adr` and the related skill from GitHub Releases; `list` and `load` worked.
 
-**Next session (Windows host, not the Dev Container).** Install PowerShell 7.4+, Git, GitHub CLI,
-`yq` v4 (`winget install MikeFarah.yq`) and the Specify CLI
-(`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3`). Then:
+**Windows host check (2026-10-31).** PowerShell 7.6, Git, GitHub CLI and `yq` v4 are present;
+`uv` and the Specify CLI are not. Spec Kit's PowerShell is only the project scripts that
+`specify init --script ps` copies into `.specify/scripts/powershell/`. The `specify` CLI itself,
+which provides `init` and `extension add`, is Python only, and its releases include no
+standalone executable. Where `uv` is unavailable, install it with pip into a virtual environment
+using the host's configured package index:
+`python -m venv ~/.venvs/specify` then `~/.venvs/specify/Scripts/python -m pip install specify-cli==1.2.3`.
+Work moved back to the Dev Container, so the Windows run is still open.
+
+**Next session (Dev Container first, then a Windows host).** In the Dev Container, release a change
+to a required skill to observe the pin cascade (see Known gaps). On a Windows host, install
+PowerShell 7.4+, Git, GitHub CLI, `yq` v4 (`winget install MikeFarah.yq`) and the Specify CLI
+(`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3`, or the pip
+route above). Then:
 
 1. Confirm the catalog resolves:
    `https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json`.
@@ -104,6 +115,9 @@ so the pin cascade is proven by tests only.
 `git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and `Test-SkillLibrary.ps1`
 as described in the [skill guide](../.github/skills/skill-library/SKILL.md#validate-and-bump).
 The PR gate fails with the script to run for any missing sidecar or unbumped change.
+
+**Open branch.** `f2calv/2026-10-updates11` carries this handover update and three PowerShell lessons
+in `shell.powershell.instructions.md`; it is committed locally but not yet pushed.
 
 ## Open Questions
 
