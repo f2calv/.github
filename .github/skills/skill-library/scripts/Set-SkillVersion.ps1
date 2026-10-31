@@ -45,7 +45,7 @@ function Update-Component([object]$Component, [string]$Level, [bool]$Explicit) {
     Set-SkillMetadataValue -RepoRoot $RepoRoot -Component $Component -Version "$Target"
     $Component.Version = "$Target"
     Write-Host "$($Component.Id): $Current -> $Target"
-    foreach ($Dependent in $Components | Where-Object { $_.Required.id -contains $Component.Id }) {
+    foreach ($Dependent in $Components | Where-Object { @($_.Required | ForEach-Object { $_['id'] }) -contains $Component.Id }) {
         Set-SkillMetadataValue -RepoRoot $RepoRoot -Component $Dependent -Version "$Target" -DependencyId $Component.Id
         foreach ($Edge in $Dependent.Required | Where-Object { $_.id -ceq $Component.Id }) { $Edge.version = "$Target" }
         Write-Host "$($Dependent.Id): requires $($Component.Id) $Target"

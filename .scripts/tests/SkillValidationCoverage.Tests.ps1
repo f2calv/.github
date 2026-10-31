@@ -7,7 +7,7 @@ BeforeAll {
 }
 
 Describe 'PowerShell script test coverage' -Tag 'Unit' {
-    It 'pairs every script with a <Name>.Tests.ps1 file' {
+    It 'pairs every script with a matching Tests.ps1 file' {
         Push-Location -LiteralPath $repositoryRoot
         try { $files = @(git ls-files --cached --others --exclude-standard -- '*.ps1' '*.psm1') }
         finally { Pop-Location }

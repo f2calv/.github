@@ -3,6 +3,9 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '../Install-Specify.ps1')
+    # Stand-ins so Pester can mock the tools on runners where they are not installed.
+    function uv { }
+    function specify { }
 }
 
 Describe 'Install-Specify' -Tag 'Unit' {
