@@ -147,6 +147,16 @@ repository, never as a route for credentials into a ConfigMap.
 
 ## Options Types
 
+- **Polymorphic DTOs**: use the
+  [polymorphic configuration skill](../skills/dotnet-polymorphic-configuration/SKILL.md) for
+  discriminator-based interface/base-class graphs. The standard binder does not honour
+  System.Text.Json polymorphism attributes; preserve provider precedence and existing validators
+  when introducing a custom binding route.
+- **Strongly-typed access only**: read configuration through bound options types, never by key
+  string (`Configuration["A:B"]`, `GetValue<T>("A:B")`). Each options type exposes its section as
+  `public const string ConfigurationSectionName`. A composition-time decision taken before the
+  service provider exists, such as a feature gate, binds that section once to the same type with
+  `GetSection(T.ConfigurationSectionName).Get<T>()`.
 - **Registration**: register each options type with
   `AddOptionsWithValidateOnStart<T>().BindConfiguration(sectionName).ValidateDataAnnotations()`, so an
   invalid value fails startup instead of surfacing at first use. An application that binds

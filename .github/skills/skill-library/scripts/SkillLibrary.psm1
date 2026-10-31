@@ -185,7 +185,14 @@ function Test-SkillVersion {
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $Item.Id
         if ($null -ne $Released) {
             $Current = ConvertTo-SkillVersion $Item.Version
+            $Next = @(
+                [version]::new($Released.Major, $Released.Minor, $Released.Build + 1)
+                [version]::new($Released.Major, $Released.Minor + 1, 0)
+                [version]::new($Released.Major + 1, 0, 0))
             if ($Current -lt $Released) { $Errors.Add("$($Item.Id): version $Current is lower than released $Released.") }
+            elseif ($Current -ne $Released -and $Next -notcontains $Current) {
+                $Errors.Add("$($Item.Id): version $Current skips past one bump from released $Released; use one of $($Next -join ', ') via Set-SkillVersion.ps1 -Id $($Item.Id).")
+            }
             elseif ($Current -eq $Released -and (Test-SkillChanged -RepoRoot $RepoRoot -Component $Item -Released $Released)) {
                 $Errors.Add("$($Item.Id): changed since $($Item.Id)/$Released; run Set-SkillVersion.ps1 -Id $($Item.Id).")
             }
@@ -308,6 +315,44 @@ function New-SkillCatalog {
     [ordered]@{ schema_version = '1.0'; extensions = $Extensions }
 }
 
+function New-SkillCatalogPage {
+    <# Renders a static HTML index of the catalog's current versions for GitHub Pages. #>
+    param([Parameter(Mandatory)][System.Collections.IDictionary]$Catalog)
+    $Encode = { param([object]$Value) [Net.WebUtility]::HtmlEncode([string]$Value) }
+    $Rows = foreach ($Pair in $Catalog.extensions.GetEnumerator()) {
+        $Entry = $Pair.Value
+        $Required = @($Entry.skill_library.required | ForEach-Object { "$($_.id) $($_.version)" }) -join ', '
+        "<tr><td><code>$(& $Encode $Pair.Key)</code></td><td><a href=`"$(& $Encode $Entry.download_url)`">$(& $Encode $Entry.version)</a></td>" +
+        "<td>$(& $Encode $Entry.description)</td><td>$(& $Encode $Required)</td></tr>"
+    }
+    @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill library catalog</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 70rem; padding: 0 1rem; color: #1f2328; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid #d0d7de; padding: .5rem; text-align: left; vertical-align: top; }
+th { background: #f6f8fa; }
+</style>
+</head>
+<body>
+<h1>Skill library catalog</h1>
+<p>Each skill is a Spec Kit extension. Point Spec Kit at <a href="catalog.json">catalog.json</a> and install with <code>/speckit-skill-library install &lt;skill&gt;</code>.</p>
+<table>
+<thead><tr><th>Skill</th><th>Version</th><th>Description</th><th>Requires</th></tr></thead>
+<tbody>
+$($Rows -join "`n")
+</tbody>
+</table>
+</body>
+</html>
+"@
+}
+
 Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
     Get-SkillWithoutMetadata, Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
-    New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog
+    New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog, New-SkillCatalogPage

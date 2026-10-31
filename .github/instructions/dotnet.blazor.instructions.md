@@ -75,6 +75,9 @@ invariants. C#, Web API, configuration and testing rules stay in their own instr
 - Use `EditForm` with an explicit `EditContext` and `DataAnnotationsValidator`. Map server
   `ValidationProblemDetails` into a `ValidationMessageStore` so field errors appear beside fields.
 - Disable the submit action while a request is in flight, and keep entered values after an error.
+- Show the confirmed saved record/result separately from a fresh or reset form. Distinguish
+  successful persistence from unmet readiness/authorization gates, and explain deliberate resets
+  so empty new-assessment fields do not appear to erase the saved decision.
 - Warn before navigation away from a dirty form with `NavigationLock`, including
   `ConfirmExternalNavigation` for browser unloads.
 - Require explicit confirmation, and a reason where the domain records one, for destructive or

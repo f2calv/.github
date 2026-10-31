@@ -5,8 +5,8 @@
 Bumps skill versions and cascades exact pins to the skills that require them.
 .DESCRIPTION
 Each bump starts from the last released tag, so rerunning it does not bump again. Skills that require a
-bumped skill get the new pin and, when already released, a patch bump. Unreleased skills keep their
-authored version unless named explicitly.
+bumped skill get the new pin and, when already released, a patch bump. Unreleased skills are never
+bumped; their first release uses the authored version.
 .PARAMETER Id
 Skills to bump. Defaults to every released skill changed since its tag without a bump.
 .PARAMETER Bump
@@ -40,7 +40,11 @@ function Step-Version([version]$Version, [string]$Level) {
 function Update-Component([object]$Component, [string]$Level, [bool]$Explicit) {
     $Current = ConvertTo-SkillVersion $Component.Version
     $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $Component.Id
-    $Target = if ($null -ne $Released) { Step-Version $Released $Level } elseif ($Explicit) { Step-Version $Current $Level } else { $Current }
+    if ($null -eq $Released) {
+        if ($Explicit) { Write-Warning "$($Component.Id) is unreleased; its first release uses the authored version $Current." }
+        return
+    }
+    $Target = Step-Version $Released $Level
     if ($Target -le $Current) { return }
     Set-SkillMetadataValue -RepoRoot $RepoRoot -Component $Component -Version "$Target"
     $Component.Version = "$Target"

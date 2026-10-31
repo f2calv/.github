@@ -106,6 +106,10 @@ preferences are suggestions, so apply both while writing:
 - **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
   hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
   end-to-end flow when extraction would obscure it.
+- Use the [`dotnet-apphost` skill](../skills/dotnet-apphost/SKILL.md) to design, align, audit,
+  refactor or diagnose application bootstrapping and AppHost composition across configuration,
+  logging, observability, feature registration, transports, middleware, endpoints, health,
+  shutdown and host tests.
 - **Use modern hosting composition**, including samples and test hosts: initialize configuration and
   register services in `Program.cs` or an `AppHost` composition root. ASP.NET Core hosts use
   `WebApplication.CreateBuilder`; do not introduce `Startup`/`UseStartup` or separate

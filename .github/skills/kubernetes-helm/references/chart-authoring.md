@@ -118,6 +118,23 @@ Helm's `default` function treats false as empty. In ranged templates that render
 documents, preserve a newline before each `---` and test at least two entries so whitespace trimming
 cannot concatenate documents.
 
+### Database Migration Jobs
+
+For a Kubernetes-hosted application whose schema is owned by EF Core or another migration tool:
+
+* render one finite Job from the same immutable application image as the daemon workloads;
+* invoke the application's dedicated migration argument, such as `--migrate`;
+* disable Services and startup/readiness/liveness probes for the Job;
+* default the migration workload to dormant unless the chart deliberately owns release ordering;
+* add Argo CD PreSync or equivalent hook annotations in environment-owned values when migration
+  must gate rollout;
+* keep ordinary application pods configured not to migrate on startup;
+* do not attach the migrator as an init container to every replica.
+
+The application owns migration execution and provider validation. The chart owns one-job rendering,
+resource policy, hook lifecycle and image-version alignment. Render and inspect the Job separately
+from daemon fixtures.
+
 ## Fixtures and Package Contents
 
 Store representative chart-testing values under `ci/` in each chart source directory. Include

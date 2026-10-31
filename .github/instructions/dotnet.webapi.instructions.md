@@ -37,6 +37,9 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**
   Share genuinely common metadata at controller scope. Keep stable route/operation names and existing
   summaries; XML comments supply OpenAPI text only when the generator is configured to consume them.
   Use the [Web API skill](../skills/dotnet-webapi/SKILL.md) for the workflow and worked example.
+  Verify closed generic controllers through `ApiExplorer`: shared error metadata can hide an
+  inferred success DTO. If it does, repair only that module's metadata rather than adding global
+  response conventions or assuming a successful build proves the OpenAPI contract.
 - **Logging lives in the service**: domain-specific, request-specific logging belongs in the service
   method. Remove `ILogger` from a controller whose methods only delegate; inject it only for work that
   cannot be delegated, such as a streaming loop with `LogTrace`.
@@ -47,6 +50,10 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**
 - **Typed service methods**: never call generic base-class methods (`GetEntities<T>(tableName, ...)`,
   `Enqueue<T>(obj, ...)`) from a controller. Add typed service methods that own table names, queue
   keys and domain logging, keeping controllers ignorant of infrastructure.
+- **Resource authorization and schemes**: manual resource-aware authorization must authenticate
+  the policy's named schemes before evaluating its requirements, using the framework policy
+  evaluator. `IAuthorizationService` alone does not select authentication schemes; adding browser
+  cookies must not replace an existing machine API's authentication defaults.
 - **Expression bodies** for single-expression or single-`await` methods. Map nullable service
   results to `NotFound` with pattern matching rather than exceptions:
 

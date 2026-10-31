@@ -7,17 +7,29 @@ Verify availability/signatures before use; this is not a standalone compiled fix
 
 ## Register One Selected Worker
 
-After the application has parsed and validated a nonempty set of supported feature names:
+After the application has parsed and validated a nonempty set of supported feature names. Feature
+names cross the configuration boundary, so they are `nameof()` constants rather than repeated literals:
+
+```csharp
+namespace Example.Constants;
+
+public static class FeatureNames
+{
+    public const string CatalogApi = nameof(CatalogApi);
+    public const string InventoryWorker = nameof(InventoryWorker);
+}
+```
 
 ```csharp
 using CasCap.Common.Abstractions;
 using CasCap.Common.Extensions;
+using Example.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 IReadOnlySet<string> enabledFeatures =
-    new HashSet<string>(["InventoryWorker"], StringComparer.OrdinalIgnoreCase);
+    new HashSet<string>([FeatureNames.InventoryWorker], StringComparer.OrdinalIgnoreCase);
 
-if (enabledFeatures.Contains("InventoryWorker"))
+if (enabledFeatures.Contains(FeatureNames.InventoryWorker))
     builder.Services.AddSingleton<IBgFeature, InventoryFeature>();
 
 builder.Services.AddFeatureFlagService(enabledFeatures);
@@ -29,18 +41,18 @@ implementation; no extra `AddHostedService<InventoryFeature>()` registration is 
 The shared dispatcher owns launching `IBgFeature.ExecuteAsync(CancellationToken)`.
 
 The selection shown is deliberately concrete to explain the API. Production registration should
-use the application's canonical feature constants and validated configuration, not hardcoded role
-selection. Add shared dependencies and the actual worker implementation before building the host.
+derive the set from validated, strongly-typed configuration, not hardcoded role selection. Add shared dependencies and the actual worker implementation before building the host.
 
 ## Gate a Controller in the Same Assembly
 
 ```csharp
 using CasCap.Common.Abstractions;
+using Example.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/catalog")]
-[FeatureController("CatalogApi")]
+[FeatureController(FeatureNames.CatalogApi)]
 public sealed class CatalogController : ControllerBase
 {
     [HttpGet("status")]
@@ -53,7 +65,7 @@ profile it must be absent from routing and API discovery/OpenAPI, not activated 
 Add authentication/authorization according to the real API contract; this fragment demonstrates
 discovery only.
 
-For `[FeatureController("CatalogApi", "InventoryWorker")]`, **either** enabled name exposes the
+For `[FeatureController(FeatureNames.CatalogApi, FeatureNames.InventoryWorker)]`, **either** enabled name exposes the
 controller. Do not use this to describe an endpoint requiring both modules.
 
 ## Lifetime Contract to Verify

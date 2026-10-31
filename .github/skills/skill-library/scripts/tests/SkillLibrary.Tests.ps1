@@ -98,6 +98,20 @@ Describe 'Version checks' -Tag 'Unit' {
         @(Get-VersionErrors) -join "`n" | Should -BeLike '*alpha: requires beta 1.0.0 but its version is 1.0.1*'
     }
 
+    It 'accepts a single <Level> bump from the released tag' -ForEach @(
+        @{ Level = 'patch'; Version = '1.0.1' }
+        @{ Level = 'minor'; Version = '1.1.0' }
+        @{ Level = 'major'; Version = '2.0.0' }
+    ) {
+        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: $Version`n"
+        @(Get-VersionErrors) | Should -BeNullOrEmpty
+    }
+
+    It 'rejects a version that skips past one bump' {
+        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.2`n"
+        @(Get-VersionErrors) -join "`n" | Should -BeLike '*gamma: version 1.0.2 skips past one bump from released 1.0.0*'
+    }
+
     It 'rejects a version below the released tag' {
         Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 0.9.0`n"
         @(Get-VersionErrors) -join "`n" | Should -BeLike '*gamma: version 0.9.0 is lower than released 1.0.0*'
@@ -117,5 +131,13 @@ Describe 'Catalog' -Tag 'Unit' {
         $Catalog.extensions['alpha'].releases['1.0.0'].sha256 | Should -Be ('a' * 64)
         $Catalog.extensions['alpha'].skill_library.required[0].id | Should -Be 'beta'
         $Catalog.extensions['beta'].Contains('releases') | Should -BeFalse
+    }
+
+    It 'renders an HTML page with encoded catalog text' {
+        $Release = @([pscustomobject]@{ Id = 'alpha'; Version = '1.0.0'; Url = 'https://example.com/a.zip'; Sha256 = ('a' * 64)
+                Description = 'Uses <script> & more.'; Facets = @(); Required = @(); Related = @() })
+        $Page = New-SkillCatalogPage -Catalog (New-SkillCatalog -Release $Release)
+        $Page | Should -BeLike '*Uses &lt;script&gt; &amp; more.*'
+        $Page | Should -Not -BeLike '*<script>*'
     }
 }

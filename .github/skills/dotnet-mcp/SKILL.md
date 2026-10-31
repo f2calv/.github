@@ -123,9 +123,10 @@ application supplies the named query facade and authorization policy:
 ```csharp
 using ModelContextProtocol.AspNetCore;
 
-var mcpEnabled = builder.Configuration.GetValue<bool>("Mcp:Enabled");
+// Composition-time gate: bind the section once to the same options type the app validates.
+var mcpConfig = builder.Configuration.GetSection(McpConfig.ConfigurationSectionName).Get<McpConfig>() ?? new();
 
-if (mcpEnabled)
+if (mcpConfig.Enabled)
 {
     builder.Services.AddMcpServer()
         .WithHttpTransport(options =>
@@ -136,7 +137,7 @@ if (mcpEnabled)
 var app = builder.Build();
 
 // Configure authentication, authorization, and the MCP Origin guard before mapping endpoints.
-if (mcpEnabled)
+if (mcpConfig.Enabled)
 {
     app.MapMcp("/mcp").RequireAuthorization("McpRead");
 }

@@ -55,6 +55,15 @@ Retry only the documented authentication failure case, not every forbidden respo
 
 ## Results, Pagination and Streaming
 
+When consuming versioned resources, prefer upstream conditional/version-bound operations. Metadata
+checks before and after a request detect observed drift but cannot prove a mutable tag was not
+changed and restored between reads. Without atomic upstream binding, document the operator's
+immutability requirement instead of claiming revision certainty.
+
+Keep local quota estimates distinct from provider-native usage when their units or tokenizers
+differ. Record authoritative native counters, disable silent truncation where supported, and
+document that detecting an overrun cannot undo work already performed.
+
 Map recognized upstream errors to the application's expected result/exception contract.
 Keep status, safe error category and actionable context, not raw bodies or sensitive URL queries.
 Bound any diagnostic body inspection and redact before logging/throwing; some APIs return HTML,

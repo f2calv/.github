@@ -2,16 +2,19 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-Publishes every unreleased skill version as GitHub Release <id>/X.Y.Z and refreshes the rolling catalog.
+Publishes every unreleased skill version as GitHub Release <id>/X.Y.Z and builds the GitHub Pages catalog site.
 .DESCRIPTION
-Runs on the default branch after merge. Published releases are never changed; the catalog asset on the
-rolling skills-catalog release is regenerated from all component releases on every run that publishes.
+Runs on the default branch after merge. Published releases are never changed. When anything is published,
+catalog.json and index.html are regenerated from all component releases into SiteDirectory, and its path is
+written to the site-directory step output for the Pages deployment.
 .PARAMETER Repository
 owner/name used for release URLs; defaults to GITHUB_REPOSITORY.
 .PARAMETER DryRun
 Build and report pending releases without creating anything.
 .PARAMETER RefreshCatalog
-Regenerate the catalog even when nothing new is published.
+Regenerate the catalog site even when nothing new is published.
+.PARAMETER SiteDirectory
+Directory that receives catalog.json and index.html.
 .EXAMPLE
 ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1 -DryRun
 #>
@@ -21,11 +24,11 @@ param(
     [switch]$DryRun,
     [switch]$RefreshCatalog,
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path,
-    [string]$OutputDirectory = (Join-Path ([IO.Path]::GetTempPath()) "skill-releases-$PID")
+    [string]$OutputDirectory = (Join-Path ([IO.Path]::GetTempPath()) "skill-releases-$PID"),
+    [string]$SiteDirectory = (Join-Path $OutputDirectory 'site')
 )
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'SkillLibrary.psm1') -Force
-$CatalogTag = 'skills-catalog'
 $TagPattern = '^(?<id>[a-z0-9]+(-[a-z0-9]+)*)/(?<version>(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$'
 
 function Invoke-Gh([string[]]$Arguments) { Invoke-SkillTool gh $Arguments -WorkingDirectory $RepoRoot }
@@ -80,14 +83,9 @@ $Records = foreach ($Tag in Invoke-Gh @('release', 'list', '--limit', '1000', '-
         Required = @($Metadata['required'] ?? @()); Related = @($Metadata['related'] ?? @()); Description = $Description; Facets = @($Metadata['facets'] ?? @())
     }
 }
-$CatalogPath = Join-Path $OutputDirectory 'catalog.json'
-[IO.File]::WriteAllText($CatalogPath, ((New-SkillCatalog -Release @($Records)) | ConvertTo-Json -Depth 20) + "`n")
-Push-Location -LiteralPath $RepoRoot
-try { & gh release view $CatalogTag *> $null; $CatalogExists = $LASTEXITCODE -eq 0 }
-finally { Pop-Location }
-if ($CatalogExists) { Invoke-Gh @('release', 'upload', $CatalogTag, $CatalogPath, '--clobber') | Out-Null }
-else {
-    Invoke-Gh @('release', 'create', $CatalogTag, $CatalogPath, '--target', $Sha, '--title', 'Skill library catalog',
-        '--notes', 'Rolling Spec Kit catalog of every published skill version. The tag never moves; only catalog.json is replaced.', '--latest=false') | Out-Null
-}
-Write-Host "Published $($Pending.Count) release(s); catalog lists $(@($Records).Count) version(s)."
+$Catalog = New-SkillCatalog -Release @($Records)
+$Site = [IO.Directory]::CreateDirectory($SiteDirectory).FullName
+[IO.File]::WriteAllText((Join-Path $Site 'catalog.json'), ($Catalog | ConvertTo-Json -Depth 20) + "`n")
+[IO.File]::WriteAllText((Join-Path $Site 'index.html'), (New-SkillCatalogPage -Catalog $Catalog))
+if ($env:GITHUB_OUTPUT) { Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "site-directory=$Site" }
+Write-Host "Published $($Pending.Count) release(s); catalog lists $(@($Records).Count) version(s) in $Site."

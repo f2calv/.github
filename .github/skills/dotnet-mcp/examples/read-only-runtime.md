@@ -46,6 +46,19 @@ namespace Example.Models;
 public sealed record RuntimeSnapshot(DateTimeOffset ObservedAtUtc, int ActiveWorkers, long QueuedItems);
 ```
 
+### `Models/McpConfig.cs`
+
+```csharp
+namespace Example.Models;
+
+public sealed record McpConfig
+{
+    public const string ConfigurationSectionName = "Mcp";
+
+    public bool Enabled { get; init; }
+}
+```
+
 ## MCP Files
 
 ### `Models/RuntimeMcpSnapshot.cs`
@@ -97,6 +110,7 @@ public sealed class RuntimeMcpService(IRuntimeSnapshotSource runtimeSnapshotSour
 
 ```csharp
 using Example.Abstractions;
+using Example.Models;
 using Example.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -108,17 +122,20 @@ namespace Example.Extensions;
 
 public static class McpEndpointExtensions
 {
+    private const string McpPath = "/mcp";
+    private const string ReadPolicy = "McpRead";
+
     public static bool AddExampleMcp(this WebApplicationBuilder builder)
     {
-        var enabled = builder.Configuration.GetValue<bool>("Mcp:Enabled");
-        if (!enabled)
+        var config = builder.Configuration.GetSection(McpConfig.ConfigurationSectionName).Get<McpConfig>() ?? new();
+        if (!config.Enabled)
             return false;
 
         if (!builder.Services.Any(service => service.ServiceType == typeof(IRuntimeSnapshotSource)))
             throw new InvalidOperationException("MCP requires the running application's snapshot source.");
 
         builder.Services.AddAuthorization(options =>
-            options.AddPolicy("McpRead", policy => policy
+            options.AddPolicy(ReadPolicy, policy => policy
                 .RequireAuthenticatedUser()
                 .RequireClaim("permission", "runtime.read")));
         builder.Services.AddMcpServer()
@@ -133,7 +150,7 @@ public static class McpEndpointExtensions
         {
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path.StartsWithSegments("/mcp"))
+                if (context.Request.Path.StartsWithSegments(McpPath))
                 {
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
                     return;
@@ -144,7 +161,7 @@ public static class McpEndpointExtensions
             return;
         }
 
-        var group = app.MapGroup("/mcp").RequireAuthorization("McpRead");
+        var group = app.MapGroup(McpPath).RequireAuthorization(ReadPolicy);
         group.AddEndpointFilter(async (context, next) =>
         {
             if (context.HttpContext.Request.Headers.ContainsKey("Origin"))
@@ -171,8 +188,10 @@ app.UseAuthorization();
 app.Run();
 ```
 
-Reuse the same captured startup flag for registration and mapping. Missing `Mcp:Enabled` means
-disabled; an invalid boolean fails configuration conversion. Enabling it is restart-required.
+Reuse the same captured startup flag for registration and mapping. The gate binds the `Mcp` section
+to `McpConfig` once at composition time, because routes are decided before the service provider
+exists. Missing `Mcp:Enabled` means disabled; an invalid boolean fails configuration binding.
+Enabling it is restart-required.
 The permission claim is synthetic: map it deliberately to the host's validated authorization
 model, never trust a caller-supplied tool argument as proof of scope.
 

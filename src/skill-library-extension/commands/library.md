@@ -1,5 +1,5 @@
 ---
-description: Search, install and load independently versioned skills, including their required and related skills.
+description: Search, install, upgrade and load independently versioned skills, including their required and related skills.
 ---
 
 # Skill Library
@@ -18,6 +18,7 @@ pwsh -NoProfile -File .specify/extensions/skill/scripts/Invoke-SkillLibrary.ps1 
 | `search <terms>` | Find skills by ID, description or facet. |
 | `plan <id>` | Show the install order, required skills and related offers. Changes nothing. |
 | `install <id>` | Install the skill and its required skills through `specify extension add`. |
+| `upgrade-all` | Upgrade every installed skill to its latest catalog version, adding newly required skills. |
 | `list` | List installed skills. |
 | `load <id>` | List the installed files of a skill, `SKILL.md` first. |
 
@@ -30,8 +31,11 @@ Follow this workflow:
    user chooses them. Then run `install` with the same `-Version` and the chosen `-Related` IDs.
 3. After installing related skills, run `plan` for each of them and offer their own related skills
    the same way, until the user declines or no new offers remain.
-4. To load, run `load <id>`. Read the listed `SKILL.md` and instruction files, then other listed files
+4. To upgrade, run `upgrade-all`. It prints each skill's current and target version, installs
+   required skills first and stops without changes if a required pin cannot be met. Report the
+   upgraded skills and suggest `load` for any whose guidance the user relies on.
+5. To load, run `load <id>`. Read the listed `SKILL.md` and instruction files, then other listed files
    only when relevant. Apply the guidance to the rest of the user's request. Read only installed
    files under `.specify/extensions/`.
-5. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
+6. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
    pass. Never run scripts contained in an installed skill unless its guidance and the user ask.

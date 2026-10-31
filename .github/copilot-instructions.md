@@ -58,6 +58,9 @@ Notes:
   glob. Skills instead require `name` and a discovery-focused `description`; `applyTo` does not
   invoke a skill. Ordinary supporting documentation has no customization frontmatter.
 - Add no attribution or "brought to you by" footer to a file or a `description`; it is noise in every agent's context.
+- Code in skills, examples and references follows the same instructions it would in a real
+  repository, for example strongly-typed options instead of configuration key strings. Label a
+  deliberate anti-pattern as such next to the snippet.
 - `applyTo` is matched relative to the workspace root. Prefer portable patterns such as `**/*.cs`. Avoid patterns anchored to one repository's folder layout.
 - One topic per file, named `<topic>.instructions.md`. Keep rules short and self-contained, and say why a rule exists where the reason is not obvious.
 - Prefer amending an existing file over adding a near-duplicate one.

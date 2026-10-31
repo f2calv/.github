@@ -30,12 +30,13 @@ Describe 'Set-SkillVersion' -Tag 'Unit' {
         Invoke-FixtureGit $Repo diff --exit-code
     }
 
-    It 'bumps an unreleased skill only when named, without cascading a bump to unreleased dependents' {
+    It 'refuses to bump an unreleased skill, however often it is named' {
         $Repo = New-SkillFixture $TestDrive
-        & $Script -RepoRoot $Repo -Id beta 6> $null
-        Get-Version 'beta' | Should -Be '1.0.1'
+        & $Script -RepoRoot $Repo -Id beta 6> $null 3> $null
+        & $Script -RepoRoot $Repo -Id beta 6> $null 3> $null
+        Get-Version 'beta' | Should -Be '1.0.0'
         Get-Version 'alpha' | Should -Be '1.0.0'
-        (Read-SkillYaml (Join-Path $Repo '.github/skills/alpha/skill.metadata.yaml')).required[0].version | Should -Be '1.0.1'
+        Invoke-FixtureGit $Repo diff --exit-code
     }
 
     It 'preserves comments' {

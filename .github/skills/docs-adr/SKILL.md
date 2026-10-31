@@ -1,6 +1,6 @@
 ---
 name: docs-adr
-description: 'Create, refine, review and supersede architecture decision records (ADRs) and architecture design proposals. Use for evidence-backed decisions under docs/, local ADR drafts, GitHub issues labelled adr, alternatives and tradeoffs, source deep links, and turning a design discussion into a durable decision record.'
+description: 'Create, refine, review and supersede architecture decision records (ADRs) and architecture design proposals. Use for evidence-backed decisions under docs/, local ADR drafts, GitHub issues labelled adr, alternatives and tradeoffs, source deep links, keeping a record current across sessions, and turning a design discussion into a decision record.'
 ---
 
 # ADR Authoring
@@ -27,7 +27,7 @@ local record; a design discussion is not authorization to implement, commit or p
 | `draft` | Research and write a local proposed ADR or explicitly requested design document |
 | `update` | Refine an existing proposal, integrating new requirements across affected sections |
 | `review` | Report evidence, consistency, alternatives and validation gaps without editing |
-| `supersede` | Write a replacement decision and link its relationship to the accepted record |
+| `supersede` | Write a separate record when the decision's subject changes, and link the two |
 | `issue` | Prepare locally, then create/update an issue when that remote operation is authorized |
 
 Use the repository's existing ADR path and numbering. Otherwise default to
@@ -123,19 +123,25 @@ Keep the outcome understandable without opening every supporting link.
   test matrices or runbooks in supporting `docs/` material only when useful/requested, and link it.
   Do not grow every ADR into a tutorial or reproduce application implementation details.
 
-## 4. Evolve a Proposal Without Contradictions
+## 4. Keep the Record Current
 
-Treat follow-up requirements as edits to the existing proposal, not append-only amendments.
-Update the summary, alternatives, dependency boundaries, data model, diagrams, failure semantics,
-UI/API contract, acceptance criteria and open questions that the change actually affects.
-Remove superseded assumptions and duplicate wording in the same pass.
+ADRs are living documents, including after acceptance. Git history preserves earlier versions, so
+update the record in place rather than appending amendments or opening a new ADR for every change.
 
-Do not silently rewrite an accepted decision's rationale/outcome. Record a changed decision in a
-new ADR, mark the relationship and preserve the historical record. Status/link updates and factual
-errata can be annotated without pretending the old decision was always the new one.
-Record significant implementation deviations and their reasons in a linked follow-up or clearly
-dated implementation note; distinguish a shipped compromise from the original accepted choice.
-Do not assign a decision owner, approval, execution result or completion status without evidence.
+- Treat follow-up requirements, refinements and implementation lessons as edits to the existing
+  record. Update the summary, alternatives, dependency boundaries, data model, diagrams, failure
+  semantics, UI/API contract, acceptance criteria and open questions that the change affects.
+  Remove superseded assumptions and duplicate wording in the same pass.
+- When an accepted outcome or rationale changes, rewrite it to the current decision, update the
+  `Date`, and keep a short reason when the old choice was rejected for a lesson worth keeping.
+  Do not leave the record contradicting itself or the implementation.
+- Create a separate superseding ADR only when the subject itself changes, for example a different
+  boundary or a replacement technology, and link the two records.
+- An ADR may carry a `Handover` section for work that continues across sessions or environments:
+  current state, ordered next steps, known gaps and unmerged branches. Rewrite it at the end of each
+  session and delete entries once they no longer apply; keep the checklist as the source of truth
+  for remaining work.
+- Do not assign a decision owner, approval, execution result or completion status without evidence.
 
 ## 5. Optionally Persist as a GitHub Issue
 

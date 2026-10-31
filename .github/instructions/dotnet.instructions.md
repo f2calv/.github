@@ -71,6 +71,9 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 - After any refactoring, build the **entire solution** rather than only the affected project, so compilation errors in dependent projects surface immediately.
 - Where Debug and Release solutions both exist, build the Debug solution locally; it is the one wired to local project references.
+- Restore the selected configuration before using `--no-restore` when project/package references are
+  configuration-conditional. Assets restored for another configuration can otherwise surface both
+  the published package and local project assembly and create a false duplicate-reference failure.
 - Serialize builds and test builds whose project-reference graphs share output directories, including
   sibling dependencies used by different Debug solutions. Separate solution roots do not prevent
   concurrent compilers from contending for the same dependency outputs.
