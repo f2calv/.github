@@ -5,6 +5,17 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 # .NET
 
+## Application Project Names
+
+- Use `CasCap.Backend` for application-owned backend implementation and `CasCap.App.Hosting` for
+  shared application composition or bootstrap libraries. Prefer these generic project names over
+  product-qualified variants; reusable capability libraries retain their own role names.
+- A project name does not prescribe a matching namespace. Review project/folder names separately
+  from assembly, public namespace, package and executable identities; preserve existing contracts
+  unless their migration is explicitly approved.
+- Classify responsibilities through the `dotnet-cleanup` inventory/review workflow before renaming
+  or splitting projects. An execution module is not automatically the entire application backend.
+
 ## Central Build Configuration
 
 - Keep shared MSBuild properties in the root `Directory.Build.props` — root namespace, language version, `ImplicitUsings`, `Nullable`, `GenerateDocumentationFile`, warning policy and `ContinuousIntegrationBuild` for deterministic CI builds.
