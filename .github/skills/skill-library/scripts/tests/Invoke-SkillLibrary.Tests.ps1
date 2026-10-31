@@ -83,6 +83,20 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
         "$Workspace/specify.log" | Should -Not -Exist
     }
 
+    It 'upgrades installed skills to their latest versions, required skills first' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Remove-Item "$Workspace/specify.log"
+        $Output = Invoke-Library upgrade-all
+        $Output | Should -Match '(?s)beta\s+1\.0\.0\s+current.*alpha\s+1\.1\.0\s+upgrade from 1\.0\.0'
+        Get-Content "$Workspace/specify.log" | Should -Be "extension add alpha --version 1.1.0 --force catalog=$CatalogPath"
+        $env:SPECKIT_CATALOG_URL | Should -BeNullOrEmpty
+        Invoke-Library upgrade-all | Should -BeLike '*All installed skills are at their latest versions*'
+    }
+
+    It 'reports when no skills are installed to upgrade' {
+        Invoke-Library upgrade-all | Should -BeLike '*No skills are installed*'
+    }
+
     It 'lists installed skills and loads their files with SKILL.md first' {
         Invoke-Library install beta | Out-Null
         Invoke-Library list | Should -Match 'beta\s+1\.0\.0\s+True'

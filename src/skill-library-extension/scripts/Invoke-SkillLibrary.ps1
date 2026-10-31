@@ -4,7 +4,7 @@
 .SYNOPSIS
 Searches, installs and loads skills from the skill library catalog through the Specify CLI.
 .PARAMETER Command
-help, search, plan, install, list or load.
+help, search, plan, install, upgrade-all, list or load.
 .PARAMETER Target
 Search terms, or the skill ID for plan, install and load.
 .PARAMETER Version
@@ -18,11 +18,11 @@ Skill library catalog; SKILL_LIBRARY_CATALOG_URL overrides the published default
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Position = 0)][ValidateSet('help', 'search', 'plan', 'install', 'list', 'load')][string]$Command = 'help',
+    [Parameter(Position = 0)][ValidateSet('help', 'search', 'plan', 'install', 'upgrade-all', 'list', 'load')][string]$Command = 'help',
     [Parameter(Position = 1)][string]$Target = '',
     [string]$Version = '',
     [string[]]$Related = @(),
-    [string]$CatalogUrl = ($env:SKILL_LIBRARY_CATALOG_URL ?? 'https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json'),
+    [string]$CatalogUrl = ($env:SKILL_LIBRARY_CATALOG_URL ?? 'https://f2calv.github.io/.github/catalog.json'),
     [string]$Workspace = (Get-Location).Path
 )
 $ErrorActionPreference = 'Stop'
@@ -97,11 +97,57 @@ function Show-Plan([object]$Plan) {
     }
 }
 
+function Resolve-Upgrade([hashtable]$Catalog) {
+    $Installed = Get-Installed
+    $Targets = @{}
+    foreach ($Id in $Installed.Keys) {
+        if ($Id -cne $BootstrapId -and $Catalog.ContainsKey($Id)) { $Targets[$Id] = Get-Release $Catalog $Id '' }
+    }
+    $Steps = [Collections.Generic.List[object]]::new()
+    $Visited = @{}
+    function Add-Step([object]$Release) {
+        if ($Visited.ContainsKey($Release.Id)) { return }
+        $Visited[$Release.Id] = $true
+        foreach ($Edge in $Release.Required) {
+            if (-not $Targets.ContainsKey($Edge.id)) { $Targets[$Edge.id] = Get-Release $Catalog $Edge.id $Edge.version }
+            if ($Targets[$Edge.id].Version -cne $Edge.version) {
+                throw "$($Release.Id) $($Release.Version) requires $($Edge.id) $($Edge.version), but the latest is $($Targets[$Edge.id].Version). Nothing was changed."
+            }
+            Add-Step $Targets[$Edge.id]
+        }
+        $Current = if ($Installed.ContainsKey($Release.Id)) { [string]$Installed[$Release.Id].version } else { $null }
+        $Action = if ($null -eq $Current) { 'install' }
+        elseif ($Current -ceq $Release.Version) { 'current' }
+        elseif ([version]$Current -gt [version]$Release.Version) { "newer $Current installed" }
+        else { "upgrade from $Current" }
+        $Steps.Add([pscustomobject]@{ Id = $Release.Id; Version = $Release.Version; Action = $Action })
+    }
+    foreach ($Id in @($Targets.Keys | Sort-Object)) { Add-Step $Targets[$Id] }
+    return $Steps
+}
+
+function Invoke-Specify([object[]]$Steps) {
+    $Cache = Join-Path $Workspace ".specify/extensions/.cache/catalog-$(([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($CatalogUrl)))).Substring(0, 16).ToLowerInvariant())"
+    Remove-Item -Path "$Cache*.json" -ErrorAction SilentlyContinue
+    $env:SPECKIT_CATALOG_URL = $CatalogUrl
+    Push-Location -LiteralPath $Workspace
+    try {
+        foreach ($Step in $Steps) {
+            $Arguments = @('extension', 'add', $Step.Id, '--version', $Step.Version)
+            if ($Step.Action -like 'upgrade*') { $Arguments += '--force' }
+            Write-Output "specify $($Arguments -join ' ')"
+            & specify @Arguments
+            if ($LASTEXITCODE -ne 0) { throw "Installing $($Step.Id) $($Step.Version) failed; earlier skills in the order remain installed." }
+        }
+    }
+    finally { Pop-Location; Remove-Item Env:SPECKIT_CATALOG_URL -ErrorAction SilentlyContinue }
+}
+
 function Assert-Target { if (-not $Target) { throw "The $Command command needs a skill ID." } }
 
 switch ($Command) {
     'help' {
-        Write-Output 'Commands: search <terms> | plan <id> | install <id> [-Version X.Y.Z] [-Related a,b] | list | load <id>'
+        Write-Output 'Commands: search <terms> | plan <id> | install <id> [-Version X.Y.Z] [-Related a,b] | upgrade-all | list | load <id>'
     }
     'search' {
         $Terms = @($Target.ToLowerInvariant() -split '\s+' | Where-Object { $_ })
@@ -125,19 +171,18 @@ switch ($Command) {
         Show-Plan $Plan
         $Conflicts = @($Plan.Steps | Where-Object Action -like 'conflict*')
         if ($Conflicts.Count) { throw "Resolve version conflicts first: $($Conflicts.Id -join ', '). Nothing was installed." }
-        $Cache = Join-Path $Workspace ".specify/extensions/.cache/catalog-$(([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($CatalogUrl)))).Substring(0, 16).ToLowerInvariant())"
-        Remove-Item -Path "$Cache*.json" -ErrorAction SilentlyContinue
-        $env:SPECKIT_CATALOG_URL = $CatalogUrl
-        Push-Location -LiteralPath $Workspace
-        try {
-            foreach ($Step in $Plan.Steps | Where-Object Action -eq 'install') {
-                Write-Output "specify extension add $($Step.Id) --version $($Step.Version)"
-                & specify extension add $Step.Id --version $Step.Version
-                if ($LASTEXITCODE -ne 0) { throw "Installing $($Step.Id) $($Step.Version) failed; earlier skills in the order remain installed." }
-            }
-        }
-        finally { Pop-Location; Remove-Item Env:SPECKIT_CATALOG_URL -ErrorAction SilentlyContinue }
+        Invoke-Specify @($Plan.Steps | Where-Object Action -eq 'install')
         Write-Output 'Installed. Run plan for newly installed related skills to see their related offers.'
+    }
+    'upgrade-all' {
+        $Steps = @(Resolve-Upgrade (Get-Catalog))
+        if ($Steps.Count -eq 0) { Write-Output 'No skills are installed.'; break }
+        Write-Output 'Upgrade order:'
+        $Steps | Format-Table Id, Version, Action -AutoSize | Out-String -Width 200 | Write-Output
+        $Pending = @($Steps | Where-Object { $_.Action -eq 'install' -or $_.Action -like 'upgrade*' })
+        if ($Pending.Count -eq 0) { Write-Output 'All installed skills are at their latest versions.'; break }
+        Invoke-Specify $Pending
+        Write-Output "Upgraded $($Pending.Count) skill(s)."
     }
     'list' {
         $Installed = Get-Installed
