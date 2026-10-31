@@ -67,6 +67,11 @@ Additional subfolders are permitted where a project has a genuinely distinct tes
 - Dispose every `ServiceProvider` a test builds with `using` / `await using`.
 - Make helper classes `static` when they have no instance state.
 - Avoid shared mutable static state in fixtures; each test must be independently repeatable.
+- Assert the actual startup failure, not a disposal wrapper. If `WebApplicationFactory` masks a fast
+  startup exception through its deferred-host disposal, exercise that reader with `Host.StartAsync`;
+  keep HTTP behavior covered separately rather than accepting any startup exception.
+- In bUnit, dispose the rendered component tree with `DisposeComponentsAsync` when testing
+  cancellation or cleanup; disposing a rendered-result wrapper alone does not prove component disposal.
 
 ## Diagnostic Output
 
