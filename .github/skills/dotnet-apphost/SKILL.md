@@ -71,13 +71,14 @@ Trace executed code in order:
 8. infrastructure and dependency registration;
 9. observability;
 10. feature/role validation and registration;
-11. Web API, MCP, gRPC and other transport registration;
-12. host options and shutdown;
-13. build;
-14. middleware;
-15. endpoint mapping;
-16. run or finite operation;
-17. cancellation, failure, logging flush, disposal and process result.
+11. one background-feature supervisor after all feature registrations;
+12. Web API, MCP, gRPC and other transport registration;
+13. host options and shutdown;
+14. build;
+15. middleware;
+16. endpoint mapping;
+17. run or finite operation;
+18. cancellation, failure, logging flush, disposal and process result.
 
 Record where each step lives and the state it passes to later phases. Do not infer behavior from
 filename symmetry.
@@ -173,6 +174,8 @@ tests covering the change. When authorized, validate:
 - interactive consoles translate Ctrl+C into cooperative cancellation and dispose their host;
 - Debug-only host modes fail clearly in Release rather than silently changing behavior;
 - shared infrastructure required by several features is registered once;
+- every registered `IBgFeature` has exactly one supervisor in each supported composition;
+- post-start observer callbacks contain and log rejected updates without hiding startup failures;
 - every thin entry point passes the intended entry assembly for user-secrets/configuration behavior;
 - cancellation and shutdown are bounded;
 - unexpected faults remain failures;

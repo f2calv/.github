@@ -176,6 +176,19 @@ enabled feature or role. Conditional registration can use `IBgFeature.AlwaysEnab
 reusable worker should not depend on application feature-name constants. Keep startup initializers
 as direct `IHostedService` implementations so their failures prevent startup.
 
+Package registration may contribute an always-enabled `IBgFeature`, but the application owns the
+supervisor. Install one `FeatureFlagBgService` after all role and package registrations when the
+composed service collection contains background features. This supports runtime-only and combined
+roles without duplicate supervisors or application feature constants leaking into reusable
+packages. Multi-target packages use `BgFeatureNames.AlwaysEnabled`; `IBgFeature.AlwaysEnabled`
+remains the net8+ alias.
+
+Keep deliberately non-fatal observers, such as runtime configuration reload adapters, as direct
+hosted services when startup application must fail the host but later callback failures should not.
+Apply the initial value outside the isolation boundary. For post-start changes, validate and compute
+the replacement before mutating live state, catch and log callback failures, and retain the last
+valid state.
+
 Exact nonzero values are rarely useful for daemons; use one unless an external process contract
 requires more. Jobs depend on zero versus nonzero for completion and retry behavior.
 
