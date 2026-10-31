@@ -12,11 +12,6 @@ permissions: {}
 
 jobs:
   test:
-    name: test (${{ matrix.shard }})
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [workspace-install, version-preparation, remaining]
     runs-on: ${{ inputs.runs-on }}
     permissions:
       contents: read
@@ -32,13 +27,6 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: python -m pip install -r skill-library requirements
-        run: 'python -m pip install --require-hashes --only-binary :all: -r .github/skills/skill-library/scripts/requirements.txt -r .github/skills/skill-library/scripts/requirements-spec-kit.txt'
 
       - name: verify local fixture tools
         shell: pwsh
@@ -56,17 +44,5 @@ jobs:
           }
           Write-Host $yqVersion
 
-      - name: npm run test:ps -- -Shard ${{ matrix.shard }}
-        shell: bash
-        env:
-          TEST_SHARD: ${{ matrix.shard }}
-          SKILL_LIBRARY_VERSION_EVIDENCE: ${{ runner.temp }}/skill-version-demo
-        run: npm run test:ps -- -Shard "$TEST_SHARD"
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && matrix.shard == 'version-preparation' }}
-        with:
-          name: skill-version-rehearsal
-          path: ${{ runner.temp }}/skill-version-demo/
-          if-no-files-found: error
-          retention-days: 30
+      - name: npm run test:ps
+        run: npm run test:ps

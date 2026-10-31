@@ -5,12 +5,9 @@ param(
 )
 
 BeforeDiscovery {
-    . (Join-Path $PSScriptRoot '../../.github/skills/skill-library/scripts/Invoke-Validation.ps1') -SkillName $SkillName
-    $Exclusions = @(Read-SkillExclusions -Root (Join-Path $PSScriptRoot '../..'))
     $SkillsRoot = Join-Path $PSScriptRoot '..\..\.github\skills'
     $script:Skills = Get-ChildItem -LiteralPath $SkillsRoot -Directory |
     Where-Object {
-        -not (Test-SkillExcluded -Name $_.Name -Patterns $Exclusions) -and
         ($SkillName.Count -eq 0 -or $_.Name -in $SkillName) -and
         (Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md'))
     } |
