@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-cron-scheduling
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.redis.instructions.md
+  - .github/instructions/workflow.instructions.md

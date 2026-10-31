@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [containers]
+related:
+  - id: containers-images
+    reason: Linked from SKILL.md.
+  - id: containers-workflows
+    reason: Linked from SKILL.md.
+  - id: containers-devcontainer
+    reason: Linked from SKILL.md.
+  - id: github-dependabot
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/docker.compose.instructions.md
+  - .github/instructions/docker.instructions.md
+  - .github/instructions/dotnet.testing.instructions.md
+  - .github/instructions/workflow.instructions.md

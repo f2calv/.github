@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-redis
+    reason: Linked from references/queries-and-writes.md.
+  - id: dotnet-upgrade
+    reason: Linked from SKILL.md.
+  - id: dotnet-release-train
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.efcore.instructions.md
+  - .github/instructions/dotnet.testing.instructions.md

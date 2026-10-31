@@ -1,33 +1,5 @@
-$schema: skill-metadata.schema.json
-id: skill-library
-version: '1.0.0'
-facets: [authoring, metadata]
-tooling:
-  - id: powershell
-    versionRequirement: '>=7.4.0'
-    scope: authoring
-    required: true
-  - id: python
-    versionRequirement: '>=3.11.0'
-    scope: authoring
-    required: true
-  - id: pyyaml
-    versionRequirement: '6.0.3'
-    scope: authoring
-    required: true
-  - id: powershell
-    versionRequirement: '>=7.4.0'
-    scope: consumer
-    required: true
-  - id: python
-    versionRequirement: '>=3.11.0'
-    scope: consumer
-    required: true
-  - id: pyyaml
-    versionRequirement: '6.0.3'
-    scope: consumer
-    required: true
-  - id: spec-kit
-    versionRequirement: '1.2.3'
-    scope: consumer
-    required: true
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [authoring, metadata, spec-kit]
+externalFiles:
+  - docs/adr-0001-skill-library-distribution.md

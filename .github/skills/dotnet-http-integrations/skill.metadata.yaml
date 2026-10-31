@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-dependency-injection
+    reason: Linked from SKILL.md.
+  - id: patterns-ports-and-adapters
+    reason: Linked from SKILL.md.
+  - id: dotnet-webapi
+    reason: Linked from SKILL.md.
+  - id: dotnet-grpc
+    reason: Linked from SKILL.md.
+  - id: tooling-rest-client
+    reason: Linked from SKILL.md.
+  - id: dotnet-performance
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/workflow.instructions.md

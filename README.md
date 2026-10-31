@@ -76,7 +76,7 @@ Use the linked workflow for its prerequisites, safety gates and detailed command
 | [Dev Containers](.github/skills/containers-devcontainer/SKILL.md) | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](.github/skills/spec-kit-bootstrap/SKILL.md) | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](.github/skills/spec-kit-guide/SKILL.md) | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
-| [Skill library](.github/skills/skill-library/SKILL.md) | YAML metadata authoring and local schema, repository defaults, dependency and safe-path validation |
+| [Skill library](.github/skills/skill-library/SKILL.md) | Skill sidecars, version bumps, Spec Kit extension releases and `/speckit-skill-library` installation |
 | [Container images](.github/skills/containers-images/SKILL.md) | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](.github/skills/containers-docker-compose/SKILL.md) | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](.github/skills/containers-workflows/SKILL.md) | Shared local container build and GitOps deployment scripts |

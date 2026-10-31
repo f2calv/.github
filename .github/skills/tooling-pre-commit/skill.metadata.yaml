@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [tooling]
+externalFiles:
+  - .pre-commit-config.yaml

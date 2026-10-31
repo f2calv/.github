@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: tooling-rest-client
+    reason: Linked from SKILL.md.
+  - id: dotnet-grpc
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/dotnet.testing.instructions.md
+  - .github/instructions/dotnet.webapi.instructions.md

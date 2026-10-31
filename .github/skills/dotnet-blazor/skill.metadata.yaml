@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-webapi
+    reason: Linked from SKILL.md.
+  - id: containers-images
+    reason: Linked from SKILL.md.
+  - id: identity-oidc-registration
+    reason: Linked from SKILL.md.
+externalFiles:
+  - .github/instructions/dotnet.blazor.instructions.md
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/dotnet.testing.instructions.md
+  - .github/instructions/dotnet.webapi.instructions.md
