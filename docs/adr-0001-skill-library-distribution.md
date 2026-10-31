@@ -62,11 +62,42 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Build a deterministic extension ZIP per skill with external files and `LICENSE`.
 - [x] Fail pull requests on unbumped changes or stale required pins; bump with cascade.
 - [x] Build the `skill` bootstrap extension with `/speckit-skill-library`.
-- [ ] Publish missing `<id>/X.Y.Z` releases and the rolling catalog from `main`.
+- [x] Publish missing `<id>/X.Y.Z` releases from `main`: 46 skills and `skill` at `1.0.0` (PR #37).
+- [ ] Publish the rolling `skills-catalog` release; the first run failed reading remote-only tags.
 - [x] Cover validation, build, version checks, bump cascade and plan resolution with Pester.
 - [x] Rewrite the `skill-library` skill and README for the new workflow.
-- [ ] Install and load skills with related selection in a fresh `specify init --script ps` consumer.
+- [x] Install and load skills with related selection in a fresh consumer from a local catalog.
+- [ ] Install and load skills from the published catalog in a fresh `specify init --script ps` consumer.
 - [ ] Publish a real follow-on version of one skill and its required dependents.
+
+## Handover
+
+**State on 2026-10-31.** [PR #37](https://github.com/f2calv/.github/pull/37) merged the slim
+workflow and published 47 releases at `1.0.0`. Its catalog step failed because `gh release create`
+makes tags on GitHub only and the job read them locally before fetching. The follow-up PR fetches
+tags first, decouples this ADR from the `skill-library` package and bumps `skill-library` to
+`1.0.1`; its merge should publish that first follow-on release and create `skills-catalog`.
+Check the `skill-releases` job of that merge and tick the catalog and follow-on boxes when green.
+
+**Next session (Windows host, not the Dev Container).** Install PowerShell 7.4+, Git, GitHub CLI,
+`yq` v4 (`winget install MikeFarah.yq`) and the Specify CLI
+(`uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.3`). Then:
+
+1. Confirm the catalog resolves:
+   `https://github.com/f2calv/.github/releases/download/skills-catalog/catalog.json`.
+2. In a fresh demo repository run `specify init --here --integration copilot --script ps`, set
+   `$env:SPECKIT_CATALOG_URL` to that URL, run `specify extension add skill`, then clear the variable.
+3. Run `/speckit-skill-library install docs-adr`: expect `repository-privacy` as required and an
+   offer of `github-issues-and-pull-requests`. Then `load docs-adr` and tick the consumer box.
+
+**Known gaps.** Windows is untested: the consumer helper should work, but the Pester fixtures use
+`chmod` and shebang fake commands, so run the repository tests in CI or Linux. Release download URLs
+for tags containing `/` are taken from the GitHub API and are unverified in a real install.
+
+**Pending skill changes from another session.** Merge `main` into that branch, then run
+`git fetch --tags`, `New-SkillMetadata.ps1`, `Set-SkillVersion.ps1` and `Test-SkillLibrary.ps1`
+as described in the [skill guide](../.github/skills/skill-library/SKILL.md#validate-and-bump).
+The PR gate fails with the script to run for any missing sidecar or unbumped change.
 
 ## Open Questions
 
