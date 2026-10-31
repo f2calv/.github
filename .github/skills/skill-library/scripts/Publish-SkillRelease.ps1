@@ -52,6 +52,10 @@ foreach ($Component in $Pending) {
 }
 if ($DryRun) { Write-Host "$($Pending.Count) pending release(s); nothing was published."; return }
 if (-not $Pending.Count -and -not $RefreshCatalog) { Write-Host 'Nothing to publish.'; return }
+# gh creates tags on GitHub, so fetch them before reading historical metadata.
+if (@(Invoke-SkillTool git @('remote') -WorkingDirectory $RepoRoot) -contains 'origin') {
+    Invoke-SkillTool git @('fetch', '--quiet', '--tags', 'origin') -WorkingDirectory $RepoRoot | Out-Null
+}
 
 $Records = foreach ($Tag in Invoke-Gh @('release', 'list', '--limit', '1000', '--json', 'tagName', '--jq', '.[].tagName')) {
     $Match = [regex]::Match($Tag, $TagPattern)

@@ -5,7 +5,7 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot 'SkillLibraryFixture.psm1') -Force
     $Script = Join-Path $PSScriptRoot '../Publish-SkillRelease.ps1'
     $SavedPath = $env:PATH
-    # Stores releases as folders, tags the target commit like GitHub does, and logs every call.
+    # Stores releases as folders, tags the target commit only on origin like GitHub does, and logs every call.
     New-FakeCommand -Root $TestDrive -Name 'gh' -Script @'
 $A = [string[]]$args
 $State = $env:FAKE_GH_STATE
@@ -18,6 +18,8 @@ switch ($A[1]) {
         [void](New-Item -ItemType Directory -Force -Path $Dir)
         Copy-Item -LiteralPath $A[3] -Destination $Dir
         & git tag $A[2] $A[[array]::IndexOf($A, '--target') + 1]
+        & git push -q origin $A[2]
+        & git tag -d $A[2] | Out-Null
         if ($LASTEXITCODE -ne 0) { exit 1 }
     }
     'upload' { Copy-Item -LiteralPath $A[3] -Destination $Dir -Force }
@@ -41,6 +43,10 @@ AfterAll { $env:PATH = $SavedPath; Remove-Item Env:FAKE_GH_STATE -ErrorAction Si
 Describe 'Publish-SkillRelease' -Tag 'Unit' {
     BeforeEach {
         $Repo = New-SkillFixture $TestDrive
+        $Origin = Join-Path $TestDrive ([guid]::NewGuid())
+        Invoke-FixtureGit $TestDrive init -q --bare $Origin
+        Invoke-FixtureGit $Repo remote add origin $Origin
+        Invoke-FixtureGit $Repo push -q origin main
         $env:FAKE_GH_STATE = Join-Path $TestDrive ([guid]::NewGuid())
         [void][IO.Directory]::CreateDirectory($env:FAKE_GH_STATE)
         function Get-Calls { @(Get-Content -LiteralPath (Join-Path $env:FAKE_GH_STATE 'calls.log') -ErrorAction SilentlyContinue) }
