@@ -34,9 +34,6 @@ Use these headings before a diagram so readers and agents find the same view in 
 | `## Configuration Hierarchy` | Nested configuration objects |
 | `## Class Hierarchy` | A published extension-point type hierarchy |
 
-A legacy `## Service Architecture` heading usually holds a System Context or Containers view; rename
-it to the matching heading when the diagram is next updated.
-
 Under each heading, write one or two sentences stating what the reader should notice before the
 diagram, and add a legend line when colors or line styles carry meaning.
 
