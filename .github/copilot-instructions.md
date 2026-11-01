@@ -37,13 +37,11 @@ files are not copied into other repositories, a change here never triggers their
   repository, for example strongly-typed options instead of configuration key strings. Label a
   deliberate anti-pattern as such next to the snippet.
 - `applyTo` is matched relative to the workspace root. Prefer portable patterns such as `**/*.cs`. Avoid patterns anchored to one repository's folder layout.
-- Every always-on (`applyTo: '**'`) line costs tokens in every request: keep those files to
-  invariants and move procedures into skills. Scope other files to the paths their rules govern,
-  and split a file when part of it serves a narrower path, as the README rules do.
-- Skill front matter: an unquoted `name`, and a `description` of at most 600 characters containing
-  a `Use when`/`Use for` trigger that names the neighbouring skill where triggers overlap. Omit
-  default-valued fields such as `user-invocable: true`. Keep `SKILL.md` under 16 KB by moving
-  detail into `references/` or `examples/`. `.scripts/tests/Skills.Tests.ps1` enforces these.
+- Keep always-on files to invariants, scope `applyTo` to governed paths, and give every skill an
+  unquoted `name`, a `description` of at most 600 characters with a `Use when`/`Use for` trigger, no
+  default-valued fields and a `SKILL.md` under 16 KB. The
+  [authoring reference](skills/skill-library/references/authoring-and-context-budget.md) explains
+  the cost model and audit; `.scripts/tests/Skills.Tests.ps1` enforces the skill rules.
 - One topic per file, named `<topic>.instructions.md`. Keep rules short and self-contained, and say why a rule exists where the reason is not obvious.
 - Prefer amending an existing file over adding a near-duplicate one.
 - Every `SKILL.md` has a `## Maintaining This Skill` section listing that skill's own drift triggers:
