@@ -30,8 +30,13 @@ retire infrastructure in reverse order.
    Use existing tests after approval; distinguish static validation, mocked plans and live checks.
    Verify that the intended cases actually ran: an unknown test-file filter can exit zero with
    no tests. Match platform-native test paths and reject zero-case success or filter warnings.
-2. Obtain permission for the exact cloud/state scope. Confirm the account and existing backend,
-   then generate a saved plan for the smallest affected root.
+2. Obtain permission for the exact cloud/state scope. Confirm the account and existing backend.
+   Before cloud-backed initialization, verify that both the target and the state-backend
+   subscriptions are enabled; a disabled backend can block even the storage-key lookup. An
+   `Enabled` status alone does not prove readiness: if an operation still returns
+   `ReadOnlyDisabledSubscription`, keep that root blocked and record the contradiction rather than
+   changing authentication or state ownership to bypass it. Then generate a saved plan for the
+   smallest affected root.
 3. Review creates, updates, replacements and destroys individually, including nested modules and
    role assignments. Distinguish harmless deployment-tag updates from functional drift; do not
    accept unrelated changes because the plan is otherwise plausible.
@@ -43,8 +48,11 @@ retire infrastructure in reverse order.
 
 ## Partial Apply Recovery
 
-After a partial apply, inspect what actually succeeded before retrying. Some cloud APIs return
-deletion success before a service name is reusable: check completion/availability, use bounded
+After a partial apply, inspect what actually succeeded before retrying, at each attempted
+resource's exact cloud ID as well as in state. A timed-out create can complete remotely without
+entering state: verify its identity and configured properties, then obtain approval to import only
+matching untracked successes into their intended addresses; never recreate or blindly adopt them.
+Some cloud APIs return deletion success before a service name is reusable: check completion/availability, use bounded
 backoff, and generate a new reviewed plan for the remaining approved actions. Do not reuse the
 stale plan, rename the service silently, or roll back successful unrelated operations.
 
