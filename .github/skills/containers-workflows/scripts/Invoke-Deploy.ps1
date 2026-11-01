@@ -120,6 +120,7 @@ function Update-ManifestRepository {
     if ($LASTEXITCODE -ne 0 -or -not $upstream) { throw 'The current GitOps branch has no upstream branch.' }
     git -C $Repository merge --ff-only $upstream
     if ($LASTEXITCODE -ne 0) { throw "GitOps branch could not be fast-forwarded to '$upstream'." }
+    $script:ManifestBranch = "$(git -C $Repository branch --show-current)".Trim()
 }
 
 function Push-ManifestRepository {
@@ -269,9 +270,14 @@ function Update-DeploymentManifest {
     git -C $ManifestRepo --no-pager diff --stat -- $Deployment.RelativePath
     if ($NoCommit) { Write-Host 'GitOps manifest patched but not committed (-NoCommit).' -ForegroundColor Yellow; return }
     git -C $ManifestRepo add -- $Deployment.RelativePath
+    $branch = "$(git -C $ManifestRepo branch --show-current)".Trim()
+    if ($script:ManifestBranch -and $branch -ne $script:ManifestBranch) {
+        throw "GitOps checkout moved from '$($script:ManifestBranch)' to '$branch' during deployment; manifest left uncommitted."
+    }
     $message = "deploy($DeploymentName): $Tag@$($digest.Substring(0, 19)) $($env:DEPLOY_STAMP)"
     if ($DeploymentChart) { $message += " chart=$($DeploymentChart.Version)" }
-    git -C $ManifestRepo commit -m $message
+    # --only commits just the manifest, never files another session staged in the shared checkout.
+    git -C $ManifestRepo commit --only -m $message -- $Deployment.RelativePath
     if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }
     Push-ManifestRepository $ManifestRepo
 }

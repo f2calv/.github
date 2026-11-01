@@ -291,6 +291,56 @@ exit 0
         Should -Invoke Push-ManifestRepository -Times 1
     }
 
+    It 'commits only the manifest and leaves other staged files staged' {
+        $gitRoot = Join-Path $TestDrive 'shared-checkout'
+        New-Item -ItemType Directory -Path $gitRoot | Out-Null
+        git -C $gitRoot init --initial-branch main | Out-Null
+        git -C $gitRoot config user.name 'Example User'
+        git -C $gitRoot config user.email 'user@example.com'
+        $manifest = Join-Path $gitRoot 'application.yaml'
+        Set-Content $manifest "kind: Application`nspec:`n  source:`n    targetRevision: old"
+        Set-Content (Join-Path $gitRoot 'other.md') 'original'
+        git -C $gitRoot add -A
+        git -C $gitRoot commit -m 'initial' | Out-Null
+        Set-Content (Join-Path $gitRoot 'other.md') 'staged by another session'
+        git -C $gitRoot add -- other.md
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -ManifestRepo $gitRoot -DeploymentName 'example' -Tag 'latest-dev' `
+            -ImageRepository 'ghcr.io/example/app' -PodAnnotationName 'example/deployed'
+        $deployment = [pscustomobject]@{ Root = $repositoryRoot; Manifest = $manifest; RelativePath = 'application.yaml' }
+        Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock Get-DeploymentImageDigest { 'sha256:' + ('b' * 64) }
+        Mock Push-ManifestRepository
+        Update-DeploymentManifest $deployment $null '20260927000000'
+        @(git -C $gitRoot diff-tree --no-commit-id --name-only -r HEAD) | Should -Be @('application.yaml')
+        @(git -C $gitRoot diff --cached --name-only) | Should -Be @('other.md')
+    }
+
+    It 'refuses to commit when the GitOps checkout changed branch during deployment' {
+        $gitRoot = Join-Path $TestDrive 'moved-checkout'
+        New-Item -ItemType Directory -Path $gitRoot | Out-Null
+        git -C $gitRoot init --initial-branch main | Out-Null
+        git -C $gitRoot config user.name 'Example User'
+        git -C $gitRoot config user.email 'user@example.com'
+        $manifest = Join-Path $gitRoot 'application.yaml'
+        Set-Content $manifest "kind: Application`nspec:`n  source:`n    targetRevision: old"
+        git -C $gitRoot add -A
+        git -C $gitRoot commit -m 'initial' | Out-Null
+        . (Join-Path $PSScriptRoot '../Invoke-Deploy.ps1') -RepositoryRoot $repositoryRoot `
+            -ManifestRepo $gitRoot -DeploymentName 'example' -Tag 'latest-dev' `
+            -ImageRepository 'ghcr.io/example/app' -PodAnnotationName 'example/deployed'
+        $script:ManifestBranch = 'main'
+        git -C $gitRoot switch -q -c feature/other-session
+        $deployment = [pscustomobject]@{ Root = $repositoryRoot; Manifest = $manifest; RelativePath = 'application.yaml' }
+        Mock Get-DeploymentGitVersion { '1.2.3' }
+        Mock Get-DeploymentImageDigest { 'sha256:' + ('b' * 64) }
+        Mock Push-ManifestRepository
+        { Update-DeploymentManifest $deployment $null '20260927000000' } | Should -Throw '*moved*'
+        "$(git -C $gitRoot log -1 --format='%s')" | Should -Be 'initial'
+        Should -Invoke Push-ManifestRepository -Times 0
+        $script:ManifestBranch = $null
+    }
+
     It 'validates an existing manifest when yq is available' {
         $manifest = Join-Path $repositoryRoot 'valid.yaml'
         Set-Content $manifest 'kind: Application'
