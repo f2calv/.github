@@ -70,11 +70,10 @@ templates, and release changes to shared workflows or Actions safely.
 
 ## Descriptions
 
-- Keep every `description:` to one short line. State what the value is, not how or why to use it, and prefer `e.g. <example>` over prose describing the format.
-- Apply the same rule to workflow inputs (`workflow_dispatch`, `workflow_call`) as to action inputs. `workflow_dispatch` descriptions render as field labels in the *Run workflow* dialog, where a long sentence wraps and makes the form look messy.
-- Move rationale, caveats, deprecation notices and cross-references into a `#` comment directly above the input, not into the description string. Use the `#no-space-after-hash` comment style.
-- Avoid multi-sentence descriptions — they bloat the file and make the input list hard to scan.
-- Keeping `key: value` pairs out of descriptions also avoids the colon-space sequence that would otherwise force the whole scalar to be quoted.
+- Keep every `description:` of an action or workflow input (`workflow_dispatch`, `workflow_call`) to
+  one short line stating what the value is, with `e.g. <example>` rather than format prose; dispatch
+  descriptions render as form labels. Put rationale, caveats and deprecations in a
+  `#no-space-after-hash` comment above the input.
 
   ```yaml
   #DEPRECATED, superseded by publisher-identity. Ignored when publisher-identity is set.
@@ -93,29 +92,29 @@ templates, and release changes to shared workflows or Actions safely.
 - Use `|` for multi-line `run` scripts and `>` for flowing multi-line description text.
 - Separate every top-level workflow section with exactly one blank line, including `on:`, `concurrency:`, `permissions:`, `env:` and `jobs:`. This leaves one blank line above and below a top-level `permissions:` block. Do not add blank lines within input or output lists.
 
-## Reusability
-
-- Reusability is a key requirement. Factor cross-cutting logic — build, test, lint, versioning, container and chart packaging, migration-drift checks — into reusable `workflow_call` workflows held in a dedicated shared-workflows repository, so every repository consumes one implementation.
-- Keep logic inline, or in a repository-local reusable workflow, only when it is genuinely repository-specific and unlikely to be reused.
-- Parameterise shared workflows with `inputs` (paths, project or context names, configuration, flags) so they stay repository-agnostic. A consumer passes specifics via `with:`.
-- Filename convention differs by scope:
-  - Shared (cross-repository): a non-underscore filename with an `_`-prefixed `name:`, for example the file `app-build.yml` declaring `name: _app-build`.
-  - Local (same repository): an underscore-prefixed filename, such as `_publish-artifacts.yml`.
-
 ## Reusable Workflows
 
-- Prefix local reusable workflow filenames with an underscore to distinguish them from top-level entry-point workflows.
-- Same repository: `uses: ./.github/workflows/_filename.yml`.
-- Cross-repository: `uses: owner/repo/.github/workflows/filename.yml@v1`, supplying the coordinate through configuration rather than hardcoding a private one.
-- Prefer `secrets: inherit` when the called workflow reads repository secrets. Omit `secrets:` when it reads none, and map secrets explicitly only when a name must change, such as a per-subscription secret passed as the callee's generic name.
-- Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
-- Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
-- A called workflow's job `permissions` must not exceed what the calling job grants, or the run fails at startup, even for a nested job its `if:` would skip. Audit every caller before declaring or raising permissions in a shared workflow.
-- Move sizeable or repeated `run` logic in a shared workflow into a composite action in the same repository rather than copying it between workflows.
-- A workflow, job or step `env:` value overrides a same-named variable a step writes to `GITHUB_ENV`. When a step normalises inputs, read the raw values under distinct names such as `IN_*`.
-- A reusable workflow reaches a composite action in its own repository only by a published reference, such as `owner/workflows/.github/actions/name@v1`. Release the action first, then switch the workflows to it in a later release.
-- A shared-workflows repository self-tests each reusable workflow in its own CI, calling the local file against small fixtures, before the floating major alias moves.
-- For the shared Helm packaging workflow, pass the full final OCI coordinate as `chart-repository`, such as `${{ github.repository_owner }}/charts/example`. The workflow pushes to `dirname(chart-repository)` and derives the package name from the `chart-path` directory basename, so that basename, `Chart.yaml` `name`, and the coordinate's final segment must match. Never insert the source repository name into the artifact path; that produces nested coordinates such as `<owner>/<source-repository>/<chart-name>`.
+- Factor cross-cutting logic (build, test, lint, versioning, image and chart packaging, drift checks)
+  into reusable `workflow_call` workflows in the shared-workflows repository, parameterised with
+  `inputs` so callers pass specifics via `with:`. Keep logic local only when it is genuinely
+  repository-specific. The `github-actions-workflows` skill's
+  [shared workflow authoring reference](../skills/github-actions-workflows/references/shared-workflow-authoring.md)
+  owns file naming, packaging coordinates and release validation.
+- Call a local reusable workflow as `uses: ./.github/workflows/_filename.yml` (underscore-prefixed),
+  and a shared one as `uses: owner/repo/.github/workflows/filename.yml@v1`, supplying coordinates
+  through configuration rather than hardcoding a private one.
+- Prefer `secrets: inherit` when the callee reads repository secrets, omit `secrets:` when it reads
+  none, and map secrets explicitly only to rename one.
+- Never forward a `workflow_dispatch`-only input to a callee and assume its default still applies;
+  on other events it evaluates empty and overrides the default.
+- Enforce required pull-request gates from `github.event_name`; a manual opt-out must never disable
+  a required pull-request check.
+- A called workflow's job `permissions` must not exceed the calling job's grant, even for a job its
+  `if:` skips, or the run fails at startup. Audit every caller before raising permissions.
+- A workflow, job or step `env:` value overrides a same-named `GITHUB_ENV` variable; read raw inputs
+  under distinct names such as `IN_*` when a step normalises them.
+- Move sizeable or repeated `run` logic in a shared workflow into a composite action in the same
+  repository.
 
 ## Composite Actions
 
@@ -137,5 +136,6 @@ templates, and release changes to shared workflows or Actions safely.
 - Always set `fetch-depth: 0` on checkout when GitVersion is in use.
 - The default configuration file is `GitVersion.yml` in the repository root.
 - Prefer `semVer` for tags and releases; use `fullSemVer`, via the `version` output, for build versioning and pre-release identifiers.
-- Action and reusable-workflow repositories must validate before release that their README consumer examples reference the exact floating major tag computed by GitVersion, such as `owner/action@v2` or `owner/workflows/.github/workflows/build.yml@v1`; `@v2.1` must not satisfy an `@v2` check. Include that validation job in the release job's `needs`, and pass its validated `major.minor.patch` values to the release step rather than a `FullSemVer` value that may contain build metadata.
+- Action and reusable-workflow repositories validate their README consumer examples against the
+  computed floating major tag before release, as the skill's authoring reference describes.
 - Action repositories are the one place the `v` prefix and the floating `vMAJOR` and `vMAJOR.MINOR` aliases apply. Consumers reference `owner/action@v1`, so the aliases must move to each new release, and only after the immutable tag succeeds. See `github.instructions.md` for the rule and for what every other repository does instead.

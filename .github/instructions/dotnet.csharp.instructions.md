@@ -1,247 +1,203 @@
 ---
-description: 'C# / .NET coding conventions for style, application wiring, errors, cancellation, time, logging, XML documentation, HTTP and everyday performance defaults.'
+description: 'C# / .NET coding conventions for files and types, style, constructors, wiring, errors, cancellation, time, logging, XML documentation, HTTP and performance defaults.'
 applyTo: '**/*.cs'
 ---
 
 # C# / .NET
 
 Scoped companions carry the rest: configuration types in `dotnet.configuration`, controllers and
-DTOs in `dotnet.webapi`, tests in `dotnet.testing`. Use the `dotnet-performance` skill for measured
-hot-path work and the [gRPC skill](../skills/dotnet-grpc/SKILL.md) for RPC contracts, clients,
-streaming and Kubernetes transport reliability.
+DTOs in `dotnet.webapi`, tests in `dotnet.testing`. Skills own deeper procedures: `dotnet-apphost`
+for bootstrapping, `dotnet-exceptions` for exception types, `dotnet-background-pipelines` for queued
+work, `dotnet-performance` for measured hot paths and [dotnet-grpc](../skills/dotnet-grpc/SKILL.md)
+for RPC.
 
 ## Files and Types
 
-- **One top-level type per file**, named after the type (`MyService.cs`, `WidgetConstants.cs`).
-  Only nested types share a file. If you are about to add a second top-level type, create a new
-  file. Two underscore-prefixed exceptions exist:
-  - `_Enums.cs` holds every `enum` in the project, and only enums.
-  - `_*Config.cs` (for example `_AppConfig.cs` for `record AppConfig`) groups a configuration root
-    with its related config types.
-- **Generic type filenames** encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
-- **Interfaces** start with `I`, live in an `Abstractions` folder and namespace, and are named for the
-  role or capability they define (`IMessageGateway`), not by prefixing an implementing class name with
-  `I`, and not ending in `Service`. Apply this to new interfaces; rename an existing one only when
-  already changing it, because renaming a published contract is breaking.
-- **Single-implementation interfaces** are bloat: remove an interface that has only one
-  implementation. Keep it when tests substitute it with a fake or mock, when it is a library
-  contract or extension point consumed by another assembly, or when a second implementation exists.
-  Do not add one speculatively for a future implementation.
-- **Services** — application types registered in DI — live in a `Services` folder. A service uses a
-  `Service` suffix (`OrderService`, `ReplayBgService`); a DI-registered type with a more specific role
-  keeps that suffix (`Handler`, `Factory`, `Manager`, `Coordinator`) and still lives in `Services`.
-  Group a service's supporting types in a `Services` sub-folder or as `ServiceName.SubCategory.cs`
-  partial files. Types outside DI keep their role suffix (`Validator`, `Converter`).
-- **Extension classes** live in an `Extensions` folder and namespace and are named after the type they
-  extend (`ServiceCollectionExtensions`). This includes endpoint-mapping and host-registration
-  extensions; do not place them in `Endpoints/` or give application-owned extensions a framework
-  namespace such as `Microsoft.AspNetCore.Builder`. Keep extensions focused on wiring and delegate
-  substantial behavior to the owning service.
-- **Models** — DTOs, request and response payloads, options and configuration records — live in a
-  `Models` folder and namespace. EF Core entities follow the EF Core instructions.
-- **Custom exceptions** use the `Exception` suffix, one per file under `Exceptions/` with a namespace
-  ending in `.Exceptions`. Nested private test doubles stay with their owning test type.
-- **Wire constants** — request URIs, route templates, header names — go in a `static class` under a
-  `Constants` folder and namespace, grouped per API surface (`RequestUris`, `UploadHeaders`), not
-  beside DTOs in `Models`. This applies to APIs the code calls and APIs it exposes.
-- **Namespaces** follow folders, except sub-folders under `Services`, which keep the parent
-  `Services` namespace.
-- **`GlobalUsings.cs`** exists in every project root. Move a namespace imported by more than two files
-  into it, delete the per-file duplicates, and re-check after refactors that add files.
+- **One top-level type per file**, named after the type; only nested types share a file. Two
+  exceptions: `_Enums.cs` holds every enum in the project and nothing else, and `_*Config.cs` (such
+  as `_AppConfig.cs`) groups a configuration root with its related config types.
+- Generic type filenames encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
+- **Interfaces** start with `I`, live in an `Abstractions` folder and namespace, and name a role or
+  capability (`IMessageGateway`), never an implementing class with an `I` prefix or a `Service`
+  suffix. Rename an existing interface only when already changing it; that is a breaking change.
+- **Remove single-implementation interfaces** unless tests substitute them, another assembly
+  consumes them as a contract or extension point, or a second implementation exists. Never add one
+  for a speculative future implementation.
+- **Services** (DI-registered application types) live in `Services` with a `Service` suffix, or a
+  more specific role suffix (`Handler`, `Factory`, `Manager`, `Coordinator`). Group supporting types
+  in a `Services` sub-folder or `ServiceName.SubCategory.cs` partials. Types outside DI keep their
+  role suffix (`Validator`, `Converter`).
+- **Extension classes** live in `Extensions`, named after the extended type
+  (`ServiceCollectionExtensions`), including endpoint-mapping and host-registration extensions. Never
+  use a framework namespace such as `Microsoft.AspNetCore.Builder`; keep them to wiring and delegate
+  behaviour to the owning service.
+- **Models** (DTOs, payloads, options and configuration records) live in `Models`; EF Core entities
+  follow the EF Core instructions. **Custom exceptions** use the `Exception` suffix, one per file in
+  `Exceptions/` with a `.Exceptions` namespace. Nested private test doubles stay with their test type.
+- **Wire constants** (request URIs, route templates, header names) go in a `static class` per API
+  surface under `Constants` (`RequestUris`, `UploadHeaders`), for APIs called and exposed alike.
+- Namespaces follow folders, except that sub-folders of `Services` keep the `Services` namespace.
+- Every project root has a `GlobalUsings.cs`; move a namespace imported by more than two files into
+  it and delete the per-file duplicates, re-checking after refactors.
 
 ## Style
 
-The repository `.editorconfig` is authoritative. Its promoted tranche is build-enforced; remaining
-preferences are suggestions, so apply both while writing:
+The repository `.editorconfig` is authoritative; apply its suggestions as well as its build-enforced
+rules:
 
-- 4 spaces, LF, final newline; file-scoped namespaces with usings above; pure alphabetical usings
-  with no `System.*` first and no blank-line groups, including in `GlobalUsings.cs`.
-- Allman braces. Omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using` bodies.
-- PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching (`is`, `not`, switch
-  expressions); nullable reference types and implicit usings enabled; latest stable C# (currently 14.0).
+- 4 spaces, LF, final newline; file-scoped namespaces with usings above, purely alphabetical with no
+  `System.*` first and no blank-line groups, including in `GlobalUsings.cs`.
+- Allman braces; omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using`
+  bodies.
+- PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching;
+  nullable reference types and implicit usings enabled; the latest stable C# (currently 14.0).
 - Expression bodies for accessors, properties, indexers, lambdas, constructors and single-expression
-  methods, not operators or local functions. Move `=>` to the next line when it would scroll.
-- Declare interface members with explicit `public` accessibility; the build enforces accessibility
-  modifiers on interface members as well as implementations.
-- Explicit interface properties use accessor blocks (`{ get => …; }`), never `=>`, and carry
-  `/// <inheritdoc/>`.
+  methods, not operators or local functions; move `=>` to the next line when it would scroll.
+- Interface members declare explicit `public`. Explicit interface properties use accessor blocks
+  (`{ get => …; }`), never `=>`, with `/// <inheritdoc/>`.
 - Wrap long parameter lists one per line, with the closing parenthesis and any `: base(...)` on its
-  own line.
-- Separate public properties with a blank line; keep private backing fields on consecutive lines.
-- Place `ToString`, `GetHashCode` and `Equals` overrides at the bottom, above private helper regions.
+  own line. Separate public properties with a blank line; keep private backing fields consecutive.
+- Put `ToString`, `GetHashCode` and `Equals` overrides at the bottom, above private helper regions.
 - Prefer `record` types with `get; init;` properties where value equality is useful.
 
 ## Constructors and Dependency Injection
 
-- **Primary constructors**: use parameters directly; never copy them to fields
-  (`private ILogger _logger = logger;`). Abstract base classes may expose a `protected` field for
-  inheritors.
-- **Parameter order**: `ILogger`, then `IOptions<T>` / `IOptionsMonitor<T>`, then `TimeProvider`, then
-  application services.
-- **Injected dependency names** follow the injected type without the leading `I`
-  (`IRealtimeConnectionHub realtimeConnectionHub`). Types ending in `Service` use a `Svc` suffix
-  instead (`orderSvc`, not `orderService`); the type itself keeps its `Service` suffix. `ILogger<T>`
-  is `logger` and `TimeProvider` is `timeProvider`. A single options dependency is named `config`;
-  with several, name each after its options type (`commsConfig`, `azureAuthConfig`).
-- **Options access**: read `.Value` / `.CurrentValue` inline at the point of use; never cache it in a
-  field or local.
-- **At most seven constructor or method parameters.** Move a cohesive group of dependencies into a
-  dedicated type, such as an `<Area>Metrics` class that owns its meter instruments, and pass a
-  small state object instead of a list of flags.
-- **Seal concrete classes** unless designed for inheritance (`virtual`/`abstract` members or a
-  documented base). Services, background services, entities, converters and middleware default to
-  `sealed`; unsealing later is non-breaking.
+- **Primary constructors**: use parameters directly and never copy them to fields; abstract base
+  classes may expose a `protected` field for inheritors.
+- **Order**: `ILogger`, then `IOptions<T>`/`IOptionsMonitor<T>`, then `TimeProvider`, then
+  application services; at most seven constructor or method parameters. Move a cohesive group into
+  a dedicated type, such as an `<Area>Metrics` class owning its meter instruments, and pass a small
+  state object instead of flags.
+- **Names** follow the type without the `I` (`realtimeConnectionHub`); `Service` types use a `Svc`
+  suffix (`orderSvc`). `ILogger<T>` is `logger`, `TimeProvider` is `timeProvider`, a single options
+  dependency is `config`, and several are named after their types (`commsConfig`).
+- Read options `.Value`/`.CurrentValue` inline at the point of use; never cache it.
+- **Seal concrete classes** unless designed for inheritance. Services, background services,
+  entities, converters and middleware default to `sealed`.
 
 ## Constants and Enums
 
 - **No magic strings**: a literal used as a key or identifier in more than one place becomes a
   `const` built with `nameof()` (`public const string SummaryValues = nameof(SummaryValues);`).
-- **Enums** suit closed sets within one assembly or tightly coupled projects. For values crossing
-  library, configuration, environment or wire boundaries, use a `static class` of `const string`
-  fields via `nameof()`. When startup validation is needed, expose `IReadOnlySet<string> ValidNames`
-  built by reflection over the class's own constants.
+- Enums suit closed sets within one assembly or tightly coupled projects. Values crossing library,
+  configuration, environment or wire boundaries use a `static class` of `nameof()` constants, with
+  an `IReadOnlySet<string> ValidNames` built by reflection when startup validation needs it.
 
 ## Application Wiring
 
-- **`Program.cs` is wiring-only** in hosted applications: configuration, DI, logging, middleware or
-  hosted services, then start. Extract logic into dedicated types. Linear console samples may keep an
-  end-to-end flow when extraction would obscure it.
-- Use the [`dotnet-apphost` skill](../skills/dotnet-apphost/SKILL.md) to design, align, audit,
-  refactor or diagnose application bootstrapping and AppHost composition across configuration,
-  logging, observability, feature registration, transports, middleware, endpoints, health,
-  shutdown and host tests.
-- **Use modern hosting composition**, including samples and test hosts: initialize configuration and
-  register services in `Program.cs` or an `AppHost` composition root. ASP.NET Core hosts use
-  `WebApplication.CreateBuilder`; do not introduce `Startup`/`UseStartup` or separate
-  `ConfigureServices`/`Configure` lifecycle classes. For `WebApplicationFactory`, expose a public
-  partial `Program` marker instead of reverting to the older hosting model.
-- **Keep composition roots shallow.** Register each feature in its own method that returns early when
-  the feature is off, and carry feature-derived switches and run-once shared infrastructure in one
-  small state type rather than tuples or local functions, so no method exceeds a cognitive
+- `Program.cs` is wiring only in hosted applications: configuration, DI, logging, middleware or
+  hosted services, then start. Linear console samples may keep an end-to-end flow.
+- Use modern hosting in applications, samples and test hosts: `WebApplication.CreateBuilder` or an
+  `AppHost` composition root, never `Startup`/`UseStartup`. Expose a public partial `Program` marker
+  for `WebApplicationFactory`.
+- Keep composition roots shallow: one registration method per feature that returns early when the
+  feature is off, with shared switches in one small state type, so no method exceeds a cognitive
   complexity of 15.
-- **No hard-coded absolute URIs or file paths** in code. Read them from configuration, or omit
-  decorative metadata such as OpenAPI contact and licence links.
-- **Centralise environment access** through `Microsoft.Extensions.Configuration`; do not scatter
-  `Environment.GetEnvironmentVariable`. Centralised reads of standard platform, CI and
+- No hard-coded absolute URIs or file paths; read them from configuration, or omit decorative
+  metadata such as OpenAPI contact links.
+- Read environment through `Microsoft.Extensions.Configuration`, not scattered
+  `Environment.GetEnvironmentVariable` calls; centralised reads of standard platform, CI and
   build-provenance variables are permitted.
-- **Validate options at startup** with data annotations, `IValidateOptions<T>` or validators plus
-  `ValidateOnStart()`. Validate external input at the boundary with actionable messages that
-  contain no secrets or personal data.
-- **Guard target-framework-specific APIs** in multi-targeted libraries with preprocessor symbols such
-  as `#if NET8_0_OR_GREATER`.
+- Validate options at startup (data annotations, `IValidateOptions<T>` or validators with
+  `ValidateOnStart()`), and external input at the boundary with actionable messages free of secrets
+  and personal data.
+- Guard target-framework-specific APIs in multi-targeted libraries with symbols such as
+  `#if NET8_0_OR_GREATER`.
 
 ## Async, Errors and Cancellation
 
-- Always await async calls; never block with `.Result`, `.Wait()` or `GetAwaiter().GetResult()`.
-- Thin wrappers that only return another async call (no `using`, `try`/`catch` or further `await`)
-  drop `async`/`await` and return the `Task`/`ValueTask` directly.
-- Never mark a callback `async` just to await a no-op; the conversion can become unobservable
-  `async void`.
-- Use `ValueTask` for frequently synchronous completions and `Task` when the call almost always goes
-  async. Never cache, await twice or concurrently await a `ValueTask`; call `.AsTask()` instead.
-- Library projects use `ConfigureAwait(false)` on every `await` that does not need `HttpContext`
+- Always await; never block with `.Result`, `.Wait()` or `GetAwaiter().GetResult()`. Thin wrappers
+  with no `using`, `try` or further `await` return the task directly. Never mark a callback `async`
+  just to await a no-op; it can become an unobservable `async void`.
+- Use `ValueTask` for frequently synchronous completions and `Task` otherwise; never cache, await
+  twice or concurrently await a `ValueTask` (use `.AsTask()`).
+- Libraries use `ConfigureAwait(false)` on every `await` that does not need `HttpContext`
   afterwards; application entry points may omit it.
-- **Catch only to handle, translate or enrich.** Never log-and-rethrow unchanged or swallow into a
-  default. Wrap with operation context, keep the original as `InnerException`, use domain exception
-  types when callers must distinguish conditions, and keep context free of credentials, tokens,
-  connection strings, full local paths and personal data.
-- Use result types, `Try*` methods or nullable returns for expected absence and validation outcomes.
-- **Choose the thrown type by who must act on it.** Never throw `Exception`, `SystemException`,
-  `ApplicationException`, `NullReferenceException` or `IndexOutOfRangeException`.
-  - Caller mistakes and object state use the BCL: the `ArgumentException` family through its
-    `ThrowIf*` helpers, `InvalidOperationException` (including "not initialised; call X first"),
-    `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
-  - Protocol boundaries throw their own type: `JsonException` in converters, `RpcException` in gRPC
-    services and `McpException` in MCP tools.
-  - Domain and runtime failures throw a type derived from the solution's shared domain exception
-    base (for example `GenericException` in `CasCap.Common.Exceptions`). Throw the base itself only
-    for a one-off failure nobody would catch or query separately; recurring failures in one area get
-    a dedicated `<Area>Exception`. Contract and client packages that deliberately avoid the shared
-    library dependency derive from `Exception` instead.
-  - The `dotnet-exceptions` skill audits a repository and introduces area exception types.
-- **Cancellation**: pass the available `CancellationToken` to every cancellable call — database, HTTP,
-  file, stream, queue, delay, lock, paging and nested services. Pass `CancellationToken.None`
-  explicitly, and locally, when an operation must outlive the caller. Never convert a requested
-  `OperationCanceledException` into an error. To wait for shutdown without a catch block, await
-  `Task.Delay(Timeout.Infinite, token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)`;
-  a `catch` that logs must pass the caught exception to the logger.
+- **Catch only to handle, translate or enrich**: never log-and-rethrow unchanged or swallow into a
+  default. Wrap with operation context, keep the original as `InnerException`, and keep context
+  free of credentials, tokens, connection strings, full local paths and personal data. Use result
+  types, `Try*` methods or nullable returns for expected absence and validation outcomes.
+- **Throw by who must act.** Never throw `Exception`, `SystemException`, `ApplicationException`,
+  `NullReferenceException` or `IndexOutOfRangeException`.
+  - Caller mistakes and object state: the `ArgumentException` family via `ThrowIf*` helpers,
+    `InvalidOperationException`, `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
+  - Protocol boundaries: `JsonException` in converters, `RpcException` in gRPC services and
+    `McpException` in MCP tools.
+  - Domain and runtime failures: a type derived from the solution's shared domain exception base,
+    with a dedicated `<Area>Exception` for recurring failures in one area; throw the base itself only
+    for a one-off failure nobody would catch separately. Contract packages that
+    avoid the shared library derive from `Exception`.
+- **Cancellation**: pass the available token to every cancellable call; pass
+  `CancellationToken.None` explicitly where an operation must outlive the caller. Never turn a
+  requested `OperationCanceledException` into an error. Await shutdown without a catch block via
+  `Task.Delay(Timeout.Infinite, token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)`; a
+  `catch` that logs passes the exception to the logger.
 
 ## Background Work and Shutdown
 
-- Propagate `ExecuteAsync`'s `stoppingToken` everywhere and use cancellable waits
-  (`Task.Delay(delay, timeProvider, stoppingToken)`); never poll a flag around an uncancellable sleep.
+- Propagate `stoppingToken` everywhere and use cancellable waits
+  (`Task.Delay(delay, timeProvider, stoppingToken)`), never a flag polled around a sleep.
 - No fire-and-forget: retain and await tasks whose failure or completion belongs to the lifecycle.
 - Dispose owned timers, streams, registrations and scopes deterministically before the host exits.
-- The owner of a linked `CancellationTokenSource` cancels it with `CancelAsync`, awaits its workers,
-  disposes it in `finally` or at shutdown, and clears retained references.
-- Prefer bounded queues with explicit backpressure over unbounded in-memory work collections.
+  The owner of a linked `CancellationTokenSource` cancels it with `CancelAsync`, awaits its workers,
+  disposes it and clears retained references.
+- Prefer bounded queues with explicit backpressure over unbounded in-memory collections.
 
 ## Time
 
 - Never call `DateTime.UtcNow`/`Now`/`Today` or `DateTimeOffset.UtcNow`/`Now` in production code.
-  Inject a singleton `TimeProvider` (`TimeProvider.System`) and use `GetUtcNow()`, the
-  `Task.Delay(TimeSpan, timeProvider, ct)` overload and `timeProvider.CreateTimer(...)`, so tests
-  (`FakeTimeProvider`) and simulations can control the clock.
-- Static helpers may accept `TimeProvider? timeProvider = null`, falling back to `TimeProvider.System`.
-- Direct use is permitted only in tests, `TimeProvider` implementations, and static, `const` or
+  Inject a singleton `TimeProvider` and use `GetUtcNow()`, the
+  `Task.Delay(TimeSpan, timeProvider, ct)` overload and `CreateTimer(...)`, so tests can use
+  `FakeTimeProvider`. Static helpers may take `TimeProvider? timeProvider = null`.
+- Direct use is permitted only in tests, `TimeProvider` implementations and static, `const` or
   default-property initialisers where DI is unavailable.
 
 ## Logging
 
-- Use `ILogger<T>` with constant message templates for application diagnostics — never
-  `Console.WriteLine` or `Debug.WriteLine` — and no string interpolation or concatenation.
-- `{ClassName}` is the first parameter, supplied as `nameof(EnclosingClass)`.
-- Parameters are PascalCase, unquoted, unique within a template, and named after the property —
-  never with a `.Value`-derived or `Val` suffix (`{ServiceFamily}` for `config.Value.ServiceFamily`).
-- Pass enum values and symbols as `nameof()` arguments, but do not add `nameof()` fields merely as
-  labels: write `"{ClassName} ServiceFamily={ServiceFamily}"`, not
-  `"{ClassName} {ServiceFamily}={ServiceFamilyValue}"`.
-- **Correlation scopes**: when a unit of work (a request, connection, session, message or job) spans
-  several methods or tasks, open `logger.BeginScope` once at its entry with its correlation IDs.
-  Take the scope keys from one constants class and name them like the matching template parameters
-  (`ConversationId`, `SessionId`). The scope flows through `await` and into tasks started within
-  it, reaches every logger in that flow, and is exported when the provider sets
-  `IncludeScopes = true`. Do not add a parameter to a method only so that it can log an ID.
-- Keep the correlation ID explicit in Warning, Error and Critical templates as well, so those lines
-  stand alone in plain-text output and where the scope did not flow.
-- Choose the level by who must act. Missing data or configuration that should exist (a file, a
-  registered handler, an expected template) is a Warning; a feature that is deliberately not
-  configured is Debug. Log routine per-item progress at Debug, not Information.
-- **Hot paths** (loops, channel readers, stream consumers, message processors) use source-generated
-  `[LoggerMessage]`: `private static partial void` methods at the bottom of the partial class or in
-  `{ClassName}.Logging.cs`, first parameter `ILogger logger`, called as `LogXxx(logger, ...)`. Leave
-  dynamic-level `logger.Log(level, ...)` calls unconverted.
-- **Logging argument cost (CA1873)**: guard every non-generated `logger.LogXxx(...)` call with
-  `if (logger.IsEnabled(LogLevel.Xxx))`, because the `params object[]` allocation alone is costly.
-  Give `[LoggerMessage]` parameters the value's own type (`Symbol symbol`, an enum) rather than
-  calling `ToString()` at the call site; the generator formats lazily.
+- Use `ILogger<T>` with constant message templates, never `Console.WriteLine`, `Debug.WriteLine`,
+  interpolation or concatenation. The first parameter is `{ClassName}` from
+  `nameof(EnclosingClass)`.
+- Parameters are PascalCase, unquoted, unique and named after the property, never with a `Value` or
+  `Val` suffix: `"{ClassName} ServiceFamily={ServiceFamily}"`. Pass enum values and symbols as
+  `nameof()` arguments, but never add `nameof()` fields merely as labels.
+- **Correlation scopes**: open `logger.BeginScope` once at a unit of work's entry with its
+  correlation IDs, keyed from one constants class and named like the template parameters. Do not
+  add a method parameter only to log an ID. Scopes flow through `await` and are exported when the
+  provider sets `IncludeScopes = true`. Still include the ID explicitly in Warning, Error and
+  Critical templates.
+- Level by who must act: missing data or configuration that should exist is a Warning; a feature
+  deliberately not configured is Debug, as is routine per-item progress.
+- **Hot paths** (loops, channel readers, stream consumers, message processors) use
+  source-generated `[LoggerMessage]` `private static partial void` methods, first parameter
+  `ILogger logger`, at the bottom of the class or in `{ClassName}.Logging.cs`. Give their
+  parameters the value's own type rather than calling `ToString()`. Leave dynamic-level
+  `logger.Log(level, ...)` calls unconverted.
+- Guard every other `logger.LogXxx(...)` with `if (logger.IsEnabled(LogLevel.Xxx))` (CA1873).
 - Never log secrets, tokens, authorisation headers, connection strings, signed-URL queries, full
   local paths or personal data.
 
 ## XML Documentation
 
-- Document every public and internal type, member and enum member. Test projects document types and
-  properties but not test methods.
-- Document on the interface; implementations use `/// <inheritdoc/>`. For enum-typed parameters and
-  properties use `<inheritdoc cref="EnumType" path="/summary"/>`, keeping value-adding `<remarks>`.
-- Reference .NET types and namespaces with `<see cref="Fully.Qualified.Name" />`, not plain text.
-- `<summary>` is one or two sentences defining the member. Move detail, examples and "Defaults to …"
-  text into `<remarks>`. Collapse a line of roughly 120 characters or fewer into
-  `/// <summary>Text.</summary>`.
-- Never delete an inline comment hyperlink; move it into `<remarks>` as `<see href="…" />`.
+- Document every public and internal type, member and enum member; test projects document types
+  and properties but not test methods.
+- Document on the interface and use `/// <inheritdoc/>` on implementations; for enum-typed members
+  use `<inheritdoc cref="EnumType" path="/summary"/>`, keeping value-adding `<remarks>`.
+- Reference .NET types with `<see cref="Fully.Qualified.Name" />`, not plain text.
+- `<summary>` is one or two defining sentences, collapsed onto one line when about 120 characters or
+  fewer; detail, examples and defaults go in `<remarks>`. Move inline comment links into `<remarks>`
+  as `<see href="…" />`; never delete them.
 
 ## Warnings
 
-- Suppress diagnostics only centrally in `Directory.Build.props` with a stated reason, never with
-  `#pragma warning disable` or `[SuppressMessage]`. Fix a new warning rather than suppressing it.
+- Fix new warnings. Suppress only centrally in `Directory.Build.props` with a stated reason, never
+  with `#pragma warning disable` or `[SuppressMessage]`.
 
 ## HTTP, Streams and Files
 
-- Obtain `HttpClient` from `IHttpClientFactory` or a typed client; never construct one per request.
-- Stream large payloads unless the method explicitly returns a byte array. Check status and content
-  before deserialising, and put the status and redacted body in domain exceptions.
-- Dispose `HttpRequestMessage`, `HttpResponseMessage`, streams and registrations with `using` /
-  `await using`.
+- Obtain `HttpClient` from `IHttpClientFactory` or a typed client, never one per request.
+- Stream large payloads unless the method returns a byte array. Check status and content before
+  deserialising, and put the status and redacted body in domain exceptions.
+- Dispose request and response messages, streams and registrations with `using`/`await using`.
 - Build temporary paths with `Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())` and delete
   them in `finally`; never use `Path.GetTempFileName()`.
 
@@ -249,18 +205,17 @@ preferences are suggestions, so apply both while writing:
 
 - Measure with BenchmarkDotNet, `dotnet-counters`, `dotnet-trace` or a load test before adding
   complexity; clarity wins in demonstration code.
-- Use `FrozenDictionary`/`FrozenSet`, stored as the concrete type, for collections built once at
-  startup, and `System.Threading.Lock` rather than `object` for dedicated locks.
-- Pass metric tags as `new TagList([...])`: its span constructor builds the collection expression on
-  the stack, whereas `Counter.Add`'s `params` overload allocates an array beyond three tags.
-  SonarQube S3878 misreads the collection expression as an array; mark it false positive.
+- Use `FrozenDictionary`/`FrozenSet`, stored as the concrete type, for collections built once, and
+  `System.Threading.Lock` for dedicated locks.
+- Pass metric tags as `new TagList([...])` to avoid the `params` array beyond three tags; mark
+  SonarQube S3878 on that expression a false positive.
 
 ## Correctness and Security
 
-- Compare calculated `float`/`double` values against a domain tolerance, not exact equality, unless
-  exact identity is part of the contract. Remove invariant expressions such as `value - value`.
+- Compare calculated `float`/`double` values against a domain tolerance unless exact identity is
+  the contract; remove invariant expressions such as `value - value`.
 - Use `RandomNumberGenerator` for tokens, secrets, identifiers and security-sensitive paths, and
-  `Random.Shared` only for clearly non-security behaviour. Never create a `Random` per call.
+  `Random.Shared` only for non-security behaviour; never create a `Random` per call.
 - When an immutable protocol mandates legacy cryptography, keep the exact algorithm, document the
-  constraint beside it and accept the specific analysis finding with that rationale. Never swap in an
-  incompatible algorithm, use `NOSONAR` or add a repository-wide suppression.
+  constraint beside it and accept that specific finding with the rationale; never swap algorithms,
+  use `NOSONAR` or add a repository-wide suppression.

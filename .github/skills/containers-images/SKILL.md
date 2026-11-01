@@ -175,7 +175,8 @@ Rules that need judgement stay manual. Check each by hand when authoring or migr
   `appsettings.json` only after restore.
 * `TARGETARCH` is declared late, and runtime packages are installed before the application copy.
 * Restore and publish use the same configuration, and a RID-specific publish runs `--no-restore`.
-* A .NET application publish receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
+* A .NET application publish follows the [.NET artifact identity](references/dotnet-artifact-identity.md)
+  contract: it receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
   `Version` and `SourceRevisionId`, plus the complete build provenance property set from the
   canonical template; the same version and commit drive the OCI version and revision labels.
 * A .NET Dockerfile retains the canonical template's argument order, restore/publish option order,

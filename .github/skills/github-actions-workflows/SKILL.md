@@ -75,6 +75,9 @@ placeholders (`Example`, `charts/example`):
 
 ### 4. Change A Shared Building Block
 
+Follow the [shared workflow authoring reference](references/shared-workflow-authoring.md) for file
+naming, packaging coordinates and release validation.
+
 1. Keep the change backward-compatible for every caller found in an audit of all workspaces and
    owned repositories; record any removal as breaking in the pull request.
 2. Extend the shared-workflows self-tests and fixtures to exercise the change.
