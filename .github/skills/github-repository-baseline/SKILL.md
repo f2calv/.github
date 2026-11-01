@@ -253,6 +253,7 @@ the exclusion as soon as the check reports.
 | Unexpected status checks | Compare the repository name with policy override patterns |
 | `WhatIf` changes fingerprints | Stop; treat as a script defect before any apply |
 | Fleet audit exits nonzero | Inspect `Drift` and `Failed`; `PlanGated` alone is non-blocking |
+| `WhatIf` lists a setting you did not mean to change | Apply reconciles every policy setting, not only the one being worked on. Stop, and agree the rollout of that setting before applying |
 | Pull request `BLOCKED` with no failing check | A required check never reported. For `SonarCloud Code Analysis`, list the project's analyses; with none, add a temporary exclusion and re-apply that repository only |
 
 ## Real-World Example: f2calv Policy

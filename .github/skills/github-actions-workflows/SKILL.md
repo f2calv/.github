@@ -78,8 +78,10 @@ placeholders (`Example`, `charts/example`):
 1. Keep the change backward-compatible for every caller found in an audit of all workspaces and
    owned repositories; record any removal as breaking in the pull request.
 2. Extend the shared-workflows self-tests and fixtures to exercise the change.
-3. For an Action, or a behaviour no fixture can reach, canary it: point a real caller at the branch
-   ref on a temporary branch, dispatch it, then delete the branch.
+3. An Action repository self-tests the Action from the commit under review with `uses: ./` against
+   a fixture, with publication switched off. For a behaviour no fixture can reach, canary it: point a
+   real caller at the branch ref on a temporary branch, dispatch it, then delete the branch. Prefer
+   self-tests to a dedicated test repository.
 4. A new composite action used by the workflows ships in two releases: publish the action, then
    switch the workflows to `@v1`.
 5. Merge to release; the floating aliases move. Re-run one real caller against the released tag.
