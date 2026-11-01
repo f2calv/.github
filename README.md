@@ -1,8 +1,9 @@
 # .github
 
-A central library of GitHub Copilot instructions and agent skills for agentic development across
-many repositories. Copilot reads them directly from this repository; the skills are also published
-as versioned Spec Kit extensions and as Agent Plugins.
+A central library of [GitHub Copilot](https://github.com/features/copilot) instructions and agent
+skills for agentic development across many repositories. Copilot reads them directly from this
+repository; the skills are also published as versioned [Spec Kit](https://github.com/github/spec-kit)
+extensions and as [Agent Plugins](https://agent-plugins.org/).
 
 ## Three Ways to Use the Skills
 
