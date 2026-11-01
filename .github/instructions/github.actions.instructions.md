@@ -9,6 +9,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 
 - Leave one blank line between steps within a job.
 - Pin actions to the major version tag by default, such as `actions/checkout@v6`. Do not pin to a commit SHA and do not include minor or patch versions.
+- When an action or tool publishes no floating major tag, pin its full release and say so in a comment above it, such as `astral-sh/setup-uv@v10.3.3` or a chart-testing image `v3.15.0`. Never reference `latest`.
 - For CI job and service container images, follow the local/test image-tag policy in
   `docker.compose.instructions.md`: supported major tags by default, verified version-specific
   exceptions when no major alias exists, and no routine digest requirement. This is distinct from
@@ -17,19 +18,21 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Expose a kebab-case `runs-on` string input with a default of `ubuntu-24.04` in reusable workflows, and use it for each Linux job that is not intentionally platform-specific. Callers override the input only when they need another runner.
 - Keep composite actions runner-agnostic. The workflow job that calls a composite action owns `runs-on`.
 - Set `fetch-depth: 0` on `actions/checkout` whenever GitVersion is used, so it can read the full commit history. Use `fetch-depth: 1` only for lint-only workflows where history is unnecessary.
-- Declare an explicit `permissions` block on every job and grant the minimum required, such as `contents: read`.
+- Declare an explicit `permissions` block on every job and grant the minimum required, such as `contents: read`. This includes jobs in reusable workflows, unless callers legitimately grant the same job different permissions, such as a shared release wrapper that versions with `contents: read` and releases with `contents: write`; say so in a comment.
+- Lint workflows and composite actions with `actionlint` and `zizmor` through pre-commit. Keep the zizmor policy in `.github/zizmor.yml`, allowing major-tag pins (`ref-pin`).
 
 ## Continuous Integration
 
 - Every repository has `.github/workflows/ci.yml` with, at minimum, a `lint` job and a release-tagging job.
 - Pull requests run the repository's formatting, initialization and validation checks, and every one of them must pass without cloud credentials.
 - Trigger automatic CI for pushes to the default branch and pull requests targeting the default branch. Do not run the same CI workflow on feature-branch pushes as well as pull requests, because that creates duplicate runs for one commit.
-- Keep CI trigger filters sparse. Do not use `paths` or `paths-ignore`; lint, workflow, dependency, documentation and packaging changes must all exercise CI. Omit the default `pull_request` activity types (`opened`, `synchronize`, `reopened`).
+- Keep CI trigger filters sparse. Do not use `paths` or `paths-ignore`; lint, workflow, dependency, documentation and packaging changes must all exercise CI. Omit the default `pull_request` activity types (`opened`, `synchronize`, `reopened`). Auxiliary workflows that gate nothing, such as a scheduled refresh or a standalone image build, may use `paths` filters.
 - Run `lint` on pull requests and default-branch pushes. Do not use a branch or event condition that skips lint on either path.
 - Start `lint`, version calculation and independent build or validation jobs in parallel. Add `needs` only where a job consumes another job's outputs or must wait for it.
 - When sharding tests, verify selections are exhaustive and non-overlapping. Fail missing or empty selections and zero executed tests. Keep a stable required aggregate gate that rejects failed, cancelled or unexpectedly skipped shards; disable fail-fast when every shard's outcome is needed.
 - Make the release-tagging job the final fan-in. Its `needs` must include `lint` and every build, test, validation, packaging or publication job required for a releasable commit.
 - Restrict release tagging to the default branch. Pull requests may calculate a version but never create a tag or release.
+- Gate the release job on `needs.versioning.outputs.release-exists == 'false'` and pass `major.minor.patch`, formatted from the versioning outputs, as `semVer`. Never pass the `FullSemVer` `version` output, which may carry pre-release or build metadata.
 - Do not ignore workflow, dependency automation or lint-configuration paths on `push`; those changes must pass lint before release tagging.
 - Keep repository-specific jobs when they validate or publish that repository's deliverables. The shared minimum supplements those jobs rather than replacing them.
 - Cancel superseded `ci.yml` runs for the same pull request or ref. Include `github.workflow` so one workflow cannot cancel another:
@@ -40,7 +43,13 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
     cancel-in-progress: true
   ```
 
-- Do not apply cancellation blindly to deployments, migrations, maintenance operations or workflows with non-idempotent side effects. Use a separate queue or environment concurrency policy where interrupting an in-progress run is unsafe.
+- Do not apply cancellation blindly to deployments, migrations, maintenance operations or workflows with non-idempotent side effects. Queue them instead, so a second run waits for the first:
+
+  ```yaml
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: false
+  ```
 
 ## Step Naming
 
@@ -54,6 +63,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Environment variables: uppercase with underscores, such as `IMAGE_REGISTRY`, `TAG_OVERRIDE`.
 - Secrets: uppercase with underscores, such as `GITHUB_TOKEN`, `REGISTRY_PASSWORD`.
 - Never hardcode a secret value, a registry hostname or an owner/repository coordinate in a workflow. Pass them as secrets, repository variables or workflow inputs.
+- Composite-action inputs follow the same kebab-case rule; rename an existing uppercase input such as `GITHUB_TOKEN` only in a major release. Do not add `type:` to composite-action inputs, which action metadata does not support.
 
 ## Descriptions
 
@@ -75,7 +85,8 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Two-space indentation for all workflow and action YAML files.
 - Do not quote strings unless YAML requires it — values containing special characters, reserved words such as `true`, `false` or `null`, or strings that could be misinterpreted as another type.
 - Quote a `run` command that consists only of a YAML reserved scalar, such as `run: 'true'`; unquoted `run: true` is a boolean, not a command string. Prefer removing a redundant no-op step or job instead of retaining it solely as a fan-in.
-- For `workflow_dispatch` string inputs that represent booleans, use quoted defaults such as `default: 'true'`.
+- Give `type: boolean` inputs unquoted defaults such as `default: false`. Quote the default only for a `type: string` input that carries a boolean, such as `default: 'true'`.
+- Never assemble JSON from expression fragments, such as `format()` calls joined by conditional commas. Build it in a step with `jq` from environment variables and pass it on as a step or job output.
 - Use `|` for multi-line `run` scripts and `>` for flowing multi-line description text.
 - Separate every top-level workflow section with exactly one blank line, including `on:`, `concurrency:`, `permissions:`, `env:` and `jobs:`. This leaves one blank line above and below a top-level `permissions:` block. Do not add blank lines within input or output lists.
 
@@ -93,10 +104,11 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Prefix local reusable workflow filenames with an underscore to distinguish them from top-level entry-point workflows.
 - Same repository: `uses: ./.github/workflows/_filename.yml`.
 - Cross-repository: `uses: owner/repo/.github/workflows/filename.yml@v1`, supplying the coordinate through configuration rather than hardcoding a private one.
-- Prefer `secrets: inherit` unless there is a specific reason to restrict the secrets passed to the called workflow.
+- Prefer `secrets: inherit` when the called workflow reads repository secrets. Omit `secrets:` when it reads none, and map secrets explicitly only when a name must change, such as a per-subscription secret passed as the callee's generic name.
 - Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
 - Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
-- A called workflow's job `permissions` must not exceed what the calling job grants, or the run fails at startup. Audit every caller before declaring or raising permissions in a shared workflow.
+- A called workflow's job `permissions` must not exceed what the calling job grants, or the run fails at startup, even for a nested job its `if:` would skip. Audit every caller before declaring or raising permissions in a shared workflow.
+- Move sizeable or repeated `run` logic in a shared workflow into a composite action in the same repository rather than copying it between workflows.
 - A workflow, job or step `env:` value overrides a same-named variable a step writes to `GITHUB_ENV`. When a step normalises inputs, read the raw values under distinct names such as `IN_*`.
 - A reusable workflow reaches a composite action in its own repository only by a published reference, such as `owner/workflows/.github/actions/name@v1`. Release the action first, then switch the workflows to it in a later release.
 - A shared-workflows repository self-tests each reusable workflow in its own CI, calling the local file against small fixtures, before the floating major alias moves.
@@ -112,7 +124,7 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 ## Security
 
 - Set workflow-level `permissions: {}` to deny everything, then grant only what each job requires.
-- Skip bot-triggered runs conditionally, such as `if: github.actor != 'dependabot[bot]'`.
+- Skip bot-triggered side effects conditionally, such as `if: github.actor != 'dependabot[bot]'`. A job skipped this way reports as skipped, which satisfies a required status check, so never skip validation for a bot: prefer `push-image: false` or `push-chart: false` over skipping the build.
 - Pass tokens via stdin for registry logins, such as `echo "$TOKEN" | docker login --password-stdin`.
 - Force OCI registry, repository and tag values to lowercase, such as `${IMAGE_REGISTRY,,}`.
 - Never interpolate free-text context such as `github.ref`, `github.head_ref`, `github.workflow`, event titles or bodies, or caller-supplied strings directly into a `run` script. Map them to step `env:` variables and reference the quoted variable (`"$GIT_BRANCH"`), so a crafted branch or workflow name cannot change the command.
