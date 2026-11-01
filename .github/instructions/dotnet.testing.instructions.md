@@ -123,6 +123,9 @@ Test code is held to the same duplication gate as production code, and copy-past
 ## Shared Test Data
 
 - Keep shared generators and fixtures in dedicated `*TestData.cs` files at the `Tests/` root.
+- When splitting suites, extract shared fakes and builders from test classes. Reuse a support
+  library or link shared helper sources; do not reference another test executable or link its test
+  cases merely to access a helper.
 - Keep hardcoded reference data for regression tests in `*Patterns.cs` files.
 - Put stateless object-building helpers in `static` helper classes.
 

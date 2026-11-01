@@ -28,19 +28,9 @@ foreach ($Name in $Id) {
     if (Test-Path -LiteralPath $Sidecar) { throw "'$Name' already has skill.metadata.yaml." }
     $Related = [ordered]@{}
     $External = [Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
-    foreach ($Document in Get-ChildItem -LiteralPath $Folder -Filter '*.md' -Recurse -File | Sort-Object FullName) {
-        $Text = [regex]::Replace([IO.File]::ReadAllText($Document.FullName), '(?ms)^(`{3,}|~{3,})[^\n]*\n.*?^\1\s*$', '')
-        foreach ($Match in [regex]::Matches($Text, '\]\(([^)\s#]+)')) {
-            $Link = $Match.Groups[1].Value
-            if ($Link -match '^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|/)') { continue }
-            $Target = [IO.Path]::GetFullPath((Join-Path $Document.DirectoryName ([uri]::UnescapeDataString($Link))))
-            $Relative = [IO.Path]::GetRelativePath($RepoRoot, $Target).Replace('\', '/')
-            if ($Relative -eq ".github/skills/$Name" -or $Relative.StartsWith(".github/skills/$Name/") -or $Relative.StartsWith('..')) { continue }
-            if ($Relative -match '^\.github/skills/([^/]+)') {
-                if (-not $Related.Contains($Matches[1])) { $Related[$Matches[1]] = [IO.Path]::GetRelativePath($Folder, $Document.FullName).Replace('\', '/') }
-            }
-            elseif (Test-Path -LiteralPath $Target -PathType Leaf) { [void]$External.Add($Relative) }
-        }
+    foreach ($Link in Get-SkillLink -RepoRoot $RepoRoot -Id $Name) {
+        if ($Link.Skill) { if (-not $Related.Contains($Link.Skill)) { $Related[$Link.Skill] = $Link.Source } }
+        else { [void]$External.Add($Link.File) }
     }
     $Lines = [Collections.Generic.List[string]]::new()
     $Lines.Add('# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json')

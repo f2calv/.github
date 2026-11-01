@@ -32,6 +32,9 @@ GitHub permission.
 5. Inspect available labels and apply every other label that accurately describes the issue. Native
    types and labels are separate metadata; setting one does not replace the other.
 6. Verify the title, body, type and labels after creation.
+7. When rewriting an existing body from PowerShell, read it as one string (``-join "`n"``) and upload
+   it with `--body-file`. `gh` returns its output as an array of lines, and an implicit array-to-string
+   conversion joins them with spaces, flattening the whole body.
 
 ### Issue Quality
 

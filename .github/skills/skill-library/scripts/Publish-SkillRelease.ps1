@@ -4,7 +4,8 @@
 .SYNOPSIS
 Publishes every unreleased skill version as GitHub Release <id>/X.Y.Z and builds the GitHub Pages catalog site.
 .DESCRIPTION
-Runs on the default branch after merge. Published releases are never changed. When anything is published,
+Runs on the default branch after merge. Each skill release carries a Spec Kit extension ZIP and an Agent Plugins
+ZIP. Published releases are never changed. When anything is published,
 catalog.json and index.html are regenerated from all component releases into SiteDirectory, and its path is
 written to the site-directory step output for the Pages deployment.
 .PARAMETER Repository
@@ -32,6 +33,10 @@ Import-Module (Join-Path $PSScriptRoot 'SkillLibrary.psm1') -Force
 $TagPattern = '^(?<id>[a-z0-9]+(-[a-z0-9]+)*)/(?<version>(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$'
 
 function Invoke-Gh([string[]]$Arguments) { Invoke-SkillTool gh $Arguments -WorkingDirectory $RepoRoot }
+function Get-AssetUrl([string]$Tag, [string]$Name) {
+    @(Invoke-Gh @('release', 'view', $Tag, '--json', 'assets', '--jq', ".assets[] | select(.name == `"$Name`") | .url"))[0]
+}
+function Get-FileSha256([string]$Path) { (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
 
 $Components = Get-SkillComponent -RepoRoot $RepoRoot
 $Errors = @(Test-SkillComponent -RepoRoot $RepoRoot -Component $Components)
@@ -45,12 +50,19 @@ $Pending = @($Components | Where-Object {
     })
 foreach ($Component in $Pending) {
     $Archive = New-SkillExtensionArchive -RepoRoot $RepoRoot -Component $Component -OutputDirectory $OutputDirectory
+    $Assets = @($Archive.Path)
     $Tag = "$($Component.Id)/$($Component.Version)"
     Write-Host "$Tag sha256:$($Archive.Sha256)"
+    $Notes = "Spec Kit extension for ``$($Component.Id)`` $($Component.Version). Install with ``/speckit-skill-library install $($Component.Id)``."
+    if ($Component.Kind -eq 'skill') {
+        $Plugin = New-SkillPluginArchive -RepoRoot $RepoRoot -Component $Component -OutputDirectory $OutputDirectory -Repository $Repository
+        $Assets += $Plugin.Path
+        Write-Host "$Tag plugin sha256:$($Plugin.Sha256)"
+        $Notes += " The ``-plugin.zip`` asset is the same skill as an Agent Plugins package."
+    }
     if (-not $DryRun) {
-        Invoke-Gh @('release', 'create', $Tag, $Archive.Path, '--target', $Sha, '--title', "$($Component.Id) $($Component.Version)",
-            '--notes', "Spec Kit extension for ``$($Component.Id)`` $($Component.Version). Install with ``/speckit-skill-library install $($Component.Id)``.",
-            '--latest=false') | Out-Null
+        Invoke-Gh (@('release', 'create', $Tag) + $Assets + @('--target', $Sha, '--title', "$($Component.Id) $($Component.Version)",
+            '--notes', $Notes, '--latest=false')) | Out-Null
     }
 }
 if ($DryRun) { Write-Host "$($Pending.Count) pending release(s); nothing was published."; return }
@@ -76,10 +88,14 @@ $Records = foreach ($Tag in Invoke-Gh @('release', 'list', '--limit', '1000', '-
     }
     $Download = Join-Path $OutputDirectory "catalog/$Id/$Version"
     Invoke-Gh @('release', 'download', $Tag, '--pattern', '*.zip', '--dir', $Download, '--clobber') | Out-Null
-    $Zip = Get-ChildItem -LiteralPath $Download -Filter '*.zip' | Select-Object -First 1
-    $Url = @(Invoke-Gh @('release', 'view', $Tag, '--json', 'assets', '--jq', ".assets[] | select(.name == `"$($Zip.Name)`") | .url"))[0]
+    $Zip = Join-Path $Download "$Id-$Version.zip"
+    $PluginZip = Join-Path $Download "$Id-$Version-plugin.zip"
+    # Releases published before Agent Plugins packaging have no plugin asset.
+    $HasPlugin = Test-Path -LiteralPath $PluginZip
     [pscustomobject]@{
-        Id = $Id; Version = $Version; Url = $Url; Sha256 = (Get-FileHash -LiteralPath $Zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        Id = $Id; Version = $Version; Url = (Get-AssetUrl $Tag "$Id-$Version.zip"); Sha256 = (Get-FileSha256 $Zip)
+        PluginUrl = if ($HasPlugin) { Get-AssetUrl $Tag "$Id-$Version-plugin.zip" } else { $null }
+        PluginSha256 = if ($HasPlugin) { Get-FileSha256 $PluginZip } else { $null }
         Required = @($Metadata['required'] ?? @()); Related = @($Metadata['related'] ?? @()); Description = $Description; Facets = @($Metadata['facets'] ?? @())
     }
 }

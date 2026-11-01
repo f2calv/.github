@@ -9,14 +9,19 @@ Component IDs to build; defaults to every component.
 Directory receiving <id>-<version>.zip files.
 .PARAMETER CatalogBaseUrl
 Also write catalog.json pointing at the built ZIPs under this URL, for local testing.
+.PARAMETER AgentPlugin
+Also build <id>-<version>-plugin.zip Agent Plugins packages for skills.
 .EXAMPLE
 ./.github/skills/skill-library/scripts/Build-SkillExtension.ps1 -Id docs-adr -OutputDirectory ./artifacts
+.EXAMPLE
+./.github/skills/skill-library/scripts/Build-SkillExtension.ps1 -Id docs-adr -OutputDirectory ./artifacts -AgentPlugin
 #>
 [CmdletBinding()]
 param(
     [string[]]$Id = @(),
     [Parameter(Mandatory)][string]$OutputDirectory,
     [string]$CatalogBaseUrl = '',
+    [switch]$AgentPlugin,
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 )
 $ErrorActionPreference = 'Stop'
@@ -31,11 +36,19 @@ $Records = @()
 foreach ($Component in $Components | Where-Object { $Id.Count -eq 0 -or $_.Id -in $Id }) {
     $Archive = New-SkillExtensionArchive -RepoRoot $RepoRoot -Component $Component -OutputDirectory $OutputDirectory
     $Archive
+    $Plugin = $null
+    if ($AgentPlugin -and $Component.Kind -eq 'skill') {
+        $Plugin = New-SkillPluginArchive -RepoRoot $RepoRoot -Component $Component -OutputDirectory $OutputDirectory
+        $Plugin
+    }
     if ($CatalogBaseUrl) {
+        $BaseUrl = $CatalogBaseUrl.TrimEnd('/')
         $Records += [pscustomobject]@{
-            Id = $Component.Id; Version = $Component.Version; Url = "$($CatalogBaseUrl.TrimEnd('/'))/$([IO.Path]::GetFileName($Archive.Path))"
+            Id = $Component.Id; Version = $Component.Version; Url = "$BaseUrl/$([IO.Path]::GetFileName($Archive.Path))"
             Sha256 = $Archive.Sha256; Required = $Component.Required; Related = $Component.Related
             Description = $Component.Description; Facets = $Component.Facets
+            PluginUrl = if ($Plugin) { "$BaseUrl/$([IO.Path]::GetFileName($Plugin.Path))" } else { $null }
+            PluginSha256 = if ($Plugin) { $Plugin.Sha256 } else { $null }
         }
     }
 }

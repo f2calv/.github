@@ -5,6 +5,29 @@ applyTo: '**/*.csproj,**/*.slnx,**/*.sln,**/Directory.Build.props,**/Directory.B
 
 # .NET
 
+## Application Project Names
+
+Use these defaults for new projects and explicitly approved naming migrations. Prefer generic
+application names over product-qualified variants; reusable capability libraries retain their own
+role names. A naming default does not require extracting another project.
+
+| Responsibility | Default project name | Boundary |
+| --- | --- | --- |
+| Application-owned backend | `CasCap.Backend` | Not every execution or integration library is the whole backend |
+| Shared application composition | `CasCap.App.Hosting` | Keep single-host composition application-owned unless sharing is justified |
+| Application-owned EF persistence | `CasCap.Data` | Not a shared schema or a general DTO collection |
+| Test suite | `<subject>.Tests` | Name for the production subject, including executable MTP suites |
+| Independently reusable test support | `<subject>.Testing` | Single-suite helpers stay internal to that suite |
+| Test-only executable host | `<subject>.TestHost` | Started by tests; not a runnable sample application |
+| Runnable sample | `<capability>[.<hosting-style>].SampleApp` | Use `SampleApp` consistently, not alternating `Sample` or `SampleHost`; distinguish real hosting variants when needed |
+| Measurement runner | `<subject>.Benchmarks` | Actual benchmark execution, not a default destination for evaluation code |
+
+- A project name does not prescribe a matching namespace. Review project/folder names separately
+  from assembly, public namespace, package and executable identities; preserve existing contracts
+  unless their migration is explicitly approved.
+- Classify responsibilities through the `dotnet-cleanup` inventory/review workflow before renaming
+  or splitting projects. An execution module is not automatically the entire application backend.
+
 ## Central Build Configuration
 
 - Keep shared MSBuild properties in the root `Directory.Build.props` — root namespace, language version, `ImplicitUsings`, `Nullable`, `GenerateDocumentationFile`, warning policy and `ContinuousIntegrationBuild` for deterministic CI builds.

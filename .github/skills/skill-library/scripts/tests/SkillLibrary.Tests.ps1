@@ -10,7 +10,7 @@ BeforeAll {
 }
 
 Describe 'Sidecar validation' -Tag 'Unit' {
-    BeforeEach { $Repo = New-SkillFixture $TestDrive }
+    BeforeEach { $Repo = New-SkillFixture (Join-Path $TestDrive "workspace $([char]0x00E9)") }
 
     It 'accepts a consistent set of skills' {
         @(Get-Errors) | Should -BeNullOrEmpty
@@ -33,11 +33,208 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @(Get-Errors) -join "`n" | Should -BeLike '*delta: missing skill.metadata.yaml*'
     }
 
-    It 'skips Git-ignored private skills' {
-        Write-FixtureText $Repo '.gitignore' "/.github/skills/private/`n"
-        Write-FixtureSkill $Repo 'private' "version: oops`n"
+    It 'skips Git-ignored private skills <Case>' -ForEach @(
+        @{ Case = 'with a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = "version: oops`n" }
+        @{ Case = 'without a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = '' }
+        @{ Case = 'with a sidecar via info/exclude'; IgnoreFile = '.git/info/exclude'; Metadata = "version: oops`n" }
+        @{ Case = 'without a sidecar via info/exclude'; IgnoreFile = '.git/info/exclude'; Metadata = '' }
+    ) {
+        Invoke-FixtureGit $Repo config core.quotePath true
+        Write-FixtureText $Repo $IgnoreFile "/.github/skills/private/`n"
+        Write-FixtureSkill $Repo 'private' $Metadata
         (Get-SkillComponent -RepoRoot $Repo).Id | Should -Not -Contain 'private'
         Get-SkillWithoutMetadata -RepoRoot $Repo | Should -BeNullOrEmpty
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
+    It 'fails <Discovery> when Git ignore status cannot be determined' -ForEach @(
+        @{ Discovery = 'Get-SkillComponent' }
+        @{ Discovery = 'Get-SkillWithoutMetadata' }
+    ) {
+        Write-FixtureSkill $Repo 'delta'
+        Rename-Item -LiteralPath (Join-Path $Repo '.git') -NewName '.git-disabled'
+        { & $Discovery -RepoRoot $Repo } | Should -Throw '*Cannot determine Git ignore status*'
+    }
+
+    It 'reports a SKILL.md name that does not match its folder' {
+        Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: other`ndescription: Beta.`n---`n"
+        @(Get-Errors) -join "`n" | Should -BeLike "*beta: SKILL.md name 'other' must match the folder name.*"
+    }
+
+    It 'reports a SKILL.md description over the Agent Skills limit' {
+        Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: beta`ndescription: $('x' * 1025)`n---`n"
+        @(Get-Errors) -join "`n" | Should -BeLike '*beta: SKILL.md description must be 1-1024 characters.*'
+    }
+
+    It 'ignores Spec Kit-generated speckit-* skills with or without a sidecar' {
+        Write-FixtureSkill $Repo 'speckit-plan'
+        Write-FixtureSkill $Repo 'speckit-tasks' "version: oops`n"
+        (Get-SkillComponent -RepoRoot $Repo).Id | Should -Not -Contain 'speckit-tasks'
+        Get-SkillWithoutMetadata -RepoRoot $Repo | Should -BeNullOrEmpty
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Skill links' -Tag 'Unit' {
+    BeforeEach { $Repo = New-SkillFixture $TestDrive }
+
+    It 'accepts links to declared skills and external files, URLs, its own files and fenced examples' {
+        $Body = "[Beta](../beta/SKILL.md) [Gamma](../gamma/SKILL.md#usage) [X](../../instructions/x.instructions.md)`n" +
+            "[Site](https://example.com) [Own](references/a.md)`n``````markdown`n[Example](../delta/SKILL.md)`n```````n"
+        Write-FixtureSkill $Repo 'alpha' (Get-Content -Raw (Join-Path $Repo '.github/skills/alpha/skill.metadata.yaml')) $Body
+        @(Get-Errors) | Should -BeNullOrEmpty
+        @(Get-SkillLink -RepoRoot $Repo -Id 'alpha').Count | Should -Be 3
+    }
+
+    It 'rejects a link to a skill that is neither required nor related' {
+        Write-FixtureSkill $Repo 'beta' "version: 1.0.0`n" '[Gamma](../gamma/SKILL.md)'
+        @(Get-Errors) -join "`n" | Should -BeLike "*beta: SKILL.md links to skill 'gamma'; add it to required or related.*"
+    }
+
+    It 'rejects a link to a repository file missing from externalFiles, once per file' {
+        Write-FixtureText $Repo '.github/skills/beta/references/b.md' "[X](../../../instructions/x.instructions.md) [X again](../../../instructions/x.instructions.md)`n"
+        $Errors = @(Get-Errors)
+        $Errors | Should -HaveCount 1
+        $Errors[0] | Should -BeLike "*beta: references/b.md links to '.github/instructions/x.instructions.md'; add it to externalFiles.*"
+    }
+}
+
+Describe 'Skill catalogue page' -Tag 'Unit' {
+    BeforeEach {
+        $Repo = New-SkillFixture $TestDrive
+        function Write-Catalogue([string[]]$Row) {
+            Write-FixtureText $Repo 'docs/skills.md' ("| Skill | Version | Use it for |`n| --- | --- | --- |`n" + ($Row -join "`n") + "`n")
+        }
+        function Get-Row([string]$Id, [string]$Version) { "| [$Id](../.github/skills/$Id/SKILL.md) | ``$Version`` | Use $Id. |" }
+    }
+
+    It 'is optional' {
+        @(Test-SkillCatalogue -RepoRoot $Repo -Component (Get-SkillComponent -RepoRoot $Repo)) | Should -BeNullOrEmpty
+    }
+
+    It 'accepts every skill listed once at its current version' {
+        Write-Catalogue @((Get-Row alpha 1.0.0), (Get-Row beta 1.0.0), (Get-Row gamma 1.0.0))
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
+    It 'rejects <Case>' -ForEach @(
+        @{ Case = 'a stale version'; Rows = @('alpha|1.0.0', 'beta|0.9.0', 'gamma|1.0.0'); Expected = "*beta: docs/skills.md shows '0.9.0' but the version is 1.0.0*" }
+        @{ Case = 'a missing skill'; Rows = @('alpha|1.0.0', 'beta|1.0.0'); Expected = '*gamma: missing from docs/skills.md*' }
+        @{ Case = 'a duplicate row'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|1.0.0', 'gamma|1.0.0'); Expected = '*gamma: listed 2 times*' }
+        @{ Case = 'an unknown skill'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|1.0.0', 'delta|1.0.0'); Expected = '*delta: listed in docs/skills.md but is not a published skill*' }
+        @{ Case = 'a row without a version'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|'); Expected = "*gamma: docs/skills.md shows ''*" }
+    ) {
+        Write-Catalogue @($Rows | ForEach-Object { $Parts = $_ -split '\|'; Get-Row $Parts[0] $Parts[1] })
+        @(Get-Errors) -join "`n" | Should -BeLike $Expected
+    }
+
+    It 'rewrites only the version cell of the named skill' {
+        Write-Catalogue @((Get-Row alpha 1.0.0), (Get-Row beta 1.0.0))
+        Set-SkillCatalogueVersion -RepoRoot $Repo -Id beta -Version 1.2.0
+        Get-Content (Join-Path $Repo 'docs/skills.md') | Select-Object -Skip 2 | Should -Be @((Get-Row alpha 1.0.0), (Get-Row beta 1.2.0))
+    }
+}
+
+Describe 'Portable frontmatter' -Tag 'Unit' {
+    It 'moves client-specific fields into string metadata and keeps the body' {
+        $Markdown = "---`nname: alpha`ndescription: 'Does things: well.'`nargument-hint: '[task]'`nuser-invocable: true`nmetadata:`n  owner: example`n---`n`n# Body`n"
+        $Portable = ConvertTo-SkillPortableMarkdown $Markdown
+        $Front = Get-SkillFrontmatter $Portable
+        @($Front.Keys) | Should -Be @('name', 'description', 'metadata')
+        $Front.description | Should -Be 'Does things: well.'
+        $Front.metadata['owner'] | Should -Be 'example'
+        $Front.metadata['argument-hint'] | Should -Be '[task]'
+        $Front.metadata['user-invocable'] | Should -BeOfType [string]
+        $Front.metadata['user-invocable'] | Should -Be 'true'
+        $Portable | Should -BeLike "*---`n`n# Body`n"
+        Test-SkillPortableFrontmatter -Id 'alpha' -Markdown $Markdown | Should -BeNullOrEmpty
+    }
+
+    It 'returns already portable Markdown unchanged' {
+        $Markdown = "---`nname: alpha`ndescription: Fine.`n---`nBody`n"
+        ConvertTo-SkillPortableMarkdown $Markdown | Should -BeExactly $Markdown
+    }
+
+    It 'returns Markdown without frontmatter unchanged' {
+        ConvertTo-SkillPortableMarkdown "# No frontmatter`n" | Should -BeExactly "# No frontmatter`n"
+    }
+
+    It 'is idempotent' {
+        $Once = ConvertTo-SkillPortableMarkdown "---`nname: alpha`ndescription: Fine.`nargument-hint: x`n---`nBody`n"
+        ConvertTo-SkillPortableMarkdown $Once | Should -BeExactly $Once
+    }
+
+    It 'rejects <Case>' -ForEach @(
+        @{ Case = 'a description over 1024 characters'; Front = "name: alpha`ndescription: $('x' * 1025)"; Expected = '*description must be 1-1024*' }
+        @{ Case = 'non-string metadata'; Front = "name: alpha`ndescription: Fine.`nmetadata:`n  count: 3"; Expected = '*metadata values must be strings*' }
+        @{ Case = 'a long compatibility'; Front = "name: alpha`ndescription: Fine.`ncompatibility: $('x' * 501)"; Expected = '*compatibility exceeds 500*' }
+        @{ Case = 'non-map metadata'; Front = "name: alpha`ndescription: Fine.`nmetadata: flat"; Expected = '*metadata must be a map*' }
+        @{ Case = 'a missing description'; Front = 'name: alpha'; Expected = '*description must be 1-1024*' }
+        @{ Case = 'a mismatched name'; Front = "name: beta`ndescription: Fine."; Expected = "*name 'beta' must match*" }
+    ) {
+        @(Test-SkillPortableFrontmatter -Id 'alpha' -Markdown "---`n$Front`n---`n") -join "`n" | Should -BeLike $Expected
+    }
+}
+
+Describe 'Agent Plugin archives' -Tag 'Unit' {
+    BeforeEach {
+        $Repo = New-SkillFixture $TestDrive
+        Write-FixtureText $Repo '.github/skills/alpha/SKILL.md' "---`nname: alpha`ndescription: Guidance for alpha.`nuser-invocable: true`n---`n`nSee [X](../../instructions/x.instructions.md).`n"
+        Invoke-FixtureGit $Repo commit -q -am hint
+        function Read-Entry([IO.Compression.ZipArchive]$Zip, [string]$Name) {
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry($Name).Open())
+            try { $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+        }
+    }
+
+    It 'lays out plugin.json, the skill and its external files so relative links resolve' {
+        $Archive = New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'out') -Repository 'owner/example'
+        [IO.Path]::GetFileName($Archive.Path) | Should -Be 'alpha-1.0.0-plugin.zip'
+        $Zip = [IO.Compression.ZipFile]::OpenRead($Archive.Path)
+        try {
+            $Zip.Entries.FullName | Should -Be @('LICENSE', 'instructions/x.instructions.md', 'plugin.json', 'skills/alpha/SKILL.md', 'skills/alpha/skill.metadata.yaml')
+            $Manifest = Read-Entry $Zip 'plugin.json' | ConvertFrom-Json -AsHashtable
+            $Skill = Read-Entry $Zip 'skills/alpha/SKILL.md'
+        }
+        finally { $Zip.Dispose() }
+        $Link = [IO.Path]::GetFullPath('skills/alpha/../../instructions/x.instructions.md', '/plugin')
+        $Link | Should -Be '/plugin/instructions/x.instructions.md'
+        @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'repository', 'keywords', 'extensions')
+        $Manifest['$schema'] | Should -Be 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
+        $Manifest.name | Should -Be 'alpha'
+        $Manifest.version | Should -Be '1.0.0'
+        $Manifest.repository | Should -Be 'https://github.com/owner/example'
+        $Manifest.keywords | Should -Be @('architecture')
+        $Manifest.extensions['io.github.f2calv.skill-library'].required[0].id | Should -Be 'beta'
+        (Get-SkillFrontmatter $Skill).metadata['user-invocable'] | Should -Be 'true'
+        $Skill | Should -BeLike '*See `[X`](../../instructions/x.instructions.md).*'
+    }
+
+    It 'produces identical bytes on rebuild' {
+        $First = New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'a')
+        $Second = New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'b')
+        $Second.Sha256 | Should -Be $First.Sha256
+    }
+
+    It 'omits repository and keywords when there are none' {
+        $Beta = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'beta'
+        $Manifest = New-SkillPluginManifest -Component $Beta
+        @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'extensions')
+        $Manifest.extensions['io.github.f2calv.skill-library'].required | Should -BeNullOrEmpty
+    }
+
+    It 'refuses uncommitted changes' {
+        Write-FixtureText $Repo '.github/skills/alpha/SKILL.md' "changed`n"
+        { New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'e') } | Should -Throw '*commit or stash*'
+    }
+
+    It 'rejects an external file outside .github' {
+        Write-FixtureText $Repo 'docs/x.md' "# X`n"
+        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nexternalFiles: [docs/x.md]`n"
+        Invoke-FixtureGit $Repo add -A
+        Invoke-FixtureGit $Repo commit -q -m docs
+        $Gamma = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'gamma'
+        { New-SkillPluginArchive -RepoRoot $Repo -Component $Gamma -OutputDirectory (Join-Path $TestDrive 'c') } | Should -Throw "*'docs/x.md' must be under .github/*"
     }
 }
 
@@ -139,5 +336,18 @@ Describe 'Catalog' -Tag 'Unit' {
         $Page = New-SkillCatalogPage -Catalog (New-SkillCatalog -Release $Release)
         $Page | Should -BeLike '*Uses &lt;script&gt; &amp; more.*'
         $Page | Should -Not -BeLike '*<script>*'
+    }
+
+    It 'lists an Agent Plugin download only for releases that have one' {
+        $Release = @(
+            [pscustomobject]@{ Id = 'alpha'; Version = '1.0.0'; Url = 'https://example.com/a.zip'; Sha256 = ('a' * 64); Description = 'A.'; Facets = @(); Required = @(); Related = @()
+                PluginUrl = 'https://example.com/a-plugin.zip'; PluginSha256 = ('d' * 64) }
+            [pscustomobject]@{ Id = 'beta'; Version = '1.0.0'; Url = 'https://example.com/b.zip'; Sha256 = ('b' * 64); Description = 'B.'; Facets = @(); Required = @(); Related = @() }
+        )
+        $Catalog = New-SkillCatalog -Release $Release
+        $Catalog.extensions['alpha'].skill_library.agent_plugin.download_url | Should -Be 'https://example.com/a-plugin.zip'
+        $Catalog.extensions['alpha'].skill_library.agent_plugin.sha256 | Should -Be ('d' * 64)
+        $Catalog.extensions['beta'].skill_library.Contains('agent_plugin') | Should -BeFalse
+        New-SkillCatalogPage -Catalog $Catalog | Should -BeLike '*href="https://example.com/a-plugin.zip">plugin</a>*'
     }
 }

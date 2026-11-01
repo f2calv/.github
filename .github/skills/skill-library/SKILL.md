@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Version, package, release and install skills as Spec Kit extensions: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, or installing skills into a Spec Kit repository.'
+description: 'Version, package, release and install skills as Spec Kit extensions and Agent Plugins: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, portable SKILL.md frontmatter, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, building plugin packages, or installing skills into a Spec Kit repository.'
 ---
 
 # Skill Library
@@ -50,11 +50,18 @@ git fetch --tags
 Fetch tags first: the checks compare against `<id>/X.Y.Z` tags that CI creates on GitHub. Without
 them every skill looks unreleased and the local check passes while CI fails.
 
+Scaffolding, validation and packaging exclude Git-ignored local skill folders and the `speckit-*`
+skills that `specify init` generates. If one appears in a
+missing-sidecar error, repair ignore discovery rather than adding it to the public catalog.
+
 `New-SkillMetadata.ps1` seeds `version: 1.0.0`, a facet from the folder prefix, related skills from
 links to other skill folders and external files from links to other repository files. Review it:
 replace generic `Linked from ...` reasons and move genuinely mandatory skills to `required`.
 
 `Test-SkillLibrary.ps1` runs in CI. It fails when a skill has no sidecar, sidecars are invalid,
+a document in a skill links to another skill not listed as required or related, or to a repository
+file not listed in `externalFiles`, `docs/skills.md` does not list every skill once at its current
+version,
 required skills form a cycle, a skill or its external files changed since its last `<id>/X.Y.Z` tag
 without a version bump, a version is more than one patch, minor or major step past its last tag,
 or a required pin differs from the required skill's version. Each error names the script that fixes it.
@@ -76,6 +83,25 @@ breaking guidance changes, `minor` for new capability and `patch` for fixes.
 A build packages committed files only and refuses uncommitted changes. The ZIP contains
 `extension.yml` and the files under `resources/<repository path>`, so relative links between the
 skill and its external files still resolve. Rebuilds are byte-identical.
+
+### Agent Plugins
+
+Every skill release also carries `<id>-<version>-plugin.zip`, an
+[Agent Plugins](https://agent-plugins.org/specification) v1.0.0 package; add `-AgentPlugin` to a
+local build to produce it. ADR 0002 under `docs/` records the design.
+
+- `plugin.json` maps id, version, description and facets; `required` and `related` go under the
+  `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
+- The skill sits at `skills/<id>/`; external files drop their `.github/` prefix, so
+  `../../instructions/<file>` links still resolve inside the plugin. External files outside
+  `.github/` fail the build.
+- `SKILL.md` frontmatter fields outside the [Agent Skills](https://agentskills.io/specification)
+  set, such as `argument-hint` and `user-invocable`, move into `metadata` as strings in the package
+  only. Sources keep them for VS Code.
+- `Test-SkillLibrary.ps1` checks the normalised frontmatter: `name` matches the folder, a
+  1-1024 character `description`, `compatibility` up to 500 characters and string `metadata`.
+- Instructions in a plugin are linked reference files; clients do not apply them by `applyTo`.
+- Releases published before this packaging have no plugin asset; a skill gains one on its next bump.
 
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
 as GitHub Release `<id>/X.Y.Z`, which also creates that tag on the merge commit. Then `catalog.json`
@@ -122,6 +148,10 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`
   format, `SPECKIT_CATALOG_URL` precedence and the catalog cache file naming used by the helper.
 - `yq` major versions: recheck `-i` comment preservation and YAML/JSON conversion.
+- Git ignore discovery on Windows and paths requiring Git quoting: verify ignored skills with and
+  without sidecars remain excluded, and Git failures are reported rather than treated as unignored.
 - GitHub release asset URLs for tags containing `/`, and the Pages URL for a dot-named repository.
 - `actions/upload-pages-artifact` and `actions/deploy-pages` major versions and permissions.
 - `specify extension add --force` semantics, which `upgrade-all` relies on.
+- Agent Plugins and Agent Skills specification versions: the `$schema` URL, the closed manifest
+  fields, the portable frontmatter field list and name, description and compatibility limits.

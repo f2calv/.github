@@ -114,6 +114,37 @@ Files keep their repository paths under `resources/`, so relative links between 
 instructions still resolve after installation. Only committed files are packaged, and rebuilding the
 same commit produces byte-identical archives.
 
+### Agent Plugins
+
+The same release also carries the skill as an [Agent Plugins](https://agent-plugins.org/) package,
+built from the same commit and version. The decision is recorded in
+[ADR 0002](adr-0002-agent-plugins-packaging.md).
+
+```mermaid
+graph TD
+    zip([docs-adr-1.0.1-plugin.zip])
+    manifest[plugin.json<br/>name, version, keywords, extensions]
+    skill[skills/docs-adr/...<br/>portable frontmatter]
+    ext[instructions/markdown*.instructions.md]
+    lic[LICENSE]
+
+    zip --> manifest
+    zip --> skill
+    zip --> ext
+    zip --> lic
+```
+
+- External files drop their `.github/` prefix, so the skill's `../../instructions/...` links resolve
+  inside the plugin root, as the specification requires.
+- VS Code-only frontmatter fields move into `metadata` in the package, so strict clients accept the
+  skill. The source files are unchanged.
+- Required and related skills are recorded under the `io.github.f2calv.skill-library` extension
+  namespace. Agent Plugins has no dependency mechanism, so a client installs only the one skill.
+- Instructions are inert reference files read when the skill follows a link; `applyTo` matching
+  happens only in the Copilot route.
+- The `speckit-*` skills that `specify init` generates belong to Spec Kit and are never validated,
+  versioned or packaged here.
+
 ## Installation Flow
 
 ```mermaid
@@ -142,12 +173,13 @@ sequenceDiagram
 `/speckit-skill-library upgrade-all` follows the same path for every installed skill whose catalog
 version is newer, replacing it with `specify extension add --force`.
 
-## Native and Versioned Routes Compared
+## Routes Compared
 
-| Aspect | Native Copilot route | Spec Kit route |
-| --- | --- | --- |
-| Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` |
-| Version | Whatever the clone has checked out | Exact published versions |
-| Selection | Every instruction and skill | Chosen skills plus their required closure |
-| Updates | `git pull` | `/speckit-skill-library upgrade-all` |
-| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases |
+| Aspect | Copilot route | Spec Kit route | Agent Plugins route |
+| --- | --- | --- | --- |
+| Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` | Download and extract `<skill>-<version>-plugin.zip`, then load it in the client |
+| Version | Whatever the clone has checked out | Exact published versions | Exact published versions |
+| Selection | Every instruction and skill | Chosen skills plus their required closure | One skill per plugin; required plugins installed by hand |
+| Instructions | Applied automatically by `applyTo` | Linked files packaged as reference | Linked files packaged as reference |
+| Updates | `git pull` | `/speckit-skill-library upgrade-all` | Replace with the newer package |
+| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases | An Agent Plugins client and access to GitHub Releases |

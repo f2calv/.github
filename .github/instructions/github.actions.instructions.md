@@ -96,6 +96,10 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 - Prefer `secrets: inherit` unless there is a specific reason to restrict the secrets passed to the called workflow.
 - Never pass a `workflow_dispatch`-only input directly to a reusable workflow or action and assume the callee's default still applies. On other events, the expression may evaluate to an empty value or the type's zero value, and forwarding it explicitly overrides the safer default.
 - Enforce required pull-request gates from `github.event_name` independently of dispatch controls. A manual opt-out may apply to trusted non-pull-request runs, but it must not disable a required pull-request check.
+- A called workflow's job `permissions` must not exceed what the calling job grants, or the run fails at startup. Audit every caller before declaring or raising permissions in a shared workflow.
+- A workflow, job or step `env:` value overrides a same-named variable a step writes to `GITHUB_ENV`. When a step normalises inputs, read the raw values under distinct names such as `IN_*`.
+- A reusable workflow reaches a composite action in its own repository only by a published reference, such as `owner/workflows/.github/actions/name@v1`. Release the action first, then switch the workflows to it in a later release.
+- A shared-workflows repository self-tests each reusable workflow in its own CI, calling the local file against small fixtures, before the floating major alias moves.
 - For the shared Helm packaging workflow, pass the full final OCI coordinate as `chart-repository`, such as `${{ github.repository_owner }}/charts/example`. The workflow pushes to `dirname(chart-repository)` and derives the package name from the `chart-path` directory basename, so that basename, `Chart.yaml` `name`, and the coordinate's final segment must match. Never insert the source repository name into the artifact path; that produces nested coordinates such as `<owner>/<source-repository>/<chart-name>`.
 
 ## Composite Actions
