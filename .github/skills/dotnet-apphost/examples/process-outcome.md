@@ -20,7 +20,8 @@ try
     return exitState.ExitCode;
 }
 catch (Exception exception)
-    when (exception is not OperationCanceledException and not TaskCanceledException)
+    when (exception is not OperationCanceledException and not TaskCanceledException
+        and not HostAbortedException)
 {
     Log.Fatal(exception, "{AppName} terminated unexpectedly",
         AppDomain.CurrentDomain.FriendlyName);
@@ -31,6 +32,16 @@ finally
     await Log.CloseAndFlushAsync();
 }
 ```
+
+Exclude `HostAbortedException`: `WebApplicationFactory` throws it at `Build()` to take over the entry
+point. A handler that catches it returns 1 instead, and every in-process test host then fails with
+"The entry point exited without ever building an IHost".
+
+A startup guard that throws before `Build()` no longer reaches `WebApplicationFactory`; it becomes
+a fatal log entry and exit code 1. Test those guards by calling the entry point's `RunAsync`
+directly, asserting the exit code and the captured fatal event. Run them in a collection with
+parallelization disabled, because they replace the static Serilog logger and process environment.
+Test start-time options validation through the registered `IValidateOptions<T>` services instead.
 
 Resolve `ApplicationExitState` before `RunAsync`: host execution can dispose the service provider
 before returning. The feature supervisor marks the retained state before requesting
