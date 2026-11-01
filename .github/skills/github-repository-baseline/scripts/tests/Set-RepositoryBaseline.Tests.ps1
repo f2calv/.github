@@ -129,11 +129,11 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         }
         @{
             Repository = 'f2calv/gha-check-release-exists'
-            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate')
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate / readme-ref-check')
         }
         @{
             Repository = 'f2calv/gha-workflows'
-            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate')
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'validate / readme-ref-check')
         }
         @{
             Repository = 'f2calv/helm-charts'
@@ -219,9 +219,9 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
             'f2calv/yamlizr' = 'build'
             'f2calv/dotnet-nuget-test' = 'build'
             'f2calv/gha-dotnet-nuget' = 'validate'
-            'f2calv/gha-gitops-manifest-update' = 'validate'
-            'f2calv/gha-sonarqube-dotnet' = 'validate'
-            'f2calv/gha-release-versioning' = 'validate'
+            'f2calv/gha-gitops-manifest-update' = 'validate / readme-ref-check'
+            'f2calv/gha-sonarqube-dotnet' = 'validate / readme-ref-check'
+            'f2calv/gha-release-versioning' = 'validate / readme-ref-check'
             'f2calv/multi-arch-container-dotnet' = 'app / app-build-dotnet'
             'f2calv/multi-arch-container-go' = 'app / app-build-go'
             'f2calv/multi-arch-container-python' = 'app / app-build-python'
@@ -677,5 +677,64 @@ Describe 'Resolve-DefaultBranchRuleset' -Tag 'Unit' {
         Should -Invoke Invoke-GhMutation -Times 0 -Exactly -ParameterFilter {
             $Method -eq 'DELETE' -and $Path -eq 'repos/f2calv/example/rulesets/10'
         }
+    }
+}
+
+Describe 'Resolve-CodeScanningDefaultSetup' -Tag 'Unit' {
+    BeforeAll {
+        $script:DefaultSetupPath = 'repos/f2calv/example/code-scanning/default-setup'
+    }
+
+    It 'Reports a configured repository as compliant without mutating it' {
+        Mock Invoke-GhCommand { ConvertTo-TestGhResponse -Output '{"state":"configured","languages":["actions","csharp"]}' }
+        Mock Invoke-GhMutation { throw 'Compliant repositories must not be mutated.' }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/f2calv/example' -Enabled $true -Apply
+
+        $Result.Status | Should -Be 'Compliant'
+        Should -Invoke Invoke-GhCommand -Times 1 -Exactly -ParameterFilter { $Arguments[1] -eq $script:DefaultSetupPath }
+    }
+
+    It 'Reports an unconfigured repository as drift during audit' {
+        Mock Invoke-GhCommand { ConvertTo-TestGhResponse -Output '{"state":"not-configured"}' }
+        Mock Invoke-GhMutation { throw 'Audit must not mutate GitHub.' }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/f2calv/example' -Enabled $true
+
+        $Result.Status | Should -Be 'Drift'
+        Should -Invoke Invoke-GhMutation -Times 0 -Exactly
+    }
+
+    It 'Does not mutate drift when WhatIf is enabled' {
+        Mock Invoke-GhCommand { ConvertTo-TestGhResponse -Output '{"state":"not-configured"}' }
+        Mock Invoke-GhMutation { throw 'WhatIf must not mutate GitHub.' }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/f2calv/example' -Enabled $true -Apply -WhatIf
+
+        $Result.Status | Should -Be 'WhatIf'
+        Should -Invoke Invoke-GhMutation -Times 0 -Exactly
+    }
+
+    It 'Configures default setup when applying drift' {
+        Mock Invoke-GhCommand { ConvertTo-TestGhResponse -Output '{"state":"not-configured"}' }
+        Mock Invoke-GhMutation { ConvertTo-TestGhResponse -Output '{"run_id":1}' }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/f2calv/example' -Enabled $true -Apply
+
+        $Result.Status | Should -Be 'Changed'
+        Should -Invoke Invoke-GhMutation -Times 1 -Exactly -ParameterFilter {
+            $Method -eq 'PATCH' -and $Path -eq $script:DefaultSetupPath -and $Body.state -eq 'configured'
+        }
+    }
+
+    It 'Reports a repository without Advanced Security as plan-gated' {
+        Mock Invoke-GhCommand {
+            ConvertTo-TestGhResponse -ExitCode 1 -Error 'gh: Advanced Security must be enabled for this repository to use code scanning. (HTTP 403)'
+        }
+        Mock Invoke-GhMutation { throw 'Plan-gated repositories must not be mutated.' }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/f2calv/example' -Enabled $true -Apply
+
+        $Result.Status | Should -Be 'PlanGated'
     }
 }

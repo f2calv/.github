@@ -36,6 +36,11 @@ The tools work for any GitHub account or organization; only the policy file is o
   private repositories never inherit these checks.
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
+- `security.codeScanningDefaultSetup` turns on CodeQL default setup, which analyses every supported
+  language, including GitHub Actions workflows, without a workflow file. GitHub rejects
+  advanced-setup analyses once default setup is configured, so delete a repository's CodeQL workflow
+  and merge that deletion before applying. Private repositories without Advanced Security report
+  `PlanGated`. Omit the key to leave code scanning unmanaged.
 
 ## Policy Selection
 
