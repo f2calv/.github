@@ -72,8 +72,10 @@ user explicitly asks for parallel sessions.
     its repository, not name prefixes that can include unrelated, similarly named projects.
   - Preserve unrelated work. Do not create another branch or pull request when the current one is
     already the correct release branch.
-  - Fold in a small compatible patch or minor Dependabot update when it can be validated in the same
-    pull request. Keep major migrations and documented holds separate.
+  - Fold every open Dependabot pull request into the repository's release pull request, including
+    major updates, then close each one as superseded. GitHub Actions majors are usually safe; NuGet
+    and other runtime majors still need the normal validation. Keep only documented holds, and any
+    major update that fails validation, out of the release.
   - For a repository's first package release, confirm that CI actually publishes. An application
     repository may only build and test, so add a default-branch `package` job using the shared NuGet
     publish action, mirroring an existing app-plus-package repository, and gate `release` on it. Ask
@@ -102,6 +104,17 @@ user explicitly asks for parallel sessions.
     - Do not expand the release into speculative repairs for retired or offline providers. Record a
       durable skip/TODO when the test can no longer run.
   - Fix build, analyzer, packaging, and deterministic test failures before continuing.
+- **Review the READMEs against the release**
+  - Before opening the pull request, compare the root README and every packable project's README
+    with the branch diff and the evaluated list of packable projects.
+  - Every published package needs a package table row or badge, and a short description with an
+    install command. Add rows for new packages; remove rows for retired ones.
+  - Describe new features, configuration options and breaking changes where the README covers that
+    area. For a major release, add migration notes or link to them.
+  - Check version numbers, target frameworks, examples and API names against the code being released.
+  - Fix stale content in the release pull request itself, or record it in the pull request
+    description with a follow-up when it is too large for this release. Use the `docs-readme` skill
+    for structure and wording.
 - **Commit and open the pull request**
   - Follow the normal auto-commit and auto-push switches; the skill grants no extra Git permission.
   - For public repositories, run the privacy scan before committing.
