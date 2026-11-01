@@ -85,8 +85,10 @@ links to the drilldown.
 
 1. Resolve the mode, the repository or container in scope, and where the result goes. In `explain`
    mode default to the session workspace; in other modes the Placement table decides.
-2. Inventory existing diagrams and the headings above them. Record their type, location and claims;
-   they are hypotheses to verify, not evidence.
+2. Before drawing anything, review every existing diagram's content, heading and location. Record
+   its type and claims; they are hypotheses to verify, not evidence. Plan the work so no view ends
+   up duplicated: correcting a stale diagram or relocating a misplaced one is often the right
+   outcome, and is preferable to adding a new diagram beside it.
 3. Read the repository's own instructions for domain diagram rules before drawing.
 
 ### 2. Gather Evidence
