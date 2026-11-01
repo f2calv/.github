@@ -78,5 +78,13 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 
 - Publish packages only through the repository's established CI workflow with trusted package-source
   authentication, deriving the version from the immutable release tag CI produces.
+- Publish to nuget.org through Trusted Publishing alone; never add, store or fall back to an API key.
+  The policy registers the owner, the publishing repository and its `ci.yml`.
+- Run the push job in a workflow file inside the publishing repository, typically a `ci.yml` job
+  calling the `gha-dotnet-nuget` composite action. nuget.org validates the OIDC
+  `job_workflow_ref` claim, which names the workflow actually running the job. Inside a reusable
+  workflow from another repository, the token exchange fails with HTTP 401 and nothing is published
+  ([NuGetGallery#11000](https://github.com/NuGet/NuGetGallery/issues/11000)). Shared reusable
+  workflows may lint, version, build and pack; the push stays local.
 - Use the `dotnet-release-train` skill to verify publication and to propagate releases through
   dependent repositories.

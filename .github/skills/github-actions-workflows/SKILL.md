@@ -21,7 +21,7 @@ caller. Reach for these before writing any inline job:
 | --- | --- |
 | Lint (pre-commit, actionlint, zizmor) | `lint.yml` |
 | Version, tag and release | `gha-release-versioning.yml` |
-| NuGet library end to end | `dotnet-nuget-library.yml` |
+| NuGet library build, test, pack and push | `gha-dotnet-nuget` composite action in a local `build` job; never a cross-repository reusable workflow, because nuget.org Trusted Publishing rejects it (see the NuGet instructions) |
 | .NET, Go, Python or Rust build and tests | `app-build-dotnet.yml`, `app-build-go.yml`, `app-build-python.yml`, `app-build-rust.yml` |
 | Container image, Helm chart, chart lint | `container-image-build.yml`, `helm-chart-package.yml`, `helm-lint.yml` |
 | GitOps manifest bump | `gitops-helm-update.yml` |
@@ -101,6 +101,7 @@ alone), and anything deliberately deferred.
 | A normalised value is ignored | A job or step `env:` of the same name overrides `GITHUB_ENV`; read raw inputs as `IN_*` |
 | `format()` JSON is invalid | Literal braces need `{{ }}`; better, build JSON with `jq` |
 | Pull request `BLOCKED`, all checks green | A required check name changed; update the ruleset policy |
+| nuget.org push fails with `401` from the token exchange | The push runs inside a reusable workflow from another repository; nuget.org Trusted Publishing validates `job_workflow_ref`. Move the push into a local job |
 | Dependabot pull request passes without testing | An actor-skipped job counts as passing; skip side effects, not validation |
 | Self-test tags the shared-workflows repository | A nested release ran; pass `release: false` or guard by repository |
 | Long-standing workaround such as `chart-testing-cli-command: skip` | Check the callee's history: the defect may already be fixed upstream |
