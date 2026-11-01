@@ -141,6 +141,13 @@ skill is only offered, with a reason, and you choose whether to install it.
 An `extension.yml` manifest, the skill folder, the instruction files it links to and the licence,
 all under their original repository paths. See [Packaging](docs/architecture.md#packaging).
 
+### Can I use the skills outside Copilot and Spec Kit?
+
+Yes, in any client that supports [Agent Plugins](https://agent-plugins.org/). Each skill release
+also carries a `-plugin.zip` package, linked from the catalog. Linked instructions travel inside it
+as reference files; only the Copilot route applies them automatically. See
+[Agent Plugins packaging](docs/architecture.md#agent-plugins).
+
 ### When are new versions published?
 
 When a pull request merges to `main`, CI publishes a GitHub Release for every skill version that has
@@ -170,6 +177,7 @@ covers the options.
 | [Development](docs/development.md) | Tests and validation for changes to this repository |
 | [EditorConfig generation](docs/editorconfig.md) | Shared formatting and analyzer fragments and their generator |
 | [ADR 0001](docs/adr-0001-skill-library-distribution.md) | Skill library distribution design and status |
+| [ADR 0002](docs/adr-0002-agent-plugins-packaging.md) | Agent Plugins packaging design and status |
 
 This public account-level repository also supplies GitHub's default issue forms, pull request
 template, [contribution guidance](CONTRIBUTING.md) and [support guidance](SUPPORT.md) to

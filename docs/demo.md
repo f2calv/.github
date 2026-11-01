@@ -13,6 +13,7 @@ see. Run them in a disposable demo repository, never in a real project.
 | [5. Install from the catalog](#5-install-from-the-catalog) | Required and related skills installed through Spec Kit | Specify CLI, PowerShell 7.4+ |
 | [6. Upgrade installed skills](#6-upgrade-installed-skills) | `upgrade-all` moving every skill to its latest version | As demo 5 |
 | [7. Fully local catalog](#7-fully-local-catalog) | The whole pipeline offline, before anything is published | Demos 4 and 5 prerequisites, Python 3 |
+| [8. Build an Agent Plugin](#8-build-an-agent-plugin) | The same skill packaged for any Agent Plugins client | As demo 3 |
 
 ## 1. Instructions Apply Automatically
 
@@ -135,3 +136,18 @@ $env:SKILL_LIBRARY_CATALOG_URL = 'http://localhost:8765/catalog.json'
 
 **Expected.** The same install experience as demo 5, served from the working tree's committed state.
 The local catalog lists only current versions, so `upgrade-all` has nothing to upgrade here.
+
+## 8. Build an Agent Plugin
+
+```powershell
+./.github/skills/skill-library/scripts/Build-SkillExtension.ps1 -Id github-dependabot -OutputDirectory ./artifacts -AgentPlugin
+Expand-Archive ./artifacts/github-dependabot-*-plugin.zip ./artifacts/plugin
+Get-ChildItem -Recurse -File ./artifacts/plugin | Resolve-Path -Relative
+Get-Content ./artifacts/plugin/plugin.json
+Get-Content ./artifacts/plugin/skills/github-dependabot/SKILL.md -TotalCount 8
+```
+
+**Expected.** A root `plugin.json` with the skill's name, version and facets as keywords, the skill
+under `skills/github-dependabot/` and its frontmatter's `argument-hint` and `user-invocable` moved
+into `metadata`. Compare with the source `SKILL.md` to show it is unchanged. Load the folder in an
+Agent Plugins client to finish the demo.
