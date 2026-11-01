@@ -79,7 +79,7 @@ Resolve latest versions live before changing these values. At the time this skil
 | `pre-commit/pre-commit-hooks` | `v6.0.0` | GitHub latest release |
 | `bmares/check-json5` | `v1.0.1` | GitLab latest stable tag |
 | `rbubley/mirrors-prettier` | `v3.9.10` | GitHub latest tag, matching npm `prettier` latest |
-| `igorshubovych/markdownlint-cli` | `v0.49.1` | GitHub latest release |
+| `igorshubovych/markdownlint-cli` | `v0.50.0` | GitHub latest release |
 
 `pre-commit/mirrors-prettier` is archived; use the maintained `rbubley/mirrors-prettier` mirror.
 
