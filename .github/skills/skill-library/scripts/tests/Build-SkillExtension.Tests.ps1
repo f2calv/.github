@@ -27,6 +27,13 @@ Describe 'Build-SkillExtension' -Tag 'Unit' {
         $Catalog.extensions['alpha'].tags | Should -Be @('architecture')
     }
 
+    It 'also builds Agent Plugin archives when asked' {
+        & $Script -RepoRoot $Repo -Id beta -OutputDirectory $Out -AgentPlugin -CatalogBaseUrl 'http://localhost:8765' | Out-Null
+        (Get-ChildItem $Out -Filter '*.zip').Name | Should -Be @('beta-1.0.0-plugin.zip', 'beta-1.0.0.zip')
+        $Catalog = Get-Content -Raw (Join-Path $Out 'catalog.json') | ConvertFrom-Json -AsHashtable
+        $Catalog.extensions['beta'].skill_library.agent_plugin.download_url | Should -Be 'http://localhost:8765/beta-1.0.0-plugin.zip'
+    }
+
     It 'rejects an unknown skill' {
         { & $Script -RepoRoot $Repo -Id missing -OutputDirectory $Out } | Should -Throw '*Unknown component: missing*'
     }

@@ -5,6 +5,10 @@ $script:BootstrapId = 'skill'
 $script:BootstrapPath = 'src/skill-library-extension'
 $script:SchemaPath = Join-Path $PSScriptRoot '../skill-metadata.schema.json'
 $script:VersionPattern = '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+$script:PluginSchema = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
+$script:PluginNamespace = 'io.github.f2calv.skill-library'
+$script:PortableFrontmatter = @('name', 'description', 'license', 'compatibility', 'metadata', 'allowed-tools')
+$script:SkillNamePattern = '^(?=.{1,64}$)[a-z0-9]+(-[a-z0-9]+)*$'
 
 function Invoke-SkillTool {
     param([Parameter(Mandatory)][string]$Name, [string[]]$Arguments = @(), [string]$WorkingDirectory = (Get-Location).Path)
@@ -32,6 +36,46 @@ function Get-SkillFrontmatter {
     $Match = [regex]::Match($Markdown, '\A---\r?\n(.*?)\r?\n---\r?\n', 'Singleline')
     if (-not $Match.Success) { return @{} }
     return ConvertFrom-SkillYaml -Yaml $Match.Groups[1].Value
+}
+
+function ConvertTo-SkillPortableMarkdown {
+    <# Moves client-specific frontmatter fields into metadata as strings so SKILL.md meets the Agent Skills specification. #>
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Markdown)
+    $Match = [regex]::Match($Markdown, '\A---\r?\n(.*?)\r?\n---\r?\n', 'Singleline')
+    if (-not $Match.Success) { return $Markdown }
+    $Front = ConvertFrom-SkillYaml -Yaml $Match.Groups[1].Value
+    $Moved = @($Front.Keys | Where-Object { $_ -notin $script:PortableFrontmatter })
+    if (-not $Moved.Count) { return $Markdown }
+    $Portable = [ordered]@{}
+    foreach ($Key in $Front.Keys) { if ($Key -in $script:PortableFrontmatter -and $Key -ne 'metadata') { $Portable[$Key] = $Front[$Key] } }
+    $Metadata = [ordered]@{}
+    if ($Front.Contains('metadata') -and $Front['metadata'] -is [Collections.IDictionary]) {
+        foreach ($Pair in $Front['metadata'].GetEnumerator()) { $Metadata[$Pair.Key] = $Pair.Value }
+    }
+    foreach ($Key in $Moved) {
+        $Value = $Front[$Key]
+        $Metadata[$Key] = if ($Value -is [bool]) { $Value.ToString().ToLowerInvariant() } else { [string]$Value }
+    }
+    $Portable['metadata'] = $Metadata
+    return "---`n$(ConvertTo-SkillYamlText $Portable)---`n" + $Markdown.Substring($Match.Length)
+}
+
+function Test-SkillPortableFrontmatter {
+    <# Returns Agent Skills specification errors for a SKILL.md after portable normalisation. #>
+    param([Parameter(Mandatory)][string]$Id, [Parameter(Mandatory)][AllowEmptyString()][string]$Markdown)
+    $Front = Get-SkillFrontmatter (ConvertTo-SkillPortableMarkdown $Markdown)
+    $Name = [string]$Front['name']
+    $Description = [string]$Front['description']
+    $Errors = [Collections.Generic.List[string]]::new()
+    if ($Name -cne $Id) { $Errors.Add("${Id}: SKILL.md name '$Name' must match the folder name.") }
+    if ($Id -cnotmatch $script:SkillNamePattern) { $Errors.Add("${Id}: the folder name is not a valid Agent Skills name.") }
+    if ($Description.Length -lt 1 -or $Description.Length -gt 1024) { $Errors.Add("${Id}: SKILL.md description must be 1-1024 characters.") }
+    if ($Front.Contains('compatibility') -and ([string]$Front['compatibility']).Length -gt 500) { $Errors.Add("${Id}: SKILL.md compatibility exceeds 500 characters.") }
+    if ($Front.Contains('metadata')) {
+        if ($Front['metadata'] -isnot [Collections.IDictionary]) { $Errors.Add("${Id}: SKILL.md metadata must be a map.") }
+        elseif (@($Front['metadata'].Values | Where-Object { $_ -isnot [string] }).Count) { $Errors.Add("${Id}: SKILL.md metadata values must be strings.") }
+    }
+    return @($Errors)
 }
 
 function ConvertTo-SkillVersion {
@@ -113,6 +157,8 @@ function Test-SkillComponent {
                 continue
             }
             if (-not $Item.Description) { $Errors.Add("$($Item.Id): SKILL.md has no description.") }
+            $Markdown = [IO.File]::ReadAllText((Join-Path $RepoRoot "$($Item.Path)/SKILL.md"))
+            foreach ($PortableError in Test-SkillPortableFrontmatter -Id $Item.Id -Markdown $Markdown) { $Errors.Add($PortableError) }
         }
         elseif ($Item.Version -cnotmatch $script:VersionPattern) { $Errors.Add("$($Item.Id): invalid version '$($Item.Version)'.") }
         $Seen = @{}
@@ -286,6 +332,49 @@ function New-SkillExtensionArchive {
     [pscustomobject]@{ Id = $Component.Id; Version = $Component.Version; Path = $Path; Sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
 }
 
+function New-SkillPluginManifest {
+    <# Agent Plugins plugin.json for one skill; required and related skills live under the skill-library extension namespace. #>
+    param([Parameter(Mandatory)][object]$Component, [string]$Repository)
+    $Manifest = [ordered]@{ '$schema' = $script:PluginSchema; name = $Component.Id; version = $Component.Version; description = $Component.Description }
+    if ($Repository) { $Manifest.repository = "https://github.com/$Repository" }
+    if ($Component.Facets.Count) { $Manifest.keywords = @($Component.Facets) }
+    $Manifest.extensions = [ordered]@{
+        $script:PluginNamespace = [ordered]@{
+            required = @($Component.Required | ForEach-Object { [ordered]@{ id = $_.id; version = $_.version } })
+            related  = @($Component.Related | ForEach-Object { [ordered]@{ id = $_.id; reason = $_.reason } })
+        }
+    }
+    return $Manifest
+}
+
+function New-SkillPluginArchive {
+    <# Builds <id>-<version>-plugin.zip: an Agent Plugin with the skill under skills/<id>/ and external files at their .github-relative paths. #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object]$Component, [Parameter(Mandatory)][string]$OutputDirectory, [string]$Repository)
+    if ($Component.Kind -ne 'skill') { throw "$($Component.Id): only skills are packaged as Agent Plugins." }
+    $Files = Get-SkillPackageFile -RepoRoot $RepoRoot -Component $Component
+    $SkillRoot = "skills/$($Component.Id)"
+    $Utf8 = [Text.UTF8Encoding]::new($false)
+    $Entry = [ordered]@{}
+    foreach ($File in $Files.Keys) {
+        $Bytes = [IO.File]::ReadAllBytes((Join-Path $RepoRoot $File))
+        # Stripping .github/ keeps SKILL.md links such as ../../instructions/x.md resolving inside the plugin root.
+        $Name = if ($File.StartsWith("$($Component.Path)/", [StringComparison]::Ordinal)) { "$SkillRoot/$($File.Substring($Component.Path.Length + 1))" }
+        elseif ($File.StartsWith('.github/', [StringComparison]::Ordinal)) { $File.Substring('.github/'.Length) }
+        elseif ($File -ceq 'LICENSE') { $File }
+        else { throw "$($Component.Id): external file '$File' must be under .github/ to resolve inside an Agent Plugin." }
+        if ($Name -ceq "$SkillRoot/SKILL.md") { $Bytes = $Utf8.GetBytes((ConvertTo-SkillPortableMarkdown $Utf8.GetString($Bytes))) }
+        $Entry[$Name] = @{ Bytes = $Bytes; Mode = $Files[$File] }
+    }
+    if (-not $Entry.Contains("$SkillRoot/SKILL.md")) { throw "$($Component.Id): SKILL.md is not committed." }
+    $Manifest = (New-SkillPluginManifest -Component $Component -Repository $Repository | ConvertTo-Json -Depth 20) + "`n"
+    $Entry['plugin.json'] = @{ Bytes = $Utf8.GetBytes($Manifest); Mode = '100644' }
+    [void][IO.Directory]::CreateDirectory($OutputDirectory)
+    $Path = Join-Path $OutputDirectory "$($Component.Id)-$($Component.Version)-plugin.zip"
+    if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path }
+    Write-SkillZip -Path $Path -Entry $Entry
+    [pscustomobject]@{ Id = $Component.Id; Version = $Component.Version; Path = $Path; Sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
+}
+
 function New-SkillCatalog {
     <# Builds a Spec Kit catalog from published releases; the highest version of each ID is current. #>
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Release)
@@ -293,14 +382,18 @@ function New-SkillCatalog {
     foreach ($Group in $Release | Group-Object Id | Sort-Object Name) {
         $Ordered = @($Group.Group | Sort-Object { ConvertTo-SkillVersion $_.Version } -Descending)
         $Records = @(foreach ($Item in $Ordered) {
+            $Library = [ordered]@{
+                required = @($Item.Required | ForEach-Object { [ordered]@{ id = $_.id; version = $_.version } })
+                related  = @($Item.Related | ForEach-Object { [ordered]@{ id = $_.id; reason = $_.reason } })
+            }
+            if ($Item.PSObject.Properties['PluginUrl'] -and $Item.PluginUrl) {
+                $Library.agent_plugin = [ordered]@{ download_url = $Item.PluginUrl; sha256 = $Item.PluginSha256 }
+            }
             [ordered]@{
                 download_url  = $Item.Url
                 sha256        = $Item.Sha256
                 requires      = [ordered]@{ speckit_version = '>=1.2.3' }
-                skill_library = [ordered]@{
-                    required = @($Item.Required | ForEach-Object { [ordered]@{ id = $_.id; version = $_.version } })
-                    related  = @($Item.Related | ForEach-Object { [ordered]@{ id = $_.id; reason = $_.reason } })
-                }
+                skill_library = $Library
             }
         })
         $Current = $Ordered[0]
@@ -322,8 +415,9 @@ function New-SkillCatalogPage {
     $Rows = foreach ($Pair in $Catalog.extensions.GetEnumerator()) {
         $Entry = $Pair.Value
         $Required = @($Entry.skill_library.required | ForEach-Object { "$($_.id) $($_.version)" }) -join ', '
+        $Plugin = if ($Entry.skill_library.Contains('agent_plugin')) { "<a href=`"$(& $Encode $Entry.skill_library.agent_plugin.download_url)`">plugin</a>" } else { '' }
         "<tr><td><code>$(& $Encode $Pair.Key)</code></td><td><a href=`"$(& $Encode $Entry.download_url)`">$(& $Encode $Entry.version)</a></td>" +
-        "<td>$(& $Encode $Entry.description)</td><td>$(& $Encode $Required)</td></tr>"
+        "<td>$Plugin</td><td>$(& $Encode $Entry.description)</td><td>$(& $Encode $Required)</td></tr>"
     }
     @"
 <!DOCTYPE html>
@@ -341,9 +435,10 @@ th { background: #f6f8fa; }
 </head>
 <body>
 <h1>Skill library catalog</h1>
-<p>Each skill is a Spec Kit extension. Point Spec Kit at <a href="catalog.json">catalog.json</a> and install with <code>/speckit-skill-library install &lt;skill&gt;</code>.</p>
+<p>Each skill is a Spec Kit extension. Point Spec Kit at <a href="catalog.json">catalog.json</a> and install with <code>/speckit-skill-library install &lt;skill&gt;</code>.
+Skills released with an <a href="https://agent-plugins.org/">Agent Plugins</a> package also link it, for any conformant client.</p>
 <table>
-<thead><tr><th>Skill</th><th>Version</th><th>Description</th><th>Requires</th></tr></thead>
+<thead><tr><th>Skill</th><th>Version</th><th>Agent Plugin</th><th>Description</th><th>Requires</th></tr></thead>
 <tbody>
 $($Rows -join "`n")
 </tbody>
@@ -355,4 +450,5 @@ $($Rows -join "`n")
 
 Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
     Get-SkillWithoutMetadata, Test-SkillComponent, Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
-    New-SkillExtensionManifest, New-SkillExtensionArchive, New-SkillCatalog, New-SkillCatalogPage
+    New-SkillExtensionManifest, New-SkillExtensionArchive, ConvertTo-SkillPortableMarkdown, Test-SkillPortableFrontmatter, New-SkillPluginManifest,
+    New-SkillPluginArchive, New-SkillCatalog, New-SkillCatalogPage

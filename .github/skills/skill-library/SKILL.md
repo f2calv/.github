@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Version, package, release and install skills as Spec Kit extensions: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, or installing skills into a Spec Kit repository.'
+description: 'Version, package, release and install skills as Spec Kit extensions and Agent Plugins: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, portable SKILL.md frontmatter, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, building plugin packages, or installing skills into a Spec Kit repository.'
 ---
 
 # Skill Library
@@ -77,6 +77,25 @@ A build packages committed files only and refuses uncommitted changes. The ZIP c
 `extension.yml` and the files under `resources/<repository path>`, so relative links between the
 skill and its external files still resolve. Rebuilds are byte-identical.
 
+### Agent Plugins
+
+Every skill release also carries `<id>-<version>-plugin.zip`, an
+[Agent Plugins](https://agent-plugins.org/specification) v1.0.0 package; add `-AgentPlugin` to a
+local build to produce it. See [ADR 0002](../../../docs/adr-0002-agent-plugins-packaging.md).
+
+- `plugin.json` maps id, version, description and facets; `required` and `related` go under the
+  `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
+- The skill sits at `skills/<id>/`; external files drop their `.github/` prefix, so
+  `../../instructions/<file>` links still resolve inside the plugin. External files outside
+  `.github/` fail the build.
+- `SKILL.md` frontmatter fields outside the [Agent Skills](https://agentskills.io/specification)
+  set, such as `argument-hint` and `user-invocable`, move into `metadata` as strings in the package
+  only. Sources keep them for VS Code.
+- `Test-SkillLibrary.ps1` checks the normalised frontmatter: `name` matches the folder, a
+  1-1024 character `description`, `compatibility` up to 500 characters and string `metadata`.
+- Instructions in a plugin are linked reference files; clients do not apply them by `applyTo`.
+- Releases published before this packaging have no plugin asset; a skill gains one on its next bump.
+
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
 as GitHub Release `<id>/X.Y.Z`, which also creates that tag on the merge commit. Then `catalog.json`
 and an `index.html` listing every skill are regenerated from all releases and deployed to GitHub
@@ -125,3 +144,5 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 - GitHub release asset URLs for tags containing `/`, and the Pages URL for a dot-named repository.
 - `actions/upload-pages-artifact` and `actions/deploy-pages` major versions and permissions.
 - `specify extension add --force` semantics, which `upgrade-all` relies on.
+- Agent Plugins and Agent Skills specification versions: the `$schema` URL, the closed manifest
+  fields, the portable frontmatter field list and name, description and compatibility limits.

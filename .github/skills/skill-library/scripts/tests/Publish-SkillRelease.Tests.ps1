@@ -16,7 +16,7 @@ $Dir = if ($A.Count -gt 2) { Join-Path $Releases ($A[2] -replace '/', '__') } el
 switch ($A[1]) {
     'create' {
         [void](New-Item -ItemType Directory -Force -Path $Dir)
-        Copy-Item -LiteralPath $A[3] -Destination $Dir
+        foreach ($Asset in $A[3..([array]::IndexOf($A, '--target') - 1)]) { Copy-Item -LiteralPath $Asset -Destination $Dir }
         & git tag $A[2] $A[[array]::IndexOf($A, '--target') + 1]
         & git push -q origin $A[2]
         & git tag -d $A[2] | Out-Null
@@ -31,7 +31,10 @@ switch ($A[1]) {
     }
     'view' {
         if (-not (Test-Path -LiteralPath $Dir)) { exit 1 }
-        if ($A -contains '--json') { "https://example.com/download/$($A[2])/$((Get-ChildItem -LiteralPath $Dir -Filter '*.zip')[0].Name)" }
+        if ($A -contains '--json') {
+            $Name = [regex]::Match($A[[array]::IndexOf($A, '--jq') + 1], '"([^"]+)"').Groups[1].Value
+            if (Test-Path -LiteralPath (Join-Path $Dir $Name)) { "https://example.com/download/$($A[2])/$Name" }
+        }
     }
 }
 exit 0
@@ -69,6 +72,8 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         $Catalog = Get-Catalog
         $Catalog.extensions.Keys | Sort-Object | Should -Be @('alpha', 'beta', 'gamma')
         $Catalog.extensions['alpha'].download_url | Should -Be 'https://example.com/download/alpha/1.0.0/alpha-1.0.0.zip'
+        $Catalog.extensions['alpha'].skill_library.agent_plugin.download_url | Should -Be 'https://example.com/download/alpha/1.0.0/alpha-1.0.0-plugin.zip'
+        $Catalog.extensions['alpha'].skill_library.agent_plugin.sha256 | Should -Match '^[0-9a-f]{64}$'
         $Catalog.extensions['alpha'].skill_library.required[0].id | Should -Be 'beta'
         $Page = Get-Content -Raw (Join-Path $Site 'index.html')
         $Page | Should -BeLike '*<code>alpha</code>*beta 1.0.0*'
