@@ -18,7 +18,7 @@ gate rejects a stale or missing row.
 | [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.1` | Issue quality, pull request descriptions, review findings and merge readiness |
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.0` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.0` | An explicitly requested temporary branch-change summary for review |
-| [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.0` | Coverage, grouping and troubleshooting across dependency ecosystems |
+| [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
 
 ## Tooling and Agent Setup
 
