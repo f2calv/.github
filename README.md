@@ -127,8 +127,7 @@ extension. See [Versioned Skills for Spec Kit](docs/spec-kit.md).
 
 ## Use as Agent Plugins
 
-Every skill release, except the Spec Kit-specific `spec-kit-*` skills, also carries
-`<skill>-<version>-plugin.zip`, a package in the vendor-neutral
+Every skill release also carries `<skill>-<version>-plugin.zip`, a package in the vendor-neutral
 [Agent Plugins](https://agent-plugins.org/specification) format. Download it from the
 [catalog](https://f2calv.github.io/.github/) or the skill's GitHub Release, extract it, and load the
 folder with your client's plugin installation method. Agent Plugins has no dependencies, so install

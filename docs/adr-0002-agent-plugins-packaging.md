@@ -93,9 +93,9 @@ Generate one Agent Plugin per skill during the existing skill release, from the 
 omitted until a client shows a use for them. An external file outside `.github/` fails the build,
 because its relative link would escape the plugin root.
 
-A sidecar can set `agentPlugin: false` to ship a skill only as a Spec Kit extension. The
-`spec-kit-bootstrap` and `spec-kit-guide` skills do, because they only make sense inside Spec Kit.
-`skill-library` keeps its plugin because it also documents Agent Plugins packaging.
+Every published skill gets a plugin, including this library's own `spec-kit-*` skills. The
+`speckit-*` skills that `specify init` generates belong to Spec Kit and are excluded from validation
+and packaging.
 
 Linked instructions travel inside each plugin as plain copies, the same way the Spec Kit ZIP carries
 them under `resources/.github/instructions/`. A client loads only the skill. The agent reads an

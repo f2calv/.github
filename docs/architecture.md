@@ -142,8 +142,8 @@ graph TD
   namespace. Agent Plugins has no dependency mechanism, so a client installs only the one skill.
 - Instructions are inert reference files read when the skill follows a link; `applyTo` matching
   happens only in the Copilot route.
-- A sidecar with `agentPlugin: false` gets no plugin. The `spec-kit-*` skills use it because they
-  only make sense inside Spec Kit.
+- The `speckit-*` skills that `specify init` generates belong to Spec Kit and are never validated,
+  versioned or packaged here.
 
 ## Installation Flow
 
