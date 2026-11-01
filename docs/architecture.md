@@ -142,6 +142,8 @@ graph TD
   namespace. Agent Plugins has no dependency mechanism, so a client installs only the one skill.
 - Instructions are inert reference files read when the skill follows a link; `applyTo` matching
   happens only in the Copilot route.
+- A sidecar with `agentPlugin: false` gets no plugin. The `spec-kit-*` skills use it because they
+  only make sense inside Spec Kit.
 
 ## Installation Flow
 
@@ -171,12 +173,13 @@ sequenceDiagram
 `/speckit-skill-library upgrade-all` follows the same path for every installed skill whose catalog
 version is newer, replacing it with `specify extension add --force`.
 
-## Native and Versioned Routes Compared
+## Routes Compared
 
-| Aspect | Native Copilot route | Spec Kit route |
-| --- | --- | --- |
-| Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` |
-| Version | Whatever the clone has checked out | Exact published versions |
-| Selection | Every instruction and skill | Chosen skills plus their required closure |
-| Updates | `git pull` | `/speckit-skill-library upgrade-all` |
-| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases |
+| Aspect | Copilot route | Spec Kit route | Agent Plugins route |
+| --- | --- | --- | --- |
+| Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` | Download and extract `<skill>-<version>-plugin.zip`, then load it in the client |
+| Version | Whatever the clone has checked out | Exact published versions | Exact published versions |
+| Selection | Every instruction and skill | Chosen skills plus their required closure | One skill per plugin; required plugins installed by hand |
+| Instructions | Applied automatically by `applyTo` | Linked files packaged as reference | Linked files packaged as reference |
+| Updates | `git pull` | `/speckit-skill-library upgrade-all` | Replace with the newer package |
+| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases | An Agent Plugins client and access to GitHub Releases |

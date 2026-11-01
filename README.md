@@ -1,8 +1,20 @@
 # .github
 
 A central library of GitHub Copilot instructions and agent skills for agentic development across
-many repositories. Copilot reads them directly from this repository; Spec Kit users can optionally
-install selected skills as versioned extensions.
+many repositories. Copilot reads them directly from this repository; the skills are also published
+as versioned Spec Kit extensions and as Agent Plugins.
+
+## Three Ways to Use the Skills
+
+| Route | Best for | What you get | Updates |
+| --- | --- | --- | --- |
+| [1. Copilot](#use-with-copilot) | Day-to-day work in VS Code | Every instruction, applied automatically by `applyTo`, and every skill, from the checked-out branch | `git pull` |
+| [2. Spec Kit extensions](#use-with-spec-kit) | Spec Kit repositories that pin versions | Chosen skills at exact versions, with their required skills and linked instructions | `/speckit-skill-library upgrade-all` |
+| [3. Agent Plugins](#use-as-agent-plugins) | Any client that supports [Agent Plugins](https://agent-plugins.org/) | One skill per package at an exact version, with its linked instructions as reference files | Download the newer package |
+
+Only route 1 applies instructions automatically. Routes 2 and 3 carry the instruction files a skill
+links to, which the agent reads when it follows the link. Pick one route per workspace to avoid
+loading the same skill twice.
 
 ## What It Provides
 
@@ -36,6 +48,10 @@ flowchart LR
         cmd(["/speckit-skill-library"])
     end
 
+    subgraph plugins [Agent Plugins route: optional]
+        client([Agent Plugins client])
+    end
+
     instr --> ws
     skills --> ws
     instr --> personal
@@ -45,14 +61,16 @@ flowchart LR
     tools --> cat
     cat --> cmd
     rel --> cmd
+    rel -- "-plugin.zip" --> client
 
     classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#000
     class instr,skills,tools owned
 ```
 
 The Copilot route reads the working tree directly, so it always reflects the checked-out branch.
-The Spec Kit route installs published, immutable versions. [How the repository works](docs/architecture.md)
-details versioning, packaging and installation with further diagrams.
+The Spec Kit and Agent Plugins routes install published, immutable versions from the same release.
+[How the repository works](docs/architecture.md) details versioning, packaging and installation
+with further diagrams.
 
 ## Use with Copilot
 
@@ -107,13 +125,23 @@ Spec Kit repositories can install selected skills at exact versions, with the sk
 through the `/speckit-skill-library` command. Each skill is released independently as a Spec Kit
 extension. See [Versioned Skills for Spec Kit](docs/spec-kit.md).
 
+## Use as Agent Plugins
+
+Every skill release, except the Spec Kit-specific `spec-kit-*` skills, also carries
+`<skill>-<version>-plugin.zip`, a package in the vendor-neutral
+[Agent Plugins](https://agent-plugins.org/specification) format. Download it from the
+[catalog](https://f2calv.github.io/.github/) or the skill's GitHub Release, extract it, and load the
+folder with your client's plugin installation method. Agent Plugins has no dependencies, so install
+each plugin listed under `required` in its `plugin.json` too. See
+[Agent Plugins packaging](docs/architecture.md#agent-plugins).
+
 ## FAQ
 
 ### Do I need Spec Kit?
 
 No. Copilot reads the instructions and skills directly once this repository is in your workspace or
 linked into `~/.copilot`. Spec Kit is only for repositories that want selected skills pinned to
-exact versions.
+exact versions; other agent clients can use the Agent Plugins packages instead.
 
 ### How does Copilot decide what to load?
 
@@ -143,10 +171,9 @@ all under their original repository paths. See [Packaging](docs/architecture.md#
 
 ### Can I use the skills outside Copilot and Spec Kit?
 
-Yes, in any client that supports [Agent Plugins](https://agent-plugins.org/). Each skill release
-also carries a `-plugin.zip` package, linked from the catalog. Linked instructions travel inside it
-as reference files; only the Copilot route applies them automatically. See
-[Agent Plugins packaging](docs/architecture.md#agent-plugins).
+Yes, in any client that supports [Agent Plugins](https://agent-plugins.org/). See
+[Use as Agent Plugins](#use-as-agent-plugins). Linked instructions travel inside each package as
+reference files; only the Copilot route applies them automatically.
 
 ### When are new versions published?
 
