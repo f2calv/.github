@@ -2,7 +2,6 @@
 name: dotnet-redis
 description: 'Design, implement, audit or troubleshoot Redis data access in .NET services: key roles (cache, state, stream, lock), cache-aside through CasCap.Common.Caching, absolute versus sliding expiration, TTL jitter, invalidation, cache stampedes, hashes, sorted-set series, streams and consumer groups, keyspace notifications, eviction policy and Sentinel endpoint placement. Use when adding a cached read, choosing a Redis data type, setting an expiration, placing keys on an endpoint, or diagnosing stale, missing, evicted or duplicated Redis data.'
 argument-hint: 'mode={design|apply|audit|diagnose} [scope=feature|application|workspace]'
-user-invocable: true
 ---
 
 # Redis Data Access

@@ -2,7 +2,6 @@
 name: dotnet-release-train
 description: 'Update, validate, release, and propagate NuGet packages through dependent .NET repositories. Use for dependency sweeps and chained releases, from CI tooling and Helm charts through the base library and its consumers, and user-approved clean-semver Kubernetes rollouts through GitHub workflows.'
 argument-hint: '[start={tooling|<first-producer>}] [packages={all|internal}]'
-user-invocable: true
 ---
 
 # .NET Release Train
@@ -19,7 +18,7 @@ availability gate. It is a synthetic laboratory, not permission to publish or st
 
 Build the order from the actual package graph: a repository moves only after every package it
 consumes is published. The waves below are the general shape; the
-[real-world example](#real-world-example-f2calv-net-release-train) shows one concrete train.
+[real-world example](references/real-world-example.md) shows one concrete train.
 
 - **Tooling wave** — release first whenever these repositories have unreleased commits, because every
   later pull request runs on them.
@@ -128,7 +127,7 @@ user explicitly asks for parallel sessions.
   - Apply accurate labels and assign the authenticated user.
 - **Review and merge**
   - For a large or breaking pull request, complete the
-    [release-version decision](#release-version-decision) before merging, even when auto-merge is
+    [release-version decision](references/release-decisions-and-rollouts.md#release-version-decision) before merging, even when auto-merge is
     enabled. Do not silently accept the default patch increment.
   - Wait for every required check on the current head SHA.
   - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
@@ -166,7 +165,7 @@ user explicitly asks for parallel sessions.
     Use authorized registry access for restricted artifacts without changing their visibility.
   - If the repository publishes no packages, continue once its merge and artifact checks are complete.
   - For a .NET Kubernetes application, offer a
-    [clean-semver workload rollout](#clean-semver-workload-rollouts) after verifying its release.
+    [clean-semver workload rollout](references/release-decisions-and-rollouts.md#clean-semver-workload-rollouts) after verifying its release.
     Publication alone does not establish that the released version has been deployed.
 - **Update documentation downstream**
   - In each consumer's pull request, remove README statements the release has made untrue, such as
@@ -174,70 +173,6 @@ user explicitly asks for parallel sessions.
     requirements, and add package badges or version rows for packages that now exist.
   - Search for them before opening the pull request rather than relying on memory, for example
     `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
-
-## Clean-SemVer Workload Rollouts
-
-Development deployments through `deploy.ps1` may still be running Debug images after a successful
-pull-request merge and release. After verifying a .NET Kubernetes application's release, use a UI
-question: "Do you wish to roll out a new version of `<application>` (`<released X.Y.Z>`) from the GitHub
-workflows?" Offer rollout now, defer to the next agreed batch, hold until the end of the train, or
-decline this rollout. Respect existing publication and deployment holds.
-
-- Let the user choose end-of-train rollouts or batches at useful milestones. Keep deferred
-  applications and their verified versions in the existing task list, not a separate release state
-  machine, and revisit them at the selected milestone and before the final report.
-- Obtain explicit dispatch approval for the named application/version/environment, individually or
-  as a clearly identified batch. Deferral is not approval to dispatch later; confirm the pending
-  batch when it is due. Merge, release, auto-push and prior Debug-deployment permissions do not
-  authorize these workflow runs.
-- Inspect the repository's existing GitHub deployment workflow and declared inputs. Use its
-  release path to build or select the published Release artifact with a clean `X.Y.Z` version,
-  such as `1.2.3`, tied to the verified release commit. Do not invent workflow inputs, substitute
-  `latest-dev` or a prerelease, merely retag a Debug image, or rerun `deploy.ps1` instead.
-- Follow the dispatched run through build, publication and deployment. Verify the exact released
-  artifact and actual workload rollout using the
-  [container deployment verification guidance](../containers-workflows/examples/caller-setup.md#check-the-result);
-  a successful merge, tag or workflow dispatch alone is insufficient. Report the workflow URL,
-  deployed version and verification result.
-- Treat workflow failures as blockers for the affected rollout and investigate them while the
-  train is in progress. Fix introduced CI/build/deployment bugs through the normal validation,
-  pull-request and merge gates before retrying; do not silently fall back to a local Debug deploy.
-  If a correction changes the published artifact, release a new immutable version rather than
-  replacing it or moving a published version tag. Mark a rollout complete only after verification,
-  and report declined or deferred deployments separately.
-
-## Release-Version Decision
-
-- Review the full branch diff and commits for consumer impact, not only the pull-request title.
-  Prompt for a substantial feature, architectural migration, or broad refactor, and always for
-  removed or renamed public contracts, incompatible configuration, or other breaking behaviour.
-  Diff size alone does not determine a semantic version.
-- Inspect the repository's `GitVersion.yml`, release workflow and scoped versioning instructions,
-  the latest immutable release tag, and any existing version directives on the branch. Do not
-  assume that conventional-commit wording or `BREAKING CHANGE` automatically controls GitVersion.
-- Before merging, use a UI choice to ask whether to deliberately bump **major**, bump **minor**, or
-  retain the **patch/default increment**. Show the current version, expected outcome of each
-  choice, and relevant compatibility impact. Recommend major for breaking changes, minor for
-  compatible new functionality, and patch for compatible fixes or internal-only refactoring.
-  For pre-1.0 packages, explain the repository's established breaking-change policy.
-- Wait for an explicit decision for that pull request; general merge approval or an active
-  auto-merge instruction does not select a version. Reconfirm if subsequent changes materially
-  alter the compatibility assessment.
-- Apply the selected increment using the repository's established mechanism. When it uses
-  `+semver:` commit directives, inspect every commit since the merge base, reuse or correct the
-  existing directive rather than stacking conflicting requests, and verify which directive maps
-  to the chosen increment under that repository's configuration. Do not hardcode a directive
-  mapping or change the global increment policy to release one pull request.
-- Preserve published history: use a normal authorized follow-up commit or the supported
-  release-workflow input instead of amending or force-pushing published commits. If an existing
-  directive prevents the selected result without rewriting history, stop and ask for direction.
-- Verify the resulting numeric version with the repository's GitVersion configuration and release
-  path; do not mistake a pull-request prerelease version for the eventual release. Record the
-  selected increment and rationale in the pull request, update affected consumer examples or
-  major-tag references, and wait for required checks on the final head before merging. If the
-  requested result cannot be verified, stop rather than silently falling back to patch.
-- Keep the post-merge immutable-tag and package-availability checks: the version decision is not
-  proof that the intended release was published.
 
 ## Unpushed Attribution Cleanup
 
@@ -279,31 +214,6 @@ published-history rewrite. Stop the train if it fails.
 - Do not mix deployment or live-cluster debugging into the release train unless the user asks for it.
 - Keep status updates short: current repository, latest verified package version, blocker, next
   repository.
-
-## Real-World Example: f2calv .NET Release Train
-
-The public f2calv repositories release in this order. Indented repositories within a wave do not
-depend on one another.
-
-- **Tooling wave**
-  - Actions: `gha-release-versioning` and `gha-dotnet-nuget` (the NuGet publish action) before the
-    `gha-workflows` reusable workflows that consume them.
-  - Charts: `helm-charts`, whose `workload` chart is bundled by every application chart.
-  - `.github`, merged last of the whole train.
-- **Base library**: `CasCap.Common` and its `CasCap.Common.*` packages.
-- **Direct consumers**, each updating every consumed `CasCap.Common.*` package together:
-  - `CasCap.Api.Azure`, releasing all `CasCap.Api.Azure.*` packages.
-  - `CasCap.Api.SignalCli`.
-  - `CasCap.Api.GooglePhotos`.
-  - `yamlizr`, released through its global-tool workflow.
-- **Second-level libraries**:
-  - `CasCap.Api.Voice`, after `CasCap.Api.Azure`.
-  - `CasCap.GooglePhotosCli`, after `CasCap.Api.GooglePhotos`, through its global-tool workflow.
-- **Platform packages**:
-  - `agentizr` releases the Agent Runtime contracts and client; its host ships as an image and chart.
-  - `signalizr` releases its client, Comms and Comms AI packages together, after the Agent Runtime
-    packages are on NuGet.
-- **Applications**: `SmartHaus` and `tutorizr`, plus private application consumers in the workspace.
 
 ## Maintaining This Skill
 

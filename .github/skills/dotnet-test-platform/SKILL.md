@@ -1,8 +1,7 @@
 ---
 name: dotnet-test-platform
-description: 'Configure, migrate, or troubleshoot .NET tests on Microsoft.Testing.Platform and xUnit v3: global.json runner selection, test project properties, VSTest package removal, dotnet test command syntax, filters, coverage, and CI workflow or VS Code task test steps.'
+description: 'Configure, migrate, or troubleshoot .NET tests on Microsoft.Testing.Platform and xUnit v3: global.json runner selection, test project properties, VSTest package removal, dotnet test command syntax, filters, coverage, and CI workflow or VS Code task test steps. Use when a test project, its runner or its CI test step changes or fails.'
 argument-hint: '[scope=repository|workflow] [mode={audit|migrate|update}]'
-user-invocable: true
 ---
 
 # .NET Test Platform

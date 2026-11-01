@@ -1,8 +1,7 @@
 ---
 name: containers-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints, debug variants and rules docker buildx build --check misses.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing a Dockerfile, including rules docker buildx build --check misses; Compose stacks belong to containers-docker-compose.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
-user-invocable: true
 compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
 ---
 

@@ -2,7 +2,6 @@
 name: patterns-architecture-review
 description: 'Assess an application''s architecture for evidence-backed smells and plan a proportionate realignment of code to its architecture views. Use after drawing context, container and component diagrams, when a codebase is convoluted or hard to change, to find dependency cycles, inverted dependencies, hub components, scattered responsibilities, leaky boundaries, shared data ownership or speculative abstraction, and to rearrange folders, projects and visibility so the code matches its component view.'
 argument-hint: 'mode={assess|realign} [scope=repository|container] [target=path to target view]'
-user-invocable: true
 ---
 
 # Architecture Review

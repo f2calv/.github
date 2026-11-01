@@ -2,7 +2,6 @@
 name: github-repository-baseline
 description: 'Audit, preview, apply, and verify consistent GitHub repository settings and default-branch rulesets. Use when standardizing repositories, migrating classic branch protection, checking baseline drift, creating a repository, or troubleshooting PlanGated and partial fleet runs.'
 argument-hint: '[repositories=owner/name,... | all-owned] [mode={audit|whatif|apply|create}]'
-user-invocable: true
 ---
 
 # Repository Baseline

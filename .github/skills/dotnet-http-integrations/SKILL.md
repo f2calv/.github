@@ -2,7 +2,6 @@
 name: dotnet-http-integrations
 description: 'Create, refactor, audit or troubleshoot outbound .NET HTTP integrations: IHttpClientFactory, typed/named clients, delegating handlers, authentication, token refresh, resilience, retries, idempotency, timeouts, streaming, pagination and fake-handler tests. Use for external REST/HTTP clients, not gRPC or inbound controller/OpenAPI design.'
 argument-hint: '[apply|audit|diagnose] [client or integration]'
-user-invocable: true
 ---
 
 # .NET HTTP Integrations

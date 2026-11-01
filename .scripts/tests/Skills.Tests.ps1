@@ -21,6 +21,8 @@ BeforeDiscovery {
 
 Describe 'Skill <Name>' -Tag 'Unit' -ForEach $script:Skills {
     BeforeAll {
+        $script:DescriptionBudget = 600
+        $script:SkillBudget = 16384
         $script:Lines = Get-Content -LiteralPath $Path
         $script:HeadingIndex = @(
             for ($i = 0; $i -lt $script:Lines.Count; $i++) {
@@ -40,6 +42,20 @@ Describe 'Skill <Name>' -Tag 'Unit' -ForEach $script:Skills {
         $frontmatter.Groups[1].Value | Should -Match "(?m)^name: ['`"]?$([regex]::Escape($Name))['`"]?$"
         $frontmatter.Groups[1].Value | Should -Match '(?m)^description: .*\S'
         $frontmatter.Groups[1].Value | Should -Not -Match '(?m)^applyTo:'
+    }
+
+    It 'keeps front matter in house style' {
+        $text = $script:Lines -join "`n"
+        $front = [regex]::Match($text, '\A---\n(.*?)\n---(?:\n|$)', 'Singleline').Groups[1].Value
+        $description = [regex]::Match($front, "(?m)^description: ['`"]?(.*?)['`"]?$").Groups[1].Value
+        $front | Should -Match "(?m)^name: $([regex]::Escape($Name))$" -Because 'the name is unquoted'
+        $front | Should -Not -Match '(?m)^user-invocable: true$' -Because 'true is the default'
+        $description.Length | Should -BeLessOrEqual $script:DescriptionBudget -Because 'every session loads every description'
+        $description | Should -Match '\bUse (when|for|before|after|to)\b' -Because 'the description states when to load the skill'
+    }
+
+    It 'keeps SKILL.md within the size budget' {
+        (Get-Item -LiteralPath $Path).Length | Should -BeLessOrEqual $script:SkillBudget -Because 'move detail into references/ or examples/'
     }
 
     It 'resolves local Markdown links in the skill and its supporting guides' {

@@ -2,7 +2,6 @@
 name: dotnet-background-pipelines
 description: 'Design, implement, audit or troubleshoot .NET background producer/consumer pipelines, System.Threading.Channels, bounded queues, backpressure, worker concurrency, completion, cancellation, draining, fault supervision and durable-delivery boundaries. Use for brokers and queued background processing, not only hosted-service registration or distributed leader election.'
 argument-hint: '[design|apply|audit|diagnose] [pipeline or worker]'
-user-invocable: true
 ---
 
 # .NET Background Pipelines

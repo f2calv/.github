@@ -2,7 +2,6 @@
 name: kubernetes-nginx-migration
 description: 'Migrate Kubernetes community ingress-nginx to F5 NGINX Ingress Controller OSS with parallel-by-default rollout, explicit compatibility mapping, staged cutover and rollback. Use for ingress-nginx controller, Ingress, TCP/UDP or authentication migrations.'
 argument-hint: '[repository=path] [scope={audit|plan|migrate|cleanup}]'
-user-invocable: true
 compatibility: 'Planning is cross-platform. Rendering requires Helm; live verification requires kubectl and cluster access.'
 ---
 

@@ -1,8 +1,7 @@
 ---
 name: github-issues-and-pull-requests
-description: 'Create, update, review, and merge GitHub issues and pull requests: issue types, labels and quality, pull request descriptions from the full branch diff, assignees, Dependabot folding, code-scanning and SonarQube gates, and merge readiness.'
+description: 'Create, update, review, and merge GitHub issues and pull requests: issue types, labels and quality, pull request descriptions from the full branch diff, assignees, Dependabot folding, code-scanning and SonarQube gates, and merge readiness. Use when creating, updating, reviewing or merging an issue or pull request.'
 argument-hint: 'mode={issue|pr-create|pr-update|pr-merge} [repository=owner/name]'
-user-invocable: true
 ---
 
 # GitHub Issues and Pull Requests

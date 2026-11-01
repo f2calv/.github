@@ -2,7 +2,6 @@
 name: dotnet-polymorphic-configuration
 description: 'Design, implement, audit or troubleshoot polymorphic .NET configuration using System.Text.Json discriminators. Use for heterogeneous interface/base-class DTO arrays, $type, JsonPolymorphic, JsonDerivedType, IConfiguration-to-JsonNode bridges, IAppConfig-style loaders, options registration and recursive startup validation. Not arbitrary CLR type loading or runtime strategy execution.'
 argument-hint: '[design|apply|audit|diagnose] [configuration section or options type]'
-user-invocable: true
 ---
 
 # .NET Polymorphic Configuration

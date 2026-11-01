@@ -2,7 +2,6 @@
 name: dotnet-leadership-election
 description: 'Create, audit or troubleshoot Redlock-backed leadership election through CasCap.Common.Caching. Use for leader-only background workers, distributed singleton ownership, lease renewal or loss, contention, failover, replica readiness, local Redis development and leadership telemetry.'
 argument-hint: 'mode={audit|apply|diagnose} [scope=worker|application|workspace]'
-user-invocable: true
 ---
 
 # Leadership Election

@@ -1,6 +1,6 @@
 ---
 name: terraform-infrastructure
-description: 'Create, extend, audit, refactor or retire Terraform IaC repositories: onion-layered deployment roots, lifecycle and state boundaries, local/private child modules, promotion to external module-per-repository releases, provider wiring, cost controls and safe deployment sequencing.'
+description: 'Create, extend, audit, refactor or retire Terraform IaC repositories: onion-layered deployment roots, lifecycle and state boundaries, local/private child modules, promotion to external module-per-repository releases, provider wiring, cost controls and safe deployment sequencing. Use when changing a Terraform repository''s structure, modules or deployment order; HCL style lives in the Terraform instructions.'
 ---
 
 # Terraform IaC

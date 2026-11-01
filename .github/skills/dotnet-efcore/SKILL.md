@@ -1,8 +1,7 @@
 ---
 name: dotnet-efcore
-description: 'Design, implement, audit and troubleshoot Entity Framework Core data access, DbContext lifetimes and factories, mappings, PostgreSQL/Npgsql, LINQ performance, read/write separation, projection consistency, tracking, tenant isolation, transactions, concurrency, SQL, seeding, migrations and rolling schema deployments. Use beyond package bumps, including model drift, provider-backed tests and database/cache consistency.'
+description: 'Design, implement, audit and troubleshoot Entity Framework Core data access, DbContext lifetimes and factories, mappings, PostgreSQL/Npgsql, LINQ performance, read/write separation, projection consistency, tracking, tenant isolation, transactions, concurrency, SQL, seeding, migrations and rolling schema deployments. Use for any EF Core change beyond a package bump, including model drift, provider-backed tests and database/cache consistency.'
 argument-hint: '[audit|model|query|migration|diagnose] [path or context]'
-user-invocable: true
 ---
 
 # EF Core Data Access

@@ -2,7 +2,6 @@
 name: containers-devcontainer
 description: 'Create, update, align and validate Dev Containers: images, Features, lifecycle scripts, mounts, lockfiles, extensions and host/editor sync across repositories. Use when adding tooling or diagnosing a Dev Container that fails to start.'
 argument-hint: 'mode={add|update|upgrade|reconcile|audit|align} [scope=repository-or-workspace]'
-user-invocable: true
 compatibility: 'Authoring is cross-platform. Rebuild validation requires Docker and VS Code Dev Containers or the Dev Container CLI.'
 ---
 

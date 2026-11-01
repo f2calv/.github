@@ -2,7 +2,6 @@
 name: containers-docker-compose
 description: 'Create, update, audit or troubleshoot Docker Compose local development and demo stacks. Use for compose.yaml, docker-compose.yml, profiles, dependency readiness, networks, ports, volumes, secrets, interpolation, image compatibility, isolated test services and workspace-wide Compose reviews. Not for production deployment or Dockerfile-only authoring.'
 argument-hint: '[create|update|audit|diagnose] [repository, file or workspace]'
-user-invocable: true
 ---
 
 # Docker Compose

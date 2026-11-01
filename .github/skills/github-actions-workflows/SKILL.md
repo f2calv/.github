@@ -2,7 +2,6 @@
 name: github-actions-workflows
 description: 'Create, align, audit and refactor GitHub Actions CI and deployment workflows using the shared reusable workflows and composite actions in gha-workflows. Use for a new repository''s ci.yml, adopting or changing a shared workflow, releasing a shared-workflow or Action change safely, required-check renames, and diagnosing startup failures, permission errors and skipped-but-passing checks.'
 argument-hint: 'mode={create|align|audit|release} [archetype=library|app|action|terraform|minimal] [repository=path]'
-user-invocable: true
 ---
 
 # GitHub Actions Workflows

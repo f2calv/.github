@@ -2,7 +2,6 @@
 name: dotnet-performance
 description: 'Optimize measured .NET hot paths: ValueTask signatures, span and UTF-8 parsing, SearchValues, frozen collections, PipeReader loops, pooled buffers, inlining and allocation-free logging. Use when profiling or tuning channel readers, stream consumers, parsers, caches or other tight loops.'
 argument-hint: '[scope=file|project] [mode={review|optimize}]'
-user-invocable: true
 ---
 
 # .NET Performance

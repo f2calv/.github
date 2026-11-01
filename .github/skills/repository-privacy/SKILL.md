@@ -1,7 +1,6 @@
 ---
 name: repository-privacy
 description: 'Check that a commit, issue, pull request, review or release note is safe to publish: PII scanning, placeholders, the public/private boundary and stripping agent attribution from unpushed commits. Use before committing, pushing or posting GitHub content.'
-user-invocable: true
 compatibility: 'The scripts require PowerShell 7.4 and git. Run them against the repository being checked with -RepoRoot.'
 ---
 

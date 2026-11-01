@@ -1,8 +1,7 @@
 ---
 name: tooling-pre-commit
-description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable.'
+description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable. Use when pre-commit hooks fail, drift or need updating.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|update|run|install-pre-push|troubleshoot}] [files=...]'
-user-invocable: true
 compatibility: 'Native execution requires pre-commit 4.6.2 and Git. The fallback requires Docker. Fleet auditing requires PowerShell 7.4 and Git.'
 ---
 

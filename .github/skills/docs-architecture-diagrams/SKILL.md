@@ -2,7 +2,6 @@
 name: docs-architecture-diagrams
 description: 'Create, update, audit and explain Mermaid architecture diagrams that zoom from a black-box system context through containers to components, plus sequence, activity/flow, state and dependency-graph views. Use to understand an unfamiliar or convoluted codebase top-down, to decide which diagrams belong in a README versus a docs/ drilldown, to build a component-to-code map that guides refactoring, or to choose diagram types, headings, shapes and styling.'
 argument-hint: 'mode={create|update|audit|explain} [scope=repository|container|project] [path=...]'
-user-invocable: true
 ---
 
 # Architecture Diagrams

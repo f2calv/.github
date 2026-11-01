@@ -1,8 +1,7 @@
 ---
 name: tooling-editorconfig
-description: 'Audit, generate, align, tighten and validate .editorconfig files across repositories: shared language profiles, drift checks, .NET analyzer enforcement, formatting fallout and staged cross-repository rollouts.'
+description: 'Audit, generate, align, tighten and validate .editorconfig files across repositories: shared language profiles, drift checks, .NET analyzer enforcement, formatting fallout and staged cross-repository rollouts. Use when an .editorconfig is missing, drifting or being tightened; C# source cleanup belongs to dotnet-cleanup.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|generate|check|tighten}] [profile={Base|DotNet|Go|Python|Rust|Terraform}]'
-user-invocable: true
 compatibility: 'Generation requires PowerShell 7.4. .NET tightening requires a compatible .NET SDK and repository build entry point.'
 ---
 

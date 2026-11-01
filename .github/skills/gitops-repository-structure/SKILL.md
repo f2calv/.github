@@ -1,8 +1,7 @@
 ---
 name: gitops-repository-structure
-description: 'Create, audit, align or migrate Argo CD App-of-Apps repositories with Applications-only discovery, scoped AppProjects, ownership-based namespaces and PVC-safe changes.'
+description: 'Create, audit, align or migrate Argo CD App-of-Apps repositories with Applications-only discovery, scoped AppProjects, ownership-based namespaces and PVC-safe changes. Use when changing how Argo CD discovers, groups or namespaces Applications.'
 argument-hint: '[repository=path] [scope={create|audit|align|plan|migrate}]'
-user-invocable: true
 ---
 
 # GitOps Repository Structure

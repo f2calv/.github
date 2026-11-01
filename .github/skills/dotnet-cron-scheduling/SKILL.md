@@ -2,7 +2,6 @@
 name: dotnet-cron-scheduling
 description: 'Create, extract, audit or troubleshoot .NET cron/crontab scheduling: Cronos expressions, UTC and time zones, startup runs, hourly jobs, missed-occurrence coalescing, non-overlap, manual triggers, injected clocks, cooperative deadlines and reusable schedule runners. Use for scheduled background services and periodic reconciliation; use dotnet-leadership-election for distributed ownership and dotnet-background-pipelines for delivery guarantees.'
 argument-hint: '[apply|audit|diagnose] [schedule or worker]'
-user-invocable: true
 ---
 
 # .NET Cron Scheduling

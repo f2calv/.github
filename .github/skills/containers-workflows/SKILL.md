@@ -1,8 +1,7 @@
 ---
 name: containers-workflows
-description: 'Run and maintain centralized container build and GitOps deploy scripts used by repository-root shims.'
+description: 'Run and maintain the centralized PowerShell container build and GitOps deploy scripts behind repository-root build and deploy shims. Use when building or deploying an image locally or changing those scripts; GitHub Actions CI belongs to github-actions-workflows.'
 argument-hint: '[build|deploy] [repository=path] [options...]'
-user-invocable: true
 ---
 
 # Container Workflows

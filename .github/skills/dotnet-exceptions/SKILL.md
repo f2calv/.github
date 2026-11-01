@@ -2,7 +2,6 @@
 name: dotnet-exceptions
 description: 'Audit and refactor C#/.NET exception throwing: replace raw or misused exception types, introduce area-specific subclasses of the shared domain exception base for recurring failures, and keep messages free of secrets. Use when reviewing throw sites, consolidating domain-exception usage, or adding a new failure area.'
 argument-hint: 'mode={audit|apply} [scope=repository|project|area]'
-user-invocable: true
 ---
 
 # .NET Exceptions

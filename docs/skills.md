@@ -16,8 +16,8 @@ gate rejects a stale or missing row.
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.0` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.1.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
 | [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.2` | Issue quality, pull request descriptions, review findings and merge readiness |
-| [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.0` | Explicitly requested retirement, archiving and optional local cleanup |
-| [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.0` | An explicitly requested temporary branch-change summary for review |
+| [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
+| [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
 | [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.0` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
 
@@ -26,12 +26,12 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.1` | Configured lint hooks, pinned runtimes and native or Docker execution |
-| [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.0` | Shared formatting profiles, analyzer rules and drift |
+| [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.1` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.1` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
-| [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.0` | Structured HTTP requests, authentication examples and secret handling |
+| [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
-| [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.0` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
+| [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](../.github/skills/skill-library/SKILL.md) | `1.1.1` | Skill sidecars, version bumps, Spec Kit extension releases and `/speckit-skill-library` installation |
 
 ## Containers, Kubernetes and Infrastructure
@@ -41,13 +41,13 @@ gate rejects a stale or missing row.
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.0.1` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.3` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
-| [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.1` | Chart contracts, values, dependencies, documentation and OCI packaging |
-| [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.0` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
+| [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.2` | Chart contracts, values, dependencies, documentation and OCI packaging |
+| [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.1` | Argo CD Application discovery, ownership and stateful migrations |
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.1` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.2` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
-| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.0.0` | Network discovery, VLANs, host networking and performance diagnostics |
+| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.0.1` | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Architecture Patterns
 
@@ -75,9 +75,9 @@ gate rejects a stale or missing row.
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.2` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.3` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.2` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
-| [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.0.0` | Throw-site audits and area-specific domain exception types |
+| [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.0.1` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.2` | Source layout, naming and analyzer-driven cleanup |
-| [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.0` | Measured hot-path, allocation and parsing improvements |
-| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.0` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.0.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
+| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.1` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.0.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.0` | Dependency-ordered NuGet updates, releases and consumer propagation |

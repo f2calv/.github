@@ -2,7 +2,6 @@
 name: github-dependabot
 description: 'Audit, create, align and troubleshoot dependabot.yml by matching package ecosystems to manifests, lockfiles, workflows, containers, infrastructure and pre-commit hooks. Use for missing ecosystems or missing and noisy Dependabot pull requests.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|troubleshoot}]'
-user-invocable: true
 ---
 
 # Dependabot Management

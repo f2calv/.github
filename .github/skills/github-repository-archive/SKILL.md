@@ -1,8 +1,7 @@
 ---
 name: github-repository-archive
-description: 'Retire and archive GitHub repositories safely, including final documentation, open work, security, integrations and local cleanup.'
+description: 'Retire and archive GitHub repositories safely, including final documentation, open work, security, integrations and local cleanup. Use when a repository is being retired.'
 argument-hint: 'repositories=owner/name,... [remove-local={true|false}]'
-user-invocable: true
 disable-model-invocation: true
 compatibility: 'Requires git and an authenticated GitHub CLI account with repository administration permission.'
 ---

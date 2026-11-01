@@ -1,5 +1,5 @@
 ---
-name: 'tooling-local-overrides'
+name: tooling-local-overrides
 description: 'Choose .gitignore, Git info/exclude or global excludes, and scope local-only Copilot instructions, skills and tool configuration. Use for environment-specific overrides, private guidance, ignore precedence and exclusion verification.'
 ---
 
