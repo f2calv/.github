@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
 version: 1.1.0
 facets: [dotnet]
+required:
+  - id: repository-privacy
+    version: 1.1.0
 related:
   - id: containers-workflows
     reason: Linked from SKILL.md.

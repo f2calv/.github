@@ -3,7 +3,7 @@ version: 1.0.2
 facets: [documentation, architecture]
 required:
   - id: repository-privacy
-    version: 1.0.0
+    version: 1.1.0
 related:
   - id: docs-architecture-diagrams
     reason: Draw current and proposed architecture views for a decision record.

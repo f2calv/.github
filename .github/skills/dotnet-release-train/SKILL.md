@@ -241,26 +241,11 @@ decline this rollout. Respect existing publication and deployment holds.
 
 ## Unpushed Attribution Cleanup
 
-- Refresh every configured remote before identifying candidates. Stop if a fetch fails.
-- Inspect commits reachable from the release branch but not from any remote branch or published
-  tag, not just `@{u}..HEAD`; a commit already published on another ref must remain unchanged.
-- Remove every `Co-authored-by:` trailer, case-insensitively, from those unpushed commits,
-  regardless of the named co-author. Leave the rest of each message unchanged except for the
-  trailing blank lines left by removal. If none match, make no changes.
-- Rewrite affected commits and their unpushed descendants, preserving trees, author and committer
-  identities and timestamps, merge topology, and all other commit metadata. Do not rebase or replay
-  patches. Stop for signed commits or signature-bearing metadata that cannot remain valid.
-- Keep local recovery refs to the original branch tips. Update branch refs with expected-old-SHA
-  guards; preserve the index, working-tree edits, untracked files and active checkout. Do not move a
-  branch checked out in another worktree or rewrite the default branch.
-- Verify every rewritten tree and metadata field, confirm that only the trailers and necessary
-  parent IDs changed, and rescan the candidate range for remaining attribution. Surface failures
-  and stop before pushing; do not silently skip a failed cleanup.
-- This step authorizes only local unpushed attribution rewrites within the train's repositories,
-  not a workspace-wide sweep, a push, a timestamp change or a published-history rewrite.
-  Follow the shared privacy and timestamp checks. Never force-push merely for this cleanup; if
-  published attribution is found, report it and request separate authorization to rewrite it.
-- Report the repositories and footer counts cleaned, or state that none were found.
+Before every authorized push, including on resume, run the
+[repository-privacy attribution cleanup](../repository-privacy/SKILL.md#step-6--strip-agent-attribution-before-pushing)
+in each train repository and report the lines removed per repository, or that none were found.
+It authorizes only local rewrites of unpushed commits: never a push, a timestamp change or a
+published-history rewrite. Stop the train if it fails.
 
 ## Interruptions And Resume
 

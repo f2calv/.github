@@ -180,7 +180,7 @@
       ]
     },
     {
-      "repositoryPattern": "f2calv/CasCap.*",
+      "repositoryPattern": "f2calv/CasCap.Api.Azure",
       "rules": [
         {
           "type": "required_status_checks",
@@ -196,6 +196,121 @@
               },
               {
                 "context": "build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.Common",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "lint / lint"
+              },
+              {
+                "context": "versioning / gha-release-versioning"
+              },
+              {
+                "context": "build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.Api.SignalCli",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "ci / lint / lint"
+              },
+              {
+                "context": "ci / versioning / gha-release-versioning"
+              },
+              {
+                "context": "ci / build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.Api.GooglePhotos",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "ci / lint / lint"
+              },
+              {
+                "context": "ci / versioning / gha-release-versioning"
+              },
+              {
+                "context": "ci / build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.Api.Voice",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "ci / lint / lint"
+              },
+              {
+                "context": "ci / versioning / gha-release-versioning"
+              },
+              {
+                "context": "ci / build"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "repositoryPattern": "f2calv/CasCap.GooglePhotosCli",
+      "rules": [
+        {
+          "type": "required_status_checks",
+          "parameters": {
+            "strict_required_status_checks_policy": true,
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "ci / lint / lint"
+              },
+              {
+                "context": "ci / versioning / gha-release-versioning"
+              },
+              {
+                "context": "ci / build"
               }
             ]
           }
