@@ -60,322 +60,99 @@ outside Copilot requires a repository script or CI job; do not install a local G
 
 ## Workflow
 
+Each step states the decisive rules; open the linked reference for the full procedure before
+editing that surface.
+
 ### 1. Establish Scope
 
-1. Confirm the target repository or explicit workspace folders. Do not scan unrelated clones.
-2. Inspect:
-    * `.devcontainer/devcontainer.json`;
-    * any devcontainer Dockerfile or Compose files;
-    * lifecycle scripts under `.devcontainer/`;
-    * `devcontainer-lock.json`, when tracked;
-    * `.github/dependabot.yml`;
-    * workflows, actions, scripts, and docs that read devcontainer fields;
-    * `.vscode/extensions.json` and container-specific VS Code customizations;
-    * added and renamed files in the working-tree and branch diff;
-    * sibling repositories required to remain aligned.
-3. Determine the visibility of the target and any precedent. For a public target, use official or
-  public precedents and never carry private topology, mounts, registries, or internal tooling into
-  tracked content.
-4. Select the nearest compatible precedent by repository role and language.
-5. Record every synchronization point before editing.
+* Confirm the target repository or explicit workspace folders; do not scan unrelated clones.
+* Inspect the devcontainer files, lifecycle scripts, lockfile, Dependabot, version consumers,
+  extension lists, the branch diff and declared siblings, and record every synchronization point.
+* For a public target, use only official or public precedents and never carry private topology.
+* Detail: [container authoring](./references/container-authoring.md#establish-scope).
 
 ### 2. Choose the Container Model
 
-For a small tooling repository, use the [minimal tooling example](./examples/minimal-tooling.md)
-to see image/Feature ownership, host/container extension parity and a non-installing post-create
-script together. Select it only when its execution evidence matches the repository.
-
-| Model | Use when |
-| --- | --- |
-| Official image | A language or base image plus Features is sufficient |
-| Dockerfile | Native packages or image-layer customization are required |
-| Docker Compose | Development needs additional services such as a database or emulator |
-
-* Use the simplest model that satisfies the repository.
-* Do not use Compose merely to run Docker commands from the container.
-* Do not install one tool through the image, a Feature, and a lifecycle script.
-* Keep the non-root user unless a concrete tool requires otherwise.
-* Add capabilities, security options, or privileged mode only for a demonstrated runtime need.
-* Require explicit approval before adding host sockets, sensitive mounts, capabilities, security
-  overrides, or privileged mode. Docker socket access is effectively host-root access.
+* Use the simplest of official image, Dockerfile or Compose; never install one tool through more
+  than one path, and keep the non-root user.
+* Require explicit approval before host sockets, sensitive mounts, capabilities, security
+  overrides or privileged mode.
+* Detail and the minimal tooling example:
+  [container authoring](./references/container-authoring.md#choose-the-container-model).
 
 ### 3. Author `devcontainer.json`
 
-Treat the file as JSON with comments and preserve its local style.
-
-* Set a concise role-based `name`.
-* Use exactly one of `image`, `build`, or the Compose properties.
-* Reference Features by supported major version so Dependabot can update them.
-* Pin concrete tool versions when CI or another script reads the Feature option as authoritative.
-* Use `latest` only where reproducibility and environment parity do not matter.
-* Disable unused tools in combined Features.
-* Verify each Feature supports the selected base distribution. Distribution upgrades can require
-  changed Feature options, especially for Docker client packages.
-* Install only extensions needed for the repository's languages and workflows.
-* Keep editor behavior in `.editorconfig` where possible; reserve VS Code settings for
-  container-specific behavior.
+* Use exactly one of `image`, `build` or Compose; reference Features by supported major version and
+  pin tool versions that CI or scripts read as authoritative.
+* Verify Feature support for the base distribution and keep editor behavior in `.editorconfig`.
+* Detail: [container authoring](./references/container-authoring.md#author-devcontainerjson).
 
 ### 4. Reconcile Repository Capabilities
 
-Infer capabilities from what contributors must run locally, not from file extensions alone.
-
-1. Inventory added and renamed files from the current Git diff, then scan the complete repository
-   so one new file is interpreted in its existing context.
-2. Find execution evidence in lifecycle scripts, developer commands, package manifests,
-   `.pre-commit-config.yaml`, READMEs, and local validation scripts.
-3. Classify each finding as:
-   * editor support;
-   * local runtime or CLI support;
-   * CI-only support;
-   * sensitive host access.
-4. In `add`, `update`, `upgrade`, and `reconcile` modes, add safe missing Features and extensions in
-   the same change. Ask before sensitive access. In `audit` mode, report only.
-5. Never remove a Feature or extension automatically. Report apparently unused capabilities and
-   require confirmation before removal.
-
-Use this evidence matrix:
-
-| Repository evidence | Editor action | Feature or local-tool action |
-| --- | --- | --- |
-| Locally executed `*.ps1` or a lifecycle command invoking `pwsh` | Add `ms-vscode.powershell` | Add `ghcr.io/devcontainers/features/powershell:2` |
-| `*.Tests.ps1` or Pester module requirements | Add `ms-vscode.powershell` | Configure PowerShell `modules` with `Pester==<required-version>` |
-| YAML authored in the repository | Add `redhat.vscode-yaml` | None unless local commands invoke `yq` |
-| JSON authored in the repository | Use VS Code's built-in JSON support | None unless local commands invoke `jq` |
-| `*.http` or `*.rest` request files | Add `humao.rest-client` | None; the extension executes requests |
-| Local scripts or documented validation invoking `jq` or `yq` | No additional extension | Add `ghcr.io/eitsupi/devcontainer-features/jq-likes:2` |
-| `*.tf` developed locally | Add `hashicorp.terraform` | Add the Terraform Feature and synchronize its version constraints |
-| `Chart.yaml` or locally run Helm validation | Add the established Helm extension | Add or configure the Kubectl/Helm Feature |
-| Dockerfile or Compose authoring | Add the established Containers extension | Add Docker access only when contributors run Docker inside the container |
-| GitHub Actions authoring | Add `github.vscode-github-actions` | Add GitHub CLI only when local scripts or documented workflows invoke `gh` |
-| Language manifest or source files | Add the established language extensions | Prefer the matching base image; use a language Feature only when needed |
-
-Do not infer `jq-likes` from a YAML or JSON file alone. Do not infer local Features from commands
-that run only in CI. A production Dockerfile does not by itself justify host Docker-socket access.
-
-The official PowerShell Feature installs modules through a comma-separated `modules` option. There
-is no separate official Pester Feature. Extract the required Pester version from `#Requires`, module
-manifests, test runners, or CI, preserve any existing modules, and use an exact module version:
-
-```jsonc
-"ghcr.io/devcontainers/features/powershell:2": {
-  "modules": "Pester==5.7.1"
-}
-```
-
-Before adding a Feature, verify the image does not already provide the executable and that another
-Feature or lifecycle command does not install it. Preserve established Feature IDs and option names
-within aligned repository families.
+* Infer Features and extensions from local execution evidence, not file extensions alone; never
+  from CI-only commands.
+* Add safe missing capabilities in `add`, `update`, `upgrade` and `reconcile`; ask before sensitive
+  access; never remove one automatically.
+* Detail, the evidence matrix and Pester module pinning:
+  [capability reconciliation](./references/capability-reconciliation.md#reconcile-repository-capabilities).
 
 ### 5. Synchronize VS Code Extensions
 
-Treat `.vscode/extensions.json` as the canonical repository recommendation set for contributors
-working on the host. Mirror its compatible `recommendations` set in
-`customizations.vscode.extensions` so the same extensions are installed inside the Dev Container.
-This duplication is deliberate: workspace recommendations suggest extensions, while Dev Container
-customizations install them in the remote environment.
-
-* When adding a shared extension, update both files in the same change.
-* Compare extension IDs case-insensitively as sets. Preserve the repository's established grouping
-  and comments; order alone is not drift.
-* Validate every recommended extension ID against the current VS Code Marketplace. Confirm that it
-  still exists, supports the required extension host and is not formally deprecated or replaced.
-* Inspect `extensionPack` and `extensionDependencies` metadata before listing related extensions.
-  Recommend the owning extension once; do not explicitly list extensions it installs automatically.
-* Treat a compatibility pack, an abandoned overlapping extension or a broad product pack as a
-  migration candidate even when the Marketplace has not formally deprecated it. Verify the
-  publisher's current replacement guidance before changing IDs.
-* Prefer the current direct extension over a compatibility extension pack. Use
-  `ms-azuretools.vscode-containers` rather than the legacy `ms-azuretools.vscode-docker` pack.
-* For modern .NET repositories, recommend `ms-dotnettools.csdevkit`; it installs
-  `ms-dotnettools.csharp` automatically, so do not list both.
-* For Terraform repositories, use `hashicorp.terraform` as the language, formatter and MCP provider.
-  Do not also recommend overlapping syntax-only Terraform or HCL extensions unless the repository
-  has a demonstrated file type or capability that the HashiCorp extension does not support.
-* Avoid broad cloud extension packs when only one service integration is required. Recommend the
-  specific extension so unrelated services, including unused database providers, are not installed.
-* If `.vscode/extensions.json` is absent, create it when the container declares extensions that are
-  also useful outside the container.
-* Verify an extension ID exists and supports the required local or remote extension host before
-  adding it.
-* Do not copy `unwantedRecommendations` into the Dev Container extension list.
-* Allow host-only or container-only extensions only for a demonstrated compatibility or execution
-  reason. Document the exception beside the relevant list and report it during reconciliation.
-* Do not add an extension only because it is personally preferred. Recommendations describe the
-  repository's supported workflows.
-
-When an extension is supplied automatically by a Feature, still include it in both explicit lists
-when host/container parity is required. Explicit lists make drift reviewable and do not depend on a
-Feature's implicit customization remaining unchanged.
+* Treat `.vscode/extensions.json` as canonical and mirror it in `customizations.vscode.extensions`.
+* Validate every ID against the Marketplace, prefer current direct extensions over packs, and
+  document any host-only or container-only exception.
+* Detail: [capability reconciliation](./references/capability-reconciliation.md#synchronize-vs-code-extensions).
 
 ### 6. Handle Mounts and Credentials
 
-* Prefer the default workspace mount. Bind a wider source root only for intentional sibling work.
-* Use Dev Container variables such as `${localEnv:HOME}` and `${localEnv:USERPROFILE}` rather than
-  literal home paths or user names.
-* Mount kubeconfig, SSH, cloud CLI, or similar directories only when normal development needs them.
-* Default to no credential mounts. When approved, mount the narrowest files possible, use
-  least-privilege credentials, and do not start untrusted configurations with host credentials
-  attached.
-* Use read-only mounts where the container does not need to modify host files.
-* Never copy credentials into images or commit secrets in environment settings, Compose files,
-  Dockerfiles, examples, or lifecycle scripts.
-* Document host prerequisites and fail clearly when a required mount is absent.
+* Prefer the default workspace mount and Dev Container variables over literal paths.
+* Default to no credential mounts; when approved, mount the narrowest files read-only where possible
+  and never copy credentials into images or tracked files.
+* Detail: [container authoring](./references/container-authoring.md#handle-mounts-and-credentials).
 
 ### 7. Design Lifecycle Scripts
 
-Keep lifecycle behavior in scripts rather than long JSON command strings.
-
-The reusable [tool verifier](./scripts/Initialize-DevContainer.ps1) checks an exact installed
-Pester version and caller-selected executables without installing packages. Keep repository tool
-selection in a thin local lifecycle entry point; specialized installers belong to their owning
-skills. The [composition tests](./scripts/tests/Initialize-DevContainer.Tests.ps1) exercise this
-repository's entry point with mocked tools, not a live container build.
-
-Lifecycle order is `initializeCommand`, `onCreateCommand`, `updateContentCommand`,
-`postCreateCommand`, `postStartCommand`, then `postAttachCommand`.
-
-* `initializeCommand` runs on the host before creation. Keep it portable and free of secrets.
-* `onCreateCommand` runs in the container during its first creation.
-* `updateContentCommand` runs when workspace content is created or updated. Put dependency
-  restoration here when it must follow content changes.
-* `postCreateCommand` runs after creation and content setup. Use it for final one-time setup and
-  concise tool summaries.
-* `postStartCommand` runs on every start. Keep it fast, idempotent, and free of repository churn.
-* `postAttachCommand` runs on every editor attach and should contain only attach-specific work.
-* Never authenticate, mutate remote systems, apply infrastructure, or change clusters from hooks.
-* Avoid unconditional operating-system upgrades on every start; they are slow and nondeterministic.
-* Do not create a Python virtual environment in lifecycle scripts. Install requirements into the
-  image's interpreter or with `pip install --user`, and add `~/.local/bin` to `PATH` through
-  `remoteEnv`. Follow the Python instructions for the exceptions.
-* Do not auto-install per-commit hooks. Document manual linting and optionally offer
-  `pre-commit install --hook-type pre-push --install-hooks`.
-* Follow the repository's shell instructions: strict error handling, quoted expansions, validated
-  inputs, and clear diagnostics.
-* A script invoked through `bash` or `sh` does not require an executable bit.
+* Keep lifecycle behavior in scripts; never authenticate, mutate remote systems or change clusters
+  from hooks, and keep `postStartCommand` fast and idempotent.
+* Do not create Python virtual environments or auto-install per-commit hooks.
+* Detail, hook order and the reusable tool verifier: [lifecycle scripts](./references/lifecycle-scripts.md).
 
 ### 8. Synchronize Consumers
 
-Before changing an image, Feature, option, or tool version, search for its old value and key.
-
-Common consumers are:
-
-* Actions or workflows that extract tool versions from `devcontainer.json`;
-* language SDK pins and infrastructure version constraints;
-* package managers, bootstrap definitions, and README commands;
-* sibling repositories maintained for cross-language comparison.
-
-Update every authoritative duplicate in the same change. If values intentionally differ, document
-which file owns each version rather than forcing equality.
+* Search for the old value and key before changing an image, Feature, option or tool version, and
+  update every authoritative duplicate in the same change.
+* Detail: [synchronization and validation](./references/synchronization-and-validation.md#synchronize-consumers).
 
 ### 9. Locking and Dependabot
 
-Use the ecosystem that owns each dependency:
-
-* `devcontainers` with `directory: /` updates Feature declarations and the Feature lockfile.
-* `docker` covers base images in a devcontainer Dockerfile.
-* `docker-compose` covers service images in a devcontainer Compose file.
-
-Preserve the repository's existing schedule and grouping conventions, and do not add duplicate
-entries.
-
-* Treat `devcontainer-lock.json` as generated resolution data; never hand-edit versions, digests, or
-  integrity values.
-* If a lockfile is tracked, regenerate it using the project's Dev Container implementation after
-  changing Features and commit it with `devcontainer.json`.
-* If no lockfile is tracked, do not introduce one incidentally. Decide the policy explicitly and
-  apply it consistently to aligned siblings.
-* Validate automated Feature updates like manual changes.
+* Use the owning Dependabot ecosystem; never hand-edit `devcontainer-lock.json`, and do not
+  introduce a lockfile incidentally.
+* Detail: [synchronization and validation](./references/synchronization-and-validation.md#locking-and-dependabot).
 
 ### 10. Validate
 
-Run cheap checks first:
-
-1. Parse `devcontainer.json` with a JSON-with-comments-aware parser.
-2. Check diagnostics and `git diff --check`.
-3. Run `shellcheck` on changed lifecycle scripts when available.
-4. Verify referenced scripts, Dockerfiles, Compose files, mounts, and extensions.
-5. Query the VS Code Marketplace for every recommended extension. Fail validation for missing or
-  deprecated IDs, and review replacement guidance plus extension-pack/dependency metadata.
-6. Search for stale versions in CI, docs, bootstrap files, and sibling repositories.
-7. Compare `.vscode/extensions.json` recommendations with Dev Container extensions
-  case-insensitively and account for every intentional exception.
-8. Verify every inferred local command is available from the image, one Feature, or one lifecycle
-  installer, without duplicate installation paths.
-9. Confirm Dependabot covers the devcontainer directory.
-10. If a lockfile is tracked, verify every configured Feature and its transitive dependency closure
-  is present, with no missing, stale, or unreachable records.
-11. Ask before building or rebuilding.
-12. After approval, rebuild from a clean cache for image or Feature upgrades.
-13. Inside the rebuilt container, print required tool versions, verify recommended extensions are
-   installed in the expected extension host, and run only approved checks.
-
-A parse alone is insufficient for an implementation. When build approval or tooling is unavailable,
-report the unperformed dynamic checks rather than claiming them. An audit is complete when it reports
-the static findings and clearly identifies every dynamic check not performed.
+* Run cheap static checks first, ask before building or rebuilding, and report every dynamic check
+  not performed; a parse alone is insufficient.
+* Detail: [synchronization and validation](./references/synchronization-and-validation.md#validate).
 
 ### 11. Preserve Sibling Alignment
 
-When repositories intentionally mirror each other:
-
-* Compare image families, Feature sets, lifecycle responsibilities, mounts, and common extensions.
-* Keep shared lifecycle scripts byte-identical where required.
-* Isolate language-specific deviations in clearly marked sections.
-* Apply and validate the change across the entire declared sibling set.
-* Commit per repository when histories are separate.
+* Apply and validate shared changes across the entire declared sibling set; isolate deliberate
+  deviations and commit per repository.
+* Detail: [synchronization and validation](./references/synchronization-and-validation.md#preserve-sibling-alignment).
 
 ## Upgrade Procedure
 
-1. Inventory the image, Features, options, lockfile, Dependabot, and version consumers.
-2. Reconcile changed repository capabilities and host/container extension parity.
-3. Read official release notes and confirm base-distribution compatibility.
-4. Change the smallest authoritative set of fields.
-5. Regenerate tracked lock data rather than editing it.
-6. Synchronize CI, documentation, and siblings.
-7. Run parse, lint, reference, extension-set, and diff checks.
-8. Ask before rebuilding.
-9. Rebuild and verify tool versions and extensions after approval.
-10. Review lessons from the completed work and flow durable corrections, replacement guidance and
-  validation improvements back into this skill before reporting completion.
-11. Report versions, capability decisions, intentional exceptions, validation, and manual host setup.
+Follow the [upgrade procedure](./references/synchronization-and-validation.md#upgrade-procedure):
+inventory, reconcile, confirm compatibility, change the smallest authoritative set, regenerate lock
+data, synchronize consumers, validate, ask before rebuilding and feed lessons back into this skill.
 
 ## Troubleshooting
 
-### Diagnose a Failed Start
-
 When a configuration works on one workstation but not another, suspect the host before the
-repository. Gather evidence before editing tracked files.
-
-1. Read the newest Dev Containers extension log first. On Windows it is under
-   `%APPDATA%\Code\logs\<session>\window<n>\exthost\ms-vscode-remote.remote-containers\`; use
-   **Dev Containers: Show Container Log** on any platform. Search for `Error response from daemon`,
-   `Command failed` and `Exit code`.
-2. Compare the logged `docker run` arguments with the configuration. The extension adds its own
-   mounts, such as the WSLg Wayland socket, the Git credential helper and the `vscode` volume; a
-   failing mount that the repository does not declare points to host or extension settings.
-3. Reproduce the failing argument alone with a throwaway container such as
-   `docker run --rm --mount <failing-mount> alpine:3 true`, then remove any image pulled only for
-   the test. A standalone failure proves the cause is independent of the repository image.
-4. Check host state: `docker version`, `docker context ls`, `wsl -l -v`, the Docker Desktop WSL
-   integration setting for each distribution and whether the relevant distribution is running.
-5. Fix host-specific causes in host or user settings, not tracked repository files. Ask before
-   changing a user setting that affects every Dev Container, and note that Settings Sync may carry
-   it to other workstations.
-
-| Symptom | Response |
-| --- | --- |
-| Feature fails after a base upgrade | Check distribution support and Feature options first |
-| Docker cannot reach the host daemon | Verify Docker-outside-of-Docker and host socket support |
-| Host mount expands incorrectly | Use the correct Dev Container variable for the host platform |
-| Hook works once but fails later | Move one-time work to post-create and make post-start idempotent |
-| Startup changes tracked files | Remove update or generation commands from post-start |
-| CI installs another tool version | Find and synchronize the authoritative version field |
-| Host and container offer different extensions | Reconcile both lists and document justified exceptions |
-| New file type lacks local tooling | Require execution evidence, then add one Feature or installer |
-| Lockfile changes unexpectedly | Confirm the generator and repository lockfile policy |
-| Files become root-owned | Restore the non-root user and use explicit `sudo` only where needed |
-| Sibling repositories drift | Compare declared shared surfaces and update them together |
-| `accessing specified distro mount service: stat /run/guest-services/distro-services/<distro>.sock` | The extension's automatic WSLg Wayland mount targets a WSL distribution without working Docker Desktop integration. Enable that distribution under Docker Desktop **Resources > WSL integration** and restart Docker Desktop, or set the user setting `"dev.containers.mountWaylandSocket": false` when the container runs no Linux GUI applications. Starting the distribution alone does not fix it |
-| Works on one workstation only | Follow [Diagnose a Failed Start](#diagnose-a-failed-start) and compare host Docker, WSL and extension settings |
+repository and gather evidence before editing tracked files. Follow the
+[troubleshooting guide](./references/troubleshooting.md) for the failed-start procedure and the
+symptom table.
 
 ## References
 
@@ -385,8 +162,10 @@ repository. Gather evidence before editing tracked files.
 
 ## Maintaining This Skill
 
-* Base image, Feature and tool versions, and the lockfile refresh in the Upgrade Procedure.
+* Base image, Feature and tool versions, and the lockfile refresh in the
+  [upgrade procedure](./references/synchronization-and-validation.md#upgrade-procedure).
 * Lifecycle-script, mount and host/editor-sync behaviour whenever a container fails to start for a
-  new reason.
+  new reason, recorded in the [troubleshooting guide](./references/troubleshooting.md).
 * Keep the minimal example's Feature options, Pester version, lifecycle script and extension lists
   synchronized; distinguish static validation from an approved container rebuild.
+* Keep the SKILL.md step summaries in step with the reference files they link.
