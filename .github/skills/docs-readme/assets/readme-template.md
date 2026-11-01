@@ -1,7 +1,8 @@
 # README Master Template
 
 Use this master outline for root and nested READMEs. It supplies section choices, not a mandatory
-document length. Read the shared Markdown and Mermaid instructions for the rules governing content.
+document length. Read the shared Markdown instructions and the architecture diagrams skill for the
+rules governing content and diagrams.
 
 ## Selection
 
@@ -28,7 +29,7 @@ empty sections, placeholder tables or template instructions in a reader-facing d
 | Helm chart | Installation or Usage, Configuration, dependency graph when dependencies exist; chart catalogue for a chart repository |
 | Terraform module | Usage, dependency graph when helpful, generator-owned interface reference |
 | Container example | Quick Start or Run, Configuration, Platform Support when constrained |
-| Meaningful relationships | A Mermaid diagram under the appropriate standard heading |
+| Meaningful relationships | One overview diagram under the appropriate standard heading, linking to any `docs/` drilldown |
 | Contributor setup differs from ordinary usage | Concise Development or Build and Test commands and prerequisites |
 | Documentation index | Purpose and guide navigation; no product scaffolding unless it actually documents a product |
 | Test project | Scope, prerequisites and execution; select required inventory and layout sections from the domain testing instructions, not package installation sections |
@@ -127,13 +128,15 @@ not a paraphrase of the instructions. Optional sections are not a request to cre
 <Verified runtime, operating-system, architecture or platform constraints not already stated.>
 
 <!-- IF a diagram explains a meaningful relationship; choose the appropriate standard heading. -->
-## <Dependency Graph, Data Flow, Service Architecture or another applicable diagram heading>
+## <System Context, Dependency Graph, Deployment Flow or another applicable diagram heading>
 
 <Short explanation of scope and what the reader should learn.>
 
 ```mermaid
-<Verified diagram using the shared Mermaid conventions.>
+<Verified overview diagram using the architecture diagrams skill's conventions.>
 ```
+
+<Link to the docs/ architecture drilldown when deeper views exist.>
 
 <!-- IF contributors need repository-specific setup beyond generic contribution guidance. -->
 ## Development

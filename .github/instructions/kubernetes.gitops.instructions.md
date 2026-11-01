@@ -132,7 +132,7 @@ src/
 
 ## Diagrams
 
-Beyond the shared Mermaid guidance in `markdown.instructions.md`:
+Beyond the shared conventions in the `docs-architecture-diagrams` skill:
 
 - Use `flowchart` for deployment flows and controller sync chains, such as the App-of-Apps
   hierarchy, and `graph` for chart dependencies, resource relationships and namespace organisation.

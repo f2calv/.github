@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.0
+version: 1.0.1
 facets: [documentation]
 related:
+  - id: docs-architecture-diagrams
+    reason: Choose, place and draw the overview diagram and its docs/ drilldown.
   - id: dotnet-performance
     reason: Linked from examples/completed-readmes.md.
 externalFiles:

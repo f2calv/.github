@@ -16,8 +16,9 @@ Read these shared instructions before authoring:
 
 - [Markdown conventions](../../instructions/markdown.instructions.md): content boundaries,
   accessibility, badges, generated reference and linting.
-- [Mermaid conventions](../../instructions/markdown.mermaid.instructions.md): diagram types,
-  headings, styling and synchronization.
+- [Architecture diagrams](../docs-architecture-diagrams/SKILL.md): which diagrams belong in a
+  README versus a `docs/` drilldown, diagram types, headings and styling. The
+  [Mermaid instructions](../../instructions/markdown.mermaid.instructions.md) keep them synchronized.
 - The target repository's instructions and applicable domain instructions.
 
 Use the [master template](./assets/readme-template.md) for section selection. It is an annotated
@@ -160,10 +161,11 @@ null optional object from a populated object whose attributes receive defaults.
 5. Verify where a README is rendered: GitHub, NuGet, Marketplace or a chart registry. Resolve images
    and essential links for that destination; GitHub-relative links may fail in package listings.
    Check current image-host restrictions before choosing badges for a NuGet package README.
-6. Decide whether a diagram improves understanding. Trace meaningful dependencies, flows or
-   interactions from source, then follow the Mermaid instructions. Avoid gratuitous type, test or
-   file graphs. Check renderer support; do not rely on Mermaid alone to explain essential usage
-   in an external registry that cannot render it.
+6. Decide whether a diagram improves understanding, using the architecture diagrams skill's
+   placement rules: a root README carries one overview diagram and links to the `docs/`
+   drilldown. Trace meaningful dependencies, flows or interactions from source. Avoid gratuitous
+   type, test or file graphs. Check renderer support; do not rely on Mermaid alone to explain
+   essential usage in an external registry that cannot render it.
 
 ### 4. Write and Connect
 

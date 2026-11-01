@@ -11,7 +11,8 @@ Where these rules refer to a *project*, read it as the repository's primary unit
 
 Use the `docs-readme` skill to create, restructure, update or audit READMEs. Its conditional
 master template owns section selection and ordering; this file owns documentation conventions.
-The Mermaid instructions own diagram selection, styling and synchronization. Domain instructions
+The `docs-architecture-diagrams` skill owns diagram selection, placement and styling; the Mermaid
+instructions own the always-on synchronization rules. Domain instructions
 and skills own technical contracts; reference them rather than copying their rules.
 
 README-specific rules below apply to every file named `README.md`, including project and `docs/`
