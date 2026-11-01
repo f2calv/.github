@@ -50,6 +50,9 @@ git fetch --tags
 Fetch tags first: the checks compare against `<id>/X.Y.Z` tags that CI creates on GitHub. Without
 them every skill looks unreleased and the local check passes while CI fails.
 
+Scaffolding and validation exclude Git-ignored local skill folders. If one appears in a
+missing-sidecar error, repair ignore discovery rather than adding it to the public catalog.
+
 `New-SkillMetadata.ps1` seeds `version: 1.0.0`, a facet from the folder prefix, related skills from
 links to other skill folders and external files from links to other repository files. Review it:
 replace generic `Linked from ...` reasons and move genuinely mandatory skills to `required`.
@@ -143,6 +146,8 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`
   format, `SPECKIT_CATALOG_URL` precedence and the catalog cache file naming used by the helper.
 - `yq` major versions: recheck `-i` comment preservation and YAML/JSON conversion.
+- Git ignore discovery on Windows and paths requiring Git quoting: verify ignored skills with and
+  without sidecars remain excluded, and Git failures are reported rather than treated as unignored.
 - GitHub release asset URLs for tags containing `/`, and the Pages URL for a dot-named repository.
 - `actions/upload-pages-artifact` and `actions/deploy-pages` major versions and permissions.
 - `specify extension add --force` semantics, which `upgrade-all` relies on.

@@ -10,7 +10,7 @@ BeforeAll {
 }
 
 Describe 'Sidecar validation' -Tag 'Unit' {
-    BeforeEach { $Repo = New-SkillFixture $TestDrive }
+    BeforeEach { $Repo = New-SkillFixture (Join-Path $TestDrive "workspace $([char]0x00E9)") }
 
     It 'accepts a consistent set of skills' {
         @(Get-Errors) | Should -BeNullOrEmpty
@@ -34,11 +34,27 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @(Get-Errors) -join "`n" | Should -BeLike '*delta: missing skill.metadata.yaml*'
     }
 
-    It 'skips Git-ignored private skills' {
-        Write-FixtureText $Repo '.gitignore' "/.github/skills/private/`n"
-        Write-FixtureSkill $Repo 'private' "version: oops`n"
+    It 'skips Git-ignored private skills <Case>' -ForEach @(
+        @{ Case = 'with a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = "version: oops`n" }
+        @{ Case = 'without a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = '' }
+        @{ Case = 'with a sidecar via info/exclude'; IgnoreFile = '.git/info/exclude'; Metadata = "version: oops`n" }
+        @{ Case = 'without a sidecar via info/exclude'; IgnoreFile = '.git/info/exclude'; Metadata = '' }
+    ) {
+        Invoke-FixtureGit $Repo config core.quotePath true
+        Write-FixtureText $Repo $IgnoreFile "/.github/skills/private/`n"
+        Write-FixtureSkill $Repo 'private' $Metadata
         (Get-SkillComponent -RepoRoot $Repo).Id | Should -Not -Contain 'private'
         Get-SkillWithoutMetadata -RepoRoot $Repo | Should -BeNullOrEmpty
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
+    It 'fails <Discovery> when Git ignore status cannot be determined' -ForEach @(
+        @{ Discovery = 'Get-SkillComponent' }
+        @{ Discovery = 'Get-SkillWithoutMetadata' }
+    ) {
+        Write-FixtureSkill $Repo 'delta'
+        Rename-Item -LiteralPath (Join-Path $Repo '.git') -NewName '.git-disabled'
+        { & $Discovery -RepoRoot $Repo } | Should -Throw '*Cannot determine Git ignore status*'
     }
 
     It 'reports a SKILL.md name that does not match its folder' {

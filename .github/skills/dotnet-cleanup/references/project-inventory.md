@@ -67,22 +67,42 @@ turning failures into library classifications. No partial report is emitted as a
 ## Review Procedure
 
 1. Confirm each candidate against the project README, entry point, public API and actual consumers.
+   For mixed libraries, trace every top-level type and its reachable helpers to production or test
+   callers, including construction, registration, reflection and launch paths. Names, imports and
+   project references alone do not prove ownership; production fixtures and recorders remain
+   production code.
 2. Separate test suites, reusable testing libraries, sample apps and test-only host processes.
+   Align suites with the subject they exercise. Move their builders and reporting helpers with them;
+   keep single-suite support internal unless independent consumers justify a support library.
    Do not rename all `.Testing` projects to `.Tests`.
 3. Compare backend candidates by responsibility, not suffix. A library that owns one application's
    controllers/background/domain processing may differ from a published integration library or
    shared host bootstrap even when all contain services.
-4. Inspect framework/configuration-specific evaluated items separately when the static report flags
+4. When no supported execution path remains, retire obsolete orchestration instead of inventing a
+   testing or benchmark project for it. Preserve helpers that still have real consumers; an
+   evaluation label does not establish a measurement-runner role.
+5. Inspect framework/configuration-specific evaluated items separately when the static report flags
    uncertainty. Obtain approval before executing build tooling; MSBuild evaluation is not inert XML
    parsing and may execute property functions or custom imports.
-5. Agree a role-to-name table and per-project mapping before moving anything. Possible review
-   vocabulary includes `.Tests`, `.Testing`, `.TestHost`, `.Sample`, `.Benchmarks`, `.Backend`
-   and `.App.Server`; this is **not an enforced rename policy**.
-6. Keep project/folder names separate from `AssemblyName`, `RootNamespace`, `PackageId`,
+6. Agree a per-project mapping using the
+   [central role-to-name defaults](../../../instructions/dotnet.instructions.md#application-project-names)
+   before moving anything. Record per-type ownership, retained identities and dependency changes.
+   Identify hybrid members and unnecessary dependency edges to decouple before relocating types;
+   do not drag test tooling into a production dependency closure.
+7. Keep project/folder names separate from `AssemblyName`, `RootNamespace`, `PackageId`,
    executable names and published contracts. A folder rename need not change every identity.
-7. For an approved migration, preserve Git history with moves; update solution entries, project
+8. For an approved migration, preserve Git history with moves before editing content; update
+   solution entries, project
    references, conditional sibling substitutions, Docker manifest copies, CI paths, friend
-   assemblies, reflection, packaging and documentation. Validate the complete affected graph.
+   assemblies, reflection, packaging, launch/debug/task paths, launch profiles, project-name-based
+   User Secrets conditions and documentation.
+9. Validate the complete affected graph with approved builds and targeted tests. Reconcile expected
+   type and test-case counts, retained behavior and dependency closures; compilation alone does not
+   prove ownership or runtime compatibility. A zero-case run is not passing coverage.
+
+Use the [EF Core workflow](../../dotnet-efcore/SKILL.md) for persistence boundaries and the
+[AppHost workflow](../../dotnet-apphost/SKILL.md) for composition ownership rather than duplicating
+their extraction rules here.
 
 The smallest useful outcome of this phase is an inventory plus reviewed role decisions and a
 proposed rename map. Do not create a new shared abstraction, split projects or rename namespaces

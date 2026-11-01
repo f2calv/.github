@@ -102,16 +102,22 @@ function New-SkillComponent {
     }
 }
 
+function Test-SkillIgnoredPath {
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$Path)
+    $PSNativeCommandUseErrorActionPreference = $false
+    $Output = @(& git -C $RepoRoot check-ignore --quiet -- $Path 2>&1)
+    switch ($LASTEXITCODE) {
+        0 { return $true }
+        1 { return $false }
+        default { throw "Cannot determine Git ignore status for '$Path': $($Output -join "`n"). Verify the repository root." }
+    }
+}
+
 function Get-SkillComponent {
     <# Returns every skill with a sidecar plus the bootstrap extension. #>
     param([Parameter(Mandatory)][string]$RepoRoot)
     $Sidecars = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/skill.metadata.yaml') -File | Sort-Object FullName)
-    if ($Sidecars.Count) {
-        Push-Location -LiteralPath $RepoRoot
-        try { $Ignored = @($Sidecars.FullName | & git check-ignore --stdin) }
-        finally { Pop-Location }
-        $Sidecars = @($Sidecars | Where-Object { $_.FullName -notin $Ignored })
-    }
+    $Sidecars = @($Sidecars | Where-Object { -not (Test-SkillIgnoredPath -RepoRoot $RepoRoot -Path $_.FullName) })
     $Components = foreach ($Sidecar in $Sidecars) {
         $Id = $Sidecar.Directory.Name
         $Front = Get-SkillFrontmatter ([IO.File]::ReadAllText((Join-Path $Sidecar.DirectoryName 'SKILL.md')))
@@ -133,10 +139,8 @@ function Get-SkillWithoutMetadata {
     $Skills = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/SKILL.md') -File |
         Where-Object { -not (Test-Path -LiteralPath (Join-Path $_.DirectoryName 'skill.metadata.yaml')) })
     if (-not $Skills.Count) { return @() }
-    Push-Location -LiteralPath $RepoRoot
-    try { $Ignored = @($Skills.FullName | & git check-ignore --stdin) }
-    finally { Pop-Location }
-    return @($Skills | Where-Object { $_.FullName -notin $Ignored } | ForEach-Object { $_.Directory.Name } | Sort-Object)
+    return @($Skills | Where-Object { -not (Test-SkillIgnoredPath -RepoRoot $RepoRoot -Path $_.FullName) } |
+        ForEach-Object { $_.Directory.Name } | Sort-Object)
 }
 
 function Test-SkillComponent {

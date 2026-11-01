@@ -27,6 +27,27 @@ Official guidance:
 [design-time creation](https://learn.microsoft.com/en-us/ef/core/cli/dbcontext-creation),
 [Npgsql provider](https://www.npgsql.org/efcore/).
 
+## Persistence Project Boundaries
+
+When a persistence extraction is proposed, review it separately from a project-name cleanup:
+
+1. Group the context, persistence entities, mappings, migrations/snapshot and design-time creation
+   by their actual database ownership. A dedicated data library can clarify that boundary, but is
+   not required solely because another application has one.
+2. Keep public request/response DTOs and client contracts independent of EF Core. Do not move all
+   models into the data library or expose tracked entities as wire contracts.
+3. Establish an acyclic dependency graph before moving files: composition and application
+   implementation may reference persistence; persistence must not reference the executable host
+   or higher-level application implementation. Keep domain policy and authorization at their
+   existing application boundary.
+4. Preserve context/factory lifetimes, transaction ownership, provider conditions, interceptors,
+   tenant state and integrations such as Data Protection. Keep runtime registration and design-time
+   creation aligned without starting workers during tooling.
+5. Review migration assembly discovery, snapshot/context associations, schema names, raw SQL,
+   resource paths and downstream consumers. Preserve published migration history; an assembly move
+   alone must not produce unintended schema changes. With approval, verify model/snapshot
+   consistency and migration discovery as well as the affected build and provider-backed behavior.
+
 ## Model Changes
 
 1. Inspect the current model configuration and snapshot together. Reuse the established inline
