@@ -130,6 +130,32 @@ done
 The links point at the working tree, so a `git pull` updates every workspace at once. Recreate them
 on another workstation; harness-folder customizations do not roam through VS Code Settings Sync.
 
+### Remove the Personal Links
+
+Remove the links before switching to the workspace route, or whenever this repository is also open
+in the workspace and the session lists each instruction twice. Only links are removed; a real folder
+at either path is left untouched, as is the clone.
+
+Windows PowerShell:
+
+```powershell
+foreach ($name in 'instructions', 'skills') {
+  $link = Get-Item -LiteralPath "$HOME\.copilot\$name" -Force -ErrorAction SilentlyContinue
+  if ($link -and $link.LinkType) { $link.Delete() }
+}
+```
+
+macOS and Linux:
+
+```bash
+for name in instructions skills; do
+  if [ -L "$HOME/.copilot/$name" ]; then rm "$HOME/.copilot/$name"; fi
+done
+```
+
+Run **Developer: Reload Window**, then confirm in **Chat: Open Customizations** that each shared
+instruction and skill appears once.
+
 ## Use with Spec Kit
 
 Spec Kit repositories can install selected skills at exact versions, with the skills they require,
