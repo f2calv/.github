@@ -73,7 +73,7 @@ A README is the front door; it shows the black box. Drilldowns live under `docs/
 | Root `README.md` of a library, Action, reusable workflow, chart or module | One diagram for the consumer's mental model: a dependency graph of published packages, an execution flow, or a chart dependency graph. No component internals. |
 | Project `README.md` | Only a view scoped to that project: its own dependency graph, or a published extension-point class hierarchy. Link to the drilldown rather than repeating repository views. |
 | `docs/architecture.md` | The drilldown: Containers, one Components view per non-trivial container, the Code Map, and links to topic documents. Move each Components view to `docs/architecture/<container>.md` once the file holds more than about five diagrams; keep `docs/architecture.md` as the index. |
-| Topic documents under `docs/` | Runtime scenarios, activity flows and lifecycles for that topic. The drilldown links to them instead of duplicating them. |
+| Topic documents under `docs/` | Runtime scenarios, activity flows and lifecycles for that topic. The drilldown links to them instead of duplicating them. When no topic document exists yet, keep them in the drilldown under their own headings rather than creating a document for one diagram; move them out once a topic document exists. |
 | ADR | A proposed target view that differs from the current code. Documentation describes what exists; a target lives in the decision record until the code matches it. |
 
 Never draw the same view in two places. When a README and a drilldown both need a view, the README

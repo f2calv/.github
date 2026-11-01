@@ -92,6 +92,9 @@ technical layer, although a well-structured codebase makes each component one fo
 - Inbound adapters (controllers, consumers, MCP tools) form one component per protocol at the top.
   Outbound adapters may be shown as their own components when several components share them.
 - Show the elements outside the container that components touch, with their established styles.
+- A component the container registers from a package but does not implement, such as a shared
+  pipeline library, stays in the view when it carries runtime behavior. Style it `published`, add a
+  legend line, and name the package in the code map's location column.
 - Draw only dependencies that exist in code. Missing expected edges and surprising extra ones are
   both findings for the report.
 
