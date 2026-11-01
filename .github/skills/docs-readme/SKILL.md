@@ -163,9 +163,11 @@ null optional object from a populated object whose attributes receive defaults.
    Check current image-host restrictions before choosing badges for a NuGet package README.
 6. Decide whether a diagram improves understanding, using the architecture diagrams skill's
    placement rules: a root README carries one overview diagram and links to the `docs/`
-   drilldown. Trace meaningful dependencies, flows or interactions from source. Avoid gratuitous
-   type, test or file graphs. Check renderer support; do not rely on Mermaid alone to explain
-   essential usage in an external registry that cannot render it.
+   drilldown. In `update` and `audit` modes, check existing diagram headings against that skill's
+   standard headings, renaming a legacy heading such as `## Service Architecture` to the view it
+   actually shows. Trace meaningful dependencies, flows or interactions from source. Avoid
+   gratuitous type, test or file graphs. Check renderer support; do not rely on Mermaid alone to
+   explain essential usage in an external registry that cannot render it.
 
 ### 4. Write and Connect
 

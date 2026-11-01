@@ -30,7 +30,7 @@ Use these headings before a diagram so readers and agents find the same view in 
 | `## <Process> Activity` | One process or pipeline with decisions and hand-offs |
 | `## <Entity> Lifecycle` | States of one entity, job or session |
 | `## Dependency Graph` | Package, module, project and chart dependencies and references |
-| `## Deployment Flow` | Build, release and deployment pipelines, and their call chains |
+| `## Deployment Flow` | Build, release and deployment workflows, and their call chains |
 | `## Configuration Hierarchy` | Nested configuration objects |
 | `## Class Hierarchy` | A published extension-point type hierarchy |
 
@@ -106,6 +106,7 @@ npm install @mermaid-js/mermaid-cli puppeteer
 ```
 
 Rendering to PNG with `-b white -s 1.5` gives an image that can be viewed to check layout, not just
-syntax. The install downloads a headless browser; ask before running it on a metered or restricted
+syntax. Render each revision to a new file name; an image viewer can keep showing the earlier render
+of a reused name. The install downloads a headless browser; ask before running it on a metered or restricted
 host. A parse error names the line; fix it and re-render. Delete the temporary folder afterwards.
 When rendering is not possible, say so in the report.

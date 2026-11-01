@@ -97,6 +97,9 @@ technical layer, although a well-structured codebase makes each component one fo
   legend line, and name the package in the code map's location column.
 - Draw only dependencies that exist in code. Missing expected edges and surprising extra ones are
   both findings for the report.
+- When several entry points share one module, draw a single edge from the entry-point group to the
+  module and list which components each entry point uses in a table beneath the diagram. One edge
+  per entry-point call turns the view into a tangle.
 
 ```mermaid
 flowchart TB
