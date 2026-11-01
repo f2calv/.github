@@ -1,6 +1,6 @@
 # ADR 0002: Agent Plugins Packaging
 
-**Status:** Accepted; implemented, client proof pending.
+**Status:** Accepted; implemented in PR #41, client proof pending.
 **Date:** 2026-11-01.
 **Scope:** Publishing the shared skills as [Agent Plugins](https://agent-plugins.org/) v1.0.0 packages
 alongside the existing Spec Kit extensions. Copilot workspace and personal-link consumption is unchanged.
@@ -127,7 +127,7 @@ skill gets one on its next version.
 
 ## Validation and Delivery
 
-Implemented with `skill-library` 1.1.0:
+Implemented in PR #41; `skill-library` 1.1.0 publishes on merge:
 
 - [x] **Conformance gate.** `Test-SkillLibrary.ps1` checks each skill's normalised frontmatter
   against the Agent Skills rules; all 49 skills pass.
@@ -135,6 +135,8 @@ Implemented with `skill-library` 1.1.0:
   `Build-SkillExtension.ps1 -AgentPlugin`, reuse the deterministic ZIP writer. Pester covers layout,
   link resolution, the closed manifest field set, frontmatter normalisation and byte-identical rebuilds.
 - [x] **Publish.** `Publish-SkillRelease.ps1` attaches the plugin ZIP and adds it to the catalog and page.
+- [x] **Link containment.** The gate fails when a skill links to an undeclared skill or to a repository
+  file missing from `externalFiles`, so every packaged link resolves inside the plugin.
 - [x] **Manifest schema.** Every generated `plugin.json` validated against the published
   `plugin.schema.json` in a one-off local check (48 of 48). The schema is not vendored; the unit test
   asserts the closed field set instead.
