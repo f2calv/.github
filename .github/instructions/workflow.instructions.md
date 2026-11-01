@@ -55,6 +55,9 @@ pull-request lifecycle belongs in the `github-issues-and-pull-requests` skill.
   checkout is unsuitable and ask for permission through a UI yes/no choice. Do not infer approval
   from authorization to build, deploy, commit or push. State the proposed path and intended lifetime,
   and keep using the current checkout when permission is declined.
+- **Re-check the branch before committing**: Another session can switch a shared checkout between
+  edits and a commit. Confirm `git branch --show-current` immediately before each commit, and stage
+  only the paths you changed when the index already holds someone else's work.
 - **Read before writing**: Consult existing repository notes and conventions for a subsystem before changing it, not after.
 - **Never auto-install git hooks**: Do not wire `pre-commit install` into a dev container's post-create step, a setup script or setup documentation. The per-commit cost is fixed interpreter startup per hook, not proportional to the number of files changed. Use the `tooling-pre-commit` skill for execution and updates; offer its explicit pre-push install mode only when the user requests a local hook.
 
