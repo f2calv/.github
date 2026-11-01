@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      push-preview:
+        type: boolean
+        description: Push a pre-release NuGet package from a non-default branch?
+        default: false
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  #Lint, versioning, build/test/pack/push and release in one shared workflow; grant the union of its permissions.
+  ci:
+    uses: f2calv/gha-workflows/.github/workflows/dotnet-nuget-library.yml@v1
+    permissions:
+      contents: write
+      id-token: write #OIDC token for NuGet Trusted Publishing
+      packages: write #push to nuget.pkg.github.com
+    with:
+      solution-name: Example.Release.slnx
+      nuget-user: ${{ github.repository_owner }}
+      #Dispatch-only input: other events must not forward its empty value.
+      push-preview: ${{ github.event_name == 'workflow_dispatch' && inputs.push-preview }}
+      dotnet-test-args: '["--filter-not-trait", "Category=Integration"]'

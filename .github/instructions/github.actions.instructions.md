@@ -5,6 +5,9 @@ applyTo: '.github/workflows/**,.github/actions/**,**/action.yml,**/action.yaml'
 
 # GitHub Actions
 
+Use the `github-actions-workflows` skill to compose CI from the shared building blocks, start from its
+templates, and release changes to shared workflows or Actions safely.
+
 ## General
 
 - Leave one blank line between steps within a job.

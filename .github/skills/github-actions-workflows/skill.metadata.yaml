@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [github]
+related:
+  - id: github-repository-baseline
+    reason: Update required status checks when reusable-workflow job names change.
+  - id: tooling-pre-commit
+    reason: Runs actionlint and zizmor through the shared lint contract.
+  - id: github-dependabot
+    reason: Keeps action and workflow references current across the fleet.
+externalFiles:
+  - .github/instructions/github.actions.instructions.md

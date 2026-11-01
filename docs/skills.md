@@ -19,6 +19,7 @@ gate rejects a stale or missing row.
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.0` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.0` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
+| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.0` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
 
 ## Tooling and Agent Setup
 
