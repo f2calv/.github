@@ -13,32 +13,18 @@ for RPC.
 
 ## Files and Types
 
-- **One top-level type per file**, named after the type; only nested types share a file. Two
-  exceptions: `_Enums.cs` holds every enum in the project and nothing else, and `_*Config.cs` (such
-  as `_AppConfig.cs`) groups a configuration root with its related config types.
-- Generic type filenames encode type parameters in braces: `Widget{T}.cs`, `Cache{TKey,TValue}.cs`.
-- **Interfaces** start with `I`, live in an `Abstractions` folder and namespace, and name a role or
-  capability (`IMessageGateway`), never an implementing class with an `I` prefix or a `Service`
-  suffix. Rename an existing interface only when already changing it; that is a breaking change.
-- **Remove single-implementation interfaces** unless tests substitute them, another assembly
-  consumes them as a contract or extension point, or a second implementation exists. Never add one
-  for a speculative future implementation.
-- **Services** (DI-registered application types) live in `Services` with a `Service` suffix, or a
-  more specific role suffix (`Handler`, `Factory`, `Manager`, `Coordinator`). Group supporting types
-  in a `Services` sub-folder or `ServiceName.SubCategory.cs` partials. Types outside DI keep their
-  role suffix (`Validator`, `Converter`).
-- **Extension classes** live in `Extensions`, named after the extended type
-  (`ServiceCollectionExtensions`), including endpoint-mapping and host-registration extensions. Never
-  use a framework namespace such as `Microsoft.AspNetCore.Builder`; keep them to wiring and delegate
-  behaviour to the owning service.
-- **Models** (DTOs, payloads, options and configuration records) live in `Models`; EF Core entities
-  follow the EF Core instructions. **Custom exceptions** use the `Exception` suffix, one per file in
-  `Exceptions/` with a `.Exceptions` namespace. Nested private test doubles stay with their test type.
-- **Wire constants** (request URIs, route templates, header names) go in a `static class` per API
-  surface under `Constants` (`RequestUris`, `UploadHeaders`), for APIs called and exposed alike.
-- Namespaces follow folders, except that sub-folders of `Services` keep the `Services` namespace.
-- Every project root has a `GlobalUsings.cs`; move a namespace imported by more than two files into
-  it and delete the per-file duplicates, re-checking after refactors.
+- **One top-level type per file**, named after it (`Cache{TKey,TValue}.cs` for generics), except
+  `_Enums.cs` for all of a project's enums and `_*Config.cs` grouping a configuration root.
+- Folders and namespaces by role: interfaces in `Abstractions` (named for a capability, never
+  `I<ClassName>` or `*Service`), DI services in `Services` (`Service` or a specific role suffix),
+  extensions in `Extensions` (never a framework namespace), DTOs and options in `Models`, exceptions
+  in `Exceptions`, and wire constants in per-surface static classes under `Constants`. Sub-folders
+  of `Services` keep the `Services` namespace.
+- Remove single-implementation interfaces unless tests substitute them, another assembly consumes
+  them, or a second implementation exists.
+- Keep a `GlobalUsings.cs` per project for namespaces imported by more than two files.
+- The `dotnet-cleanup` skill's [type layout reference](../skills/dotnet-cleanup/references/type-layout.md)
+  holds the full rules.
 
 ## Style
 

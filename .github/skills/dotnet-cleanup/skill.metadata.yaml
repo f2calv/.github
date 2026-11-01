@@ -8,3 +8,5 @@ related:
     reason: Review composition ownership before extracting a shared hosting project.
 externalFiles:
   - .github/instructions/dotnet.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/dotnet.efcore.instructions.md

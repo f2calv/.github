@@ -9,7 +9,9 @@ argument-hint: '[scope=repository|workflow] [mode={audit|migrate|update}]'
 Every .NET repository is forward-only on `Microsoft.Testing.Platform` (MTP) with xUnit v3. Use this
 workflow when adding the first test project, migrating from VSTest, or authoring `dotnet test` steps
 in workflows, composite actions or `.vscode/tasks.json`. Test structure, naming and assertion rules
-remain in the shared testing instructions.
+remain in the shared testing instructions; the
+[integration test setup](references/integration-test-setup.md) covers `TestBase`, configuration and
+credentials.
 
 Never run tests without explicit user approval; they may be integration tests needing credentials
 or external services.

@@ -54,6 +54,8 @@ evidence-backed candidates for human review, not a mandate to rename.
 
 ## Layout Contract
 
+The [type layout reference](references/type-layout.md) holds the full convention; the audit checks:
+
 - One top-level type per matching file.
 - Nested types may share their containing type's file.
 - `_Enums.cs` may contain multiple enums and no other type kind.
