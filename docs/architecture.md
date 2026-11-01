@@ -3,7 +3,7 @@
 This repository is the single source of truth for shared Copilot instructions and skills. It serves
 them in two ways: directly from the working tree to Copilot, and as independently versioned Spec Kit
 extensions published to GitHub Releases. This document explains the structure, the versioning rules
-and the packaging pipeline behind both.
+and the release and packaging workflow behind both.
 
 ## Repository Layout
 
@@ -11,7 +11,7 @@ and the packaging pipeline behind both.
 | --- | --- |
 | `.github/instructions/` | `*.instructions.md` files; each `applyTo` glob decides which files it governs |
 | `.github/skills/<id>/` | One skill per folder: `SKILL.md`, optional scripts, references and examples, plus `skill.metadata.yaml` |
-| `.github/skills/skill-library/` | The tooling that validates, versions, builds and publishes every skill |
+| `.github/skills/skill-library/` | The tooling that validates, versions, builds and publishes every skill; see [Skill Library Tooling](architecture/skill-library-tooling.md) for its components |
 | `src/skill-library-extension/` | The `skill` bootstrap extension that provides `/speckit-skill-library` |
 | `.github/copilot-instructions.md` | Rules for authoring this repository itself, not part of the shared set |
 | `docs/` | This documentation and the [distribution ADR](adr-0001-skill-library-distribution.md) |
@@ -67,21 +67,43 @@ Rules enforced on every pull request by `Test-SkillLibrary.ps1`:
 repeatedly during a long session never stacks bumps, and it cascades pin updates and patch bumps to
 dependents.
 
+## Skill Version Lifecycle
+
+A skill's version moves between these states as it is edited, bumped and published.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unreleased: skill folder and sidecar created
+    Unreleased --> Released: merged to main, Publish-SkillRelease.ps1 creates id/X.Y.Z
+    Released --> Changed: skill or external file edited
+    Changed --> Changed: Test-SkillLibrary.ps1 fails the pull request
+    Changed --> Bumped: Set-SkillVersion.ps1, one step from the last tag
+    Released --> Bumped: required skill bumped, pin and patch cascade
+    Bumped --> Released: merged to main, release published
+```
+
 ## Deployment Flow
+
+Releases are published by jobs in the [CI workflow](../.github/workflows/ci.yml). Every pull request
+and push runs the checks; only `main` publishes.
 
 ```mermaid
 flowchart LR
-    edit([Edit a skill]) --> bump[Set-SkillVersion.ps1<br/>bump once from last tag]
-    bump --> check[Test-SkillLibrary.ps1<br/>pull request gate]
-    check --> merge{Merged to main?}
-    merge -- no --> edit
-    merge -- yes --> publish[Publish-SkillRelease.ps1]
-    publish --> zip[Build deterministic ZIP<br/>per untagged version]
-    zip --> release[(GitHub Release<br/>id/X.Y.Z)]
-    release --> catalog[(GitHub Pages<br/>catalog.json and index.html)]
-
     classDef ci fill:#dcfce7,stroke:#15803d,color:#000
-    class check,publish,zip ci
+    classDef store fill:#e5e7eb,stroke:#4b5563,color:#000
+
+    edit([Edit a skill]) --> bump[Set-SkillVersion.ps1<br/>bump once from last tag]
+    bump --> lint[lint]:::ci
+    bump --> test[skills-library-tests<br/>then test]:::ci
+    bump --> versions[skill-versions<br/>Test-SkillLibrary.ps1]:::ci
+    lint --> main{On main?}
+    test --> main
+    versions --> main
+    main -- no --> done([Checks only])
+    main -- yes --> releases[skill-releases<br/>Publish-SkillRelease.ps1<br/>ZIP per untagged version]:::ci
+    releases --> release[(GitHub Release<br/>id/X.Y.Z)]:::store
+    releases -->|"site generated"| catalog[skill-catalog<br/>deploy Pages]:::ci
+    catalog --> pages[(GitHub Pages<br/>catalog.json and index.html)]:::store
 ```
 
 On `main`, CI publishes each component whose version has no tag yet. Publishing the release creates

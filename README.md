@@ -28,10 +28,15 @@ Consumer repositories do not copy these files. Each keeps only its own
 `.github/copilot-instructions.md` with a pointer here and its project-specific rules, so a change
 in this repository takes effect everywhere without a pull request in each consumer.
 
-## Service Architecture
+## System Context
+
+Skill authors change this repository through pull requests; developers in consumer repositories
+receive its instructions and skills through one of three routes.
 
 ```mermaid
 flowchart LR
+    author([Skill author]):::person -->|"pull requests"| repo
+
     subgraph repo [This repository]
         instr[Instructions<br/>.github/instructions]
         skills[Skills<br/>.github/skills]
@@ -63,15 +68,20 @@ flowchart LR
     cat --> cmd
     rel --> cmd
     rel -- "-plugin.zip" --> client
+    copilot --> developer([Developer in a consumer repository]):::person
+    speckit --> developer
+    plugins --> developer
 
     classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#000
+    classDef person fill:#ede9fe,stroke:#6d28d9,color:#2e1065
     class instr,skills,tools owned
 ```
 
 The Copilot route reads the working tree directly, so it always reflects the checked-out branch.
 The Spec Kit and Agent Plugins routes install published, immutable versions from the same release.
 [How the repository works](docs/architecture.md) details versioning, packaging and installation
-with further diagrams.
+with further diagrams, and [Skill Library Tooling](docs/architecture/skill-library-tooling.md) shows
+the PowerShell components behind them.
 
 ## Use with Copilot
 
