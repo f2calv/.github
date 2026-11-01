@@ -14,8 +14,11 @@ rather than imposing the same outline on every repository.
 
 Read these shared instructions before authoring:
 
-- [Markdown conventions](../../instructions/markdown.instructions.md): content boundaries,
-  accessibility, badges, generated reference and linting.
+- [Markdown conventions](../../instructions/markdown.instructions.md) and
+  [README instructions](../../instructions/markdown.readme.instructions.md): structure, content
+  boundaries, accessibility, generated reference and linting.
+- [Discoverability and badges](./references/discoverability-and-badges.md) for a public primary
+  README and any README carrying badges.
 - [Architecture diagrams](../docs-architecture-diagrams/SKILL.md): which diagrams belong in a
   README versus a `docs/` drilldown, diagram types, headings and styling. The
   [Mermaid instructions](../../instructions/markdown.mermaid.instructions.md) keep them synchronized.
@@ -143,7 +146,7 @@ null optional object from a populated object whose attributes receive defaults.
 
 1. Apply the master template's inclusion conditions to each README. Select only sections that help
    its readers, combine related sections and choose one heading for each purpose. For a public
-   primary README, apply the Markdown discoverability rules and compare its summary with repository
+   primary README, apply the [discoverability rules](./references/discoverability-and-badges.md) and compare its summary with repository
    and registry metadata. Report metadata discrepancies separately from file edits.
 2. For a simple repository, keep a single concise entry point where sufficient. Do not invent extra
    projects or documentation to satisfy the template.
@@ -182,7 +185,7 @@ null optional object from a populated object whose attributes receive defaults.
    implying every consumer needs every dependency. Distinguish application overrides from library
    defaults, and label complete configurations versus merge fragments. Apply visibility and privacy
    rules before including operational context.
-5. Verify badge sources and destinations under the Markdown badge rules. Use the template's badge
+5. Verify badge sources and destinations under the [badge rules](./references/discoverability-and-badges.md#badges-and-external-destinations). Use the template's badge
    patterns only after replacing placeholders with verified public metadata.
 6. Preserve generator-owned content and run the pinned generator when its inputs changed. Do not
    manufacture marker names or rewrite generated tables to match the template.

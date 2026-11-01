@@ -1,6 +1,6 @@
 ---
 description: 'GitOps conventions for Kubernetes clusters reconciled from Git, covering the App-of-Apps pattern, Application manifests, namespaces, naming and sync policy.'
-applyTo: 'src/**/*.yaml,src/**/*.yml'
+applyTo: '**/applications/**/*.yaml,**/applications/**/*.yml,**/resources/**/*.yaml,**/resources/**/*.yml,**/bootstrap*.yaml,**/bootstrap/**/*.yaml'
 ---
 
 # Kubernetes GitOps

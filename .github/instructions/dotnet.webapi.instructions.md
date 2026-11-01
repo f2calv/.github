@@ -1,6 +1,6 @@
 ---
 description: 'ASP.NET Core controller, endpoint and request/response DTO conventions for thin pass-through controllers, typed service calls and OpenAPI examples.'
-applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/Models/**/*.cs,**/*Request.cs,**/*Response.cs,**/*Dto.cs'
+applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/*Request.cs,**/*Response.cs,**/*Dto.cs'
 ---
 
 # ASP.NET Core Web API
