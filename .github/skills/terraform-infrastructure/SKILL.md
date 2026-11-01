@@ -13,6 +13,7 @@ both live beneath a directory named `modules`.
 | --- | --- |
 | [Roots and modules](references/roots-and-modules.md) | Contract discovery, onion layout, local children, promotion, local-first integration, exemplars |
 | [Deployment and retirement](references/deployment-and-retirement.md) | Consumer wiring, plan/apply, partial-apply recovery, retirement, cost investigations |
+| [Module releases](references/module-releases.md) | Child-module versioning directives, breaking changes and pull-request CI |
 
 ## Authorities And Boundaries
 
