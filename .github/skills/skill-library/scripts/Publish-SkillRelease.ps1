@@ -54,7 +54,7 @@ foreach ($Component in $Pending) {
     $Tag = "$($Component.Id)/$($Component.Version)"
     Write-Host "$Tag sha256:$($Archive.Sha256)"
     $Notes = "Spec Kit extension for ``$($Component.Id)`` $($Component.Version). Install with ``/speckit-skill-library install $($Component.Id)``."
-    if ($Component.Kind -eq 'skill') {
+    if ($Component.AgentPlugin) {
         $Plugin = New-SkillPluginArchive -RepoRoot $RepoRoot -Component $Component -OutputDirectory $OutputDirectory -Repository $Repository
         $Assets += $Plugin.Path
         Write-Host "$Tag plugin sha256:$($Plugin.Sha256)"

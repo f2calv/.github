@@ -45,6 +45,11 @@
         "type": "string",
         "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
       }
+    },
+    "agentPlugin": {
+      "description": "Whether releases also carry an Agent Plugins package; false for skills that only make sense inside Spec Kit.",
+      "type": "boolean",
+      "default": true
     }
   },
   "$defs": {

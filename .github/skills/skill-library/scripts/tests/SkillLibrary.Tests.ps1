@@ -23,6 +23,7 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @{ Case = 'an unknown field'; Metadata = "version: 1.0.0`ntooling: []`n"; Expected = '*schema*' }
         @{ Case = 'a missing external file'; Metadata = "version: 1.0.0`nexternalFiles: [docs/missing.md]`n"; Expected = '*does not exist*' }
         @{ Case = 'a self reference'; Metadata = "version: 1.0.0`nrelated:`n  - id: beta`n    reason: Self.`n"; Expected = '*references itself*' }
+        @{ Case = 'a non-boolean agentPlugin'; Metadata = "version: 1.0.0`nagentPlugin: maybe`n"; Expected = '*schema*' }
     ) {
         Write-FixtureText $Repo '.github/skills/beta/skill.metadata.yaml' $Metadata
         @(Get-Errors) -join "`n" | Should -BeLike $Expected
@@ -43,6 +44,19 @@ Describe 'Sidecar validation' -Tag 'Unit' {
     It 'reports a SKILL.md name that does not match its folder' {
         Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: other`ndescription: Beta.`n---`n"
         @(Get-Errors) -join "`n" | Should -BeLike "*beta: SKILL.md name 'other' must match the folder name.*"
+    }
+
+    It 'reports a SKILL.md description over the Agent Skills limit' {
+        Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: beta`ndescription: $('x' * 1025)`n---`n"
+        @(Get-Errors) -join "`n" | Should -BeLike '*beta: SKILL.md description must be 1-1024 characters.*'
+    }
+
+    It 'packages skills as Agent Plugins unless the sidecar opts out' {
+        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
+        $Components = Get-SkillComponent -RepoRoot $Repo
+        ($Components | Where-Object Id -eq 'alpha').AgentPlugin | Should -BeTrue
+        ($Components | Where-Object Id -eq 'gamma').AgentPlugin | Should -BeFalse
+        @(Get-Errors) | Should -BeNullOrEmpty
     }
 }
 
@@ -66,10 +80,22 @@ Describe 'Portable frontmatter' -Tag 'Unit' {
         ConvertTo-SkillPortableMarkdown $Markdown | Should -BeExactly $Markdown
     }
 
+    It 'returns Markdown without frontmatter unchanged' {
+        ConvertTo-SkillPortableMarkdown "# No frontmatter`n" | Should -BeExactly "# No frontmatter`n"
+    }
+
+    It 'is idempotent' {
+        $Once = ConvertTo-SkillPortableMarkdown "---`nname: alpha`ndescription: Fine.`nargument-hint: x`n---`nBody`n"
+        ConvertTo-SkillPortableMarkdown $Once | Should -BeExactly $Once
+    }
+
     It 'rejects <Case>' -ForEach @(
         @{ Case = 'a description over 1024 characters'; Front = "name: alpha`ndescription: $('x' * 1025)"; Expected = '*description must be 1-1024*' }
         @{ Case = 'non-string metadata'; Front = "name: alpha`ndescription: Fine.`nmetadata:`n  count: 3"; Expected = '*metadata values must be strings*' }
         @{ Case = 'a long compatibility'; Front = "name: alpha`ndescription: Fine.`ncompatibility: $('x' * 501)"; Expected = '*compatibility exceeds 500*' }
+        @{ Case = 'non-map metadata'; Front = "name: alpha`ndescription: Fine.`nmetadata: flat"; Expected = '*metadata must be a map*' }
+        @{ Case = 'a missing description'; Front = 'name: alpha'; Expected = '*description must be 1-1024*' }
+        @{ Case = 'a mismatched name'; Front = "name: beta`ndescription: Fine."; Expected = "*name 'beta' must match*" }
     ) {
         @(Test-SkillPortableFrontmatter -Id 'alpha' -Markdown "---`n$Front`n---`n") -join "`n" | Should -BeLike $Expected
     }
@@ -113,6 +139,25 @@ Describe 'Agent Plugin archives' -Tag 'Unit' {
         $First = New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'a')
         $Second = New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'b')
         $Second.Sha256 | Should -Be $First.Sha256
+    }
+
+    It 'omits repository and keywords when there are none' {
+        $Beta = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'beta'
+        $Manifest = New-SkillPluginManifest -Component $Beta
+        @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'extensions')
+        $Manifest.extensions['io.github.f2calv.skill-library'].required | Should -BeNullOrEmpty
+    }
+
+    It 'refuses a skill that opts out' {
+        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
+        Invoke-FixtureGit $Repo commit -q -am optout
+        $Gamma = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'gamma'
+        { New-SkillPluginArchive -RepoRoot $Repo -Component $Gamma -OutputDirectory (Join-Path $TestDrive 'd') } | Should -Throw '*is not packaged as an Agent Plugin*'
+    }
+
+    It 'refuses uncommitted changes' {
+        Write-FixtureText $Repo '.github/skills/alpha/SKILL.md' "changed`n"
+        { New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'e') } | Should -Throw '*commit or stash*'
     }
 
     It 'rejects an external file outside .github' {

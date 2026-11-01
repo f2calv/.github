@@ -97,6 +97,7 @@ function New-SkillComponent {
         Required      = @($Metadata['required'] ?? @())
         Related       = @($Metadata['related'] ?? @())
         ExternalFiles = @($Metadata['externalFiles'] ?? @())
+        AgentPlugin   = $Kind -eq 'skill' -and ($Metadata['agentPlugin'] ?? $true)
         Description   = $Description
     }
 }
@@ -350,7 +351,7 @@ function New-SkillPluginManifest {
 function New-SkillPluginArchive {
     <# Builds <id>-<version>-plugin.zip: an Agent Plugin with the skill under skills/<id>/ and external files at their .github-relative paths. #>
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object]$Component, [Parameter(Mandatory)][string]$OutputDirectory, [string]$Repository)
-    if ($Component.Kind -ne 'skill') { throw "$($Component.Id): only skills are packaged as Agent Plugins." }
+    if (-not $Component.AgentPlugin) { throw "$($Component.Id): is not packaged as an Agent Plugin." }
     $Files = Get-SkillPackageFile -RepoRoot $RepoRoot -Component $Component
     $SkillRoot = "skills/$($Component.Id)"
     $Utf8 = [Text.UTF8Encoding]::new($false)

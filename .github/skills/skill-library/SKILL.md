@@ -94,6 +94,8 @@ local build to produce it. See [ADR 0002](../../../docs/adr-0002-agent-plugins-p
 - `Test-SkillLibrary.ps1` checks the normalised frontmatter: `name` matches the folder, a
   1-1024 character `description`, `compatibility` up to 500 characters and string `metadata`.
 - Instructions in a plugin are linked reference files; clients do not apply them by `applyTo`.
+- Set `agentPlugin: false` in a sidecar for a skill that only makes sense inside Spec Kit, such as
+  the `spec-kit-*` skills; it then ships only as a Spec Kit extension.
 - Releases published before this packaging have no plugin asset; a skill gains one on its next bump.
 
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
