@@ -124,7 +124,8 @@ After creating a pull request, and again before merging it:
 1. Re-check Dependabot folding, the security and quality gates, and every required check on the
    current head.
 2. Merge only with the user's authorization, using the merge method and local synchronization rules
-   in the workflow instructions.
+   in the [GitHub instructions](../../instructions/github.instructions.md#merging):
+   `gh pr merge <number> --merge`, then fast-forward the local default branch.
 3. Verify the merge commit on the default branch and any release tag the default-branch CI produces.
 
 ## Reporting

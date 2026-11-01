@@ -1,44 +1,20 @@
 # Copilot Instructions
 
-This repository is the single source of truth for every reusable Copilot customization used across `f2calv` repositories — instruction files today, agent skills and custom agents later.
+This repository is the single source of truth for every reusable Copilot customization used across `f2calv` repositories — instruction files and agent skills.
 
 Individual repositories no longer carry a `.github/instructions/` folder. They keep only their own `.github/copilot-instructions.md`, which points here and holds that repository's specific rules.
 
 ## Setup
 
-The shared files live under `.github/instructions/`, `.github/skills/` and `.github/prompts/`, the
-locations VS Code reads for any folder open in a workspace. There are two ways to consume them, set
-out for end users in the [README](../README.md):
+The shared files live under `.github/instructions/` and `.github/skills/`, which VS Code reads for
+any folder open in a workspace. Consume them through exactly one route, as the
+[README](../README.md) describes: add this repository to the workspace (preferred here, because
+changes are fed back continuously), or link its folders into `~/.copilot/`. Using both loads every
+instruction twice and doubles its context cost; the README has commands to remove the links.
 
-- **Add this repository to the workspace** alongside the repository being worked on. No setup, but it
-  applies only inside that workspace.
-- **Link the folders into the user profile** so they apply in every workspace:
-
-```powershell
-$repo = "$HOME\source\github\.github"
-New-Item -ItemType Directory -Force -Path "$HOME\.copilot" | Out-Null
-foreach ($name in 'instructions', 'skills', 'prompts') {
-  New-Item -ItemType Junction -Path "$HOME\.copilot\$name" -Target "$repo\.github\$name"
-}
-```
-
-Confirm VS Code can see them:
-
-```powershell
-Get-ChildItem "$HOME\.copilot\instructions" -Filter *.instructions.md | Measure-Object
-Get-ChildItem "$HOME\.copilot\skills" -Filter SKILL.md -Recurse | Measure-Object
-Get-ChildItem "$HOME\.copilot\prompts" -Filter *.prompt.md | Measure-Object
-```
-
-In VS Code, open the Chat view, select **Diagnostics** from the context menu, and check the files are listed.
-
-Notes:
-
-- User-profile customizations apply across all workspaces and take **priority over** repository instructions. A repository that needs to override a central rule must say so explicitly in its own `copilot-instructions.md`.
-- A link points at the working tree, so a `git pull` here updates every workspace immediately. There is nothing to sync and no pull requests to raise.
-- Because the files are not copied into other repositories, an instructions change never triggers their continuous integration or bumps their version.
-- Using both options at once discovers every file twice, once per route. It is harmless but duplicates rules in context; remove this repository from the workspace if that matters.
-- Enable Settings Sync to carry user-level customizations to another device, or create the links there too.
+User-profile customizations take priority over repository instructions, so a repository that
+overrides a central rule must say so explicitly in its own `copilot-instructions.md`. Because the
+files are not copied into other repositories, a change here never triggers their CI.
 
 ## Layout
 
@@ -46,7 +22,6 @@ Notes:
 | --------------------------------- | -------------------------------------------------------------- |
 | `.github/instructions/`           | Canonical `*.instructions.md` files                            |
 | `.github/skills/`                 | Reusable agent skills                                          |
-| `.github/prompts/`                | Shared slash-command prompts                                   |
 | `.scripts/`                       | Repository management, baseline and privacy tooling            |
 | `.github/copilot-instructions.md` | This repository's own instructions, not part of the shared set |
 

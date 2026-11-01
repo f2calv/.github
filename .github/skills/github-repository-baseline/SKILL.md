@@ -227,7 +227,8 @@ Use the repository helper from the central customization checkout:
 ```
 
 The helper creates or resumes the repository, invokes the bundled baseline reconciler, clones it, and
-can add it to the active VS Code workspace.
+can add it to the active VS Code workspace. Lay out its files, or bootstrap them from named
+exemplar repositories, with the [repository layout reference](references/repository-layout.md).
 
 After CI is established, verify its emitted check names against the policy overrides and rerun the
 baseline; the creation-time ruleset alone does not establish repository-specific validation checks.
