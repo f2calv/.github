@@ -151,6 +151,9 @@ user explicitly asks for parallel sessions.
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
     version before continuing downstream.
+    - Take the IDs from the `.nupkg` files CI created or pushed, or from each project's evaluated
+      `PackageId`. Global tools often set a short `PackageId` such as `yamlizr`, so a project file
+      name is not a reliable package ID.
     - Check the publication action's branch gates before choosing a workflow-dispatch ref.
       `gha-dotnet-nuget` publishes stable packages from the default branch, not a tag dispatch.
       Recover missing packages using the exact release source without rebuilding or replacing
