@@ -31,7 +31,7 @@ gate rejects a stale or missing row.
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.0` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.0` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
-| [Skill library](../.github/skills/skill-library/SKILL.md) | `1.1.0` | Skill sidecars, version bumps, Spec Kit extension releases and `/speckit-skill-library` installation |
+| [Skill library](../.github/skills/skill-library/SKILL.md) | `1.1.1` | Skill sidecars, version bumps, Spec Kit extension releases and `/speckit-skill-library` installation |
 
 ## Containers, Kubernetes and Infrastructure
 

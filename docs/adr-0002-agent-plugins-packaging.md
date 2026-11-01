@@ -1,6 +1,6 @@
 # ADR 0002: Agent Plugins Packaging
 
-**Status:** Accepted; implemented, client proof pending.
+**Status:** Accepted; implemented and released (PR #41, `skill-library/1.1.0`), client proof pending.
 **Date:** 2026-11-01.
 **Scope:** Publishing the shared skills as [Agent Plugins](https://agent-plugins.org/) v1.0.0 packages
 alongside the existing Spec Kit extensions. Copilot workspace and personal-link consumption is unchanged.
@@ -127,7 +127,7 @@ skill gets one on its next version.
 
 ## Validation and Delivery
 
-Implemented with `skill-library` 1.1.0:
+Implemented in PR #41 and released as `skill-library` 1.1.0:
 
 - [x] **Conformance gate.** `Test-SkillLibrary.ps1` checks each skill's normalised frontmatter
   against the Agent Skills rules; all 49 skills pass.
@@ -135,21 +135,24 @@ Implemented with `skill-library` 1.1.0:
   `Build-SkillExtension.ps1 -AgentPlugin`, reuse the deterministic ZIP writer. Pester covers layout,
   link resolution, the closed manifest field set, frontmatter normalisation and byte-identical rebuilds.
 - [x] **Publish.** `Publish-SkillRelease.ps1` attaches the plugin ZIP and adds it to the catalog and page.
+- [x] **Link containment.** The gate fails when a skill links to an undeclared skill or to a repository
+  file missing from `externalFiles`, so every packaged link resolves inside the plugin.
 - [x] **Manifest schema.** Every generated `plugin.json` validated against the published
   `plugin.schema.json` in a one-off local check (48 of 48). The schema is not vendored; the unit test
   asserts the closed field set instead.
 - [x] **Docs.** README FAQ, [architecture](architecture.md#agent-plugins), demo 8 and the
   skill-library skill.
+- [x] **Release.** `skill-library/1.1.0` carries `skill-library-1.1.0-plugin.zip`, and the Pages catalog
+  lists it under `skill_library.agent_plugin` with a matching SHA-256. The downloaded `plugin.json`
+  validates against the published schema and the layout matches the decision.
 - [ ] **Client proof.** Load one generated plugin in a conformant client and record the client and
   version here.
 
 ## Handover
 
-1. After merge, confirm the `skill-library/1.1.0` release has `skill-library-1.1.0-plugin.zip` and
-   the Pages catalog shows `skill_library.agent_plugin` for it.
-2. Run demo 8, then load the extracted folder in an Agent Plugins client; record the result above
+1. Run demo 8, then load the extracted folder in an Agent Plugins client; record the result above
    and drop "client proof pending" from the status.
-3. Decide whether to backfill plugins for existing skill versions. It would mean rebuilding from each
+2. Decide whether to backfill plugins for existing skill versions. It would mean rebuilding from each
    tag and adding an asset to a published release, which ADR 0001 currently forbids; the alternative
    is waiting for each skill's next bump.
 

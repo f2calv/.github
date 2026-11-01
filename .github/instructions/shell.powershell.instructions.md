@@ -19,6 +19,7 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 ## Strict Mode
 
 - **Require `Set-StrictMode -Version 3.0`** immediately after `$ErrorActionPreference`. It catches uninitialised variables, missing properties, missing hashtable keys, and array indexes past the end.
+  Member enumeration on a possibly empty array, such as `@($Items).FullName`, then throws; project with `ForEach-Object FullName` instead.
 - **Pin the number; never use `Latest`.** `Latest` is a moving target that silently adopts new rules when the PowerShell version changes, so a script that passes today can fail on a runner with a newer build. In PowerShell 7.6 the two are behaviourally identical, which is precisely why pinning costs nothing.
 - Versions above `3.0` are accepted by the parameter but define no additional checks. `3.0` is the strictest meaningful level.
 - Strict mode makes property access on loosely shaped JSON throw. Guard it with `ContainsKey()` on a hashtable, or `PSObject.Properties.Name -contains` on an object, rather than relaxing the mode.
