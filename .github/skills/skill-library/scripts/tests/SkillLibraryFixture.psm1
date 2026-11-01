@@ -43,13 +43,19 @@ function New-SkillFixture {
 }
 
 function New-FakeCommand {
-    <# Puts an executable PowerShell script named $Name first on PATH for the current process. #>
+    <# Puts a PowerShell command named $Name first on PATH for the current process. #>
     param([Parameter(Mandatory)][string]$Root, [Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Script)
     $Bin = Join-Path $Root 'bin'
     [void][IO.Directory]::CreateDirectory($Bin)
-    $Path = Join-Path $Bin $Name
-    [IO.File]::WriteAllText($Path, "#!/usr/bin/env pwsh`n$Script`n")
-    & chmod +x $Path
+    if ($IsWindows) {
+        # PowerShell resolves name.ps1 on PATH, so the fake runs without a shebang or execute bit.
+        [IO.File]::WriteAllText((Join-Path $Bin "$Name.ps1"), "$Script`n")
+    }
+    else {
+        $Path = Join-Path $Bin $Name
+        [IO.File]::WriteAllText($Path, "#!/usr/bin/env pwsh`n$Script`n")
+        & chmod +x $Path
+    }
     if (-not $env:PATH.StartsWith("$Bin$([IO.Path]::PathSeparator)")) { $env:PATH = "$Bin$([IO.Path]::PathSeparator)$env:PATH" }
 }
 

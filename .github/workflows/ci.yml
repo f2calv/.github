@@ -33,19 +33,62 @@ jobs:
     permissions:
       contents: read
 
+  #The full suite needs Linux-only tooling; the skill-library tooling is also supported on Windows and macOS.
+  skill-library-platforms:
+    name: skill-library-platforms (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: install yq (${{ matrix.os }})
+        shell: pwsh
+        run: |
+          if ($IsWindows) { choco install yq --no-progress -y }
+          elseif (-not (Get-Command yq -ErrorAction SilentlyContinue)) { brew install yq }
+          yq --version
+
+      - name: Install-Module Pester -RequiredVersion 5.7.1
+        shell: pwsh
+        run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+
+      - name: test skill-library (${{ matrix.os }})
+        shell: pwsh
+        run: |
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          $Config = New-PesterConfiguration
+          $Config.Run.Path = './.github/skills/skill-library/scripts/tests'
+          $Config.Run.PassThru = $true
+          $Config.Output.Verbosity = 'Detailed'
+          $Result = Invoke-Pester -Configuration $Config
+          if ($Result.FailedCount -or $Result.FailedContainersCount -or -not $Result.PassedCount) {
+            throw "skill-library tests failed: $($Result.FailedCount) failed, $($Result.PassedCount) passed"
+          }
+
   test:
     if: always()
-    needs: [skills-library-tests]
+    needs: [skills-library-tests, skill-library-platforms]
     runs-on: ubuntu-24.04
     permissions: {}
     steps:
-      - name: verify required test result
+      - name: verify required test results
         shell: pwsh
         env:
           TEST_RESULT: ${{ needs.skills-library-tests.result }}
+          PLATFORM_RESULT: ${{ needs.skill-library-platforms.result }}
         run: |
           if ($env:TEST_RESULT -ne 'success') {
             throw "Skills-library tests did not succeed: $env:TEST_RESULT"
+          }
+          if ($env:PLATFORM_RESULT -ne 'success') {
+            throw "Skill-library platform tests did not succeed: $env:PLATFORM_RESULT"
           }
 
   dotnet-examples:

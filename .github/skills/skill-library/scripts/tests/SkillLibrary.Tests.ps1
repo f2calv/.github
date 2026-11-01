@@ -197,8 +197,9 @@ Describe 'Agent Plugin archives' -Tag 'Unit' {
             $Skill = Read-Entry $Zip 'skills/alpha/SKILL.md'
         }
         finally { $Zip.Dispose() }
-        $Link = [IO.Path]::GetFullPath('skills/alpha/../../instructions/x.instructions.md', '/plugin')
-        $Link | Should -Be '/plugin/instructions/x.instructions.md'
+        $PluginRoot = Join-Path $TestDrive 'plugin'
+        $Link = [IO.Path]::GetFullPath('skills/alpha/../../instructions/x.instructions.md', $PluginRoot)
+        [IO.Path]::GetRelativePath($PluginRoot, $Link).Replace('\', '/') | Should -Be 'instructions/x.instructions.md'
         @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'repository', 'keywords', 'extensions')
         $Manifest['$schema'] | Should -Be 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
         $Manifest.name | Should -Be 'alpha'

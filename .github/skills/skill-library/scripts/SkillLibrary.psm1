@@ -104,22 +104,30 @@ function New-SkillComponent {
     }
 }
 
-function Test-SkillIgnoredPath {
-    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$Path)
+function Get-SkillIgnoredPath {
+    <# Returns the subset of files that Git ignores, from one git call. #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [AllowEmptyCollection()][IO.FileInfo[]]$File = @())
+    if (-not $File.Count) { return @() }
+    $Root = [IO.Path]::GetFullPath($RepoRoot)
+    $Relative = @($File | ForEach-Object { [IO.Path]::GetRelativePath($Root, $_.FullName).Replace('\', '/') })
     $PSNativeCommandUseErrorActionPreference = $false
-    $Output = @(& git -C $RepoRoot check-ignore --quiet -- $Path 2>&1)
+    # -z avoids path quoting and CRLF issues; the trailing NUL keeps PowerShell's appended newline out of the last path.
+    $Output = @((($Relative -join "`0") + "`0") | & git -C $Root check-ignore -z --stdin 2>&1)
     switch ($LASTEXITCODE) {
-        0 { return $true }
-        1 { return $false }
-        default { throw "Cannot determine Git ignore status for '$Path': $($Output -join "`n"). Verify the repository root." }
+        0 { $Ignored = @(($Output -join "`n") -split "`0" | Where-Object { $_ }) }
+        1 { $Ignored = @() }
+        default { throw "Cannot determine Git ignore status under '$Root': $($Output -join "`n"). Verify the repository root." }
     }
+    return @($File | Where-Object { [IO.Path]::GetRelativePath($Root, $_.FullName).Replace('\', '/') -in $Ignored })
 }
 
 function Get-SkillComponent {
     <# Returns every skill with a sidecar plus the bootstrap extension. #>
     param([Parameter(Mandatory)][string]$RepoRoot)
     $Sidecars = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/skill.metadata.yaml') -File | Sort-Object FullName)
-    $Sidecars = @($Sidecars | Where-Object { $_.Directory.Name -notlike $script:SpecKitSkillPattern -and -not (Test-SkillIgnoredPath -RepoRoot $RepoRoot -Path $_.FullName) })
+    $Sidecars = @($Sidecars | Where-Object { $_.Directory.Name -notlike $script:SpecKitSkillPattern })
+    $Ignored = @(Get-SkillIgnoredPath -RepoRoot $RepoRoot -File $Sidecars | ForEach-Object FullName)
+    $Sidecars = @($Sidecars | Where-Object { $_.FullName -notin $Ignored })
     $Components = foreach ($Sidecar in $Sidecars) {
         $Id = $Sidecar.Directory.Name
         $Front = Get-SkillFrontmatter ([IO.File]::ReadAllText((Join-Path $Sidecar.DirectoryName 'SKILL.md')))
@@ -141,8 +149,8 @@ function Get-SkillWithoutMetadata {
     $Skills = @(Get-ChildItem -Path (Join-Path $RepoRoot '.github/skills/*/SKILL.md') -File |
         Where-Object { $_.Directory.Name -notlike $script:SpecKitSkillPattern -and -not (Test-Path -LiteralPath (Join-Path $_.DirectoryName 'skill.metadata.yaml')) })
     if (-not $Skills.Count) { return @() }
-    return @($Skills | Where-Object { -not (Test-SkillIgnoredPath -RepoRoot $RepoRoot -Path $_.FullName) } |
-        ForEach-Object { $_.Directory.Name } | Sort-Object)
+    $Ignored = @(Get-SkillIgnoredPath -RepoRoot $RepoRoot -File $Skills | ForEach-Object FullName)
+    return @($Skills | Where-Object { $_.FullName -notin $Ignored } | ForEach-Object { $_.Directory.Name } | Sort-Object)
 }
 
 function Test-SkillComponent {

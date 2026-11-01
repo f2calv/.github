@@ -8,7 +8,9 @@ description: 'Version, package, release and install skills as Spec Kit extension
 Each skill in `.github/skills/` is an independently versioned component, released as a Spec Kit
 extension. The [ADR](https://github.com/f2calv/.github/blob/main/docs/adr-0001-skill-library-distribution.md)
 records the design and delivery status.
-Native consumption of the folders is unchanged. Tooling needs PowerShell 7.4+, Git and `yq` v4.
+Native consumption of the folders is unchanged. Tooling needs PowerShell 7.4+, Git and Mike Farah
+`yq` v4 on Linux, macOS or Windows; install `yq` with `winget install MikeFarah.yq`, `brew install yq`
+or your Linux package manager.
 
 ## Sidecar
 
