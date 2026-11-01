@@ -47,6 +47,7 @@ function Update-Component([object]$Component, [string]$Level, [bool]$Explicit) {
     $Target = Step-Version $Released $Level
     if ($Target -le $Current) { return }
     Set-SkillMetadataValue -RepoRoot $RepoRoot -Component $Component -Version "$Target"
+    if ($Component.Kind -eq 'skill') { Set-SkillCatalogueVersion -RepoRoot $RepoRoot -Id $Component.Id -Version "$Target" }
     $Component.Version = "$Target"
     Write-Host "$($Component.Id): $Current -> $Target"
     foreach ($Dependent in $Components | Where-Object { @($_.Required | ForEach-Object { $_['id'] }) -contains $Component.Id }) {

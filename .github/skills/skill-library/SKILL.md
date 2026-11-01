@@ -50,7 +50,8 @@ git fetch --tags
 Fetch tags first: the checks compare against `<id>/X.Y.Z` tags that CI creates on GitHub. Without
 them every skill looks unreleased and the local check passes while CI fails.
 
-Scaffolding and validation exclude Git-ignored local skill folders. If one appears in a
+Scaffolding, validation and packaging exclude Git-ignored local skill folders and the `speckit-*`
+skills that `specify init` generates. If one appears in a
 missing-sidecar error, repair ignore discovery rather than adding it to the public catalog.
 
 `New-SkillMetadata.ps1` seeds `version: 1.0.0`, a facet from the folder prefix, related skills from
@@ -58,6 +59,9 @@ links to other skill folders and external files from links to other repository f
 replace generic `Linked from ...` reasons and move genuinely mandatory skills to `required`.
 
 `Test-SkillLibrary.ps1` runs in CI. It fails when a skill has no sidecar, sidecars are invalid,
+a document in a skill links to another skill not listed as required or related, or to a repository
+file not listed in `externalFiles`, `docs/skills.md` does not list every skill once at its current
+version,
 required skills form a cycle, a skill or its external files changed since its last `<id>/X.Y.Z` tag
 without a version bump, a version is more than one patch, minor or major step past its last tag,
 or a required pin differs from the required skill's version. Each error names the script that fixes it.
@@ -84,7 +88,7 @@ skill and its external files still resolve. Rebuilds are byte-identical.
 
 Every skill release also carries `<id>-<version>-plugin.zip`, an
 [Agent Plugins](https://agent-plugins.org/specification) v1.0.0 package; add `-AgentPlugin` to a
-local build to produce it. See [ADR 0002](../../../docs/adr-0002-agent-plugins-packaging.md).
+local build to produce it. ADR 0002 under `docs/` records the design.
 
 - `plugin.json` maps id, version, description and facets; `required` and `related` go under the
   `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
@@ -97,8 +101,6 @@ local build to produce it. See [ADR 0002](../../../docs/adr-0002-agent-plugins-p
 - `Test-SkillLibrary.ps1` checks the normalised frontmatter: `name` matches the folder, a
   1-1024 character `description`, `compatibility` up to 500 characters and string `metadata`.
 - Instructions in a plugin are linked reference files; clients do not apply them by `applyTo`.
-- Set `agentPlugin: false` in a sidecar for a skill that only makes sense inside Spec Kit, such as
-  the `spec-kit-*` skills; it then ships only as a Spec Kit extension.
 - Releases published before this packaging have no plugin asset; a skill gains one on its next bump.
 
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published

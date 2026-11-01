@@ -25,6 +25,20 @@ Describe 'Set-SkillVersion' -Tag 'Unit' {
         @(Test-SkillVersion -RepoRoot $Repo -Component (Get-SkillComponent -RepoRoot $Repo)) | Should -BeNullOrEmpty
     }
 
+    It 'updates the catalogue page rows of every bumped skill' {
+        $Rows = foreach ($Id in 'alpha', 'beta', 'gamma') { "| [$Id](../.github/skills/$Id/SKILL.md) | ``1.0.0`` | Use $Id. |" }
+        Write-FixtureText $Repo 'docs/skills.md' ("| Skill | Version | Use it for |`n| --- | --- | --- |`n" + ($Rows -join "`n") + "`n")
+        Invoke-FixtureGit $Repo add -A
+        Invoke-FixtureGit $Repo commit -q -m catalogue
+        Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: beta`ndescription: Changed.`n---`n"
+        & $Script -RepoRoot $Repo -Bump minor 6> $null
+        $Page = Get-Content -Raw (Join-Path $Repo 'docs/skills.md')
+        $Page | Should -Match 'skills/alpha/SKILL\.md\) \| `1\.0\.1`'
+        $Page | Should -Match 'skills/beta/SKILL\.md\) \| `1\.1\.0`'
+        $Page | Should -Match 'skills/gamma/SKILL\.md\) \| `1\.0\.0`'
+        @(Test-SkillCatalogue -RepoRoot $Repo -Component (Get-SkillComponent -RepoRoot $Repo)) | Should -BeNullOrEmpty
+    }
+
     It 'does nothing when no released skill changed' {
         & $Script -RepoRoot $Repo 6> $null
         Invoke-FixtureGit $Repo diff --exit-code

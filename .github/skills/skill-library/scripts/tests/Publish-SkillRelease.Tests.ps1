@@ -80,17 +80,12 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         $Page | Should -BeLike '*href="catalog.json"*'
     }
 
-    It 'attaches an Agent Plugin only to skills that do not opt out' {
-        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
-        Invoke-FixtureGit $Repo commit -q -am optout
+    It 'attaches both the Spec Kit extension and the Agent Plugin to each skill release' {
         Invoke-Publish
         $Calls = Get-Calls
-        @($Calls | Where-Object { $_ -like 'release create alpha/1.0.0 *alpha-1.0.0.zip *alpha-1.0.0-plugin.zip --target *' }).Count | Should -Be 1
-        @($Calls | Where-Object { $_ -like 'release create gamma/1.0.0 *gamma-1.0.0.zip --target *' }).Count | Should -Be 1
-        @($Calls | Where-Object { $_ -like '*gamma-1.0.0-plugin.zip*' }).Count | Should -Be 0
-        $Catalog = Get-Catalog
-        $Catalog.extensions['gamma'].skill_library.Contains('agent_plugin') | Should -BeFalse
-        $Catalog.extensions['gamma'].download_url | Should -Be 'https://example.com/download/gamma/1.0.0/gamma-1.0.0.zip'
+        foreach ($Id in 'alpha', 'beta', 'gamma') {
+            @($Calls | Where-Object { $_ -like "release create $Id/1.0.0 *$Id-1.0.0.zip *$Id-1.0.0-plugin.zip --target *" }).Count | Should -Be 1
+        }
     }
 
     It 'writes the site directory to the step output' {

@@ -23,7 +23,6 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @{ Case = 'an unknown field'; Metadata = "version: 1.0.0`ntooling: []`n"; Expected = '*schema*' }
         @{ Case = 'a missing external file'; Metadata = "version: 1.0.0`nexternalFiles: [docs/missing.md]`n"; Expected = '*does not exist*' }
         @{ Case = 'a self reference'; Metadata = "version: 1.0.0`nrelated:`n  - id: beta`n    reason: Self.`n"; Expected = '*references itself*' }
-        @{ Case = 'a non-boolean agentPlugin'; Metadata = "version: 1.0.0`nagentPlugin: maybe`n"; Expected = '*schema*' }
     ) {
         Write-FixtureText $Repo '.github/skills/beta/skill.metadata.yaml' $Metadata
         @(Get-Errors) -join "`n" | Should -BeLike $Expected
@@ -67,12 +66,72 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @(Get-Errors) -join "`n" | Should -BeLike '*beta: SKILL.md description must be 1-1024 characters.*'
     }
 
-    It 'packages skills as Agent Plugins unless the sidecar opts out' {
-        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
-        $Components = Get-SkillComponent -RepoRoot $Repo
-        ($Components | Where-Object Id -eq 'alpha').AgentPlugin | Should -BeTrue
-        ($Components | Where-Object Id -eq 'gamma').AgentPlugin | Should -BeFalse
+    It 'ignores Spec Kit-generated speckit-* skills with or without a sidecar' {
+        Write-FixtureSkill $Repo 'speckit-plan'
+        Write-FixtureSkill $Repo 'speckit-tasks' "version: oops`n"
+        (Get-SkillComponent -RepoRoot $Repo).Id | Should -Not -Contain 'speckit-tasks'
+        Get-SkillWithoutMetadata -RepoRoot $Repo | Should -BeNullOrEmpty
         @(Get-Errors) | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Skill links' -Tag 'Unit' {
+    BeforeEach { $Repo = New-SkillFixture $TestDrive }
+
+    It 'accepts links to declared skills and external files, URLs, its own files and fenced examples' {
+        $Body = "[Beta](../beta/SKILL.md) [Gamma](../gamma/SKILL.md#usage) [X](../../instructions/x.instructions.md)`n" +
+            "[Site](https://example.com) [Own](references/a.md)`n``````markdown`n[Example](../delta/SKILL.md)`n```````n"
+        Write-FixtureSkill $Repo 'alpha' (Get-Content -Raw (Join-Path $Repo '.github/skills/alpha/skill.metadata.yaml')) $Body
+        @(Get-Errors) | Should -BeNullOrEmpty
+        @(Get-SkillLink -RepoRoot $Repo -Id 'alpha').Count | Should -Be 3
+    }
+
+    It 'rejects a link to a skill that is neither required nor related' {
+        Write-FixtureSkill $Repo 'beta' "version: 1.0.0`n" '[Gamma](../gamma/SKILL.md)'
+        @(Get-Errors) -join "`n" | Should -BeLike "*beta: SKILL.md links to skill 'gamma'; add it to required or related.*"
+    }
+
+    It 'rejects a link to a repository file missing from externalFiles, once per file' {
+        Write-FixtureText $Repo '.github/skills/beta/references/b.md' "[X](../../../instructions/x.instructions.md) [X again](../../../instructions/x.instructions.md)`n"
+        $Errors = @(Get-Errors)
+        $Errors | Should -HaveCount 1
+        $Errors[0] | Should -BeLike "*beta: references/b.md links to '.github/instructions/x.instructions.md'; add it to externalFiles.*"
+    }
+}
+
+Describe 'Skill catalogue page' -Tag 'Unit' {
+    BeforeEach {
+        $Repo = New-SkillFixture $TestDrive
+        function Write-Catalogue([string[]]$Row) {
+            Write-FixtureText $Repo 'docs/skills.md' ("| Skill | Version | Use it for |`n| --- | --- | --- |`n" + ($Row -join "`n") + "`n")
+        }
+        function Get-Row([string]$Id, [string]$Version) { "| [$Id](../.github/skills/$Id/SKILL.md) | ``$Version`` | Use $Id. |" }
+    }
+
+    It 'is optional' {
+        @(Test-SkillCatalogue -RepoRoot $Repo -Component (Get-SkillComponent -RepoRoot $Repo)) | Should -BeNullOrEmpty
+    }
+
+    It 'accepts every skill listed once at its current version' {
+        Write-Catalogue @((Get-Row alpha 1.0.0), (Get-Row beta 1.0.0), (Get-Row gamma 1.0.0))
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
+    It 'rejects <Case>' -ForEach @(
+        @{ Case = 'a stale version'; Rows = @('alpha|1.0.0', 'beta|0.9.0', 'gamma|1.0.0'); Expected = "*beta: docs/skills.md shows '0.9.0' but the version is 1.0.0*" }
+        @{ Case = 'a missing skill'; Rows = @('alpha|1.0.0', 'beta|1.0.0'); Expected = '*gamma: missing from docs/skills.md*' }
+        @{ Case = 'a duplicate row'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|1.0.0', 'gamma|1.0.0'); Expected = '*gamma: listed 2 times*' }
+        @{ Case = 'an unknown skill'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|1.0.0', 'delta|1.0.0'); Expected = '*delta: listed in docs/skills.md but is not a published skill*' }
+        @{ Case = 'a row without a version'; Rows = @('alpha|1.0.0', 'beta|1.0.0', 'gamma|'); Expected = "*gamma: docs/skills.md shows ''*" }
+    ) {
+        Write-Catalogue @($Rows | ForEach-Object { $Parts = $_ -split '\|'; Get-Row $Parts[0] $Parts[1] })
+        @(Get-Errors) -join "`n" | Should -BeLike $Expected
+    }
+
+    It 'rewrites only the version cell of the named skill' {
+        Write-Catalogue @((Get-Row alpha 1.0.0), (Get-Row beta 1.0.0))
+        Set-SkillCatalogueVersion -RepoRoot $Repo -Id beta -Version 1.2.0
+        Get-Content (Join-Path $Repo 'docs/skills.md') | Select-Object -Skip 2 | Should -Be @((Get-Row alpha 1.0.0), (Get-Row beta 1.2.0))
     }
 }
 
@@ -162,13 +221,6 @@ Describe 'Agent Plugin archives' -Tag 'Unit' {
         $Manifest = New-SkillPluginManifest -Component $Beta
         @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'extensions')
         $Manifest.extensions['io.github.f2calv.skill-library'].required | Should -BeNullOrEmpty
-    }
-
-    It 'refuses a skill that opts out' {
-        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
-        Invoke-FixtureGit $Repo commit -q -am optout
-        $Gamma = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'gamma'
-        { New-SkillPluginArchive -RepoRoot $Repo -Component $Gamma -OutputDirectory (Join-Path $TestDrive 'd') } | Should -Throw '*is not packaged as an Agent Plugin*'
     }
 
     It 'refuses uncommitted changes' {

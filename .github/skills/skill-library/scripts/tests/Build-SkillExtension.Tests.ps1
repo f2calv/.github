@@ -34,13 +34,6 @@ Describe 'Build-SkillExtension' -Tag 'Unit' {
         $Catalog.extensions['beta'].skill_library.agent_plugin.download_url | Should -Be 'http://localhost:8765/beta-1.0.0-plugin.zip'
     }
 
-    It 'skips Agent Plugins for skills that opt out' {
-        Write-FixtureText $Repo '.github/skills/gamma/skill.metadata.yaml' "version: 1.0.0`nagentPlugin: false`n"
-        Invoke-FixtureGit $Repo commit -q -am optout
-        & $Script -RepoRoot $Repo -Id beta, gamma -OutputDirectory $Out -AgentPlugin | Out-Null
-        (Get-ChildItem $Out -Filter '*.zip').Name | Should -Be @('beta-1.0.0-plugin.zip', 'beta-1.0.0.zip', 'gamma-1.0.0.zip')
-    }
-
     It 'rejects an unknown skill' {
         { & $Script -RepoRoot $Repo -Id missing -OutputDirectory $Out } | Should -Throw '*Unknown component: missing*'
     }
