@@ -7,7 +7,8 @@ Searches, installs and loads skills from the skill library catalog through the S
 After every install, upgrade, removal and prune, the helper copies each enabled skill's
 resources/.github/ into the workspace .github/, where Copilot discovers skills and instructions.
 It records each copy's SHA-256 in .specify/extensions/.skill-library.json and replaces or deletes a
-copy only while its bytes still match, so local edits are kept and reported.
+copy only while its bytes still match, so local edits are kept and reported. bash/skill-library.sh
+and python/skill_library.py implement the same commands, output and state; change all three together.
 .PARAMETER Command
 help, search, plan, install, upgrade-all, remove, prune, sync, list or load. The helper records
 whether each skill was chosen or only required, so prune removes only skills that no chosen skill

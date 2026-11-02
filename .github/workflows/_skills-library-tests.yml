@@ -46,3 +46,61 @@ jobs:
 
       - name: npm run test:ps
         run: npm run test:ps
+
+  #The Python and Bash variants of the skill bootstrap helper; maintainer tooling stays PowerShell-only.
+  python-helper:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      #setup-uv publishes no floating major tag, so the full release is pinned.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.6
+
+      - name: uv sync --group test --locked
+        run: uv sync --group test --locked
+
+      - name: uv run ruff format --check
+        run: uv run --no-sync ruff format --check
+
+      - name: uv run ruff check
+        run: uv run --no-sync ruff check
+
+      - name: uv run mypy
+        run: uv run --no-sync mypy
+
+      - name: uv run pytest
+        run: uv run --no-sync pytest
+
+  bash-helper:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: shellcheck
+        run: |
+          shellcheck --version
+          shellcheck src/skill-library-extension/scripts/bash/skill-library.sh .github/skills/skill-library/scripts/tests/fixtures/helper/specify
+          shellcheck -s bash .github/skills/skill-library/scripts/tests/bash/skill-library.bats
+
+      #bats-action publishes no floating major tag, so the full release is pinned.
+      - id: setup-bats
+        uses: bats-core/bats-action@4.1.0
+        with:
+          detik-install: false
+          file-install: false
+
+      - name: bats .github/skills/skill-library/scripts/tests/bash
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+          TERM: xterm
+        run: bats .github/skills/skill-library/scripts/tests/bash

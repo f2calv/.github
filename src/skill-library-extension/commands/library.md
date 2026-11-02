@@ -1,15 +1,20 @@
 ---
 description: Search, install, upgrade, remove and load independently versioned skills, copying them into .github/ for Copilot discovery.
+scripts:
+  ps: pwsh -NoProfile -File scripts/Invoke-SkillLibrary.ps1
+  sh: bash scripts/bash/skill-library.sh
+  py: scripts/python/skill_library.py
 ---
 
 # Skill Library
 
 User request: $ARGUMENTS
 
-Run the helper from the workspace root with PowerShell 7.4+:
+Run the helper from the workspace root. Spec Kit chose the PowerShell, Bash or Python variant for
+this repository; all three take the same commands and arguments and print the same output:
 
 ```text
-pwsh -NoProfile -File .specify/extensions/skill/scripts/Invoke-SkillLibrary.ps1 <command> [target] [-Version X.Y.Z] [-Related id1,id2]
+{SCRIPT} <command> [target] [-Version X.Y.Z] [-Related id1,id2]
 ```
 
 | Command | Effect |
@@ -55,4 +60,5 @@ Follow this workflow:
 7. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
    pass. Never run scripts contained in an installed skill unless its guidance and the user ask.
    Skills the user requested or selected are recorded as chosen and are never pruned; skills
-   installed before choices were recorded count as chosen.
+   installed before choices were recorded count as chosen. If the helper reports a missing runtime,
+   such as `jq` or Bash 4 for the Bash variant, pass that on rather than switching variants yourself.

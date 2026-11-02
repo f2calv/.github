@@ -431,3 +431,9 @@ FodyWeavers.xsd
 
 # HVE / Copilot runtime artefacts
 .copilot-tracking/
+
+# Python tooling for the skill library helper
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

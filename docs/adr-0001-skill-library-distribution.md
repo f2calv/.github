@@ -21,7 +21,9 @@ installation that Spec Kit already provides. It never published a release. Git h
 1. **One sidecar per skill.** Every skill folder has `skill.metadata.yaml` with `version`, optional
    `facets`, `required` skills pinned to exact versions, `related` skills with a reason, and
    `externalFiles` outside the folder. The component ID is the folder name.
-2. **PowerShell and `yq` only.** Repository tooling uses PowerShell 7.4+, Git and `yq` v4. No Python.
+2. **PowerShell and `yq` for maintainer tooling.** Repository tooling that validates, versions, builds
+   and publishes skills uses PowerShell 7.4+, Git and `yq` v4 only. The consumer helper in decision
+   8 is the one exception.
 3. **One extension per skill.** A build packages the skill folder, its external files and `LICENSE`
    into a deterministic Spec Kit extension ZIP. Required skills are separate extensions, not bundled.
    [ADR 0002](adr-0002-agent-plugins-packaging.md) adds an Agent Plugins ZIP to the same release.
@@ -34,7 +36,7 @@ installation that Spec Kit already provides. It never published a release. Git h
    as GitHub Release `<id>/X.Y.Z`. CI then regenerates one Spec Kit `catalog.json` with every
    published version, plus an `index.html` listing the skills, and deploys both to GitHub Pages.
 6. **One bootstrap command.** The `skill` extension provides `/speckit-skill-library`. Its
-   PowerShell helper wraps the `specify` CLI: it searches the catalog, resolves the required
+   helper wraps the `specify` CLI: it searches the catalog, resolves the required
    closure, offers related skills for explicit selection, installs through `specify extension add`,
    upgrades every installed skill to its latest version with `upgrade-all` and lists installed
    guidance for loading. Spec Kit verifies archive digests.
@@ -44,6 +46,16 @@ installation that Spec Kit already provides. It never published a release. Git h
    records each copied file's SHA-256, owning skills and version in `.skill-library.json`. A copy is
    replaced or deleted only while its bytes still match that record; a modified copy, or a file the
    bootstrap did not write, is kept and reported, so removing a skill never discards local edits.
+8. **Portable helper in three languages.** The bootstrap ships the helper as PowerShell
+   (`Invoke-SkillLibrary.ps1`), Bash (`bash/skill-library.sh`) and Python
+   (`python/skill_library.py`). The command declares all three in its front-matter `scripts` map
+   (`ps`, `sh`, `py`), and Spec Kit substitutes `{SCRIPT}` with the variant chosen at
+   `specify init --script`, falling back by platform. Each variant is a full implementation with the
+   same commands, arguments, output and `.skill-library.json` state, so a workspace can switch
+   variant at any time. One set of scenarios, run by Pester, pytest and bats-core against shared
+   catalog fixtures, keeps them in parity. The Bash variant needs Bash 4+, `jq`, `curl` and
+   `sha256sum` or `shasum`; the Python variant uses the standard library only, under the
+   interpreter Spec Kit already requires.
 
 ### Discovery Gap
 
@@ -69,10 +81,20 @@ serves the catalog, `specify extension list` and `search`, not Copilot discovery
 | Discovery: point editor settings at extension folders | Rejected: editor-specific and needs a setting per installed skill. |
 | Discovery: symlink instead of copy | Rejected: a link has no install-time content to audit, and symlinks are unreliable on Windows checkouts. |
 | Discovery: copy with recorded SHA-256 | Chosen: native discovery in any client that reads `.github/`, plus an audit record that protects local edits on upgrade and removal. |
+| Helper: PowerShell only | Replaced: consumers who chose `specify init --script sh` would need PowerShell installed just for the bootstrap. |
+| Helper: Python core with thin `ps` and `sh` launchers | Rejected: one implementation, but every variant would then depend on a Python interpreter and the launchers add a second hop to debug. |
+| Helper: three full implementations | Chosen: each variant runs natively in the shell Spec Kit selected; shared scenarios and fixtures make divergence a test failure. |
+| Helper: Bash reads JSON with Python | Rejected: `jq` is the common, small JSON tool for shell scripts and keeps the Bash variant independent of Python. |
+| Maintainer tooling in three languages | Rejected: CI runs it in one controlled environment, so PowerShell alone suffices. |
 
 ## Consequences
 
-- Consumers need the `specify` CLI, PowerShell 7.4+ and network access to GitHub Pages and Releases.
+- Consumers need the `specify` CLI, network access to GitHub Pages and Releases, and the runtime of
+  their helper variant: PowerShell 7.4+, Bash 4+ with `jq`, `curl` and a SHA-256 tool, or the Python
+  that Spec Kit already uses. macOS ships Bash 3.2, so macOS consumers choose `ps` or `py`, or install
+  a newer Bash.
+- Every helper change is made three times. A scenario added to one test suite must be added to the
+  other two; the shared fixtures fail all three suites when the catalog format drifts.
 - Installing a skill through `specify extension add` directly skips its required skills; use the
   bootstrap command.
 - Related skills install at their current catalog version; only required edges pin versions.
@@ -121,6 +143,10 @@ serves the catalog, `specify extension list` and `search`, not Copilot discovery
 - [x] Copy installed guidance into `.github/` with SHA-256 audit records, add `remove` and `sync`,
       and keep modified copies on upgrade and removal (`skill` 1.3.0) with Pester coverage.
 - [ ] Confirm in a fresh consumer that a copied skill is discovered in a new chat without `load`.
+- [ ] Ship Bash and Python helper variants selected through the command's `scripts` map, with
+      pytest and bats-core suites sharing the Pester scenarios and catalog fixtures (`skill` 1.4.0).
+- [ ] Install from the published catalog with `specify init --script sh` and `--script py`
+      consumers.
 - [ ] Publish a follow-on version of a skill with required dependents and observe the pin cascade.
 
 ## Handover

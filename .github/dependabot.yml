@@ -31,6 +31,13 @@ updates:
       interval: weekly
       time: "04:00"
 
+  #Lint, type-check and test pins for the Python skill library helper.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"
+
   #The runnable parsing fixture is maintained and built by CI; illustrative package fragments are not.
   - package-ecosystem: nuget
     directory: /.github/skills/dotnet-performance/examples/utf8-count
