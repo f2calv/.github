@@ -22,6 +22,9 @@ Push content down this table: an always-on line costs the most, a reference line
   `~/.copilot/`. Both routes load every file twice; path-case differences such as `C:\` and `c:\`
   defeat de-duplication. Check the session's instruction list for duplicates first when context
   seems inflated.
+- Extension-contributed instruction packs load by `applyTo` alongside the shared set and cannot be
+  disabled file by file. Measure their overlap and recommend the narrowest pack, as the README does
+  for HVE Core.
 
 ## Instructions
 
