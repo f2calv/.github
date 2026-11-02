@@ -10,12 +10,13 @@ extensions and as [Agent Plugins](https://agent-plugins.org/).
 | Route | Best for | What you get | Updates |
 | --- | --- | --- | --- |
 | [1. Copilot](#use-with-copilot) | Day-to-day work in VS Code | Every instruction, applied automatically by `applyTo`, and every skill, from the checked-out branch | `git pull` |
-| [2. Spec Kit extensions](#use-with-spec-kit) | Spec Kit repositories that pin versions | Chosen skills at exact versions, with their required skills and linked instructions | `/speckit-skill-library upgrade-all` |
+| [2. Spec Kit extensions](#use-with-spec-kit) | Spec Kit repositories that pin versions | Chosen skills at exact versions, with their required skills and linked instructions, copied into `.github/` and applied automatically | `/speckit-skill-library upgrade-all` |
 | [3. Agent Plugins](#use-as-agent-plugins) | Any client that supports [Agent Plugins](https://agent-plugins.org/) | One skill per package at an exact version, with its linked instructions as reference files | Download the newer package |
 
-Only route 1 applies instructions automatically. Routes 2 and 3 carry the instruction files a skill
-links to, which the agent reads when it follows the link. Pick one route per workspace to avoid
-loading the same skill twice.
+Routes 1 and 2 apply instructions automatically: route 2 copies each installed skill's instructions
+into `.github/instructions/`. Route 3 carries the instruction files a skill links to, which the
+agent reads when it follows the link. Pick one route per workspace to avoid loading the same skill
+twice.
 
 ## What It Provides
 
@@ -232,6 +233,53 @@ skill is only offered, with a reason, and you choose whether to install it.
 An `extension.yml` manifest, the skill folder, the instruction files it links to and the licence,
 all under their original repository paths. See [Packaging](docs/architecture.md#packaging).
 
+### Why is each skill packaged as a Spec Kit extension?
+
+To reuse a package manager instead of writing one. The extension format gives every skill a
+catalog entry per published version, `specify extension add --version` downloads, SHA-256 digest
+checks, a registry of installed versions, and enable, disable and remove commands. It also lets the
+skills appear in any Spec Kit catalog alongside other Spec Kit packages. The first implementation
+rebuilt installation itself, grew to about 10,000 lines and never shipped; see
+[ADR 0001](docs/adr-0001-skill-library-distribution.md).
+
+### Why does installing skills need an extension of its own?
+
+The `skill` bootstrap extension fills the two gaps Spec Kit 1.2.3 leaves for skills:
+
+- **Dependencies between packages.** Spec Kit checks only the required Spec Kit version. The
+  bootstrap resolves required skills at their pinned versions, offers related skills, upgrades in
+  dependency order and prunes skills nothing requires any more.
+- **A skill package type.** Extensions can provide commands, hooks, scripts, templates and
+  configuration, but not skills, and the Copilot integration registers only commands. The bootstrap
+  copies each installed skill and its instructions into `.github/`, where Copilot discovers them.
+
+If Spec Kit gains either feature, the bootstrap shrinks accordingly.
+
+### Why are installed skills copied into `.github/`?
+
+Spec Kit unpacks a skill under `.specify/extensions/<skill>/`, which Copilot never scans, so the
+skill would load only through an explicit `/speckit-skill-library load` in the current chat. Copies
+in `.github/skills/` and `.github/instructions/` are discovered in every new chat and applied by
+`applyTo`, exactly like route 1. Copies rather than links give an audit trail: the bootstrap records
+each copy's SHA-256, skill, version and copy date, and works on any operating system.
+
+### What happens if I edit or remove an installed skill?
+
+Before replacing a copy on upgrade or deleting it on `remove` or `prune`, the bootstrap compares the
+file with the SHA-256 recorded when it was copied. Unchanged copies are replaced or deleted. A
+modified copy, or a file the bootstrap never wrote, is kept and reported with the skill, version
+and date it came from, so removing a skill never silently discards local changes. The record proves
+that a file changed, not who changed it.
+
+### What alternatives to extensions were considered?
+
+| Alternative | Why not the Spec Kit route |
+| --- | --- |
+| Plain ZIPs downloaded and verified by the bootstrap | Rebuilds download, digest checks and the installed-version registry that Spec Kit already provides. |
+| [Agent Plugins](#use-as-agent-plugins) only | Native skill format, but not a Spec Kit package; published from the same release as route 3. |
+| Cloning or linking this repository | Route 1: no per-skill version selection. |
+| A `skills` package type in Spec Kit | The cleanest fix for discovery, but it needs an upstream change. |
+
 ### Can I use the skills outside Copilot and Spec Kit?
 
 Yes, in any client that supports [Agent Plugins](https://agent-plugins.org/). See
@@ -249,7 +297,8 @@ releases never change.
 Run `/speckit-skill-library upgrade-all`. It moves every installed skill to its latest version,
 required skills first, and stops without changes if a pin cannot be met. It installs newly required
 skills, offers newly related ones, and reports skills no longer required, which
-`/speckit-skill-library prune` removes.
+`/speckit-skill-library prune` removes. `/speckit-skill-library remove <skill>` removes a skill that
+no other installed skill requires.
 
 ### Can I keep private or local-only skills?
 

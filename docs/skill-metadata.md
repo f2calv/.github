@@ -80,7 +80,7 @@ companion: the installer shows its `reason` and installs it only when the user a
 | Installed | Always, before this skill | Only when the user chooses it |
 | Version | Exactly the pinned `version` | The current catalog version |
 | Upgrades | Installed automatically when a new version adds it | Offered when a new version adds it |
-| Removal | `prune` removes it once no chosen skill requires it | Kept, because the user chose it |
+| Removal | `prune` removes it once no chosen skill requires it | Kept until `remove`, because the user chose it |
 | When to use | The skill's workflow depends on the other skill | The other skill is a natural next step |
 
 Pins are maintained by `Set-SkillVersion.ps1`: bumping a required skill updates every pin to it and
@@ -130,5 +130,6 @@ The skill's `SKILL.md` front matter supplies the description everywhere.
 
 A Spec Kit repository that installs skills through `/speckit-skill-library` gets a different file,
 `.specify/extensions/.skill-library.json`. It records whether the user chose each installed skill or
-it was installed only as a requirement, so that `upgrade-all` and `prune` can tell them apart.
+it was installed only as a requirement, so that `upgrade-all` and `prune` can tell them apart, and
+the SHA-256 of every file copied into `.github/`, so that local edits survive upgrades and removals.
 Sidecars describe published skills; that file describes one consumer's installation.

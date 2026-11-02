@@ -65,8 +65,9 @@ Which responsibilities each script composes:
 | `Publish-SkillRelease.ps1` | Yes | Yes | Yes | Yes | Yes |
 
 The consumer side is separate: the `skill` bootstrap extension's `Invoke-SkillLibrary.ps1` reads
-`catalog.json`, drives `specify extension add` and `specify extension remove`, and records chosen
-versus required skills in `.specify/extensions/.skill-library.json`, as the
+`catalog.json`, drives `specify extension add` and `specify extension remove`, copies installed
+guidance into `.github/`, and records chosen versus required skills and each copy's SHA-256 in
+`.specify/extensions/.skill-library.json`, as the
 [installation flow](../architecture.md#installation-flow) shows.
 
 ## Code Map

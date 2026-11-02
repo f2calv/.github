@@ -157,12 +157,18 @@ Remove-Item Env:SPECKIT_CATALOG_URL
 Then use `/speckit-skill-library search architecture`, `/speckit-skill-library install docs-adr` and
 `/speckit-skill-library load docs-adr`. The command plans the install, asks which related skills to
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each
-archive's SHA-256 from the catalog. Installed skills are read from `.specify/extensions/<id>/`.
+archive's SHA-256 from the catalog and unpacks skills under `.specify/extensions/<id>/`, which
+Copilot never scans, because Spec Kit 1.2.3 has no skill package type. The helper therefore copies
+each enabled skill's `resources/.github/` into the workspace `.github/` after every install,
+upgrade, `remove`, `prune` and `sync`, recording each copy's SHA-256, skill, version and date. It
+replaces or deletes a copy only while its bytes match that record and reports modified or unmanaged
+files as `Kept`.
 `/speckit-skill-library upgrade-all` moves every installed skill to its latest catalog version with
 `specify extension add --force`, required skills first, and installs skills an upgraded version
 newly requires. It offers related skills that an upgraded version newly lists and reports skills no
 chosen skill requires any more; `/speckit-skill-library prune` removes those with
-`specify extension remove --force`. The helper records whether each skill was chosen or only
+`specify extension remove --force`, and `remove <id>` removes one chosen skill nothing else requires.
+The helper records whether each skill was chosen or only
 required in `.specify/extensions/.skill-library.json`, because Spec Kit's registry stores only
 versions; skills installed before that file existed count as chosen and are never pruned.
 `upgrade-all` does not upgrade the `skill` bootstrap, which `specify extension add skill --force`
