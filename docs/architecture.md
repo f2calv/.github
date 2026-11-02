@@ -164,7 +164,7 @@ graph TD
 - Required and related skills are recorded under the `io.github.f2calv.skill-library` extension
   namespace. Agent Plugins has no dependency mechanism, so a client installs only the one skill.
 - Instructions are inert reference files read when the skill follows a link; `applyTo` matching
-  happens only in the Copilot route.
+  happens only in the Copilot and Spec Kit routes.
 - The `speckit-*` skills that `specify init` generates belong to Spec Kit and are never validated,
   versioned or packaged here.
 
@@ -190,14 +190,36 @@ sequenceDiagram
         Specify->>Releases: download ZIP
         Specify->>Specify: verify SHA-256 from catalog
     end
-    Cmd->>User: list installed skills for load
+    Cmd->>Cmd: copy guidance into .github/<br/>and record each copy's SHA-256
+    Cmd->>User: report copies and any kept files
 ```
 
 `/speckit-skill-library upgrade-all` follows the same path for every installed skill whose catalog
 version is newer, replacing it with `specify extension add --force` and installing newly required
 skills. It then offers newly related skills and reports skills no chosen skill requires, which
-`/speckit-skill-library prune` removes with `specify extension remove`. The helper records chosen
-versus required skills in `.specify/extensions/.skill-library.json`.
+`/speckit-skill-library prune` removes with `specify extension remove`; `remove <skill>` removes one
+chosen skill that nothing else requires. The helper records chosen versus required skills, and each
+copied file's SHA-256, in `.specify/extensions/.skill-library.json`.
+
+### Copied Guidance
+
+Spec Kit extensions cannot provide skills, so Copilot never discovers a skill left under
+`.specify/extensions/`. After each change the helper mirrors every enabled skill's
+`resources/.github/` into the workspace `.github/` and reconciles the copies against their records:
+
+```mermaid
+flowchart TD
+    start([Copy or delete a file]) --> exists{Workspace file exists?}
+    exists -- No --> act[Copy, or nothing to delete]
+    exists -- Yes --> rec{Recorded copy?}
+    rec -- No --> keep1[Keep: not written by the helper]
+    rec -- Yes --> match{Bytes match recorded SHA-256?}
+    match -- Yes --> act2[Replace or delete, update the record]
+    match -- No --> keep2[Keep: modified locally, report skill, version and date]
+```
+
+When two skills ship the same instruction file, the copy from the first skill by ID is used and a
+differing copy is reported.
 
 ## Routes Compared
 
@@ -206,6 +228,6 @@ versus required skills in `.specify/extensions/.skill-library.json`.
 | Setup | Add to workspace or link into `~/.copilot` | `specify extension add skill`, then `/speckit-skill-library install` | Download and extract `<skill>-<version>-plugin.zip`, then load it in the client |
 | Version | Whatever the clone has checked out | Exact published versions | Exact published versions |
 | Selection | Every instruction and skill | Chosen skills plus their required closure | One skill per plugin; required plugins installed by hand |
-| Instructions | Applied automatically by `applyTo` | Linked files packaged as reference | Linked files packaged as reference |
+| Instructions | Applied automatically by `applyTo` | Copied into `.github/instructions/` and applied by `applyTo` | Linked files packaged as reference |
 | Updates | `git pull` | `/speckit-skill-library upgrade-all` | Replace with the newer package |
 | Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases | An Agent Plugins client and access to GitHub Releases |

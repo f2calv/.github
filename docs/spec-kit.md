@@ -42,8 +42,23 @@ In Copilot Chat in the consuming repository:
 
 `install` resolves the skills the selected skill requires, at their pinned versions, and offers its
 related skills for explicit selection. It then installs each through `specify extension add`, which
-verifies every archive's SHA-256 digest from the catalog. Installed skills live under
+verifies every archive's SHA-256 digest from the catalog. Spec Kit unpacks each skill under
 `.specify/extensions/<skill>/`.
+
+## Copilot Discovery
+
+Spec Kit has no skill package type, and Copilot never scans `.specify/extensions/`. After every
+`install`, `upgrade-all`, `remove` and `prune`, the helper therefore copies each installed skill's
+folder into `.github/skills/<skill>/` and its instructions into `.github/instructions/`, where
+Copilot discovers the skill in every new chat and applies the instructions by `applyTo`. `load`
+brings a skill into the current chat without starting a new one.
+
+Each copy's SHA-256, source skill, version and copy date are recorded in
+`.specify/extensions/.skill-library.json`. A copy is replaced or deleted only while its bytes still
+match that record. A locally modified copy, or a file the helper did not write, is kept and
+reported with a `Kept` line, so upgrading or removing a skill never silently discards local edits.
+Commit the copies so collaborators get the skills without Spec Kit, or ignore them; either works.
+After running `specify extension add` or `remove` directly, run `/speckit-skill-library sync`.
 
 ## Upgrade Installed Skills
 
@@ -75,8 +90,9 @@ Each skill follows semantic versioning independently: `major` for breaking guida
 for new capability and `patch` for fixes. A skill's required skills are pinned to exact versions;
 related skills install at their current catalog version. Published releases never change.
 
-Installing a skill directly with `specify extension add <skill>` skips its required skills; use the
-bootstrap command instead. To remove a skill you chose, use `specify extension remove <skill>`;
+Installing a skill directly with `specify extension add <skill>` skips its required skills and the
+copy into `.github/`; use the bootstrap command instead. To remove a skill you chose, use
+`/speckit-skill-library remove <skill>`, which refuses while another installed skill requires it;
 `prune` removes only skills no chosen skill requires.
 
 ## Further Reading

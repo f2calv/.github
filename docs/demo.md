@@ -102,8 +102,15 @@ In Copilot Chat:
 ```
 
 **Expected.** `install` plans `repository-privacy` before `docs-adr`, offers
-`github-issues-and-pull-requests` with its reason and installs only what you accept. `load` lists
-`SKILL.md` first. Finish by asking a question that uses the loaded skill.
+`github-issues-and-pull-requests` with its reason and installs only what you accept. It reports the
+guidance copied into `.github/`: show `.github/skills/docs-adr/` and the per-file SHA-256 records in
+`.specify/extensions/.skill-library.json`. `load` lists `SKILL.md` first. Finish by asking a
+question that uses the loaded skill, then start a new chat and ask an ADR question without `load`
+to show the copied skill is discovered natively.
+
+To show the audit check, edit `.github/skills/docs-adr/SKILL.md`, then run
+`/speckit-skill-library remove docs-adr`. The unchanged copies are deleted; the edited `SKILL.md` is
+kept with a `Kept` line naming the skill, version and copy date.
 
 ## 6. Upgrade Installed Skills
 
@@ -119,7 +126,7 @@ Continue in the demo 5 repository. Install an older version first so there is so
 only the outdated ones, required skills first, and `list` shows the latest versions with each skill
 marked `chosen` or `required`. When an upgraded version adds a related skill, `upgrade-all` offers
 it; when it drops a required one, `upgrade-all` names it and `/speckit-skill-library prune` removes
-it.
+it. Unmodified copies in `.github/` are updated to the new versions.
 
 ## 7. Fully Local Catalog
 

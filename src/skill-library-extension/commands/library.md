@@ -1,5 +1,5 @@
 ---
-description: Search, install, upgrade, prune and load independently versioned skills, including their required and related skills.
+description: Search, install, upgrade, remove and load independently versioned skills, copying them into .github/ for Copilot discovery.
 ---
 
 # Skill Library
@@ -19,9 +19,17 @@ pwsh -NoProfile -File .specify/extensions/skill/scripts/Invoke-SkillLibrary.ps1 
 | `plan <id>` | Show the install order, required skills and related offers. Changes nothing. |
 | `install <id>` | Install the skill and its required skills through `specify extension add`. |
 | `upgrade-all` | Upgrade every installed skill to its latest catalog version, adding newly required skills, offering newly related ones and reporting skills no longer required. |
+| `remove <id>` | Remove a skill that no other installed skill requires. |
 | `prune` | Remove installed skills that no chosen skill requires any more. |
+| `sync` | Copy installed guidance into `.github/` again, for example after `specify extension add` or `remove` run directly. |
 | `list` | List installed skills, each marked `chosen` or `required`. |
 | `load <id>` | List the installed files of a skill, `SKILL.md` first. |
+
+`install`, `upgrade-all`, `remove`, `prune` and `sync` copy each installed skill's guidance into
+`.github/skills/` and `.github/instructions/`, where Copilot discovers it in new chats. Each copy's
+SHA-256 is recorded in `.specify/extensions/.skill-library.json`. A copy that was edited after it
+was copied, or a file the helper did not write, is never replaced or deleted; the helper prints a
+`Kept` line for it instead.
 
 Follow this workflow:
 
@@ -39,8 +47,12 @@ Follow this workflow:
    skills no longer required, list them and run `prune` only if the user agrees.
 5. To load, run `load <id>`. Read the listed `SKILL.md` and instruction files, then other listed files
    only when relevant. Apply the guidance to the rest of the user's request. Read only installed
-   files under `.specify/extensions/`.
-6. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
+   files under `.specify/extensions/`. Copied skills are discovered automatically from a new chat;
+   `load` brings one into the current chat.
+6. To remove, run `remove <id>` only when the user asks. Report every `Kept` line from any command
+   verbatim: it names a locally modified or unmanaged file that the user must review and delete
+   or keep themselves. Never delete or overwrite such a file on the user's behalf.
+7. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
    pass. Never run scripts contained in an installed skill unless its guidance and the user ask.
    Skills the user requested or selected are recorded as chosen and are never pruned; skills
    installed before choices were recorded count as chosen.

@@ -2,12 +2,12 @@ schema_version: '1.0'
 extension:
   id: skill
   name: skill-library
-  version: 1.2.0
-  description: Search, install, upgrade, prune and load independently versioned skills, including their required and related skills.
+  version: 1.3.0
+  description: Search, install, upgrade, remove and load independently versioned skills, copying them into .github/ for Copilot discovery.
 requires:
   speckit_version: '>=1.2.3'
 provides:
   commands:
     - name: speckit.skill.library
       file: commands/library.md
-      description: Search, install, upgrade, prune and load independently versioned skills, including their required and related skills.
+      description: Search, install, upgrade, remove and load independently versioned skills, copying them into .github/ for Copilot discovery.
