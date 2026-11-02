@@ -37,6 +37,9 @@ In Copilot Chat in the consuming repository:
 /speckit-skill-library load docs-adr
 ```
 
+`search` matches skill IDs, descriptions and each skill's
+[facets](skill-metadata.md#facets), such as `architecture` or `dotnet`.
+
 `install` resolves the skills the selected skill requires, at their pinned versions, and offers its
 related skills for explicit selection. It then installs each through `specify extension add`, which
 verifies every archive's SHA-256 digest from the catalog. Installed skills live under
@@ -79,6 +82,7 @@ bootstrap command instead. To remove a skill you chose, use `specify extension r
 ## Further Reading
 
 - [Skill catalogue](skills.md): what each skill is for.
+- [Skill metadata sidecar](skill-metadata.md): what each field of `skill.metadata.yaml` means.
 - [End-to-end demos](demo.md): install, load and upgrade walkthroughs.
 - [Skill library workflow](../.github/skills/skill-library/SKILL.md): sidecars, version bumps and
   releases, for maintainers.

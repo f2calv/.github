@@ -263,6 +263,7 @@ covers the options.
 | --- | --- |
 | [How the repository works](docs/architecture.md) | Structure, versioning, packaging and installation, with diagrams |
 | [Skill catalogue](docs/skills.md) | Every skill, grouped by area |
+| [Skill metadata sidecar](docs/skill-metadata.md) | Every field of `skill.metadata.yaml`, including facets, dependencies and external files |
 | [Versioned skills for Spec Kit](docs/spec-kit.md) | Optional versioned installation and upgrades |
 | [End-to-end demos](docs/demo.md) | Scripted walkthroughs from Copilot use to publishing and upgrading skills |
 | [Repository management](docs/repository-management.md) | Baseline audits, repository creation and GitHub community defaults |

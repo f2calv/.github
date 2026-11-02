@@ -9,7 +9,8 @@ packaging, publication and installation. This page shows which parts of the code
 Five entry scripts share one module, `SkillLibrary.psm1`. Each script composes a different subset of
 the module's responsibilities. `git` and `gh` run through the module's tool adapter, which turns a
 non-zero exit into an error carrying the tool's output; `yq` is called directly where YAML is read,
-edited or generated.
+edited or generated. A sixth script, `Measure-CustomizationContext.ps1`, stands alone: it estimates
+the context cost of instructions and skills for authoring audits and does not use the module.
 
 ```mermaid
 flowchart TB
@@ -64,7 +65,8 @@ Which responsibilities each script composes:
 | `Publish-SkillRelease.ps1` | Yes | Yes | Yes | Yes | Yes |
 
 The consumer side is separate: the `skill` bootstrap extension's `Invoke-SkillLibrary.ps1` reads
-`catalog.json` and drives `specify extension add`, as the
+`catalog.json`, drives `specify extension add` and `specify extension remove`, and records chosen
+versus required skills in `.specify/extensions/.skill-library.json`, as the
 [installation flow](../architecture.md#installation-flow) shows.
 
 ## Code Map
@@ -77,7 +79,7 @@ sits beside it in [scripts/](../../.github/skills/skill-library/scripts/) with a
 | Component | Responsibility | Functions | Requires |
 | --- | --- | --- | --- |
 | Discovery | Finds skill folders, excludes Git-ignored ones, reads sidecars and frontmatter | `Get-SkillComponent`, `New-SkillComponent`, `Get-SkillIgnoredPath`, `Get-SkillWithoutMetadata`, `Get-SkillFrontmatter`, `Read-SkillYaml`, `ConvertFrom-SkillYaml` | yq |
-| Validation | Checks sidecar schema, links, required-skill cycles and catalogue rows | `Test-SkillComponent`, `Get-SkillLink`, `Test-SkillCatalogue`, `Get-SkillCatalogueVersion` | Discovery |
+| Validation | Checks sidecar schema, links, external-file locations, required-skill cycles and catalogue rows | `Test-SkillComponent`, `Get-SkillLink`, `Test-SkillCatalogue`, `Get-SkillCatalogueVersion` | Discovery |
 | Versioning | Compares each skill with its last `<id>/X.Y.Z` tag and enforces one-step bumps | `Test-SkillVersion`, `Test-SkillChanged`, `Get-SkillReleasedVersion`, `Get-SkillVersionPath`, `ConvertTo-SkillVersion`, `Set-SkillMetadataValue`, `Set-SkillCatalogueVersion` | Tool adapter, yq |
 | Packaging | Builds deterministic extension and Agent Plugins ZIPs from committed files | `New-SkillExtensionArchive`, `New-SkillPluginArchive`, `New-SkillExtensionManifest`, `New-SkillPluginManifest`, `Get-SkillPackageFile`, `Write-SkillZip`, `ConvertTo-SkillPortableMarkdown`, `Test-SkillPortableFrontmatter`, `ConvertTo-SkillYamlText` | Tool adapter, yq |
 | Catalogue | Generates `catalog.json` and the GitHub Pages index | `New-SkillCatalog`, `New-SkillCatalogPage` | None |

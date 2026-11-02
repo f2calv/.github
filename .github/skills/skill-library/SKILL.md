@@ -31,11 +31,17 @@ externalFiles:
   - .github/instructions/markdown.instructions.md
 ```
 
+- `facets` are search tags: catalog `tags`, `/speckit-skill-library search` terms and plugin
+  `keywords`. Reuse an existing facet before inventing one.
 - `required` skills are always installed with this one, at the pinned version.
 - `related` skills are offered with their `reason`; the user chooses whether to install them.
-- `externalFiles` are repository-root-relative files outside the folder the skill depends on,
-  typically instructions it links to. Everything committed in the folder is packaged automatically.
+- `externalFiles` are repository-root-relative files under `.github/`, outside the folder, that the
+  skill links to, typically instructions. Everything committed in the folder is packaged
+  automatically; link other repository files by URL.
 - Do not hand-edit `version` or required pins; use `Set-SkillVersion.ps1`.
+
+The [sidecar reference](https://github.com/f2calv/.github/blob/main/docs/skill-metadata.md) explains
+every field for human readers.
 
 ## Author and Audit
 
@@ -109,8 +115,8 @@ local build to produce it. ADR 0002 under `docs/` records the design.
 - `plugin.json` maps id, version, description and facets; `required` and `related` go under the
   `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
 - The skill sits at `skills/<id>/`; external files drop their `.github/` prefix, so
-  `../../instructions/<file>` links still resolve inside the plugin. External files outside
-  `.github/` fail the build.
+  `../../instructions/<file>` links still resolve inside the plugin. `Test-SkillLibrary.ps1` rejects
+  external files outside `.github/` before they can fail the build.
 - `SKILL.md` frontmatter fields outside the [Agent Skills](https://agentskills.io/specification)
   set, such as `argument-hint` and `user-invocable`, move into `metadata` as strings in the package
   only. Sources keep them for VS Code.
