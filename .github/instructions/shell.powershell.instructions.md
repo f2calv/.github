@@ -48,32 +48,15 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - `ConvertFrom-Json` can materialize ISO timestamps as `DateTime`. Convert typed timestamps directly
   to `DateTimeOffset`; do not stringify and reparse them through the current culture.
 
-## Testing With Pester
+## Testing
 
-- Use Pester 5.7.1 for PowerShell unit and regression tests. Name test files
-  `<ScriptName>.Tests.ps1` and place them in an adjacent `tests/` directory.
-- Before creating a non-trivial script, use a graphical question to ask whether the user wants Pester
-  tests included. Do the same when changing an existing script that has no Pester coverage. State
-  what the proposed tests would exercise so the choice is informed.
-- When an existing script already has Pester tests, update or extend them as part of every behaviour
-  change without asking whether coverage should be maintained. Still obtain the normal explicit
-  approval before running tests.
-- Keep executable entry points behind an invocation guard so tests can dot-source functions without
-  running the script's main operation.
-- Test success, validation failure, external-command failure, `-WhatIf`, and idempotent/no-change
-  paths where they exist. For scripts that mutate files or remote state, verify the exact changed
-  surface and rollback or no-partial-write behaviour.
-- Use `$TestDrive` for files and temporary Git repositories. Use synthetic values only; never load
-  real local configuration, credentials, repository coordinates, or deployment identifiers into a
-  test fixture or test output.
-- Build fixture paths with `Join-Path` so containment and link checks exercise the same scenario on
-  Windows and Unix; use literal separators only when testing that separator's handling.
-- Mock PowerShell commands with Pester. Wrap native executables behind functions or place synthetic
-  executables earlier on `PATH` so tests do not contact external services or mutate real state.
-- Write a pass-through wrapper for a native executable without `param()` or `[CmdletBinding()]`,
-  forwarding `$args`. Otherwise native flags such as `git add -A` bind as PowerShell parameters.
-- Provide an `Invoke-Tests.ps1` entry point for a script package or skill with multiple tests. Pin its
-  Pester import to 5.7.1 and return a nonzero exit code when tests fail.
+- Test with Pester 5.7.1, in `<ScriptName>.Tests.ps1` files in an adjacent `tests/` directory.
+- Before creating a non-trivial script, or changing one without tests, ask with a graphical question
+  whether to include Pester tests, stating what they would exercise.
+- When a script already has tests, update or extend them with every behaviour change without asking;
+  still ask before running them.
+- The `scripting-tests` skill's [Pester reference](../skills/scripting-tests/references/pester.md)
+  holds the layout, fakes, runner and CI procedure.
 
 ## Secrets
 

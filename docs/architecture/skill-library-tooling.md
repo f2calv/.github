@@ -64,11 +64,14 @@ Which responsibilities each script composes:
 | `Build-SkillExtension.ps1` | Yes | Yes | | Yes | Yes |
 | `Publish-SkillRelease.ps1` | Yes | Yes | Yes | Yes | Yes |
 
-The consumer side is separate: the `skill` bootstrap extension's `Invoke-SkillLibrary.ps1` reads
+The consumer side is separate: the `skill` bootstrap extension's helper reads
 `catalog.json`, drives `specify extension add` and `specify extension remove`, copies installed
 guidance into `.github/`, and records chosen versus required skills and each copy's SHA-256 in
 `.specify/extensions/.skill-library.json`, as the
-[installation flow](../architecture.md#installation-flow) shows.
+[installation flow](../architecture.md#installation-flow) shows. It exists in three variants with
+identical behaviour, selected by `specify init --script`: `Invoke-SkillLibrary.ps1`,
+`bash/skill-library.sh` and `python/skill_library.py`. Pester, pytest and bats-core run the same
+scenarios against shared fixtures in `scripts/tests/`; maintainer tooling stays PowerShell-only.
 
 ## Code Map
 

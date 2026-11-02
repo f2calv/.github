@@ -7,6 +7,13 @@ updates:
       interval: weekly
       time: "04:00"
 
+  #Test toolchain images in docker-compose.yml.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"
+
   - package-ecosystem: docker
     directory: /.github/skills/tooling-pre-commit
     schedule:
@@ -26,6 +33,13 @@ updates:
       time: "04:00"
 
   - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"
+
+  #Lint, type-check and test pins for the Python skill library helper.
+  - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly

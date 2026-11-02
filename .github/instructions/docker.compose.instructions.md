@@ -18,7 +18,9 @@ target. Optimise it for "clone and run", not for production fidelity.
   Dev Containers are exempt; do not add an empty stack merely to satisfy coverage. A Dev Container
   Dockerfile does not exempt a separate application/service Dockerfile in the same repository.
   Libraries may still need Compose for integration dependencies.
-- One Compose file per repository, in the root. Use profiles instead of
+- One Compose file per repository, in the root, named `docker-compose.yml`. Rename a `compose.yaml`,
+  `compose.yml` or `docker-compose.yaml` with `git mv`, and update its callers in the same change;
+  never keep two candidates, because Compose silently prefers `compose.yaml`. Use profiles instead of
   `docker-compose.override.yml` or per-environment files.
 - Never include the obsolete top-level `version:` key.
 - Open the file with a header comment listing what the default `docker compose up` starts, each

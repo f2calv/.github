@@ -33,6 +33,8 @@ applyTo: '**/*.sh'
 - Default optional variables explicitly before `set -u` takes effect, using `: "${VAR:=}"` or a per-use `"${VAR:-}"`, so referencing a legitimately unset optional variable does not abort the script.
 - Quote every variable expansion (`"$var"`, `"${arr[@]}"`) unless word splitting or globbing is intentional. This includes file paths, which may contain spaces.
 - Fail fast with a specific message rather than letting an empty or invalid value propagate into a downstream command's cryptic error. Validate credentials and inputs before the command that consumes them, not after it fails.
+- End a function with an explicit `return 0` when its last command can be a false test, such as `[[ -n $x ]] && do_it`: the function then returns 1 and `set -e` stops the caller.
+- `exit` inside `$( … )` or a pipeline stage ends only that subshell. Assign command substitutions on their own line (`value=$(fetch)`), never inside `local value=$(fetch)`, so `set -e` sees the failure, and wrap a call in `( … )` when its failure must be caught rather than fatal.
 
 ## Logging and GitHub Actions Annotations
 
@@ -49,8 +51,19 @@ applyTo: '**/*.sh'
 - Exercise the success path and every distinct error path, including a missing required variable and an empty or invalid response.
 - Run `shellcheck` against new or modified scripts before committing and resolve every finding above informational severity. An informational finding on a deliberately single-quoted expression passed to a query tool is expected and may be left as-is.
 
+## Testing
+
+- Test with bats-core, loading bats-support and bats-assert through `bats_load_library`, in
+  `<script>.bats` files beside the script's other tests.
+- Before creating a non-trivial script, or changing one without tests, ask with a graphical question
+  whether to include bats tests, stating what they would exercise. When tests exist, update them with
+  every behaviour change; still ask before running them.
+- The `scripting-tests` skill's [bats reference](../skills/scripting-tests/references/bats.md) holds
+  layout, fakes, portable assertions, container runs and CI steps.
+
 ## Style
 
 - Declare every function-scoped variable with `local`.
 - Lowercase values passed to case-sensitive systems that require lowercase, such as OCI registries and repositories, with `${var,,}`.
 - Clean up every temporary file and directory the script creates, including artifacts created inside a loop, so one iteration's leftovers cannot leak into the next.
+- In `jq`, a pipe changes the input: inside `$installed | has(.id)`, `.id` reads from `$installed`. Bind values first (`.id as $id | $installed | has($id)`).

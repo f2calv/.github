@@ -207,6 +207,13 @@ No. Copilot reads the instructions and skills directly once this repository is i
 linked into `~/.copilot`. Spec Kit is only for repositories that want selected skills pinned to
 exact versions; other agent clients can use the Agent Plugins packages instead.
 
+### Does the Spec Kit route need PowerShell?
+
+No. The `/speckit-skill-library` helper ships in PowerShell, Bash and Python with identical
+behaviour, and Spec Kit runs the one matching `specify init --script ps`, `sh` or `py`. The
+[Spec Kit guide](docs/spec-kit.md#prerequisites) lists what each variant needs. Only the
+maintainer tooling that versions and publishes skills in this repository requires PowerShell.
+
 ### How does Copilot decide what to load?
 
 Each instruction file's `applyTo` glob matches the files being edited. Each skill's `description`

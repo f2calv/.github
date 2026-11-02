@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Fake Specify CLI for the Bash and Python helper tests; mirrors the Pester fake in
+# Invoke-SkillLibrary.Tests.ps1. Logs each call to ./specify.log and updates the registry and
+# extension folders the way specify extension add and remove would.
+set -euo pipefail
+
+echo "$* catalog=${SPECKIT_CATALOG_URL:-}" >> specify.log
+registry=.specify/extensions/.registry
+id=$3
+
+if [[ $2 == remove ]]; then
+  jq --arg id "$id" 'del(.extensions[$id])' "$registry" > "$registry.tmp"
+  mv "$registry.tmp" "$registry"
+  rm -rf ".specify/extensions/$id"
+  exit 0
+fi
+
+version=$5
+jq --arg id "$id" --arg version "$version" '.extensions[$id] = {version: $version, enabled: true}' "$registry" > "$registry.tmp"
+mv "$registry.tmp" "$registry"
+mkdir -p ".specify/extensions/$id/resources/.github/skills/$id" ".specify/extensions/$id/resources/.github/instructions"
+echo "# Skill $id $version" > ".specify/extensions/$id/resources/.github/skills/$id/SKILL.md"
+echo '# Shared' > ".specify/extensions/$id/resources/.github/instructions/shared.instructions.md"

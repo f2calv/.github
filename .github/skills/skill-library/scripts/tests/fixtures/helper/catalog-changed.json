@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "alpha": {
+      "name": "alpha",
+      "description": "Alpha guidance.",
+      "version": "1.1.0",
+      "tags": [
+        "architecture"
+      ],
+      "download_url": "https://example.com/a2.zip",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "requires": {
+        "speckit_version": ">=1.2.3"
+      },
+      "skill_library": {
+        "required": [
+          {
+            "id": "delta",
+            "version": "1.0.0"
+          }
+        ],
+        "related": [
+          {
+            "id": "gamma",
+            "reason": "Optional extra."
+          },
+          {
+            "id": "epsilon",
+            "reason": "New extra."
+          }
+        ]
+      },
+      "releases": {
+        "1.0.0": {
+          "download_url": "https://example.com/a1.zip",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "requires": {
+            "speckit_version": ">=1.2.3"
+          },
+          "skill_library": {
+            "required": [
+              {
+                "id": "beta",
+                "version": "1.0.0"
+              }
+            ],
+            "related": [
+              {
+                "id": "gamma",
+                "reason": "Optional extra."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "beta": {
+      "name": "beta",
+      "description": "Beta guidance.",
+      "version": "1.0.0",
+      "tags": [],
+      "download_url": "https://example.com/b.zip",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "requires": {
+        "speckit_version": ">=1.2.3"
+      },
+      "skill_library": {
+        "required": [],
+        "related": []
+      }
+    },
+    "delta": {
+      "name": "delta",
+      "description": "Delta guidance.",
+      "version": "1.0.0",
+      "tags": [],
+      "download_url": "https://example.com/d.zip",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "requires": {
+        "speckit_version": ">=1.2.3"
+      },
+      "skill_library": {
+        "required": [],
+        "related": []
+      }
+    },
+    "epsilon": {
+      "name": "epsilon",
+      "description": "Epsilon guidance.",
+      "version": "1.0.0",
+      "tags": [],
+      "download_url": "https://example.com/e.zip",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "requires": {
+        "speckit_version": ">=1.2.3"
+      },
+      "skill_library": {
+        "required": [],
+        "related": []
+      }
+    },
+    "gamma": {
+      "name": "gamma",
+      "description": "Gamma guidance.",
+      "version": "1.0.0",
+      "tags": [
+        "testing"
+      ],
+      "download_url": "https://example.com/g.zip",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "requires": {
+        "speckit_version": ">=1.2.3"
+      },
+      "skill_library": {
+        "required": [],
+        "related": [
+          {
+            "id": "alpha",
+            "reason": "Back link."
+          }
+        ]
+      }
+    }
+  }
+}

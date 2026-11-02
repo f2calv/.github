@@ -25,7 +25,9 @@ Set-Content -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[
 Set-Content -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/instructions/shared.instructions.md") -Value '# Shared'
 exit 0
 '@
-    $CatalogPath = Join-Path $TestDrive 'catalog.json'
+    # pytest and bats run the Bash and Python helpers against these same committed fixtures.
+    $FixtureRoot = Join-Path $PSScriptRoot 'fixtures/helper'
+    $GeneratedCatalogPath = Join-Path $TestDrive 'catalog.json'
     $Release = @(
         [pscustomobject]@{ Id = 'alpha'; Version = '1.0.0'; Url = 'https://example.com/a1.zip'; Sha256 = ('a' * 64); Description = 'Old alpha.'; Facets = @('architecture')
             Required = @(@{ id = 'beta'; version = '1.0.0' }); Related = @(@{ id = 'gamma'; reason = 'Optional extra.' }) }
@@ -35,9 +37,9 @@ exit 0
         [pscustomobject]@{ Id = 'gamma'; Version = '1.0.0'; Url = 'https://example.com/g.zip'; Sha256 = ('d' * 64); Description = 'Gamma guidance.'; Facets = @('testing')
             Required = @(); Related = @(@{ id = 'alpha'; reason = 'Back link.' }) }
     )
-    [IO.File]::WriteAllText($CatalogPath, ((New-SkillCatalog -Release $Release) | ConvertTo-Json -Depth 20))
+    [IO.File]::WriteAllText($GeneratedCatalogPath, ((New-SkillCatalog -Release $Release) | ConvertTo-Json -Depth 20) + "`n")
     # In the changed catalog alpha 1.1.0 drops beta, newly requires delta and newly offers epsilon.
-    $ChangedCatalogPath = Join-Path $TestDrive 'catalog-changed.json'
+    $GeneratedChangedPath = Join-Path $TestDrive 'catalog-changed.json'
     $Changed = @(
         $Release[0]
         [pscustomobject]@{ Id = 'alpha'; Version = '1.1.0'; Url = 'https://example.com/a2.zip'; Sha256 = ('b' * 64); Description = 'Alpha guidance.'; Facets = @('architecture')
@@ -47,7 +49,9 @@ exit 0
         [pscustomobject]@{ Id = 'delta'; Version = '1.0.0'; Url = 'https://example.com/d.zip'; Sha256 = ('e' * 64); Description = 'Delta guidance.'; Facets = @(); Required = @(); Related = @() }
         [pscustomobject]@{ Id = 'epsilon'; Version = '1.0.0'; Url = 'https://example.com/e.zip'; Sha256 = ('f' * 64); Description = 'Epsilon guidance.'; Facets = @(); Required = @(); Related = @() }
     )
-    [IO.File]::WriteAllText($ChangedCatalogPath, ((New-SkillCatalog -Release $Changed) | ConvertTo-Json -Depth 20))
+    [IO.File]::WriteAllText($GeneratedChangedPath, ((New-SkillCatalog -Release $Changed) | ConvertTo-Json -Depth 20) + "`n")
+    $CatalogPath = Join-Path $FixtureRoot 'catalog.json'
+    $ChangedCatalogPath = Join-Path $FixtureRoot 'catalog-changed.json'
     # Plain function so @args forwards -Version and -Related as parameters.
     function Invoke-Library { & $Script @args -CatalogUrl $CatalogPath -Workspace $Workspace | Out-String }
     function Invoke-ChangedLibrary { & $Script @args -CatalogUrl $ChangedCatalogPath -Workspace $Workspace | Out-String }
@@ -62,6 +66,22 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
         $Workspace = Join-Path $TestDrive ([guid]::NewGuid())
         [void][IO.Directory]::CreateDirectory("$Workspace/.specify/extensions")
         [IO.File]::WriteAllText("$Workspace/.specify/extensions/.registry", '{"schema_version":"1.0","extensions":{"skill":{"version":"1.0.0","enabled":true}}}')
+    }
+
+    It 'declares a ps, sh and py helper variant that each exist in the extension' {
+        $Extension = Join-Path $PSScriptRoot '../../../../../src/skill-library-extension'
+        $Front = [regex]::Match([IO.File]::ReadAllText((Join-Path $Extension 'commands/library.md')), '(?s)\A---\n(.*?)\n---').Groups[1].Value
+        foreach ($Variant in 'ps', 'sh', 'py') {
+            $Line = [regex]::Match($Front, "(?m)^  ${Variant}: (.+)$").Groups[1].Value
+            $Line | Should -Not -BeNullOrEmpty -Because "the $Variant variant must be declared"
+            $Relative = [regex]::Match($Line, '(scripts/\S+)').Groups[1].Value
+            Join-Path $Extension $Relative | Should -Exist
+        }
+    }
+
+    It 'keeps the shared catalog fixtures equal to New-SkillCatalog output' {
+        [IO.File]::ReadAllText($CatalogPath).Replace("`r`n", "`n") | Should -BeExactly ([IO.File]::ReadAllText($GeneratedCatalogPath).Replace("`r`n", "`n"))
+        [IO.File]::ReadAllText($ChangedCatalogPath).Replace("`r`n", "`n") | Should -BeExactly ([IO.File]::ReadAllText($GeneratedChangedPath).Replace("`r`n", "`n"))
     }
 
     It 'lists commands by default' {

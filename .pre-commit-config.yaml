@@ -45,14 +45,16 @@ repos:
   rev: v3.9.10
   hooks:
   #JSON formatting; indentation and line endings come from .editorconfig. Tool-written
-  #manifests and lockfiles are left to the tools that generate them.
+  #manifests, lockfiles and the ConvertTo-Json helper catalog fixtures, which Pester compares byte for
+  #byte with New-SkillCatalog output, are left to the tools that generate them.
   - id: prettier
     types_or: [json]
     exclude: |
       (?x)(
         (^|/)devcontainer-lock\.json$|
         (^|/)package-lock\.json$|
-        (^|/)\.config/dotnet-tools\.json$
+        (^|/)\.config/dotnet-tools\.json$|
+        ^\.github/skills/skill-library/scripts/tests/fixtures/helper/catalog(-changed)?\.json$
       )
 - repo: https://github.com/igorshubovych/markdownlint-cli
   rev: v0.50.0

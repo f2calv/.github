@@ -1,0 +1,57 @@
+#Test tooling for the Python skill library helper; this repository publishes no Python package.
+[project]
+name = "f2calv-github-tooling"
+version = "0.0.0"
+description = "Lint, type-check and test tooling for the Python variant of the skill library helper."
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+test = [
+  "mypy==2.4.1",
+  "pytest==9.2.0",
+  "ruff==0.17.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+include = [
+  "src/skill-library-extension/scripts/python/*.py",
+  ".github/skills/skill-library/scripts/tests/python/*.py",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812", # conflicts with the ruff formatter's trailing-comma handling
+  "CPY001", # the repository LICENSE covers every file; no per-file copyright headers
+  "D203",   # D211 (no blank line before a class docstring) is used instead
+  "D213",   # D212 (summary on the first docstring line) is used instead
+  "EXE002", # bind mounts from Windows hosts report every file as executable
+]
+
+[tool.ruff.lint.per-file-ignores]
+#Standalone scripts and test modules live in folders without __init__.py by design.
+"src/skill-library-extension/scripts/python/*.py" = ["INP001"]
+".github/skills/skill-library/scripts/tests/python/*.py" = [
+  "D103",    # test names describe the behaviour; a docstring would repeat them
+  "INP001",
+  "PLR2004", # expected counts in assertions are the specification, not magic numbers
+  "S101",    # pytest uses plain assert
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = [
+  "src/skill-library-extension/scripts/python/skill_library.py",
+  ".github/skills/skill-library/scripts/tests/python/test_skill_library.py",
+]
+
+[tool.pytest.ini_options]
+testpaths = [".github/skills/skill-library/scripts/tests/python"]
+addopts = "-ra --strict-markers"

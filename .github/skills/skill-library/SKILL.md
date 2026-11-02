@@ -154,6 +154,9 @@ specify extension add skill
 Remove-Item Env:SPECKIT_CATALOG_URL
 ```
 
+`--script sh` and `--script py` select the Bash and Python variants of the helper instead; the
+command's `scripts` map names all three, and their behaviour is identical.
+
 Then use `/speckit-skill-library search architecture`, `/speckit-skill-library install docs-adr` and
 `/speckit-skill-library load docs-adr`. The command plans the install, asks which related skills to
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each

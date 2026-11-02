@@ -6,7 +6,7 @@ Use the central instructions as the rule authority; this table describes the evi
 
 | Surface | Review evidence and common failure |
 | --- | --- |
-| Invocation/layout | Root stack and header match actual callers; automatic overrides or `COMPOSE_FILE` can change behavior |
+| Invocation/layout | One root `docker-compose.yml`; a `compose.yaml`, `compose.yml` or `docker-compose.yaml` is a rename finding, and a coexisting `compose.yaml` silently wins discovery. Header matches actual callers; automatic overrides or `COMPOSE_FILE` can change behavior |
 | Profiles | Default infrastructure and optional builds/GPU/demo paths match intent; dependencies remain valid in each supported selection |
 | Images | Supported major tags, variant/platform and publisher support verified; version-specific exceptions explained; no untagged/latest images or routine digest requirement |
 | Build inputs | Context, Dockerfile and ignore rules contain the required sources; relative paths still work after consolidation |
@@ -100,10 +100,10 @@ flags. Supply absolute file/project-directory paths; do not rely on shell workin
 Example commands use synthetic paths and must be adapted to the actual invocation:
 
 ```powershell
-docker compose --project-directory 'C:\work\example' -f 'C:\work\example\compose.yaml' config --quiet
-docker compose --project-directory 'C:\work\example' -f 'C:\work\example\compose.yaml' --profile '*' config --quiet
-docker compose --project-directory 'C:\work\example' -f 'C:\work\example\compose.yaml' --profile test config --quiet
-docker compose --project-directory 'C:\work\example' -f 'C:\work\example\compose.yaml' config --services
+docker compose --project-directory 'C:\work\example' -f 'C:\work\example\docker-compose.yml' config --quiet
+docker compose --project-directory 'C:\work\example' -f 'C:\work\example\docker-compose.yml' --profile '*' config --quiet
+docker compose --project-directory 'C:\work\example' -f 'C:\work\example\docker-compose.yml' --profile test config --quiet
+docker compose --project-directory 'C:\work\example' -f 'C:\work\example\docker-compose.yml' config --services
 ```
 
 Repeat with each documented profile and required combination. Check the service list against
