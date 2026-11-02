@@ -1,6 +1,6 @@
 ---
 description: 'Application configuration layering, appsettings MSBuild copy/publish/pack metadata, optional local files, options validation, command-line precedence and secret safety.'
-applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs,**/*.csproj,**/*.props,**/*.targets'
+applyTo: '**/appsettings*.json,**/*Config.cs,**/*Options.cs'
 ---
 
 # Configuration

@@ -1,8 +1,7 @@
 ---
 name: containers-workflows
-description: 'Run and maintain centralized container build and GitOps deploy scripts used by repository-root shims.'
+description: 'Run and maintain the centralized PowerShell container build and GitOps deploy scripts behind repository-root build and deploy shims. Use when building or deploying an image locally or changing those scripts; GitHub Actions CI belongs to github-actions-workflows.'
 argument-hint: '[build|deploy] [repository=path] [options...]'
-user-invocable: true
 ---
 
 # Container Workflows
@@ -70,6 +69,10 @@ The deployment script reads each Argo CD manifest's `kind` and supports both `Ap
 The pushed tag is mutable, so the script resolves its registry digest and writes the image tag as
 `<tag>@sha256:<digest>` with `pullPolicy: IfNotPresent`. Every rollout is therefore traceable to
 one image, and a pod reschedule cannot silently pick up a later push of the same tag.
+
+The GitOps checkout may be shared with other sessions. The deployment commits only its own manifest
+path, leaving anything else staged untouched, and stops without committing if the checkout switched
+branch after the initial fast-forward.
 
 Grafana dashboards ship inside the application chart as a `file://` subchart, so a `-Chart`
 deployment publishes and rolls them out with the application. There is no separate dashboard

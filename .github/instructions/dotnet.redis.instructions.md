@@ -1,6 +1,6 @@
 ---
 description: 'Redis key-naming, consumer-group, TTL and key-migration conventions for feature-scoped keys.'
-applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*Cache*.cs,**/*.lua,**/appsettings*.json'
+applyTo: '**/*Redis*.cs,**/*Redlock*.cs,**/*Cache*.cs,**/*.lua'
 ---
 
 # Redis Key Naming

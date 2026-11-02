@@ -2,7 +2,6 @@
 name: network-unifi
 description: 'Discover, design, change, benchmark and recover UniFi-managed networks safely. Use for VLANs, DHCP reservations, switch-port native networks, multi-NIC Linux hosts, dedicated storage networks, routing asymmetry, MetalLB/ARP incidents, and before/after network performance validation.'
 argument-hint: '[mode={audit|plan|apply|benchmark|recover}] [client-or-port] [network-purpose]'
-user-invocable: true
 compatibility: 'Requires an authenticated UniFi Network browser session for controller changes. Host validation may additionally require SSH, NetworkManager, iproute2, ethtool and iperf3.'
 ---
 

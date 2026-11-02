@@ -1,8 +1,7 @@
 ---
 name: dotnet-cleanup
-description: 'Inventory and classify .NET projects before naming/folder changes; audit C# type layout, naming, constructors, ILogger templates and IDE/CA diagnostics. Use for project-role inventories, distinguishing test suites from test-support libraries and integration hosts, source cleanup or convention drift.'
+description: 'Inventory and classify .NET projects before naming/folder changes; audit C# type layout, naming, constructors, ILogger templates and IDE/CA diagnostics. Use for project-role inventories, distinguishing test suites from test-support libraries and integration hosts, source cleanup or convention drift. .editorconfig rule changes belong to tooling-editorconfig.'
 argument-hint: 'mode={audit|fix-logging|format} repository=<path> [audit={Layout|Naming|Constructors|Logging}]'
-user-invocable: true
 compatibility: 'Requires PowerShell 7.4 and git. Formatter mode also requires the repository .NET SDK and restored projects.'
 ---
 
@@ -54,6 +53,8 @@ Keep the report local when the workspace contains private repositories. Classifi
 evidence-backed candidates for human review, not a mandate to rename.
 
 ## Layout Contract
+
+The [type layout reference](references/type-layout.md) holds the full convention; the audit checks:
 
 - One top-level type per matching file.
 - Nested types may share their containing type's file.

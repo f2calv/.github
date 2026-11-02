@@ -2,7 +2,6 @@
 name: kubernetes-nginx-migration
 description: 'Migrate Kubernetes community ingress-nginx to F5 NGINX Ingress Controller OSS with parallel-by-default rollout, explicit compatibility mapping, staged cutover and rollback. Use for ingress-nginx controller, Ingress, TCP/UDP or authentication migrations.'
 argument-hint: '[repository=path] [scope={audit|plan|migrate|cleanup}]'
-user-invocable: true
 compatibility: 'Planning is cross-platform. Rendering requires Helm; live verification requires kubectl and cluster access.'
 ---
 
@@ -19,6 +18,12 @@ Prefer the smallest safe diff. Do not redesign application routing, rename Servi
 credentials, change TLS ownership, or replace the active LoadBalancer address in the same step
 unless the migration requires it.
 
+| Reference | Holds |
+| --- | --- |
+| [Discovery, validation and cleanup](references/discovery-and-validation.md) | Inventory checklist, ledger format, validation evidence, cleanup proof |
+| [Compatibility and rollout](references/compatibility-and-rollout.md) | Strategy record, annotation/resource mapping, Secrets, L4, addresses, monitoring, gates |
+| [Parallel route example](./examples/parallel-route.md) | Old/new Ingress pair, class identities, difference ledger, rollback gates |
+
 ## Prerequisites
 
 - Read repository instructions, Helm values, Argo CD Applications, overlays, and operational
@@ -30,17 +35,6 @@ unless the migration requires it.
   installation, upgrade, synchronization, DNS, certificate, or LoadBalancer mutation.
 - Never copy live credentials, private endpoints, fixed addresses, or environment identifiers into
   examples, fixtures, output, or logs.
-
-## Quick Start
-
-1. Inventory controller ownership, routes, annotations, TLS, authentication, and L4 exposure.
-2. Build a route-by-route compatibility ledger using
-   [the migration reference](references/compatibility-and-rollout.md).
-3. Add F5 NGINX Ingress Controller OSS in a dedicated namespace with a distinct `IngressClass`.
-4. Render and validate the new controller and migrated resources without changing active traffic.
-5. Expose a separate test address and migrate low-risk routes first.
-6. Cut over in stages with explicit health gates and a tested rollback action.
-7. Remove ingress-nginx only after every dependency and fallback window has been cleared.
 
 ## Modes
 
@@ -58,267 +52,85 @@ production-critical systems. This is the only strategy that permits target valid
 source controller still serves production traffic.
 
 A non-parallel cutover is permitted only for an explicitly identified low-criticality or homelab
-environment where obtaining multiple LoadBalancer addresses for testing is impractical. Before
-editing, record:
-
-- why the environment is low criticality and why a temporary address is unavailable or
-  disproportionate;
-- the expected outage window, maintenance notification, stop conditions, and operator;
-- the immutable source, target, and cutover Git commits and pull requests;
-- the exact rollback procedure: revert the cutover commit or synchronize the last known-good
-  immutable revision, then verify source-controller health;
-- what can be validated offline and what remains unproven until the outage.
-
-Never perform a non-parallel cutover through uncommitted manifests or ad hoc live edits. Keep the
-source configuration and controller version reproducible from Git, and do not delete them during
-the rollback window. Describe the operation as an outage-bearing replacement; never claim or imply
-zero downtime.
+environment where multiple LoadBalancer addresses are impractical. Write its decision record and
+commit every state to Git before editing, as defined in
+[Migration Strategy](references/compatibility-and-rollout.md#migration-strategy); never claim zero
+downtime.
 
 ## Required Workflow
 
 ### 1. Discover the Current Contract
 
-Inspect source, rendered, and—when authorized—live resources. Record:
-
-- ingress-nginx chart/release/version, namespace, controller image, arguments, ConfigMap, admission
-  webhook, default backend, metrics, Pod scheduling, PodDisruptionBudget, and NetworkPolicies;
-- `IngressClass` names, `spec.controller` values, defaults, classless Ingresses, legacy
-  `kubernetes.io/ingress.class`, and each `spec.ingressClassName`;
-- every Ingress host, path, `pathType`, backend Service/port, TLS Secret, cert-manager annotation,
-  source annotation, finalizer, and Argo CD owner;
-- every host claimed by more than one Ingress, including cross-namespace claims; standard F5
-  Ingress resources do not merge these implicitly, so identify the required master/minion or
-  VirtualServer/VirtualServerRoute ownership before cutover;
-- controller ConfigMap settings, custom templates, snippets, ModSecurity, Lua/plugins, forwarded
-  headers, proxy protocol, real-IP trust, and global defaults;
-- Service type, ports, node ports, `externalTrafficPolicy`, health-check settings, provider
-  annotations, address allocation mechanism, published status address, and DNS dependencies;
-- default certificates, cross-namespace Secret references, Basic Auth Secrets, external
-  authentication, allowlists, redirects, rewrites, regex paths, rate limits, affinity, canaries,
-  gRPC/WebSocket behavior, buffering, body limits, and timeout settings;
-- ingress-nginx TCP/UDP ConfigMaps and every exposed port, protocol, namespace/Service, target port,
-  PROXY setting, and client;
-- Helm, Kustomize, Argo CD, policy, schema, generated documentation, monitoring, alerting, and
-  runbook surfaces that own or observe the controller.
-
-Do not infer behavior from resource names. Compare configured defaults with both controllers'
-versioned defaults and mark anything not proven as unknown. Render umbrella and aliased dependency
-charts and record actual backend Service names; controller annotations must reference rendered
-names, not dependency aliases or guessed release prefixes.
+- Inventory controller, classes, routes, TLS, authentication, shared hosts, L4 listeners and owning
+  tooling using the [discovery inventory](references/discovery-and-validation.md#discovery-inventory).
+- Do not infer behavior from resource names; mark anything not proven as unknown.
+- Record rendered backend Service names, not dependency aliases or guessed release prefixes.
 
 ### 2. Build a Compatibility Ledger
 
-Use the [parallel route example](./examples/parallel-route.md) for a concrete old/new Ingress pair,
-expected class identities, intentional-difference ledger and measurable rollback gates. It maps a
-small verified surface; it does not imply that controller defaults or certificate renewal match.
-
-Create one row per route or L4 listener:
-
-| Source | Source behavior | F5 OSS target | Evidence | Validation | Cutover | Rollback |
-| --- | --- | --- | --- | --- | --- | --- |
-| Ingress or listener | Exact annotation/config | Annotation, resource, policy, or unsupported | Docs/render/live | Request or protocol check | Traffic switch | Exact reversal |
-
-Classify every source feature as:
-
-- direct Kubernetes field with unchanged semantics;
-- F5 `nginx.org/*` annotation with verified version-specific syntax;
-- F5 custom resource or Policy;
-- controller-wide Helm/ConfigMap setting;
-- requires an application, proxy, DNS, or certificate change;
-- unsupported or intentionally removed.
-
-Never bulk-replace annotation prefixes. Annotation names, value syntax, scope, defaults, and merge
-behavior differ. Resolve every row before moving its traffic; unsupported critical behavior blocks
-cutover.
-
-For each host used by multiple Ingress resources, choose one supported target model before
-migration: one mergeable master plus minions, one consolidated Ingress, or a VirtualServer with
-VirtualServerRoutes. Do not point several ordinary F5 Ingress resources at the same host and wait
-for one to win. Treat `All hosts are taken by other resources` as a design failure, not rollout
-propagation.
+- Create one classified row per route or L4 listener using the
+  [ledger format](references/discovery-and-validation.md#compatibility-ledger) and the
+  [annotation decisions](references/compatibility-and-rollout.md#http-annotation-decisions).
+- Never bulk-replace annotation prefixes. Unsupported critical behavior blocks cutover.
+- Give each shared host one supported owner model before migration, per
+  [Shared Hosts](references/compatibility-and-rollout.md#shared-hosts-and-mergeable-ingress).
 
 ### 3. Design Independent Parallel Ownership
 
-- Install F5 NGINX Ingress Controller OSS in a dedicated namespace. Do not reuse the ingress-nginx
-  namespace, release name, Service, ServiceAccount, admission resources, or ConfigMap.
-- Create a distinct, non-default `IngressClass` with the target controller value required by the
-  pinned F5 chart. Keep ingress-nginx's class and default status unchanged during migration.
-- Configure both controllers to watch only their intended class. Do not enable classless Ingress
-  handling or make the new class default while classless resources remain.
-- Pin the OSS chart/image and enable only OSS-supported features. Do not introduce NGINX Plus
-  resources or settings.
-- Install the target CRDs and any `GlobalConfiguration` before resources that depend on them.
-  Establish Argo CD sync waves or separate Applications where ordering is required.
-- Account for CRD and namespace lifecycle explicitly. Helm does not remove installed CRDs during
-  ordinary uninstall or Argo pruning, and a namespace can survive after its Application is gone.
-  Define declarative cleanup and verify it during rollback exercises.
-- Preserve controller availability, security context, scheduling, observability, and network access
-  unless a documented incompatibility requires a narrow change.
+- Install the target in a dedicated namespace with a distinct, non-default `IngressClass`; each
+  controller watches only its own class. Use OSS features only.
+- Install CRDs and `GlobalConfiguration` before dependents and plan CRD/namespace cleanup; see
+  [Parallel Controller Ownership](references/compatibility-and-rollout.md#parallel-controller-ownership).
 
 ### 4. Handle LoadBalancer Addresses Safely
 
-Under the default parallel strategy, give the target controller a distinct temporary LoadBalancer
-address. For a fixed address:
-
-1. Identify whether allocation is controlled by a Service field, provider annotation, address-pool
-   annotation, or external reservation.
-2. Preserve the provider-specific mechanism and verify the address is reserved, unassigned, in the
-   correct scope, and permitted by policy.
-3. Keep the active address attached to ingress-nginx during parallel validation. Never request the
-   same exclusive address for both Services.
-4. Record Service status, DNS TTL, certificate routing, source ranges, firewall rules, health checks,
-   and `externalTrafficPolicy` before cutover.
-5. Use a temporary hostname, direct address, or controlled client override for testing.
-
-Prefer a reversible DNS or provider-supported address reassignment at cutover. If the final address
-must move between Services, define the exact detach/attach order, expected outage, ownership checks,
-timeouts, and rollback before starting.
-
-Under an approved non-parallel strategy, do not create a second address. Validate rendered
-resources offline, schedule the documented outage, detach or remove the source controller's claim,
-and only then let the target claim the address. Roll back through the recorded immutable Git
-revision if any ownership, health, or behavior gate fails.
+- Parallel: give the target a distinct temporary address; never request the same exclusive address
+  for both Services.
+- Non-parallel: create no second address; release the source claim before the target claims it,
+  inside the outage. Follow the
+  [address decision](references/compatibility-and-rollout.md#fixed-loadbalancer-address-decision).
 
 ### 5. Convert HTTP and L4 Resources
 
-Use [the migration reference](references/compatibility-and-rollout.md) for annotation and resource
-mapping rules.
-
-- Clone an Ingress into a temporary, distinctly named resource only when parallel host validation
-  requires it; otherwise change `spec.ingressClassName` in one controlled Git step.
-- Preserve hosts, paths, `pathType`, backend Services/ports, TLS Secrets, and cert-manager ownership.
-- Make every ACME HTTP-01 certificate on an F5-served host solve in place. F5 NGINX gives a host to
-  its oldest resource, so cert-manager's separate solver Ingress is rejected and renewals fail
-  silently until expiry:
-  - Annotate a regular Ingress with `acme.cert-manager.io/http01-edit-in-place: "true"`.
-  - A mergeable master has no paths. Declare its `Certificate` explicitly with
-    `acme.cert-manager.io/http01-override-ingress-name` set to an always-present minion, and remove
-    the master's issuer annotation.
-  - Under Argo CD self-heal, add a global `resource.customizations.ignoreDifferences` rule for
-    Ingress paths whose backend starts with `cm-acme-http-solver-`, or self-heal removes the
-    transient path before validation.
-  - Remove chart-generated `Certificate`s that write the same Secret as an ingress-shim one.
-  - After cutover, confirm that every public certificate renews; do not rely on `Ready=True`, which
-    stays true until expiry.
-- Replace each source annotation only after its F5 OSS behavior and value syntax are verified.
-- Convert ingress-nginx TCP/UDP ConfigMap entries into explicitly allowed `GlobalConfiguration`
-  listeners and one or more matching `TransportServer` resources. Expose the same ports on the
-  target controller Service and Pod.
-- Keep listener names unique and protocol-specific. Verify that every `TransportServer` listener
-  name and protocol matches its `GlobalConfiguration` entry.
-- Query the target Service and EndpointSlices before preserving an L4 mapping. A stale ConfigMap can
-  name a Service that no longer exists or an optional backend that was retired; record such source
-  defects separately from migration regressions.
-- For Basic Auth, create a migration Secret with `type: nginx.org/htpasswd` and the F5-required data
-  key `htpasswd`; do not mutate the source Secret's `auth` key while ingress-nginx still consumes
-  it. Point the migrated Ingress at the new Secret through the F5 Basic Auth annotation.
-- For an approved non-parallel cutover, a coordinated key rename can be acceptable when source and
-  target never consume the Secret concurrently. Render all owners together and retain the exact Git
-  reversal; do not leave one controller reading `auth` while the other expects `htpasswd`.
-- Secret `type` is immutable. When converting an existing `Opaque` Secret in place, stage a
-  one-time Argo resource annotation `argocd.argoproj.io/sync-options: Force=true,Replace=true`,
-  verify the Secret was recreated with the F5 type and the controller materialized its auth file,
-  then overwrite it in a second commit with `Force=false,Replace=false` and verify the live
-  annotation changed. Omitting an annotation after a forced recreation might not remove the live
-  field under server-side apply ownership. Never leave forced replacement enabled.
-- Decode or print neither htpasswd data nor TLS/private key material. Verify key presence and Secret
-  references only.
+- Preserve hosts, paths, backends, TLS and cert-manager ownership; replace an annotation only after
+  its F5 OSS behavior is verified ([conversion](references/compatibility-and-rollout.md#converting-ingress-resources)).
+- Make every ACME HTTP-01 certificate solve in place
+  ([ACME](references/compatibility-and-rollout.md#acme-http-01-certificates)).
+- Basic Auth needs a `nginx.org/htpasswd` Secret with key `htpasswd`; follow
+  [Basic Auth Secrets](references/compatibility-and-rollout.md#basic-auth-secrets) for parallel
+  Secrets and one-time forced type replacement.
+- Convert TCP/UDP entries to `GlobalConfiguration` listeners and `TransportServer`s per
+  [TCP and UDP](references/compatibility-and-rollout.md#tcp-and-udp).
 
 ### 6. Validate Before Traffic
 
-Use repository-pinned tools and wrappers. Static validation should cover:
-
-1. YAML, Markdown, schema, and policy diagnostics;
-2. Helm dependency/lock consistency and `helm lint`;
-3. `helm template` for source and target values with CRDs available to validation;
-4. normalized rendered-resource comparison, accounting for every intentional difference;
-5. Argo CD rendering/diff without sync, prune, or live mutation;
-6. distinct namespaces, release names, classes, selectors, webhook names, Services, addresses, and
-   status publication;
-7. all compatibility-ledger rows, including expected rejection of invalid or unsupported settings.
-
-For Helm-generated routes, assert that protocol annotations equal actual rendered Service names,
-every shared host has exactly one master or consolidated owner, masters contain no paths, minions
-contain no TLS or conflicting paths, and every Ingress or TransportServer receives an accepted or
-valid controller event.
-
-For every Basic Auth route, inspect the generated NGINX configuration for its
-`auth_basic_user_file`, verify that file exists inside the controller Pod, and compare its
-fingerprint with the live Secret without printing content. A 401 response without credentials does
-not prove the file exists: NGINX emits the challenge before it attempts password verification.
-After materialization, verify an invalid credential returns a normal 401 and an authorized operator
-confirms a valid credential succeeds.
-
-Ask before running tests or suites. Ask separately before accessing a cluster. When authorized,
-verify controller logs/events, configuration acceptance, status, readiness, metrics, certificates,
-client source IP, HTTP behavior, WebSockets/gRPC, and TCP/UDP flows from representative clients.
-
-Do not treat an Ingress status address as acceptance evidence: status can remain populated after a
-resource is rejected. Require a current controller `AddedOrUpdated` event or equivalent accepted
-state, no new rejection in an observation window, and a protocol-aware request to the intended
-backend. Historical Kubernetes events remain visible after repair; separate them by timestamp from
-current logs and events.
+- Run the [static validation](references/discovery-and-validation.md#static-validation) with
+  repository-pinned tools; ask before tests and separately before cluster access.
+- An Ingress status address or an unauthenticated 401 is not acceptance evidence; require the
+  [live acceptance evidence](references/discovery-and-validation.md#live-acceptance-evidence).
+- Pass the [Helm and Argo CD gates](references/compatibility-and-rollout.md#helm-and-argo-cd-gates)
+  without syncing.
 
 ### 7. Roll Out and Cut Over in Stages
 
-For the default parallel strategy:
-
-1. Deploy the target controller and CRDs with no production Ingress ownership.
-2. Validate the separate LoadBalancer address and controller health.
-3. Migrate one low-risk route, then routes grouped by shared behavior.
-4. Pause after each stage for error-rate, latency, status-code, certificate, connection, and
-   controller-reload evidence.
-5. Migrate TCP/UDP listeners individually; verify protocol-level behavior before continuing.
-6. Lower DNS TTL ahead of DNS cutover when policy permits, then wait out the previous TTL.
-7. Move the final address or DNS only after all gates pass. Keep ingress-nginx deployable and its
-   manifests intact throughout the rollback window.
-
-For an approved non-parallel strategy, perform all possible static and rendered validation first,
-then execute the source stop, address release, target deployment, and verification inside the
-planned outage. Treat the first failed gate or expired timebox as an immediate Git-backed rollback.
-Report the actual outage and never characterize the result as zero downtime.
-
-Every stage must have a named owner, success threshold, observation interval, stop condition, and
-one-step traffic rollback. Roll back before debugging if a production stop condition is met.
+- Follow [Staged Cutover](references/compatibility-and-rollout.md#staged-cutover); keep
+  ingress-nginx deployable and its manifests intact throughout the rollback window.
+- Give every stage the owner, thresholds and one-step rollback in
+  [Cutover and Rollback Gates](references/compatibility-and-rollout.md#cutover-and-rollback-gates).
+  Roll back before debugging if a production stop condition is met.
 
 ### 8. Establish Monitoring and GitOps Convergence
 
-- Enable the F5 chart metrics endpoint and its metrics Service.
-- Create a ServiceMonitor or PodMonitor whose labels and namespace match the Prometheus instance's
-  actual selectors. Pod scrape annotations are not evidence when the Prometheus deployment uses
-  operator-managed monitor discovery.
-- Query Prometheus target discovery and require one active healthy target with no scrape error.
-  Then verify dashboards and alerts use the target's actual metric names.
-- Compare the rendered LoadBalancer Service with the live Service. First declare stable behavior
-  through chart values, such as NodePort allocation and IP family policy.
-- Treat ClusterIP(s), health-check NodePort, individual NodePorts, and provider allocation-status
-  annotations as runtime assignments unless the platform deliberately fixes them.
-- If Argo CD still reports drift, add the narrowest `ignoreDifferences` entry scoped by group, kind,
-  namespace, and exact Service name. Ignore only proven runtime-assigned JSON pointers or JQ paths,
-  enable `RespectIgnoreDifferences=true`, and verify the Application becomes Synced/Healthy.
-- Never ignore the entire Service spec, annotations map, LoadBalancer address request, ports,
-  selectors, traffic policy, or user-owned provider annotations.
+- Require one active, healthy Prometheus target, per
+  [Prometheus Discovery](references/compatibility-and-rollout.md#prometheus-discovery).
+- Ignore only proven runtime-assigned Service fields, per
+  [Argo CD Service Drift](references/compatibility-and-rollout.md#argo-cd-service-drift).
 
 ### 9. Clean Up Only After Proof
 
-Before removing ingress-nginx, prove that:
-
-- no Ingress, legacy class annotation, TCP/UDP entry, DNS record, LoadBalancer, firewall rule,
-  monitor, policy, or runbook depends on it;
-- the new class owns every intended route and all migrated resources are accepted;
-- the agreed rollback window and DNS caches have expired;
-- dashboards, alerts, backups, and operational ownership now target F5 NGINX Ingress Controller;
-- Argo CD will not prune shared Secrets, Services, CRDs, or namespaces still in use.
-- target CRDs and the target namespace are either intentionally retained or explicitly removed;
-  pruning the Helm Application is not proof that either was deleted.
-
-Remove old routes and L4 configuration first, then the old controller Application/release, and
-finally controller-specific namespace and CRDs only when no remaining resource uses them. Release
-obsolete addresses or reservations last. Keep the compatibility ledger and validation evidence as
-durable migration documentation.
-
-Published tags and releases from a failed attempt remain immutable evidence. Never move or delete
-them after rollback; publish a later version that records the recovered state.
+- Satisfy the [cleanup proof](references/discovery-and-validation.md#cleanup-proof); remove routes
+  and L4 configuration, then the controller, then namespace and CRDs, and release addresses last.
+- Never move or delete published tags from a failed attempt.
 
 ### 10. Reconcile the Tracking Issue
 
@@ -356,7 +168,8 @@ Report:
 
 ## Maintaining This Skill
 
-- Annotation and ConfigMap compatibility mappings as either controller releases new versions.
+- Annotation and ConfigMap compatibility mappings in the compatibility reference as either
+  controller releases new versions.
 - Rollout stages, gates and rollback actions proven during a cutover.
 - Keep the route pair, expected class identities and exact-diff assertions aligned with the
   selected controller contracts; never promote offline fixture success into live cutover evidence.

@@ -2,7 +2,6 @@
 name: github-repository-baseline
 description: 'Audit, preview, apply, and verify consistent GitHub repository settings and default-branch rulesets. Use when standardizing repositories, migrating classic branch protection, checking baseline drift, creating a repository, or troubleshooting PlanGated and partial fleet runs.'
 argument-hint: '[repositories=owner/name,... | all-owned] [mode={audit|whatif|apply|create}]'
-user-invocable: true
 ---
 
 # Repository Baseline
@@ -36,6 +35,11 @@ The tools work for any GitHub account or organization; only the policy file is o
   private repositories never inherit these checks.
 - Never persist credentials or include private repository identities in public issues, commits, logs,
   or examples.
+- `security.codeScanningDefaultSetup` turns on CodeQL default setup, which analyses every supported
+  language, including GitHub Actions workflows, without a workflow file. GitHub rejects
+  advanced-setup analyses once default setup is configured, so delete a repository's CodeQL workflow
+  and merge that deletion before applying. Private repositories without Advanced Security report
+  `PlanGated`. Omit the key to leave code scanning unmanaged.
 
 ## Policy Selection
 
@@ -222,7 +226,8 @@ Use the repository helper from the central customization checkout:
 ```
 
 The helper creates or resumes the repository, invokes the bundled baseline reconciler, clones it, and
-can add it to the active VS Code workspace.
+can add it to the active VS Code workspace. Lay out its files, or bootstrap them from named
+exemplar repositories, with the [repository layout reference](references/repository-layout.md).
 
 After CI is established, verify its emitted check names against the policy overrides and rerun the
 baseline; the creation-time ruleset alone does not establish repository-specific validation checks.
@@ -248,6 +253,7 @@ the exclusion as soon as the check reports.
 | Unexpected status checks | Compare the repository name with policy override patterns |
 | `WhatIf` changes fingerprints | Stop; treat as a script defect before any apply |
 | Fleet audit exits nonzero | Inspect `Drift` and `Failed`; `PlanGated` alone is non-blocking |
+| `WhatIf` lists a setting you did not mean to change | Apply reconciles every policy setting, not only the one being worked on. Stop, and agree the rollout of that setting before applying |
 | Pull request `BLOCKED` with no failing check | A required check never reported. For `SonarCloud Code Analysis`, list the project's analyses; with none, add a temporary exclusion and re-apply that repository only |
 
 ## Real-World Example: f2calv Policy

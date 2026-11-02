@@ -1,8 +1,7 @@
 ---
 name: github-issues-and-pull-requests
-description: 'Create, update, review, and merge GitHub issues and pull requests: issue types, labels and quality, pull request descriptions from the full branch diff, assignees, Dependabot folding, code-scanning and SonarQube gates, and merge readiness.'
+description: 'Create, update, review, and merge GitHub issues and pull requests: issue types, labels and quality, pull request descriptions from the full branch diff, assignees, Dependabot folding, code-scanning and SonarQube gates, and merge readiness. Use when creating, updating, reviewing or merging an issue or pull request.'
 argument-hint: 'mode={issue|pr-create|pr-update|pr-merge} [repository=owner/name]'
-user-invocable: true
 ---
 
 # GitHub Issues and Pull Requests
@@ -124,7 +123,8 @@ After creating a pull request, and again before merging it:
 1. Re-check Dependabot folding, the security and quality gates, and every required check on the
    current head.
 2. Merge only with the user's authorization, using the merge method and local synchronization rules
-   in the workflow instructions.
+   in the [GitHub instructions](../../instructions/github.instructions.md#merging):
+   `gh pr merge <number> --merge`, then fast-forward the local default branch.
 3. Verify the merge commit on the default branch and any release tag the default-branch CI produces.
 
 ## Reporting

@@ -12,7 +12,9 @@ local record; a design discussion is not authorization to implement, commit or p
 ## Authorities and Boundaries
 
 - Follow the [Markdown instructions](../../instructions/markdown.instructions.md) and
-  [Mermaid instructions](../../instructions/markdown.mermaid.instructions.md).
+  [Mermaid instructions](../../instructions/markdown.mermaid.instructions.md). Draw current and
+  proposed views with the [architecture diagrams skill](../docs-architecture-diagrams/SKILL.md);
+  an ADR is where a target view lives until the code matches it.
 - Use the [GitHub issues and pull requests skill](../github-issues-and-pull-requests/SKILL.md)
   for issue discovery, effective templates, metadata and remote verification.
 - Apply the [repository privacy skill](../repository-privacy/SKILL.md) before public content.

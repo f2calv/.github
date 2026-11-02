@@ -1,6 +1,6 @@
 ---
 name: skill-library
-description: 'Version, package, release and install skills as Spec Kit extensions and Agent Plugins: skill.metadata.yaml sidecars, required and related skills, version bumps with pin cascade, deterministic ZIP builds, portable SKILL.md frontmatter, GitHub Releases with a GitHub Pages catalog, and the /speckit-skill-library bootstrap command. Use when adding or changing a sidecar, bumping a skill version, fixing a failed skill version check, building plugin packages, or installing skills into a Spec Kit repository.'
+description: 'Version, package, release and install skills as Spec Kit extensions and Agent Plugins, and author or audit instructions and skills against a context budget: sidecars, version bumps with pin cascade, deterministic builds, portable frontmatter, the GitHub Pages catalog and token measurement. Use when changing a sidecar or skill version, fixing a failed version check, building or installing packages, or writing, splitting or auditing instructions and skills for token efficiency.'
 ---
 
 # Skill Library
@@ -8,7 +8,9 @@ description: 'Version, package, release and install skills as Spec Kit extension
 Each skill in `.github/skills/` is an independently versioned component, released as a Spec Kit
 extension. The [ADR](https://github.com/f2calv/.github/blob/main/docs/adr-0001-skill-library-distribution.md)
 records the design and delivery status.
-Native consumption of the folders is unchanged. Tooling needs PowerShell 7.4+, Git and `yq` v4.
+Native consumption of the folders is unchanged. Tooling needs PowerShell 7.4+, Git and Mike Farah
+`yq` v4 on Linux, macOS or Windows; install `yq` with `winget install MikeFarah.yq`, `brew install yq`
+or your Linux package manager.
 
 ## Sidecar
 
@@ -34,6 +36,20 @@ externalFiles:
 - `externalFiles` are repository-root-relative files outside the folder the skill depends on,
   typically instructions it links to. Everything committed in the folder is packaged automatically.
 - Do not hand-edit `version` or required pins; use `Set-SkillVersion.ps1`.
+
+## Author and Audit
+
+Write, split and audit instructions and skills against the context budget in the
+[authoring reference](references/authoring-and-context-budget.md): what every surface costs, what
+belongs always-on, how to scope `applyTo`, description and front-matter style, and how to move
+detail into references without losing rules. Measure before and after a change:
+
+```powershell
+./.github/skills/skill-library/scripts/Measure-CustomizationContext.ps1 -Root ./.github
+```
+
+It reports always-on and per-file instruction tokens, description tokens and the largest skills,
+and warns on each budget breach; `-FailOnBudget` makes a breach fail.
 
 ## Validate and Bump
 
@@ -145,6 +161,8 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 
 ## Maintaining This Skill
 
+- Context budgets and the cost model whenever a client changes how it loads instructions, skill
+  descriptions or skill resources; lessons from each library audit go in the authoring reference.
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`
   format, `SPECKIT_CATALOG_URL` precedence and the catalog cache file naming used by the helper.
 - `yq` major versions: recheck `-i` comment preservation and YAML/JSON conversion.

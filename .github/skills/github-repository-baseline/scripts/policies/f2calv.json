@@ -10,7 +10,8 @@
     "dependabotAlerts": true,
     "dependabotSecurityUpdates": true,
     "secretScanning": true,
-    "secretScanningPushProtection": true
+    "secretScanningPushProtection": true,
+    "codeScanningDefaultSetup": true
   },
   "publicRepository": {
     "requiredStatusChecks": ["SonarCloud Code Analysis"],
@@ -224,29 +225,7 @@
         }
       ]
     },
-    {
-      "repositoryPattern": "f2calv/dotnet-nuget-test",
-      "rules": [
-        {
-          "type": "required_status_checks",
-          "parameters": {
-            "strict_required_status_checks_policy": true,
-            "do_not_enforce_on_create": false,
-            "required_status_checks": [
-              {
-                "context": "lint / lint"
-              },
-              {
-                "context": "versioning / gha-release-versioning"
-              },
-              {
-                "context": "build"
-              }
-            ]
-          }
-        }
-      ]
-    },
+
     {
       "repositoryPattern": "f2calv/gha-workflows",
       "rules": [
@@ -263,7 +242,7 @@
                 "context": "versioning / gha-release-versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }
@@ -286,7 +265,7 @@
                 "context": "versioning / gha-release-versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }
@@ -309,7 +288,7 @@
                 "context": "versioning / gha-release-versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }
@@ -332,7 +311,7 @@
                 "context": "versioning / gha-release-versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }
@@ -355,7 +334,7 @@
                 "context": "versioning / gha-release-versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }
@@ -378,7 +357,7 @@
                 "context": "versioning"
               },
               {
-                "context": "validate"
+                "context": "validate / readme-ref-check"
               }
             ]
           }

@@ -1,8 +1,7 @@
 ---
 name: gitops-repository-structure
-description: 'Create, audit, align or migrate Argo CD App-of-Apps repositories with Applications-only discovery, scoped AppProjects, ownership-based namespaces and PVC-safe changes.'
+description: 'Create, audit, align or migrate Argo CD App-of-Apps repositories with Applications-only discovery, scoped AppProjects, ownership-based namespaces and PVC-safe changes. Use when changing how Argo CD discovers, groups or namespaces Applications.'
 argument-hint: '[repository=path] [scope={create|audit|align|plan|migrate}]'
-user-invocable: true
 ---
 
 # GitOps Repository Structure
@@ -11,6 +10,17 @@ Create, audit, align or migrate an Argo CD App-of-Apps repository without treati
 neatness as a runtime boundary. Keep root discovery restricted to Argo Applications, use
 AppProjects and namespaces as deliberate authorization boundaries, use sync waves for ordering, and
 separate Application ownership changes from namespace and data migrations.
+
+The Kubernetes GitOps instructions (`.github/instructions/kubernetes.gitops.instructions.md`) own the baseline layout,
+App-of-Apps, Application manifest, AppProject, namespace and naming rules. This skill owns the
+construction, audit and migration workflow and does not restate those rules.
+
+| Reference | Holds |
+| --- | --- |
+| [Repository design](references/repository-design.md) | Multi-cluster model, wave table, project and namespace reasoning, new-repository detail |
+| [PVC-safe migration](references/pvc-safe-migration.md) | Inventory, ownership handoffs, wrapper consolidation, AppProject rollout, namespace data moves |
+| [Audit and validation](references/audit-and-validation.md) | Audit report and priorities, guardrails, phase checks, troubleshooting |
+| [Single-cluster example](./examples/single-cluster.md) | Discovery tree, seed projects, leaf Applications and ownership map |
 
 ## Prerequisites
 
@@ -21,91 +31,18 @@ separate Application ownership changes from namespace and data migrations.
 - The target cluster and repository ownership model, including whether one repository manages one
   cluster or several clusters
 
-## Quick Start
+## Modes
 
-For a new repository:
+| Mode | Contract |
+| --- | --- |
+| `create` | Build a new repository through the New Repository Workflow |
+| `audit` | Make no edits; report findings by priority with ordered corrections |
+| `align` | Apply the smallest ordered corrections an audit recommends |
+| `plan` | Produce the phased migration plan and inventory without editing |
+| `migrate` | Execute the Required Migration Workflow one phase at a time |
 
-1. Define cluster, trust, ownership, policy, and lifecycle boundaries.
-2. Create one seeded root Application per independent cluster boundary.
-3. Point each root at an Applications-only discovery tree.
-4. Add constrained AppProjects before ordinary leaf Applications use them.
-5. Put deployable resources outside the discovery tree and validate a clean-cluster bootstrap.
-
-For an existing repository:
-
-1. Audit root Applications, child Applications, AppProjects, sync waves, destination namespaces,
-   and source paths.
-2. Inventory PVC UID, PV, reclaim policy, storage class, access mode, node affinity, and Argo
-   tracking ID.
-3. Design the target Applications-only tree without changing live resource identity.
-4. Migrate Application ownership first without changing namespaces or Kubernetes resource names.
-5. Introduce AppProjects and namespace changes incrementally.
-6. Migrate stateful namespaces last, one workload at a time, with explicit data movement.
-
-See [the PVC-safe migration reference](references/pvc-safe-migration.md) before changing any
+Read [the PVC-safe migration reference](references/pvc-safe-migration.md) before changing any
 Application, ApplicationSet, Helm release name, namespace, StatefulSet, or PVC.
-
-## Repository Models
-
-Use the [single-cluster worked example](./examples/single-cluster.md) for a concrete discovery tree,
-seed projects, direct leaf Applications and an ownership/permission map. Its bootstrap prerequisites
-and live migration gates are explicit; the steady-state manifests are not a handoff procedure.
-
-Use one seeded root Application for one cluster when access and lifecycle boundaries permit it:
-
-```text
-src/
-├── bootstrap.yaml
-├── applications/
-│   ├── platform/
-│   │   ├── app-projects.yaml
-│   │   ├── ingress-controller.yaml
-│   │   └── storage-controller.yaml
-│   └── workloads/
-│       └── example.yaml
-└── resources/
-   ├── app-projects/
-   │   └── projects.yaml
-   └── example/
-      ├── manifests/
-      ├── values/
-      └── chart/
-```
-
-The root source is `src/applications` with recursive directory discovery. Every YAML file
-there must be an Argo CD `Application` or `ApplicationSet`. Leaf Applications may point to Helm
-repositories, OCI charts, or directories under `resources/`.
-
-Do not recursively scan `src` itself. A mixed tree eventually applies a Secret, values
-file, archived manifest, or Helm template as though it were an Argo Application.
-
-Avoid wrapper Applications whose only purpose is to traverse one folder or group resources by a
-generic namespace. The root can discover direct leaf Applications recursively; each leaf owns a
-deployable unit and points to its actual resource source.
-
-For a repository that manages several clusters, repeat the boundary explicitly:
-
-```text
-clusters/
-├── cluster-a/
-│   ├── bootstrap.yaml
-│   └── applications/
-├── cluster-b/
-│   ├── bootstrap.yaml
-│   └── applications/
-└── resources/
-   ├── base/
-   └── overlays/
-      ├── cluster-a/
-      └── cluster-b/
-```
-
-Each cluster root discovers only its own Applications tree and has only the destination permissions
-that cluster requires. Share charts, bases, or values deliberately under `resources`; do not use a
-single broadly privileged root merely to avoid small cluster-specific entry points.
-
-Repository folders describe source ownership and reuse. They do not create Kubernetes isolation,
-RBAC, network policy, secret boundaries, or data protection.
 
 ## Structural Invariants
 
@@ -126,236 +63,56 @@ Keep these true for greenfield repositories and after every later change:
   category;
 - every stateful workload has a documented and proven restore route.
 
-## Dependency Ordering
-
-Put `argocd.argoproj.io/sync-wave` on direct child Applications:
-
-| Typical wave | Responsibility |
-| --- | --- |
-| `-4` | Cluster networking and storage prerequisites |
-| `-3` | Certificate and security controllers |
-| `-2` | GitOps controller self-management |
-| `0` | Shared operators and data services |
-| Positive | Observability and application workloads |
-
-Use the numbers as a repository-specific dependency graph, not a universal taxonomy. Argo advances
-only after earlier-wave child Applications become healthy when health assessment is configured for
-the Argo CD `Application` custom resource. Verify that configuration before relying on waves for a
-clean-cluster bootstrap. A sync wave does not replace runtime readiness, CRD availability checks, or
-application retry behavior.
-
-## Authorization Boundaries
-
-Use AppProjects to restrict each class of Application, including in a single-operator repository.
-They are preventive guardrails and executable ownership documentation, not merely multi-team UI
-grouping:
-
-- allow only intended source repositories;
-- allow only intended destination clusters and namespaces;
-- allow cluster-scoped resources only for platform controllers that need them;
-- constrain namespaced resource kinds for ordinary workloads;
-- give the root only the permissions needed to create approved child Applications.
-
-The root's own project must pre-exist. Seed it with the root, or initially use a deliberately
-constrained pre-existing project. Reconcile all other AppProjects through an earliest-wave leaf
-Application before Applications that reference them. Do not leave every leaf in an unrestricted
-`default` project after bootstrap validation.
-
-Choose projects from real permission boundaries rather than mechanically creating one per
-Application. A typical starting model separates cluster foundation, shared services, and
-independently owned applications. Split a project further only when source trust, destinations,
-resource kinds, secrets, operators, or lifecycle differ.
-
-## Namespace Boundaries
-
-Create namespaces around trust, ownership, policy, and lifecycle:
-
-- Keep cluster operators in conventional namespaces.
-- Give an independently operated application its own namespace.
-- Co-locate a database with its sole owning application when policy and operations align.
-- Use a shared-service namespace only when several applications deliberately share the service.
-- Avoid broad `utilities`, `data`, `apps`, `prd`, or `tst` namespaces as permanent ownership models.
-
-Environment can remain a label, configuration dimension, or suffix where multiple instances are
-required. It should not be the only isolation boundary between unrelated applications.
-
-Namespace separation is not a security control by itself. Pair new application namespaces with
-least-privilege service accounts and RBAC, default-deny NetworkPolicies plus tested DNS and service
-exceptions, intentional secret distribution, and resource limits where appropriate.
-
 ## New Repository Workflow
 
-### 1. Define Boundaries
+Each step is detailed in
+[New Repository Details](references/repository-design.md#new-repository-details).
 
-Classify each component as cluster foundation, shared service, independently owned application, or
-environment-specific instance. Record its source trust, destination, cluster-scoped requirements,
-namespace, secrets, state, consumers, and release lifecycle.
-
-### 2. Seed Bootstrap and Projects
-
-Create the root outside its discovery tree. Pre-create or seed a constrained root AppProject, then
-reconcile other AppProjects through an earliest-wave leaf before dependent Applications.
-
-### 3. Add Leaf Applications
-
-Give each deployable unit one leaf Application. Point it to an external chart, OCI artifact, or a
-resource directory. Put dependency waves on these direct children and preserve stable Helm release
-names.
-
-### 4. Add Runtime Isolation
-
-Create ownership-based namespaces and their RBAC, policies, quotas, secrets, and monitoring access.
-Keep shared services shared only when their consumers, permissions, and lifecycle justify it.
-
-### 5. Prove Bootstrap
-
-Validate render output and, in a disposable cluster when practical, bootstrap from only the seeded
-root. Confirm ordering, CRD readiness, Application health assessment, project permissions,
-namespace policies, pruning behavior, and state restoration.
+1. **Define boundaries**: classify every component and record its trust, destination, state and
+   lifecycle. One repository may manage several clusters only with one root per cluster
+   ([models](references/repository-design.md#repository-models)).
+2. **Seed bootstrap and projects**: create the root outside its discovery tree with a pre-existing,
+   constrained project; reconcile other AppProjects in the earliest wave.
+3. **Add leaf Applications**: one leaf per deployable unit, with
+   [dependency waves](references/repository-design.md#dependency-ordering) on direct children and
+   stable Helm release names.
+4. **Add runtime isolation**: pair ownership-based namespaces with RBAC, policies, quotas and secrets
+   ([namespaces](references/repository-design.md#namespace-boundaries)).
+5. **Prove bootstrap**: render, then bootstrap a disposable cluster from only the seeded root when
+   practical.
 
 ## Required Migration Workflow
 
-### 1. Inventory Before Editing
+1. **Inventory before editing**: record Applications, finalizers, tracking IDs, waves, wrapper-owned
+   resources and full PVC identity
+   ([preflight inventory](references/pvc-safe-migration.md#preflight-inventory)).
+2. **Build the Applications-only tree** without changing the active root, source paths, namespaces,
+   release names or resource names
+   ([tree](references/pvc-safe-migration.md#building-the-applications-only-tree)).
+3. **Remove wrapper ownership safely**: finalizer off and verified before the root switch; restore
+   finalizers after adoption
+   ([consolidation](references/pvc-safe-migration.md#root-and-wrapper-consolidation),
+   [handoff](references/pvc-safe-migration.md#application-ownership-handoff)).
+4. **Verify resource identity**: PVC UID/PV, release name, namespace and resource names must not
+   change ([invariants](references/pvc-safe-migration.md#invariants)).
+5. **Introduce AppProjects separately**, never combined with a handoff or namespace move
+   ([AppProjects](references/pvc-safe-migration.md#introducing-appprojects)).
+6. **Migrate namespaces separately** as planned data migrations, stateless first and stateful last,
+   one workload at a time ([namespace migration](references/pvc-safe-migration.md#namespace-migration)).
 
-Record:
-
-- root and wrapper Application names, UIDs, finalizers, tracking IDs, and source paths;
-- every leaf Application, destination namespace, Helm release name, and sync wave;
-- raw resources currently owned directly by wrapper Applications;
-- every PVC and its UID, PV, reclaim policy, storage class, access mode, capacity, node affinity,
-  owner references, and Argo tracking ID;
-- current workload readiness and restart counts.
-
-### 2. Build the Applications-Only Tree
-
-Create the target tree without changing the active root. Copy or move only Argo Application
-manifests. Add dedicated directory-source Applications for raw resources that wrappers currently
-own. Keep source paths, namespaces, Helm release names, and Kubernetes resource names unchanged.
-
-### 3. Remove Wrapper Ownership Safely
-
-For each wrapper Application:
-
-1. Remove its resources finalizer and reconcile that change.
-2. Verify the live wrapper has no finalizer.
-3. Switch the root to the Applications-only tree so direct leaf Applications are adopted.
-4. Verify direct child Applications are Synced/Healthy and tracking annotations identify the new
-   owner.
-5. Restore finalizers on the desired direct Applications.
-6. Remove any finalizer-free orphan Application only after its replacement is healthy.
-
-For an ApplicationSet, set `spec.syncPolicy.preserveResourcesOnDeletion: true`, reconcile it, and
-verify generated Applications no longer carry a resources finalizer before deleting the set.
-
-### 4. Verify Resource Identity
-
-Compare pre- and post-migration values. A repository restructure must not change:
-
-- PVC UID or backing PV;
-- Helm release name;
-- destination namespace;
-- StatefulSet, Deployment, Service, Secret, or ConfigMap names;
-- volume claim templates or mounted claim names.
-
-### 5. Introduce AppProjects Separately
-
-Add project definitions before assigning dependent Applications. Pilot one low-risk namespaced
-Application, test intended denials as well as successful reconciliation, and then move Applications
-out of `default` incrementally. Do not combine project assignment with an ownership handoff or
-namespace move.
-
-### 6. Migrate Namespaces Separately
-
-A PVC cannot be renamed or moved to another namespace. Treat each stateful namespace move as a
-planned data migration:
-
-1. Prove backup restore or CSI snapshot/clone support.
-2. Set an appropriate PV reclaim policy and record the rollback point.
-3. Quiesce writers.
-4. Restore or clone into a new PVC in the destination namespace.
-5. Validate data and application behavior before decommissioning the original claim.
-
-Move stateless workloads first. Never combine an App-of-Apps ownership refactor with a stateful
-namespace move.
+Validate after every phase with the
+[phase checks](references/audit-and-validation.md#phase-validation) and stop on any
+[stop condition](references/pvc-safe-migration.md#stop-conditions).
 
 ## Conformance Audit
 
-Use `scope=audit` before adding a major workload, after changing bootstrap discovery, and
-periodically for every managed cluster.
-
-Report:
-
-1. each root and the exact path it discovers;
-2. any discovered non-Application document;
-3. wrapper Applications and the boundary each one adds;
-4. duplicate, overlapping, or ambiguous resource ownership;
-5. Applications still using `default` or an over-broad AppProject;
-6. AppProject source, destination, namespaced-kind, and cluster-kind grants;
-7. broad category/environment namespaces containing unrelated owners;
-8. Applications whose effective dependency order exists only on a wrapper;
-9. namespace-qualified service addresses, namespace-local Secrets/ConfigMaps/RBAC, and other move
-   blockers;
-10. stateful workloads without a current inventory and proven restore path.
-
-Classify findings:
-
-| Priority | Meaning |
-| --- | --- |
-| Blocker | Discovery can apply the wrong document, pruning/ownership is unsafe, or persistent data lacks a recoverable path |
-| High | AppProject or namespace permissions cross unrelated trust boundaries |
-| Medium | Wrapper, wave, naming, or source layout creates avoidable operational coupling |
-| Low | Structure is safe but inconsistent or unnecessarily difficult to navigate |
-
-Recommend the smallest ordered corrections. Put repository-only and stateless low-risk work first,
-then ownership handoffs, policy tightening, stateless namespace moves, and finally independent
-stateful data migrations. Never report directory tidiness alone as a security improvement.
-
-## Automation Guardrails
-
-Add repository validation that:
-
-- enumerates every YAML document below each Applications-only tree and rejects kinds other than
-  `Application` and `ApplicationSet`;
-- rejects a root whose source includes its own manifest;
-- detects duplicate Application names and obvious overlapping in-repository source ownership;
-- renders or validates leaf sources with the repository's existing Helm, Kustomize, schema, and
-  policy tooling;
-- runs `git diff --check`.
-
-Static validation cannot prove safe live ownership transfer, CRD readiness, project enforcement,
-network connectivity, backup validity, or restore correctness. Keep those as explicit runtime
-gates.
-
-## Validation
-
-After every phase:
-
-```powershell
-kubectl get applications,applicationsets -n argocd
-kubectl get pvc,pv -A
-kubectl get pods -A
-git diff --check
-```
-
-Also verify:
-
-- the intended Applications are Synced and Healthy;
-- no old Application retains a resources finalizer before deletion;
-- PVC UID/PV mappings match the inventory;
-- workloads have the expected ready replicas and restart counts;
-- warning events and application logs show no storage or mount failures;
-- the Git worktree contains no unrelated changes before each commit.
-
-## Troubleshooting
-
-| Symptom | Response |
-| --- | --- |
-| Root tries to apply a Secret or values file | Restrict its source to the Applications-only tree |
-| Shared-resource warning during adoption | Remove old ownership safely, then let one desired Application adopt it |
-| Application deletion starts pruning workloads | Stop; remove/reconcile its finalizer or preserve generated resources before deletion |
-| New namespace cannot bind the old PVC | Restore/clone data into a new claim; PVCs are namespace-scoped |
-| Stateful pod remains Pending after placement change | Check PV node affinity and storage replicas before changing selectors |
-| Earlier sync wave is stuck | Inspect child Application health and CRD/controller readiness; do not bypass ordering blindly |
+- Use `scope=audit` before adding a major workload, after changing bootstrap discovery, and
+  periodically for every managed cluster.
+- Report the [audit items and priorities](references/audit-and-validation.md#conformance-audit) and
+  recommend the smallest ordered corrections. Never report directory tidiness alone as a security
+  improvement.
+- Add the [automation guardrails](references/audit-and-validation.md#automation-guardrails); keep
+  live ownership, CRD readiness, project enforcement and restore correctness as runtime gates.
 
 ## Maintaining This Skill
 

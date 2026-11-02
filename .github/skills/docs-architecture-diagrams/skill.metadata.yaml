@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [documentation, architecture, diagrams]
+related:
+  - id: patterns-architecture-review
+    reason: Assess the architecture signals found while drawing and realign code to a components view.
+  - id: docs-readme
+    reason: Select the README sections around an overview diagram.
+  - id: docs-adr
+    reason: Record a proposed target view until the code matches it.
+externalFiles:
+  - .github/instructions/markdown.instructions.md
+  - .github/instructions/markdown.mermaid.instructions.md

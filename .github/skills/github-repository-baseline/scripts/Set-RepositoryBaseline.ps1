@@ -829,6 +829,64 @@ function Resolve-DefaultBranchRuleset {
     [pscustomobject]@{ Status = 'Changed'; Detail = $DriftDetail }
 }
 
+function Resolve-CodeScanningDefaultSetup {
+    <#
+    .SYNOPSIS
+        Audits or reconciles the CodeQL default setup state.
+    .DESCRIPTION
+        Default setup analyses every supported language, including GitHub Actions workflows, without a
+        workflow file. Remove an advanced-setup CodeQL workflow before enabling it: GitHub rejects
+        advanced analyses while default setup is configured.
+    .PARAMETER RepositoryPath
+        GitHub REST API repository path.
+    .PARAMETER Enabled
+        Whether default setup should be configured.
+    .PARAMETER Apply
+        Reconciles drift when specified.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryPath,
+
+        [Parameter(Mandatory = $true)]
+        [bool]$Enabled,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$Apply
+    )
+
+    $DefaultSetupPath = "$RepositoryPath/code-scanning/default-setup"
+    $Response = Invoke-GhCommand -Arguments @('api', $DefaultSetupPath)
+    if ($Response.ExitCode -ne 0) {
+        return [pscustomobject]@{
+            Status = Get-FailureStatus $Response.Error
+            Detail = $Response.Error
+        }
+    }
+
+    $DefaultSetup = ConvertFrom-GhResponse -Response $Response
+    $Configured = $null -ne $DefaultSetup -and $DefaultSetup.state -eq 'configured'
+    if ($Configured -eq $Enabled) {
+        return [pscustomobject]@{ Status = 'Compliant'; Detail = '' }
+    }
+    if (-not $Apply) {
+        return [pscustomobject]@{ Status = 'Drift'; Detail = "Default setup state is '$($DefaultSetup.state)'." }
+    }
+    if (-not $PSCmdlet.ShouldProcess($RepositoryPath, 'Reconcile CodeQL default setup')) {
+        return [pscustomobject]@{ Status = 'WhatIf'; Detail = '' }
+    }
+
+    $State = if ($Enabled) { 'configured' } else { 'not-configured' }
+    $Mutation = Invoke-GhMutation -Method PATCH -Path $DefaultSetupPath -Body @{ state = $State }
+    [pscustomobject]@{
+        Status = $(if ($Mutation.ExitCode -eq 0) { 'Changed' } else { Get-FailureStatus $Mutation.Error })
+        Detail = $Mutation.Error
+    }
+}
+
 #endregion Functions
 
 #region Main Execution
@@ -1044,6 +1102,18 @@ if ($MyInvocation.InvocationName -ne '.') {
             else {
                 Add-BaselineResult -Results $Results -RepositoryName $FullName `
                     -Setting 'secret_protection' -Status 'WhatIf'
+            }
+
+            if ($Policy.security.PSObject.Properties.Name -contains 'codeScanningDefaultSetup') {
+                $CodeScanningResult = Resolve-CodeScanningDefaultSetup `
+                    -RepositoryPath $RepositoryPath `
+                    -Enabled ([bool]$Policy.security.codeScanningDefaultSetup) `
+                    -Apply:($Mode -eq 'Apply') `
+                    -WhatIf:$WhatIfPreference
+                Add-BaselineResult -Results $Results -RepositoryName $FullName `
+                    -Setting 'code_scanning_default_setup' `
+                    -Status $CodeScanningResult.Status `
+                    -Detail $CodeScanningResult.Detail
             }
 
             $RulesetResult = Resolve-DefaultBranchRuleset `

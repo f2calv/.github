@@ -2,7 +2,6 @@
 name: dotnet-upgrade
 description: 'Assess and upgrade .NET major versions, starting with .NET 10 to 11 and evolving for .NET 12 onward. Use for SDK, target-framework and NuGet bumps, release-note analysis, breaking changes, deprecated APIs, and codebase-specific C# convention, runtime and performance opportunities beyond version replacement.'
 argument-hint: '[target major] [audit|upgrade]'
-user-invocable: true
 ---
 
 # .NET Upgrade

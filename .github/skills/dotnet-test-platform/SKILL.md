@@ -1,8 +1,7 @@
 ---
 name: dotnet-test-platform
-description: 'Configure, migrate, or troubleshoot .NET tests on Microsoft.Testing.Platform and xUnit v3: global.json runner selection, test project properties, VSTest package removal, dotnet test command syntax, filters, coverage, and CI workflow or VS Code task test steps.'
+description: 'Configure, migrate, or troubleshoot .NET tests on Microsoft.Testing.Platform and xUnit v3: global.json runner selection, test project properties, VSTest package removal, dotnet test command syntax, filters, coverage, and CI workflow or VS Code task test steps. Use when a test project, its runner or its CI test step changes or fails.'
 argument-hint: '[scope=repository|workflow] [mode={audit|migrate|update}]'
-user-invocable: true
 ---
 
 # .NET Test Platform
@@ -10,7 +9,9 @@ user-invocable: true
 Every .NET repository is forward-only on `Microsoft.Testing.Platform` (MTP) with xUnit v3. Use this
 workflow when adding the first test project, migrating from VSTest, or authoring `dotnet test` steps
 in workflows, composite actions or `.vscode/tasks.json`. Test structure, naming and assertion rules
-remain in the shared testing instructions.
+remain in the shared testing instructions; the
+[integration test setup](references/integration-test-setup.md) covers `TestBase`, configuration and
+credentials.
 
 Never run tests without explicit user approval; they may be integration tests needing credentials
 or external services.

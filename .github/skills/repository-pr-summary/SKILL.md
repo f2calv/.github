@@ -1,6 +1,6 @@
 ---
 name: repository-pr-summary
-description: Create a temporary markdown file summarising all branch changes vs. the default branch for PR review
+description: 'Create a temporary Markdown summary of every change on the branch against the default branch. Use when preparing to review a branch before opening a pull request.'
 disable-model-invocation: true
 ---
 # Summarize Branch Changes for PR

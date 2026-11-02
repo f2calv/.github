@@ -2,7 +2,6 @@
 name: patterns-modular-monolith
 description: 'Design, implement, audit or troubleshoot .NET modular monoliths with one Dockerfile and release image serving multiple configured roles. Use for layered module boundaries, dependency direction, feature-selected modules, workers running singly or together, composition roots, controller/OpenAPI gating, run-once jobs, worker lifecycle, replica ownership, and role-aware health and deployment contracts.'
 argument-hint: '[design|apply|audit|diagnose] [module or runtime role]'
-user-invocable: true
 ---
 
 # Modular Monolith

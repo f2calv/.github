@@ -2,7 +2,6 @@
 name: kubernetes-configmap-sync
 description: 'Embed a complete reviewed non-secret UTF-8 file in one existing tracked ConfigMap data key. Use for JSON or JSONC appsettings, XML including KNX exports, plain text, configuration drift checks and local GitOps preparation. Not secret synchronization, deployment or live cluster mutation.'
 argument-hint: '[source file] [check|sync]'
-user-invocable: true
 ---
 
 # Sync File To ConfigMap

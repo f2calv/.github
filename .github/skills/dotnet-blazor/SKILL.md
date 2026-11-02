@@ -1,6 +1,6 @@
 ---
 name: dotnet-blazor
-description: 'Create, extend, audit or troubleshoot Blazor Web App frontends: render-mode choice, co-hosted WebAssembly client projects, component libraries, typed API clients, OIDC cookie authentication, antiforgery, multi-replica assets and Data Protection, and component or browser tests.'
+description: 'Create, extend, audit or troubleshoot Blazor Web App frontends: render-mode choice, co-hosted WebAssembly client projects, component libraries, typed API clients, OIDC cookie authentication, antiforgery, multi-replica assets and Data Protection, and component or browser tests. Use when building or reviewing a Blazor UI, its sign-in or its client and server split.'
 ---
 
 # Blazor Frontend

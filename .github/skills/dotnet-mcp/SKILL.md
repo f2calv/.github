@@ -1,8 +1,7 @@
 ---
 name: dotnet-mcp
-description: 'Create, modify, modernize, or audit .NET MCP server tools, protocol prompts, registration, options, DTOs and tests, including Mcp-named files and Mcp folders. Covers read-only Streamable HTTP, live state, bounded history, privacy and protocol validation.'
+description: 'Create, modify, modernize, or audit .NET MCP server tools, protocol prompts, registration, options, DTOs and tests, including Mcp-named files and Mcp folders. Covers read-only Streamable HTTP, live state, bounded history, privacy and protocol validation. Use when adding or changing MCP tools, prompts or their registration in a .NET server.'
 argument-hint: 'mode={create|update|audit} [scope=application]'
-user-invocable: true
 ---
 
 # .NET HTTP MCP

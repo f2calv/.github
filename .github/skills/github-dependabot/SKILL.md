@@ -2,7 +2,6 @@
 name: github-dependabot
 description: 'Audit, create, align and troubleshoot dependabot.yml by matching package ecosystems to manifests, lockfiles, workflows, containers, infrastructure and pre-commit hooks. Use for missing ecosystems or missing and noisy Dependabot pull requests.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|troubleshoot}]'
-user-invocable: true
 ---
 
 # Dependabot Management
@@ -102,9 +101,14 @@ Classify every finding:
 - `Policy drift`: schedules, grouping, limits, or commit-message conventions differ without a
   repository-specific reason.
 - `Intentional exception`: a documented, current constraint requires local policy.
+- `Unmerged`: configuration is correct but Dependabot pull requests have sat open, so versions drift
+  between repositories anyway, such as one repository on `actions/checkout@v6` while the rest use
+  `@v7`. List them with `gh pr list --author app/dependabot --state open` and fold or merge them;
+  a configuration fix cannot resolve this class.
 
 Produce the matrix before editing. For fleet reviews, include one row per repository and list exact
-ecosystem-directory pairs for every gap.
+ecosystem-directory pairs for every gap. Compare the major versions of each third-party action
+across the fleet's workflows: a repository behind the others is usually `Unmerged`, not `Missing`.
 
 ### 4. Align The Configuration
 

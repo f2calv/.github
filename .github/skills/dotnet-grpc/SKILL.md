@@ -2,7 +2,6 @@
 name: dotnet-grpc
 description: 'Create, refactor, audit or troubleshoot .NET gRPC clients, servers and Protocol Buffers contracts: proto-first and protobuf-net code-first, HTTP/2 and h2c, channel lifetimes, deadlines, cancellation, keepalive, retries, streaming acknowledgements and replay, Kubernetes discovery, load balancing, probes, rollout and observability. Use for GrpcChannel, AddGrpcClient, AddGrpc, MapGrpcService, .proto and gRPC-backed workers; not REST/OpenAPI, SignalR or HTTP MCP tools.'
 argument-hint: '[design|apply|audit|diagnose] [contract, client, service or workspace]'
-user-invocable: true
 ---
 
 # .NET gRPC

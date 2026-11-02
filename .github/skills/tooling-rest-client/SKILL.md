@@ -1,8 +1,7 @@
 ---
 name: tooling-rest-client
-description: 'Create, migrate, audit, and maintain VS Code REST Client .http and .rest files, including requests-folder layout, dotenv secrets, authentication, examples, references, and editor support.'
+description: 'Create, migrate, audit, and maintain VS Code REST Client .http and .rest files, including requests-folder layout, dotenv secrets, authentication, examples, references, and editor support. Use when adding or changing .http request files.'
 argument-hint: 'mode={add|update|migrate|audit} [scope=repository-or-workspace]'
-user-invocable: true
 compatibility: 'Requires VS Code with humao.rest-client to execute requests. Authoring and static validation are cross-platform.'
 ---
 

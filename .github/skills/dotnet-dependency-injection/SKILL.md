@@ -2,7 +2,6 @@
 name: dotnet-dependency-injection
 description: 'Design, implement, audit or troubleshoot .NET dependency injection: singleton, scoped and transient lifetimes, captive dependencies, provider/strategy factories, keyed services, shared-instance aliases, disposal, hosted-service scopes and test substitutions. Use for DI registration and resolution failures or composition refactoring, not distributed singleton election.'
 argument-hint: '[design|apply|audit|diagnose] [service or composition root]'
-user-invocable: true
 ---
 
 # .NET Dependency Injection

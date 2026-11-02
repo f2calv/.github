@@ -1,6 +1,6 @@
 # ADR 0002: Agent Plugins Packaging
 
-**Status:** Accepted; implemented in PR #41, client proof pending.
+**Status:** Accepted; implemented and released (PR #41, `skill-library/1.1.0`), client proof pending.
 **Date:** 2026-11-01.
 **Scope:** Publishing the shared skills as [Agent Plugins](https://agent-plugins.org/) v1.0.0 packages
 alongside the existing Spec Kit extensions. Copilot workspace and personal-link consumption is unchanged.
@@ -127,7 +127,7 @@ skill gets one on its next version.
 
 ## Validation and Delivery
 
-Implemented in PR #41; `skill-library` 1.1.0 publishes on merge:
+Implemented in PR #41 and released as `skill-library` 1.1.0:
 
 - [x] **Conformance gate.** `Test-SkillLibrary.ps1` checks each skill's normalised frontmatter
   against the Agent Skills rules; all 49 skills pass.
@@ -142,16 +142,17 @@ Implemented in PR #41; `skill-library` 1.1.0 publishes on merge:
   asserts the closed field set instead.
 - [x] **Docs.** README FAQ, [architecture](architecture.md#agent-plugins), demo 8 and the
   skill-library skill.
+- [x] **Release.** `skill-library/1.1.0` carries `skill-library-1.1.0-plugin.zip`, and the Pages catalog
+  lists it under `skill_library.agent_plugin` with a matching SHA-256. The downloaded `plugin.json`
+  validates against the published schema and the layout matches the decision.
 - [ ] **Client proof.** Load one generated plugin in a conformant client and record the client and
   version here.
 
 ## Handover
 
-1. After merge, confirm the `skill-library/1.1.0` release has `skill-library-1.1.0-plugin.zip` and
-   the Pages catalog shows `skill_library.agent_plugin` for it.
-2. Run demo 8, then load the extracted folder in an Agent Plugins client; record the result above
+1. Run demo 8, then load the extracted folder in an Agent Plugins client; record the result above
    and drop "client proof pending" from the status.
-3. Decide whether to backfill plugins for existing skill versions. It would mean rebuilding from each
+2. Decide whether to backfill plugins for existing skill versions. It would mean rebuilding from each
    tag and adding an asset to a published release, which ADR 0001 currently forbids; the alternative
    is waiting for each skill's next bump.
 

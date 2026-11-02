@@ -1,8 +1,7 @@
 ---
 name: dotnet-apphost
-description: 'Design, align, refactor, audit or troubleshoot .NET application bootstrapping and AppHost composition: thin Program entry points, configuration/logging/telemetry ordering, feature and role registration, finite migration and ingestion modes, interactive consoles, Web API/MCP/gRPC wiring, middleware and endpoint order, health, shutdown, process results and host tests. Use for AppHost.cs, Program.cs and cross-application bootstrap consistency.'
+description: 'Design, align, refactor, audit or troubleshoot .NET application bootstrapping and AppHost composition: thin Program entry points, configuration/logging/telemetry ordering, feature and role registration, finite migration and ingestion modes, interactive consoles, Web API/MCP/gRPC wiring, middleware and endpoint order, health, shutdown, process results and host tests. Use for AppHost.cs, Program.cs and cross-application bootstrap consistency. CLI parsing belongs to dotnet-cli and DI lifetimes to dotnet-dependency-injection.'
 argument-hint: '[design|apply|audit|diagnose] [application or host concern]'
-user-invocable: true
 ---
 
 # .NET Application Host

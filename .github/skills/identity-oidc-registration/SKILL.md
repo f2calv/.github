@@ -1,6 +1,6 @@
 ---
 name: identity-oidc-registration
-description: 'Create, rotate, audit and troubleshoot OpenID Connect sign-in registrations for self-hosted web applications with Microsoft Entra ID or Google Workspace: redirect URIs, secrets in a secret store, user assignment, claims for authorization, reverse-proxy callbacks, and moving an internal host to a public domain.'
+description: 'Create, rotate, audit and troubleshoot OpenID Connect sign-in registrations for self-hosted web applications with Microsoft Entra ID or Google Workspace: redirect URIs, secrets in a secret store, user assignment, claims for authorization, reverse-proxy callbacks, and moving an internal host to a public domain. Use when a sign-in registration is created, rotated, broken or moved.'
 ---
 
 # OIDC App Registration

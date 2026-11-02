@@ -1,8 +1,7 @@
 ---
 name: tooling-pre-commit
-description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable.'
+description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable. Use when pre-commit hooks fail, drift or need updating.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|update|run|install-pre-push|troubleshoot}] [files=...]'
-user-invocable: true
 compatibility: 'Native execution requires pre-commit 4.6.2 and Git. The fallback requires Docker. Fleet auditing requires PowerShell 7.4 and Git.'
 ---
 
@@ -79,7 +78,7 @@ Resolve latest versions live before changing these values. At the time this skil
 | `pre-commit/pre-commit-hooks` | `v6.0.0` | GitHub latest release |
 | `bmares/check-json5` | `v1.0.1` | GitLab latest stable tag |
 | `rbubley/mirrors-prettier` | `v3.9.10` | GitHub latest tag, matching npm `prettier` latest |
-| `igorshubovych/markdownlint-cli` | `v0.49.1` | GitHub latest release |
+| `igorshubovych/markdownlint-cli` | `v0.50.0` | GitHub latest release |
 
 `pre-commit/mirrors-prettier` is archived; use the maintained `rbubley/mirrors-prettier` mirror.
 

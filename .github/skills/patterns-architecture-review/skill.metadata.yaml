@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [architecture, review, refactoring]
+required:
+  - id: docs-architecture-diagrams
+    version: 1.0.0
+related:
+  - id: patterns-modular-monolith
+    reason: Module boundaries and dependency direction for a realigned container.
+  - id: patterns-ports-and-adapters
+    reason: Application-owned ports when breaking inverted dependencies or leaky boundaries.
+  - id: dotnet-dependency-injection
+    reason: Composition-root changes when components move or split.
+  - id: docs-adr
+    reason: Record the target architecture before realignment.
+  - id: repository-privacy
+    reason: Check a findings report before publishing it to a public destination.
+externalFiles:
+  - .github/instructions/workflow.instructions.md

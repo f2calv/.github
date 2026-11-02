@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  lint:
+    uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+    permissions:
+      contents: read
+
+  versioning:
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    permissions:
+      contents: read
+    with:
+      tag-and-release: false
+
+  #Exercise the action from this commit; replace with assertions on its outputs or side effects.
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./
+        id: action
+
+  #Reports as validate / readme-ref-check; require that name in the repository ruleset.
+  validate:
+    needs: [versioning]
+    uses: f2calv/gha-workflows/.github/workflows/readme-ref-check.yml@v1
+    permissions:
+      contents: read
+    with:
+      major: ${{ needs.versioning.outputs.major }}
+
+  #Action repositories keep the v prefix and move the floating vMAJOR and vMAJOR.MINOR aliases.
+  release:
+    needs: [lint, versioning, test, validate]
+    if: needs.versioning.outputs.release-exists == 'false'
+      && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    permissions:
+      contents: write
+    with:
+      semVer: ${{ format('{0}.{1}.{2}', needs.versioning.outputs.major, needs.versioning.outputs.minor, needs.versioning.outputs.patch) }}

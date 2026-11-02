@@ -26,7 +26,7 @@ Tests/
     └── TestBase.cs # Shared integration-test setup
 ```
 
-Additional subfolders are permitted where a project has a genuinely distinct test category, but `Unit/` and `Integration/` remain the primary split.
+Further subfolders are allowed for a genuinely distinct category; `Unit/` and `Integration/` stay primary.
 
 ## Unit Tests
 
@@ -34,100 +34,67 @@ Additional subfolders are permitted where a project has a genuinely distinct tes
 - Do not inherit unit tests from an integration `TestBase`, and never let them require credentials or network access.
 - Use domain-specific trait categories such as `Parsing`, `Serialization` or `Generation` — not `Unit`.
 - May take `ITestOutputHelper` directly for diagnostic output.
-- Prefer captured payloads stored as offline test assets over live calls, so behaviour is verified deterministically and reproducibly.
+- Prefer captured payloads stored as offline test assets over live calls.
 
 ## Integration Tests
 
-- Apply `[Trait("Category", "Integration")]` to every test that reaches configuration, credentials or an external service.
-- Place them under `Tests/Integration/` and share configuration, logging and service setup through `TestBase`.
-- Inherit from `TestBase(output)`, which wires up `ILoggerFactory` (routed to xUnit output), `IConfiguration` and, where needed, a DI container.
-- Build configuration in a documented order: the test `appsettings` chain, then user secrets for local runs, then environment variables for CI, then any secret store the repository uses.
-- Keep test connection strings in configuration, not C# fallback literals. When using the shared
-  configuration extensions, select the `Test` environment to load optional `appsettings.Test.json`,
-  copy the settings to the test output, and preserve CI environment-variable precedence. An absent
-  test file is allowed; required values must still be supplied by another provider. Tracked files
-  may contain only synthetic disposable-local-service defaults, never real credentials.
-- Check for an existing deployment environment before choosing the test overlay name. Preserve
-  explicitly agreed repository-specific environment/file names; never repurpose deployed
-  configuration to satisfy the default test naming convention.
-- Expose commonly-used services as `protected` fields on `TestBase` rather than resolving them again in each test class.
-- Expose `protected ITestOutputHelper _output` on `TestBase`. Subclasses use that field directly; capturing the constructor parameter in a primary constructor while also passing it to the base is compile error **CS9107**.
-- Dispose any `ServiceProvider` the fixture creates through `IDisposable` or `IAsyncDisposable`.
-- Dispose fixture-owned configuration providers/watchers through a disposable concrete owner such
-  as `ConfigurationManager`; do not assume `IConfigurationRoot` implements `IDisposable`.
-- Skip rather than fail when no credential is configured, so a contributor without access still gets a green credential-free run.
-- Read CI credentials only from secret-backed environment variables. Never commit a credential, token, account identifier or tenant-specific name, and never write a resolved secret to test output.
-- Never commit a secret to an `appsettings*.json` file to make a test pass.
-- Keep integration tests read-only against the target service wherever the service supports it. Do not create, update or delete shared remote resources as a side effect of a test run.
-- Perform account registration, linking or interactive authentication outside the test run. Never initiate an interactive login or a registration flow in CI.
-- Exception: a lightweight integration test needing only `HttpClient` may take `ITestOutputHelper` directly without `TestBase`.
+- Tag every test that reaches configuration, credentials or an external service with
+  `[Trait("Category", "Integration")]`, place it under `Tests/Integration/` and inherit `TestBase`.
+- Skip, never fail, when no credential is configured. Read CI credentials only from secret-backed
+  environment variables, and never commit or log a credential, account identifier or resolved
+  secret, including in `appsettings*.json`.
+- Keep tests read-only against shared remote services, and keep registration and interactive
+  authentication out of the test run.
+- The `dotnet-test-platform` skill's
+  [integration test setup](../skills/dotnet-test-platform/references/integration-test-setup.md)
+  covers `TestBase` wiring, the configuration chain, test environment naming and disposal.
 
 ## Fixtures and Disposal
 
-- Dispose every `ServiceProvider` a test builds with `using` / `await using`.
-- Make helper classes `static` when they have no instance state.
-- Avoid shared mutable static state in fixtures; each test must be independently repeatable.
-- Assert the actual startup failure, not a disposal wrapper. If `WebApplicationFactory` masks a fast
-  startup exception through its deferred-host disposal, exercise that reader with `Host.StartAsync`;
-  keep HTTP behavior covered separately rather than accepting any startup exception.
-- In bUnit, dispose the rendered component tree with `DisposeComponentsAsync` when testing
-  cancellation or cleanup; disposing a rendered-result wrapper alone does not prove component disposal.
+- Dispose every `ServiceProvider` a test builds; make stateless helpers `static`; avoid shared
+  mutable static state so each test is independently repeatable.
+- Assert the actual startup failure, not a disposal wrapper: when `WebApplicationFactory` masks a
+  fast startup exception, exercise it with `Host.StartAsync` and cover HTTP behaviour separately.
+- In bUnit, prove component cleanup with `DisposeComponentsAsync`, not by disposing the wrapper.
 
 ## Diagnostic Output
 
-- Write diagnostics through `ITestOutputHelper`, or through an `ILogger` configured to route to xUnit output.
-- Never use `Debug.WriteLine` or `Console.WriteLine`. The runner captures neither, so output is invisible in CI, in `dotnet test` and in the test explorer — precisely when it is needed. `Debug.WriteLine` is additionally compiled out of Release builds.
-- Never call `Debugger.Break()` in a test; it hangs an unattended CI run.
-- Prefer string interpolation over concatenation or composite format strings.
-- Do not dump large payloads unconditionally. Emit only the values that explain a failure, and put the decisive ones in the assertion message so they survive into the failure report.
+- Write diagnostics through `ITestOutputHelper` or an `ILogger` routed to it. Never use
+  `Debug.WriteLine` or `Console.WriteLine`, which the runner does not capture, and never call
+  `Debugger.Break()`, which hangs CI.
+- Emit only the values that explain a failure, and put the decisive ones in the assertion message.
+  Prefer string interpolation over concatenation or composite format strings.
 
-## Theory Parameterisation
+## Structure and Duplication
 
-- Consolidate facts that differ only by input into a single `[Theory]` with `[InlineData]`. This cuts duplication while widening coverage.
-- Use `[Theory]` for the same logic across parameter combinations such as input sizes, thresholds or format types.
-- Keep `[Fact]` for tests whose setup or assertions do not parameterise cleanly.
+Tests face the same duplication gate as production code.
 
-## Duplication
-
-Test code is held to the same duplication gate as production code, and copy-pasted arrange blocks are the usual cause of a failed gate.
-
-- When two tests differ only by input, use a `[Theory]`. When they differ only by fixture or assertion, extract a private helper on the test class taking the varying values as parameters.
-- Build a new fixture from an existing one rather than restating it. A fixture varying a single dimension should delegate to a shared private builder in the same `*TestData.cs`, not repeat the object graph.
-- Extract a repeated arrange block once it appears in a third test, or as soon as it exceeds a handful of lines in a second.
-- Keep intent readable after extraction. Name a helper for what it asserts, such as `AssertGeneratedOutputIsAccepted`, rather than for its mechanics.
-
-## Test Method Naming
-
-- Name test methods after the method or feature under test, such as `UploadDocument`, `GetColumnCells` or `DetectsThresholdBreach`.
-- Do not use verbose BDD-style sentence names such as `Should_Return_Column_When_Given_Valid_Input`.
-- Use underscore-separated phases for lifecycle tests, such as `ItemLifecycle_CreateGetUpdateDelete` or `DefinitionLoadGenerateSerialize`.
+- Consolidate tests that differ only by input into a `[Theory]` with `[InlineData]`; keep `[Fact]`
+  where setup or assertions do not parameterise cleanly.
+- Extract a private helper named for what it asserts (`AssertGeneratedOutputIsAccepted`) when tests
+  differ only by fixture or assertion, and extract a repeated arrange block by its third use, or its
+  second when it is more than a few lines.
+- Derive fixture variants from a shared private builder in the same `*TestData.cs`.
+- Name tests after the method or feature under test (`UploadDocument`, `DetectsThresholdBreach`),
+  with underscore-separated phases for lifecycles (`ItemLifecycle_CreateGetUpdateDelete`); never
+  BDD sentences such as `Should_Return_Column_When_Given_Valid_Input`.
 
 ## Assertions
 
-- Every test must contain meaningful assertions. Never use `Assert.True(true)` or another placeholder assertion.
-- Prefer specific assertions — `Assert.Equal`, `Assert.Contains`, `Assert.Single`, `Assert.NotNull`, `Assert.Null` — over a generic `Assert.True(condition)`.
-- Never wrap the system under test in a `try`/`catch` that swallows the exception. A thrown exception must fail the test, or be asserted with `Assert.Throws` / `Assert.ThrowsAsync`.
-- Tests that only measure performance — timing loops, a `Stopwatch`, elapsed-time output — without asserting correctness are not valid tests. Delete them, and move the measurement to a BenchmarkDotNet project if it is still wanted.
+- Every test asserts meaningfully with the most specific assertion (`Assert.Equal`,
+  `Assert.Single`, `Assert.Throws`), never a placeholder such as `Assert.True(true)`.
+- Never swallow an exception from the system under test in a `try`/`catch`.
+- Delete timing-only tests that assert nothing; move wanted measurements to BenchmarkDotNet.
+- A fix for a reported issue adds a test that fails before it, names the issue in a comment and uses
+  an offline captured input rather than a live service.
 
-## Regression Tests for Reported Issues
+## Dead Code and Shared Data
 
-- When fixing a reported issue, add a test that fails before the fix and passes after it, and name the issue in a comment on the test.
-- Capture the offending input shape as an offline test asset rather than reproducing it against a live service.
-
-## Dead Code
-
-- Delete commented-out tests, unreachable code behind an early `return`, and permanently skipped tests rather than leaving them to rot.
-- When removing the last consumer of a helper or field, remove that helper or field in the same commit.
-- Clean up `using` directives that become unused after a test removal, in the same commit.
-
-## Shared Test Data
-
-- Keep shared generators and fixtures in dedicated `*TestData.cs` files at the `Tests/` root.
-- When splitting suites, extract shared fakes and builders from test classes. Reuse a support
-  library or link shared helper sources; do not reference another test executable or link its test
-  cases merely to access a helper.
-- Keep hardcoded reference data for regression tests in `*Patterns.cs` files.
-- Put stateless object-building helpers in `static` helper classes.
+- Delete commented-out, unreachable and permanently skipped tests, and the helpers, fields and
+  `using` directives they leave unused, in the same commit.
+- Keep shared generators and fixtures in `*TestData.cs` at the `Tests/` root, regression reference
+  data in `*Patterns.cs`, and object builders in `static` helper classes. When splitting suites, move
+  shared fakes into a support library or linked source; never reference another test executable.
 
 ## Test Project README
 

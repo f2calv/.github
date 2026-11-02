@@ -1,8 +1,7 @@
 ---
 name: containers-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints, debug variants and rules docker buildx build --check misses.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing a Dockerfile, including rules docker buildx build --check misses; Compose stacks belong to containers-docker-compose.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
-user-invocable: true
 compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
 ---
 
@@ -175,7 +174,8 @@ Rules that need judgement stay manual. Check each by hand when authoring or migr
   `appsettings.json` only after restore.
 * `TARGETARCH` is declared late, and runtime packages are installed before the application copy.
 * Restore and publish use the same configuration, and a RID-specific publish runs `--no-restore`.
-* A .NET application publish receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
+* A .NET application publish follows the [.NET artifact identity](references/dotnet-artifact-identity.md)
+  contract: it receives `VERSION` and `GIT_COMMIT` and passes them as MSBuild
   `Version` and `SourceRevisionId`, plus the complete build provenance property set from the
   canonical template; the same version and commit drive the OCI version and revision labels.
 * A .NET Dockerfile retains the canonical template's argument order, restore/publish option order,

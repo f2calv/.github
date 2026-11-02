@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.1
+version: 1.0.2
 facets: [dotnet]
 related:
   - id: dotnet-efcore
@@ -8,3 +8,5 @@ related:
     reason: Review composition ownership before extracting a shared hosting project.
 externalFiles:
   - .github/instructions/dotnet.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/dotnet.efcore.instructions.md

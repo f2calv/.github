@@ -25,6 +25,9 @@ MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negot
 These repository-owned authorities take precedence over conflicting generic/plugin defaults.
 Do not edit a generated plugin installation to store shared conventions.
 
+The [contract details](references/contract-details.md) hold the JSON enum, response metadata,
+caching, authorization, versioning and DTO validation rules the instructions summarise.
+
 ## Workflow
 
 ### 1. Establish the Contract

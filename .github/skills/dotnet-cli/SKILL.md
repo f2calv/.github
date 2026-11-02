@@ -2,7 +2,6 @@
 name: dotnet-cli
 description: 'Create, extend, audit or troubleshoot .NET command-line applications: argument parsing, commands, help/version, configuration precedence, lazy credentials, Generic Host startup/shutdown, finite jobs versus daemons, cancellation, stdout/stderr contracts and process exit codes. Use for console entrypoints and administrative modes, not general dotnet SDK commands.'
 argument-hint: '[apply|audit|diagnose] [command or entrypoint]'
-user-invocable: true
 ---
 
 # .NET CLI Applications

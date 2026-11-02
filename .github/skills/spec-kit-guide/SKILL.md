@@ -2,7 +2,6 @@
 name: spec-kit-guide
 description: 'Read-only Spec Kit session tutor. Use when asking where am I in the process, what ran last, what comes next, how to resume after context switching, or which Spec Kit stages can be skipped. Distinguishes observed command outcomes from saved feature state and explains alternative next commands and their prerequisites.'
 argument-hint: '[feature=path] [question=where-am-I|next|alternatives]'
-user-invocable: true
 ---
 
 # Spec Kit Session Tutor
