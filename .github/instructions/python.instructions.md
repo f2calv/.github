@@ -70,16 +70,17 @@ applyTo: '**/*.py,**/pyproject.toml,**/uv.lock,**/.python-version,**/requirement
 
 ## Testing
 
-- **`pytest` is the test framework.** Tests live in `tests/`, mirroring the package layout.
-- **Plain `assert`**, not `unittest` assertion methods - pytest rewrites them to produce useful failure output.
-- **Test names describe the behaviour**, not the function: `load_falls_back_to_defaults_when_file_missing`, not `test_load`.
-- **Arrange/Act/Assert**, separated by blank lines. One behaviour per test.
-- **`@pytest.mark.parametrize`** for anything with more than one interesting input, rather than a loop inside a single test.
-- **Use the built-in fixtures** (`tmp_path`, `monkeypatch`, `caplog`, `capsys`) instead of hand-rolled setup and teardown; they restore state automatically.
-- **Never mutate `os.environ` directly** in a test. Use `monkeypatch.setenv` or pass an explicit environment mapping.
-- **No shared mutable module-level state between tests.** Each test must be independently repeatable and order-independent.
-- **Assert on public behaviour**, not private helpers, unless the helper carries genuinely tricky logic.
-- **`assert` is stripped under `python -O`.** Never use it for runtime validation in application code - only in tests.
+- **`pytest` is the test framework**, with plain `assert` and test names that describe the behaviour
+  (`load_falls_back_to_defaults_when_file_missing`, not `test_load`). One behaviour per test,
+  Arrange/Act/Assert separated by blank lines.
+- **Use the built-in fixtures** (`tmp_path`, `monkeypatch`, `caplog`, `capsys`); never mutate
+  `os.environ` directly or share mutable module-level state between tests.
+- **Parametrize** several interesting inputs with `@pytest.mark.parametrize` rather than looping.
+- **Assert on public behaviour**, not private helpers, unless a helper carries genuinely tricky logic.
+- **`assert` is stripped under `python -O`**: use it in tests only, never for runtime validation.
+- Run ruff, mypy and pytest in the same CI job. The `scripting-tests` skill's
+  [pytest reference](../skills/scripting-tests/references/pytest.md) holds layout, fakes for
+  external commands, container runs and CI steps.
 
 ## Documentation
 

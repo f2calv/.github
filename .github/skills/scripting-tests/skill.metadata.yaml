@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [tooling, testing]
+related:
+  - id: dotnet-test-platform
+    reason: .NET test projects run on Microsoft.Testing.Platform rather than Pester, pytest or bats.
+  - id: tooling-pre-commit
+    reason: Run shellcheck and ruff as pre-commit hooks alongside the test suites.
+externalFiles:
+  - .github/instructions/python.instructions.md
+  - .github/instructions/shell.bash.instructions.md
+  - .github/instructions/shell.powershell.instructions.md
