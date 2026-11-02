@@ -174,9 +174,20 @@ jobs:
       - uses: actions/deploy-pages@v4
         id: deploy
 
+  #The final fan-in: the repository tag moves only after skill releases and the catalog succeed.
+  #skill-catalog is skipped when no skill was released, which must not skip the repository release.
   release:
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    needs: [lint, versioning, test, dotnet-examples, skill-versions]
+    if: >-
+      always()
+      && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      && needs.lint.result == 'success'
+      && needs.versioning.result == 'success'
+      && needs.test.result == 'success'
+      && needs.dotnet-examples.result == 'success'
+      && needs.skill-versions.result == 'success'
+      && needs.skill-releases.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.skill-catalog.result)
+    needs: [lint, versioning, test, dotnet-examples, skill-versions, skill-releases, skill-catalog]
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       semVer: ${{ needs.versioning.outputs.version }}
