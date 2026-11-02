@@ -9,12 +9,17 @@ enforced by `.scripts/tests/Skills.Tests.ps1`.
 | Surface | Loaded | Budget |
 | --- | --- | --- |
 | `applyTo: '**'` instructions | Every request | About 4k tokens combined |
-| Scoped instructions | Each request touching a matching file | About 5k tokens per typical file |
+| Scoped instructions | Agent host: listed with their `applyTo`, read when the agent works on a matching file | About 5k tokens per typical file |
 | Skill `description` | Every session, for every skill | 600 characters each |
 | `SKILL.md` body | When the skill is invoked | 16 KB |
 | `references/`, `examples/`, `templates/` | Only when the skill links and the agent reads them | Unbounded |
 
 Push content down this table: an always-on line costs the most, a reference line the least.
+
+In agent-host sessions only always-on instructions are guaranteed to be in context; a scoped file
+takes effect only if the agent reads it from the listing, which a probe showed it may skip for a
+routine file. Keep any rule that must never be missed always-on, and give a scoped file a
+description that makes its relevance obvious from the listing.
 
 ## Loading Routes
 
