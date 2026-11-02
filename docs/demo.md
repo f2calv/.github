@@ -11,7 +11,7 @@ see. Run them in a disposable demo repository, never in a real project.
 | [3. Version a skill change](#3-version-a-skill-change) | One bump per branch, the pin cascade and the pull request gate | PowerShell 7.4+, Git, `yq` v4 |
 | [4. Package a skill](#4-package-a-skill) | Deterministic Spec Kit extension ZIPs | As demo 3 |
 | [5. Install from the catalog](#5-install-from-the-catalog) | Required and related skills installed through Spec Kit | Specify CLI, PowerShell 7.4+ |
-| [6. Upgrade installed skills](#6-upgrade-installed-skills) | `upgrade-all` moving every skill to its latest version | As demo 5 |
+| [6. Upgrade installed skills](#6-upgrade-installed-skills) | `upgrade-all` moving every skill to its latest version, and `prune` | As demo 5 |
 | [7. Fully local catalog](#7-fully-local-catalog) | The whole pipeline offline, before anything is published | Demos 4 and 5 prerequisites, Python 3 |
 | [8. Build an Agent Plugin](#8-build-an-agent-plugin) | The same skill packaged for any Agent Plugins client | As demo 3 |
 
@@ -116,7 +116,10 @@ Continue in the demo 5 repository. Install an older version first so there is so
 ```
 
 **Expected.** `upgrade-all` prints each installed skill with `current` or `upgrade from X`, replaces
-only the outdated ones, required skills first, and `list` shows the latest versions.
+only the outdated ones, required skills first, and `list` shows the latest versions with each skill
+marked `chosen` or `required`. When an upgraded version adds a related skill, `upgrade-all` offers
+it; when it drops a required one, `upgrade-all` names it and `/speckit-skill-library prune` removes
+it.
 
 ## 7. Fully Local Catalog
 

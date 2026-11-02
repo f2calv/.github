@@ -31,11 +31,17 @@ externalFiles:
   - .github/instructions/markdown.instructions.md
 ```
 
+- `facets` are search tags: catalog `tags`, `/speckit-skill-library search` terms and plugin
+  `keywords`. Reuse an existing facet before inventing one.
 - `required` skills are always installed with this one, at the pinned version.
 - `related` skills are offered with their `reason`; the user chooses whether to install them.
-- `externalFiles` are repository-root-relative files outside the folder the skill depends on,
-  typically instructions it links to. Everything committed in the folder is packaged automatically.
+- `externalFiles` are repository-root-relative files under `.github/`, outside the folder, that the
+  skill links to, typically instructions. Everything committed in the folder is packaged
+  automatically; link other repository files by URL.
 - Do not hand-edit `version` or required pins; use `Set-SkillVersion.ps1`.
+
+The [sidecar reference](https://github.com/f2calv/.github/blob/main/docs/skill-metadata.md) explains
+every field for human readers.
 
 ## Author and Audit
 
@@ -109,8 +115,8 @@ local build to produce it. ADR 0002 under `docs/` records the design.
 - `plugin.json` maps id, version, description and facets; `required` and `related` go under the
   `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
 - The skill sits at `skills/<id>/`; external files drop their `.github/` prefix, so
-  `../../instructions/<file>` links still resolve inside the plugin. External files outside
-  `.github/` fail the build.
+  `../../instructions/<file>` links still resolve inside the plugin. `Test-SkillLibrary.ps1` rejects
+  external files outside `.github/` before they can fail the build.
 - `SKILL.md` frontmatter fields outside the [Agent Skills](https://agentskills.io/specification)
   set, such as `argument-hint` and `user-invocable`, move into `metadata` as strings in the package
   only. Sources keep them for VS Code.
@@ -153,8 +159,14 @@ Then use `/speckit-skill-library search architecture`, `/speckit-skill-library i
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each
 archive's SHA-256 from the catalog. Installed skills are read from `.specify/extensions/<id>/`.
 `/speckit-skill-library upgrade-all` moves every installed skill to its latest catalog version with
-`specify extension add --force`, required skills first; it does not upgrade the `skill` bootstrap,
-which `specify extension add skill --force` replaces.
+`specify extension add --force`, required skills first, and installs skills an upgraded version
+newly requires. It offers related skills that an upgraded version newly lists and reports skills no
+chosen skill requires any more; `/speckit-skill-library prune` removes those with
+`specify extension remove --force`. The helper records whether each skill was chosen or only
+required in `.specify/extensions/.skill-library.json`, because Spec Kit's registry stores only
+versions; skills installed before that file existed count as chosen and are never pruned.
+`upgrade-all` does not upgrade the `skill` bootstrap, which `specify extension add skill --force`
+replaces.
 
 Every script in `scripts/` has a matching `tests/<Name>.Tests.ps1`; the consumer helper's tests live
 there too so they are not packaged into the bootstrap. A repository test enforces the pairing.

@@ -195,6 +195,7 @@ function Test-SkillComponent {
         foreach ($File in $Item.ExternalFiles) {
             if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $File) -PathType Leaf)) { $Errors.Add("$($Item.Id): external file '$File' does not exist.") }
             elseif ($File.StartsWith("$($Item.Path)/", [StringComparison]::Ordinal)) { $Errors.Add("$($Item.Id): '$File' is already inside the skill folder.") }
+            elseif (-not $File.StartsWith('.github/', [StringComparison]::Ordinal)) { $Errors.Add("$($Item.Id): external file '$File' must be under .github/ to resolve inside an Agent Plugin; link it by URL instead.") }
         }
     }
     $State = @{}

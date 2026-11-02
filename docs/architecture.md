@@ -21,7 +21,8 @@ and the release and packaging workflow behind both.
 A skill's `skill.metadata.yaml` sidecar declares what it needs. **Required** skills are pinned to an
 exact version and always installed with it. **Related** skills are offered with a reason and
 installed only when chosen. **External files**, typically instructions the skill links to, are
-packaged inside the skill's extension.
+packaged inside the skill's extension. **Facets** are search tags. The
+[sidecar reference](skill-metadata.md) explains every field.
 
 ```mermaid
 graph LR
@@ -193,7 +194,10 @@ sequenceDiagram
 ```
 
 `/speckit-skill-library upgrade-all` follows the same path for every installed skill whose catalog
-version is newer, replacing it with `specify extension add --force`.
+version is newer, replacing it with `specify extension add --force` and installing newly required
+skills. It then offers newly related skills and reports skills no chosen skill requires, which
+`/speckit-skill-library prune` removes with `specify extension remove`. The helper records chosen
+versus required skills in `.specify/extensions/.skill-library.json`.
 
 ## Routes Compared
 

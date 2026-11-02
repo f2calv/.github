@@ -5,8 +5,12 @@
   "additionalProperties": false,
   "required": ["version"],
   "properties": {
-    "version": { "$ref": "#/$defs/version" },
+    "version": {
+      "description": "The skill's semantic version, released as the tag <id>/X.Y.Z. Bump it with Set-SkillVersion.ps1.",
+      "$ref": "#/$defs/version"
+    },
     "facets": {
+      "description": "Search tags for the catalog and Agent Plugin keywords; see docs/skill-metadata.md.",
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/slug" }
@@ -38,7 +42,7 @@
       }
     },
     "externalFiles": {
-      "description": "Repository-root-relative files outside the skill folder that the skill needs.",
+      "description": "Repository-root-relative files under .github/ outside the skill folder that the skill links to.",
       "type": "array",
       "uniqueItems": true,
       "items": {

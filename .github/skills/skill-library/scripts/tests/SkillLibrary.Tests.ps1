@@ -22,6 +22,7 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @{ Case = 'a malformed version'; Metadata = "version: '1.0'`n"; Expected = '*schema*' }
         @{ Case = 'an unknown field'; Metadata = "version: 1.0.0`ntooling: []`n"; Expected = '*schema*' }
         @{ Case = 'a missing external file'; Metadata = "version: 1.0.0`nexternalFiles: [docs/missing.md]`n"; Expected = '*does not exist*' }
+        @{ Case = 'an external file outside .github'; Metadata = "version: 1.0.0`nexternalFiles: [LICENSE]`n"; Expected = "*external file 'LICENSE' must be under .github/*" }
         @{ Case = 'a self reference'; Metadata = "version: 1.0.0`nrelated:`n  - id: beta`n    reason: Self.`n"; Expected = '*references itself*' }
     ) {
         Write-FixtureText $Repo '.github/skills/beta/skill.metadata.yaml' $Metadata

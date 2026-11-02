@@ -56,8 +56,9 @@ installation that Spec Kit already provides. It never published a release. Git h
   bootstrap command.
 - Related skills install at their current catalog version; only required edges pin versions.
 - Renaming a skill folder creates a new component ID. Published releases and tags are never moved.
-- Digests prove integrity, not authorship. Signing and uninstall orchestration are out of scope
-  until needed; `specify extension remove` covers removal.
+- Digests prove integrity, not authorship. Signing is out of scope until needed. The bootstrap
+  records whether each skill was chosen or only required, so `prune` removes required skills no
+  chosen skill needs; `specify extension remove` removes a chosen skill.
 - Consumers of `skill` 1.0.0 keep the retired release-hosted catalog, which stops receiving new
   versions, until they reinstall the bootstrap with `--force`.
 
@@ -85,6 +86,8 @@ installation that Spec Kit already provides. It never published a release. Git h
 - [x] Generate the catalog and an index page for GitHub Pages and add the deployment job; Pester
       covers the site output.
 - [x] Add `upgrade-all` to the bootstrap (`skill` 1.1.0) with Pester coverage.
+- [x] Track chosen versus required skills so `upgrade-all` offers newly related skills and `prune`
+      removes skills no longer required (`skill` 1.2.0) with Pester coverage.
 - [x] Enable Pages for this repository, merge, and confirm the deployed catalog and index resolve
       (PR #40, release `1.6.3`).
 - [ ] Publish a follow-on version of a skill with required dependents and observe the pin cascade.

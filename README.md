@@ -247,7 +247,9 @@ releases never change.
 ### How do I upgrade installed skills?
 
 Run `/speckit-skill-library upgrade-all`. It moves every installed skill to its latest version,
-required skills first, and stops without changes if a pin cannot be met.
+required skills first, and stops without changes if a pin cannot be met. It installs newly required
+skills, offers newly related ones, and reports skills no longer required, which
+`/speckit-skill-library prune` removes.
 
 ### Can I keep private or local-only skills?
 
@@ -261,6 +263,7 @@ covers the options.
 | --- | --- |
 | [How the repository works](docs/architecture.md) | Structure, versioning, packaging and installation, with diagrams |
 | [Skill catalogue](docs/skills.md) | Every skill, grouped by area |
+| [Skill metadata sidecar](docs/skill-metadata.md) | Every field of `skill.metadata.yaml`, including facets, dependencies and external files |
 | [Versioned skills for Spec Kit](docs/spec-kit.md) | Optional versioned installation and upgrades |
 | [End-to-end demos](docs/demo.md) | Scripted walkthroughs from Copilot use to publishing and upgrading skills |
 | [Repository management](docs/repository-management.md) | Baseline audits, repository creation and GitHub community defaults |
