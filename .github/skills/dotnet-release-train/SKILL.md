@@ -74,7 +74,8 @@ user explicitly asks for parallel sessions.
   - Fold every open Dependabot pull request into the repository's release pull request, including
     major updates, then close each one as superseded. GitHub Actions majors are usually safe; NuGet
     and other runtime majors still need the normal validation. Keep only documented holds, and any
-    major update that fails validation, out of the release.
+    major update that fails validation, out of the release. Never close, merge, fold in or modify a
+    pull request opened by a third-party contributor.
   - For a repository's first package release, confirm that CI actually publishes. An application
     repository may only build and test, so add a default-branch `package` job using the shared NuGet
     publish action, mirroring an existing app-plus-package repository, and gate `release` on it. Ask
