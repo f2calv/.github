@@ -152,7 +152,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         if: steps.publish.outputs.site-directory != ''
         with:
           path: ${{ steps.publish.outputs.site-directory }}
