@@ -1,7 +1,7 @@
 # .NET Artifact Identity
 
 How a .NET image and its entry assembly carry one version and source revision; the audit's DF026
-rule and the manual checks in [SKILL.md](../SKILL.md#audit-rules) enforce it.
+rule and the manual checks in [audit reference](audit-and-scripts.md#audit-rules) enforce it.
 
 - Start .NET service images from the canonical templates bundled with this skill:
   `templates/dotnet-service.dockerfile.tmpl` for published images and

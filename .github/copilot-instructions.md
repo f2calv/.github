@@ -7,10 +7,10 @@ Individual repositories no longer carry a `.github/instructions/` folder. They k
 ## Setup
 
 The shared files live under `.github/instructions/` and `.github/skills/`, which VS Code reads for
-any folder open in a workspace. Consume them through exactly one route, as the
-[README](../README.md) describes: add this repository to the workspace (preferred here, because
-changes are fed back continuously), or link its folders into `~/.copilot/`. Using both loads every
-instruction twice and doubles its context cost; the README has commands to remove the links.
+any folder open in a workspace. As the [README](../README.md) describes, keep this repository in the
+workspace for editing and link its folders into `~/.copilot/` so agent sessions in every other
+repository load them; agent sessions read workspace customizations only from the folder they start
+in. VS Code 1.144.0 fixed a bug that loaded the linked files twice.
 
 User-profile customizations take priority over repository instructions, so a repository that
 overrides a central rule must say so explicitly in its own `copilot-instructions.md`. Because the

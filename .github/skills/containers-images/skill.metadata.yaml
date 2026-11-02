@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.1
+version: 1.0.2
 facets: [containers]
 related:
   - id: dotnet-grpc
     reason: Linked from references/patterns.md.
+externalFiles:
+  - .github/instructions/docker.instructions.md
