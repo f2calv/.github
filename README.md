@@ -95,13 +95,16 @@ the PowerShell components behind them.
 
 Discovery depends on the selected agent harness; use the
 [VS Code customization documentation](https://code.visualstudio.com/docs/agent-customization/overview)
-and the active session's customization view to verify what is loaded.
+and the active session's customization view to verify what is loaded. A **Copilot CLI** (agent
+host) session reads workspace customizations only from the folder it starts in, so it sees this
+repository's files only when it runs inside this repository. For agent sessions anywhere else,
+install the personal links below.
 
 ### Install for Every Workspace
 
-To use the shared files in every workspace without adding this repository to each one, link its
-folders into your personal Copilot locations. Choose one route, workspace or personal, to avoid
-loading the same files twice.
+To use the shared files in every workspace and every agent session, link its folders into your
+personal Copilot locations. The links can coexist with this repository open in the workspace, which
+remains the convenient way to edit it.
 
 The examples assume a clone under `source/github/.github` in your home directory. Adjust that
 location first, and run them only when the destination links do not already exist. Preserve any
@@ -129,12 +132,18 @@ done
 
 The links point at the working tree, so a `git pull` updates every workspace at once. Recreate them
 on another workstation; harness-folder customizations do not roam through VS Code Settings Sync.
+Restart VS Code after creating or removing them: agent sessions discover `~/.copilot` only at
+start-up.
+
+VS Code releases before 1.144.0 loaded every file in `~/.copilot/instructions` twice in agent
+sessions ([microsoft/vscode#342394](https://github.com/microsoft/vscode/issues/342394)). If a session
+still lists each instruction twice, update VS Code rather than removing the links, which would leave
+agent sessions in other repositories without the shared files.
 
 ### Remove the Personal Links
 
-Remove the links before switching to the workspace route, or whenever this repository is also open
-in the workspace and the session lists each instruction twice. Only links are removed; a real folder
-at either path is left untouched, as is the clone.
+To uninstall, remove the links. Only links are removed; a real folder at either path is left
+untouched, as is the clone.
 
 Windows PowerShell:
 

@@ -18,10 +18,13 @@ Push content down this table: an always-on line costs the most, a reference line
 
 ## Loading Routes
 
-- Load the shared folders through exactly one route: the repository in the workspace, or links into
-  `~/.copilot/`. Both routes load every file twice; path-case differences such as `C:\` and `c:\`
-  defeat de-duplication. Check the session's instruction list for duplicates first when context
-  seems inflated.
+- Agent-host sessions read workspace customizations only from their starting folder, so other
+  repositories need the `~/.copilot/` links; never remove them to fix duplicates. Before VS Code
+  1.144.0, those sessions loaded linked instructions twice (microsoft/vscode#342394).
+- Verify loading from evidence, not from the customization view: start a throwaway session in a
+  consumer repository after a VS Code restart, count a unique heading in its `system.message` event
+  under `~/.copilot/session-state/<id>/events.jsonl`, then delete the session. Agent sessions
+  discover `~/.copilot` only when VS Code starts.
 - Extension-contributed instruction packs load by `applyTo` alongside the shared set and cannot be
   disabled file by file. Measure their overlap and recommend the narrowest pack, as the README does
   for HVE Core.
