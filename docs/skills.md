@@ -45,7 +45,7 @@ gate rejects a stale or missing row.
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.1` | Argo CD Application discovery, ownership and stateful migrations |
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
-| [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.1` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
+| [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.2` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.2` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.0.1` | Network discovery, VLANs, host networking and performance diagnostics |
 
