@@ -20,9 +20,9 @@ runs return a nonzero exit code. Some fixtures use `chmod` and shebang fake comm
 suite on Linux or in CI rather than on a Windows host.
 
 The Bash and Python variants of the skill bootstrap helper have their own suites. The root
-[compose.yaml](../compose.yaml) defines one-shot test services behind the `test` profile, so
-`docker compose up` starts nothing and the only host requirement is Docker. CI's `python-helper` and
-`bash-helper` jobs run the same services:
+[docker-compose.yml](../docker-compose.yml) defines one-shot test services behind the `test`
+profile, so `docker compose up` starts nothing and the only host requirement is Docker. CI's
+`python-helper` and `bash-helper` jobs run the same services:
 
 ```bash
 docker compose run --rm python-tests   # uv sync --locked, ruff format and check, mypy, pytest

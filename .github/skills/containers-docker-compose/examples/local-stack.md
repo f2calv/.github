@@ -1,6 +1,6 @@
 # IDE Cache and Read-Only Test Probe
 
-The [Compose template](../assets/compose.yaml.tmpl) is a synthetic local stack: an IDE-facing Redis
+The [Compose template](../assets/docker-compose.yml.tmpl) is a synthetic local stack: an IDE-facing Redis
 dependency and a one-shot read-only connectivity probe. It is not a complete
 application, production topology or proof that integration tests passed.
 

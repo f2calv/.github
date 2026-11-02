@@ -7,7 +7,7 @@ updates:
       interval: weekly
       time: "04:00"
 
-  #Test toolchain images in compose.yaml.
+  #Test toolchain images in docker-compose.yml.
   - package-ecosystem: docker-compose
     directory: /
     schedule:

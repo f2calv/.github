@@ -53,8 +53,9 @@ Never run tests without the user's approval: they may reach credentials or exter
    executed test count; zero executed tests is a failure.
 5. Wire new suites into CI as the reference shows, and keep linters (ruff and mypy, shellcheck) in
    the same job as the tests they guard. When a repository tests scripts in several languages,
-   define one-shot `compose.yaml` services behind a `test` profile with a read-only source mount, and
-   run them in CI with `docker compose run --rm <service>` so local and CI toolchains match.
+   define one-shot `docker-compose.yml` services behind a `test` profile with a read-only source
+   mount, and run them in CI with `docker compose run --rm <service>` so local and CI toolchains
+   match.
 
 ## Maintaining This Skill
 

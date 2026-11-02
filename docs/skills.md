@@ -40,7 +40,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.0.2` | Dockerfile authoring, image profiles, build strategy and static auditing |
-| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.4` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
+| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.5` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.2` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |

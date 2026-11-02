@@ -47,8 +47,9 @@ jobs:
       - name: npm run test:ps
         run: npm run test:ps
 
-  #The Python and Bash variants of the skill bootstrap helper run in the compose.yaml test services, so CI
-  #and local runs share one toolchain definition; maintainer tooling stays PowerShell-only.
+  #The Python and Bash variants of the skill bootstrap helper run in the docker-compose.yml test
+  #services, so CI and local runs share one toolchain definition; maintainer tooling stays
+  #PowerShell-only.
   python-helper:
     runs-on: ${{ inputs.runs-on }}
     permissions:
