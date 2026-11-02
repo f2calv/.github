@@ -59,7 +59,8 @@ editing that surface.
 - Require remote Redis and enabled locking for an elected worker and fail explicitly otherwise;
   treat database, prefix, resource-dimension or key-format changes as an ownership migration.
 - Detail, timings, the provisional `ILeadershipRunner` contract and the integration procedure:
-  [shared caching contract](./references/shared-caching-contract.md).
+  [shared caching contract](./references/shared-caching-contract.md). For a complete leader-only
+  worker, start from the [owned worker example](./examples/owned-worker.md).
 
 ### 3. Bind Work to a Lease Lifetime
 

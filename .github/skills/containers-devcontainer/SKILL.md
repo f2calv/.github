@@ -76,8 +76,8 @@ editing that surface.
   than one path, and keep the non-root user.
 * Require explicit approval before host sockets, sensitive mounts, capabilities, security
   overrides or privileged mode.
-* Detail and the minimal tooling example:
-  [container authoring](./references/container-authoring.md#choose-the-container-model).
+* Detail: [container authoring](./references/container-authoring.md#choose-the-container-model);
+  for a small tooling repository, start from the [minimal tooling example](./examples/minimal-tooling.md).
 
 ### 3. Author `devcontainer.json`
 
