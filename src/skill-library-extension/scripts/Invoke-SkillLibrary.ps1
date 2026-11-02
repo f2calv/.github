@@ -3,12 +3,17 @@
 <#
 .SYNOPSIS
 Searches, installs and loads skills from the skill library catalog through the Specify CLI.
+.DESCRIPTION
+After every install, upgrade, removal and prune, the helper copies each enabled skill's
+resources/.github/ into the workspace .github/, where Copilot discovers skills and instructions.
+It records each copy's SHA-256 in .specify/extensions/.skill-library.json and replaces or deletes a
+copy only while its bytes still match, so local edits are kept and reported.
 .PARAMETER Command
-help, search, plan, install, upgrade-all, prune, list or load. The helper records in
-.specify/extensions/.skill-library.json whether each skill was chosen or only required, so prune
-removes only skills that no chosen skill requires any more.
+help, search, plan, install, upgrade-all, remove, prune, sync, list or load. The helper records
+whether each skill was chosen or only required, so prune removes only skills that no chosen skill
+requires any more.
 .PARAMETER Target
-Search terms, or the skill ID for plan, install and load.
+Search terms, or the skill ID for plan, install, remove and load.
 .PARAMETER Version
 Exact version of the target skill; defaults to the catalog's current version.
 .PARAMETER Related
@@ -20,7 +25,7 @@ Skill library catalog; SKILL_LIBRARY_CATALOG_URL overrides the published default
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Position = 0)][ValidateSet('help', 'search', 'plan', 'install', 'upgrade-all', 'prune', 'list', 'load')][string]$Command = 'help',
+    [Parameter(Position = 0)][ValidateSet('help', 'search', 'plan', 'install', 'upgrade-all', 'remove', 'prune', 'sync', 'list', 'load')][string]$Command = 'help',
     [Parameter(Position = 1)][string]$Target = '',
     [string]$Version = '',
     [string[]]$Related = @(),
@@ -45,19 +50,116 @@ function Get-Installed {
     return (Get-Content -LiteralPath $Registry -Raw | ConvertFrom-Json -AsHashtable).extensions
 }
 
-# Records why each skill was installed; Spec Kit's registry stores only versions.
-function Get-Manifest {
+# Records why each skill was installed and which guidance files were copied; Spec Kit's registry stores only versions.
+function Read-State {
     $Path = Join-Path $Workspace '.specify/extensions/.skill-library.json'
-    if (-not (Test-Path -LiteralPath $Path)) { return @{} }
-    return (Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable).skills ?? @{}
+    if (-not (Test-Path -LiteralPath $Path)) { return @{ skills = @{}; files = @{} } }
+    $Data = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable
+    $Files = $Data['files'] ?? @{}
+    # ConvertFrom-Json parses ISO dates into DateTime; keep the recorded UTC text.
+    foreach ($Record in $Files.Values) { if ($Record['copied'] -is [datetime]) { $Record['copied'] = $Record['copied'].ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') } }
+    return @{ skills = $Data['skills'] ?? @{}; files = $Files }
 }
 
-function Save-Manifest([hashtable]$Skills) {
+function Get-Manifest { return (Read-State).skills }
+
+function Save-State([hashtable]$Skills, [hashtable]$Files) {
     $Installed = Get-Installed
     $Kept = [ordered]@{}
     foreach ($Id in @($Skills.Keys | Sort-Object)) { if ($Installed.ContainsKey($Id)) { $Kept[$Id] = $Skills[$Id] } }
+    $Copies = [ordered]@{}
+    foreach ($Rel in @($Files.Keys | Sort-Object)) { $Copies[$Rel] = $Files[$Rel] }
     $Path = Join-Path $Workspace '.specify/extensions/.skill-library.json'
-    [IO.File]::WriteAllText($Path, ([ordered]@{ schema_version = '1.0'; skills = $Kept } | ConvertTo-Json -Depth 5) + "`n")
+    [IO.File]::WriteAllText($Path, ([ordered]@{ schema_version = '1.1'; skills = $Kept; files = $Copies } | ConvertTo-Json -Depth 5) + "`n")
+}
+
+function Save-Manifest([hashtable]$Skills) { Save-State $Skills (Read-State).files }
+
+function Get-Sha256([string]$Path) { return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
+
+function Remove-EmptyParent([string]$Path) {
+    $Stop = [IO.Path]::GetFullPath((Join-Path $Workspace '.github'))
+    $Dir = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Path))
+    while ($Dir -and $Dir.Length -gt $Stop.Length -and -not (Get-ChildItem -LiteralPath $Dir -Force | Select-Object -First 1)) {
+        Remove-Item -LiteralPath $Dir
+        $Dir = [IO.Path]::GetDirectoryName($Dir)
+    }
+}
+
+# Mirrors enabled skills' resources/.github/ into .github/, touching a copy only while it matches its record.
+function Sync-Guidance {
+    $State = Read-State
+    $Records = $State.files
+    $Installed = Get-Installed
+    $Desired = [ordered]@{}
+    $Notes = [Collections.Generic.List[string]]::new()
+    foreach ($Id in @($Installed.Keys | Sort-Object)) {
+        if ($Id -ceq $BootstrapId -or $Installed[$Id]['enabled'] -eq $false) { continue }
+        $Root = Join-Path $Workspace ".specify/extensions/$Id/resources/.github"
+        if (-not (Test-Path -LiteralPath $Root -PathType Container)) { continue }
+        foreach ($File in Get-ChildItem -LiteralPath $Root -File -Recurse -Force) {
+            $Rel = '.github/' + [IO.Path]::GetRelativePath($Root, $File.FullName).Replace('\', '/')
+            $Hash = Get-Sha256 $File.FullName
+            if ($Desired.Contains($Rel)) {
+                if ($Desired[$Rel].Hash -cne $Hash) { $Notes.Add("Kept $Rel from $($Desired[$Rel].Skill); $Id ships a different copy.") }
+                continue
+            }
+            $Desired[$Rel] = [pscustomobject]@{ Source = $File.FullName; Skill = $Id; Version = [string]$Installed[$Id].version; Hash = $Hash }
+        }
+    }
+    $Next = @{}
+    $Counts = @{ copied = 0; updated = 0; removed = 0 }
+    foreach ($Rel in $Desired.Keys) {
+        $Want = $Desired[$Rel]
+        $Path = Join-Path $Workspace $Rel
+        $Record = $Records[$Rel]
+        $Current = if (Test-Path -LiteralPath $Path -PathType Leaf) { Get-Sha256 $Path } else { $null }
+        $NewRecord = [ordered]@{ sha256 = $Want.Hash; skill = $Want.Skill; version = $Want.Version; copied = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ') }
+        if ($Current -and $Current -ceq $Want.Hash) {
+            $Next[$Rel] = if ($Record -and $Record.sha256 -ceq $Want.Hash) { $Record } else { $NewRecord }
+            continue
+        }
+        if ($Current -and -not $Record) { $Notes.Add("Kept $Rel`: it exists and was not copied by the skill library."); continue }
+        if ($Current -and $Current -cne $Record.sha256) {
+            $Notes.Add("Kept $Rel`: modified since $($Record.skill) $($Record.version) copied it on $($Record.copied); $($Want.Skill) $($Want.Version) was not applied.")
+            $Next[$Rel] = $Record
+            continue
+        }
+        [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($Path))
+        Copy-Item -LiteralPath $Want.Source -Destination $Path -Force
+        $Counts[($Current ? 'updated' : 'copied')]++
+        $Next[$Rel] = $NewRecord
+    }
+    foreach ($Rel in @($Records.Keys | Sort-Object)) {
+        if ($Desired.Contains($Rel)) { continue }
+        if ($Rel -notlike '.github/*' -or $Rel -match '(^|/)\.\.(/|$)') { continue }
+        $Path = Join-Path $Workspace $Rel
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { continue }
+        $Record = $Records[$Rel]
+        if ((Get-Sha256 $Path) -cne $Record.sha256) {
+            $Notes.Add("Kept $Rel`: modified since $($Record.skill) $($Record.version) copied it on $($Record.copied). Review it before deleting it.")
+            continue
+        }
+        Remove-Item -LiteralPath $Path
+        Remove-EmptyParent $Path
+        $Counts.removed++
+    }
+    Save-State $State.skills $Next
+    Write-Output "Guidance in .github/: $($Counts.copied) copied, $($Counts.updated) updated, $($Counts.removed) removed."
+    $Notes | Write-Output
+}
+
+function Invoke-Remove([string[]]$Ids) {
+    Push-Location -LiteralPath $Workspace
+    try {
+        foreach ($Id in $Ids) {
+            Write-Output "specify extension remove $Id --force"
+            & specify extension remove $Id --force
+            if ($LASTEXITCODE -ne 0) { throw "Removing $Id failed; skills listed before it were removed." }
+        }
+    }
+    finally { Pop-Location }
+    Save-Manifest (Get-Manifest)
 }
 
 # Skills installed before the manifest existed count as chosen, so they are never pruned.
@@ -193,7 +295,7 @@ function Assert-Target { if (-not $Target) { throw "The $Command command needs a
 
 switch ($Command) {
     'help' {
-        Write-Output 'Commands: search <terms> | plan <id> | install <id> [-Version X.Y.Z] [-Related a,b] | upgrade-all | prune | list | load <id>'
+        Write-Output 'Commands: search <terms> | plan <id> | install <id> [-Version X.Y.Z] [-Related a,b] | upgrade-all | remove <id> | prune | sync | list | load <id>'
     }
     'search' {
         $Terms = @($Target.ToLowerInvariant() -split '\s+' | Where-Object { $_ })
@@ -224,12 +326,13 @@ switch ($Command) {
             elseif ($Step.Action -eq 'install' -and -not $Manifest.ContainsKey($Step.Id)) { $Manifest[$Step.Id] = @{ chosen = $false } }
         }
         Save-Manifest $Manifest
+        Sync-Guidance
         Write-Output 'Installed. Run plan for newly installed related skills to see their related offers.'
     }
     'upgrade-all' {
         $Catalog = Get-Catalog
         $Steps = @(Resolve-Upgrade $Catalog)
-        if ($Steps.Count -eq 0) { Write-Output 'No skills are installed.'; break }
+        if ($Steps.Count -eq 0) { Write-Output 'No skills are installed.'; Sync-Guidance; break }
         Write-Output 'Upgrade order:'
         $Steps | Format-Table Id, Version, Action -AutoSize | Out-String -Width 200 | Write-Output
         $Pending = @($Steps | Where-Object { $_.Action -eq 'install' -or $_.Action -like 'upgrade*' })
@@ -258,22 +361,32 @@ switch ($Command) {
                 $Offers | Sort-Object Id, OfferedBy -Unique | Format-Table Id, OfferedBy, Reason -AutoSize | Out-String -Width 300 | Write-Output
             }
         }
+        Sync-Guidance
+        Show-Unneeded (Get-Unneeded $Catalog)
+    }
+    'remove' {
+        Assert-Target
+        if ($Target -ceq $BootstrapId) { throw "Remove the bootstrap with: specify extension remove $BootstrapId" }
+        $Installed = Get-Installed
+        if (-not $Installed.ContainsKey($Target)) { throw "'$Target' is not installed." }
+        $Catalog = Get-Catalog
+        $Dependents = @($Installed.Keys | Where-Object { $_ -cne $BootstrapId -and $_ -cne $Target -and $Catalog.ContainsKey($_) } | Where-Object {
+                $Target -cin @((Get-InstalledRelease $Catalog $_ ([string]$Installed[$_].version)).Required | ForEach-Object { $_.id })
+            } | Sort-Object)
+        if ($Dependents.Count) { throw "'$Target' is required by $($Dependents -join ', '). Remove those first. Nothing was changed." }
+        Invoke-Remove @($Target)
+        Sync-Guidance
         Show-Unneeded (Get-Unneeded $Catalog)
     }
     'prune' {
         $Unneeded = @(Get-Unneeded (Get-Catalog))
         if ($Unneeded.Count -eq 0) { Write-Output 'Nothing to prune: every installed skill is chosen or required by one.'; break }
-        Push-Location -LiteralPath $Workspace
-        try {
-            foreach ($Id in $Unneeded) {
-                Write-Output "specify extension remove $Id --force"
-                & specify extension remove $Id --force
-                if ($LASTEXITCODE -ne 0) { throw "Removing $Id failed; skills listed before it were removed." }
-            }
-        }
-        finally { Pop-Location }
-        Save-Manifest (Get-Manifest)
+        Invoke-Remove $Unneeded
         Write-Output "Removed $($Unneeded.Count) skill(s)."
+        Sync-Guidance
+    }
+    'sync' {
+        Sync-Guidance
     }
     'list' {
         $Installed = Get-Installed

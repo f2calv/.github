@@ -20,7 +20,9 @@ if ($args[1] -eq 'remove') {
 $Data.extensions[$args[2]] = @{ version = $args[4]; enabled = $true }
 [IO.File]::WriteAllText($Registry, ($Data | ConvertTo-Json -Depth 5))
 [void](New-Item -ItemType Directory -Force -Path (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/skills/$($args[2])"))
-Set-Content -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/skills/$($args[2])/SKILL.md") -Value '# Skill'
+Set-Content -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/skills/$($args[2])/SKILL.md") -Value "# Skill $($args[2]) $($args[4])"
+[void](New-Item -ItemType Directory -Force -Path (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/instructions"))
+Set-Content -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/instructions/shared.instructions.md") -Value '# Shared'
 exit 0
 '@
     $CatalogPath = Join-Path $TestDrive 'catalog.json'
@@ -50,6 +52,7 @@ exit 0
     function Invoke-Library { & $Script @args -CatalogUrl $CatalogPath -Workspace $Workspace | Out-String }
     function Invoke-ChangedLibrary { & $Script @args -CatalogUrl $ChangedCatalogPath -Workspace $Workspace | Out-String }
     function Get-ManifestSkills { (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).skills }
+    function Get-ManifestFiles { (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).files }
 }
 
 AfterAll { $env:PATH = $SavedPath }
@@ -168,5 +171,72 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
 
     It 'reports an unknown skill' {
         { Invoke-Library plan missing } | Should -Throw "*can't find the skill 'missing'*"
+    }
+
+    It 'copies installed guidance into .github and records each copy' {
+        Invoke-Library install alpha | Should -BeLike '*Guidance in .github/: 3 copied, 0 updated, 0 removed.*'
+        Get-Content "$Workspace/.github/skills/alpha/SKILL.md" | Should -Be '# Skill alpha 1.1.0'
+        Get-Content "$Workspace/.github/skills/beta/SKILL.md" | Should -Be '# Skill beta 1.0.0'
+        Get-Content "$Workspace/.github/instructions/shared.instructions.md" | Should -Be '# Shared'
+        $Files = Get-ManifestFiles
+        $Files.Keys | Sort-Object | Should -Be @('.github/instructions/shared.instructions.md', '.github/skills/alpha/SKILL.md', '.github/skills/beta/SKILL.md')
+        $Files['.github/skills/alpha/SKILL.md'].sha256 | Should -Be (Get-FileHash "$Workspace/.github/skills/alpha/SKILL.md").Hash.ToLowerInvariant()
+        $Files['.github/skills/alpha/SKILL.md'].version | Should -Be '1.1.0'
+        $Files['.github/instructions/shared.instructions.md'].skill | Should -Be 'alpha'
+    }
+
+    It 'updates unmodified copies on upgrade' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Invoke-Library upgrade-all | Should -BeLike '*Guidance in .github/: 0 copied, 1 updated, 0 removed.*'
+        Get-Content "$Workspace/.github/skills/alpha/SKILL.md" | Should -Be '# Skill alpha 1.1.0'
+        (Get-ManifestFiles)['.github/skills/alpha/SKILL.md'].version | Should -Be '1.1.0'
+    }
+
+    It 'keeps a modified copy on upgrade and reports it' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Set-Content "$Workspace/.github/skills/alpha/SKILL.md" -Value '# Local edit'
+        $Output = Invoke-Library upgrade-all
+        $Output | Should -Match 'Kept \.github/skills/alpha/SKILL\.md: modified since alpha 1\.0\.0 copied it on \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z; alpha 1\.1\.0 was not applied\.'
+        Get-Content "$Workspace/.github/skills/alpha/SKILL.md" | Should -Be '# Local edit'
+        (Get-ManifestFiles)['.github/skills/alpha/SKILL.md'].version | Should -Be '1.0.0'
+    }
+
+    It 'removes a skill with its unmodified copies and keeps modified ones' {
+        Invoke-Library install gamma | Out-Null
+        Invoke-Library install beta | Out-Null
+        Invoke-Library remove beta | Should -BeLike '*Guidance in .github/: 0 copied, 0 updated, 1 removed.*'
+        "$Workspace/.github/skills/beta" | Should -Not -Exist
+        "$Workspace/.github/instructions/shared.instructions.md" | Should -Exist
+        Set-Content "$Workspace/.github/skills/gamma/SKILL.md" -Value '# Local edit'
+        $Output = Invoke-Library remove gamma
+        $Output | Should -BeLike '*Kept .github/skills/gamma/SKILL.md: modified since gamma 1.0.0 copied it on *. Review it before deleting it.*'
+        $Output | Should -BeLike '*1 removed.*'
+        Get-Content "$Workspace/.github/skills/gamma/SKILL.md" | Should -Be '# Local edit'
+        "$Workspace/.github/instructions" | Should -Not -Exist
+        (Get-ManifestFiles).Count | Should -Be 0
+        Get-Content "$Workspace/specify.log" | Select-Object -Last 2 | Should -Be @('extension remove beta --force catalog=', 'extension remove gamma --force catalog=')
+    }
+
+    It 'refuses to remove a skill another installed skill requires' {
+        Invoke-Library install alpha | Out-Null
+        { Invoke-Library remove beta } | Should -Throw "*'beta' is required by alpha*"
+        Get-Content "$Workspace/specify.log" | Should -Not -Contain 'extension remove beta --force catalog='
+        { Invoke-Library remove skill } | Should -Throw '*specify extension remove skill*'
+    }
+
+    It 'never overwrites or deletes a file it did not copy' {
+        [void](New-Item -ItemType Directory -Force "$Workspace/.github/skills/beta")
+        Set-Content "$Workspace/.github/skills/beta/SKILL.md" -Value '# Mine'
+        Invoke-Library install beta | Should -BeLike '*Kept .github/skills/beta/SKILL.md: it exists and was not copied by the skill library.*'
+        (Get-ManifestFiles).ContainsKey('.github/skills/beta/SKILL.md') | Should -BeFalse
+        Invoke-Library remove beta | Out-Null
+        Get-Content "$Workspace/.github/skills/beta/SKILL.md" | Should -Be '# Mine'
+    }
+
+    It 'restores missing copies on sync' {
+        Invoke-Library install beta | Out-Null
+        Remove-Item "$Workspace/.github/skills/beta/SKILL.md"
+        Invoke-Library sync | Should -BeLike '*Guidance in .github/: 1 copied, 0 updated, 0 removed.*'
+        Get-Content "$Workspace/.github/skills/beta/SKILL.md" | Should -Be '# Skill beta 1.0.0'
     }
 }
