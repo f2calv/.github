@@ -53,6 +53,19 @@ verifies every archive's SHA-256 digest from the catalog. Installed skills live 
 skills first. It also installs any skill newly required by an upgraded version. If a required pin
 cannot be met it stops before changing anything. It does not upgrade the `skill` bootstrap itself.
 
+After upgrading it lists related skills that an upgraded version newly offers, for you to install by
+choice, and names skills that no chosen skill requires any more, for example after an upgraded skill
+dropped a dependency. Remove those with:
+
+```text
+/speckit-skill-library prune
+```
+
+The helper records in `.specify/extensions/.skill-library.json` whether you chose each skill or it
+was installed only as a requirement; `list` shows that as `chosen` or `required`. Skills you
+requested or selected are never pruned, and skills installed before the file existed count as
+chosen.
+
 ## Versions
 
 Each skill follows semantic versioning independently: `major` for breaking guidance changes, `minor`
@@ -60,8 +73,8 @@ for new capability and `patch` for fixes. A skill's required skills are pinned t
 related skills install at their current catalog version. Published releases never change.
 
 Installing a skill directly with `specify extension add <skill>` skips its required skills; use the
-bootstrap command instead. The bootstrap command does not remove installed skills; use
-`specify extension remove <skill>`.
+bootstrap command instead. To remove a skill you chose, use `specify extension remove <skill>`;
+`prune` removes only skills no chosen skill requires.
 
 ## Further Reading
 

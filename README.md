@@ -247,7 +247,9 @@ releases never change.
 ### How do I upgrade installed skills?
 
 Run `/speckit-skill-library upgrade-all`. It moves every installed skill to its latest version,
-required skills first, and stops without changes if a pin cannot be met.
+required skills first, and stops without changes if a pin cannot be met. It installs newly required
+skills, offers newly related ones, and reports skills no longer required, which
+`/speckit-skill-library prune` removes.
 
 ### Can I keep private or local-only skills?
 

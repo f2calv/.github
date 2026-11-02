@@ -11,6 +11,12 @@ BeforeAll {
 Add-Content -LiteralPath (Join-Path (Get-Location) 'specify.log') -Value "$($args -join ' ') catalog=$env:SPECKIT_CATALOG_URL"
 $Registry = Join-Path (Get-Location) '.specify/extensions/.registry'
 $Data = Get-Content -Raw -LiteralPath $Registry | ConvertFrom-Json -AsHashtable
+if ($args[1] -eq 'remove') {
+    $Data.extensions.Remove($args[2])
+    [IO.File]::WriteAllText($Registry, ($Data | ConvertTo-Json -Depth 5))
+    Remove-Item -Recurse -Force -LiteralPath (Join-Path (Get-Location) ".specify/extensions/$($args[2])") -ErrorAction SilentlyContinue
+    exit 0
+}
 $Data.extensions[$args[2]] = @{ version = $args[4]; enabled = $true }
 [IO.File]::WriteAllText($Registry, ($Data | ConvertTo-Json -Depth 5))
 [void](New-Item -ItemType Directory -Force -Path (Join-Path (Get-Location) ".specify/extensions/$($args[2])/resources/.github/skills/$($args[2])"))
@@ -28,8 +34,22 @@ exit 0
             Required = @(); Related = @(@{ id = 'alpha'; reason = 'Back link.' }) }
     )
     [IO.File]::WriteAllText($CatalogPath, ((New-SkillCatalog -Release $Release) | ConvertTo-Json -Depth 20))
+    # In the changed catalog alpha 1.1.0 drops beta, newly requires delta and newly offers epsilon.
+    $ChangedCatalogPath = Join-Path $TestDrive 'catalog-changed.json'
+    $Changed = @(
+        $Release[0]
+        [pscustomobject]@{ Id = 'alpha'; Version = '1.1.0'; Url = 'https://example.com/a2.zip'; Sha256 = ('b' * 64); Description = 'Alpha guidance.'; Facets = @('architecture')
+            Required = @(@{ id = 'delta'; version = '1.0.0' }); Related = @(@{ id = 'gamma'; reason = 'Optional extra.' }, @{ id = 'epsilon'; reason = 'New extra.' }) }
+        $Release[2]
+        $Release[3]
+        [pscustomobject]@{ Id = 'delta'; Version = '1.0.0'; Url = 'https://example.com/d.zip'; Sha256 = ('e' * 64); Description = 'Delta guidance.'; Facets = @(); Required = @(); Related = @() }
+        [pscustomobject]@{ Id = 'epsilon'; Version = '1.0.0'; Url = 'https://example.com/e.zip'; Sha256 = ('f' * 64); Description = 'Epsilon guidance.'; Facets = @(); Required = @(); Related = @() }
+    )
+    [IO.File]::WriteAllText($ChangedCatalogPath, ((New-SkillCatalog -Release $Changed) | ConvertTo-Json -Depth 20))
     # Plain function so @args forwards -Version and -Related as parameters.
     function Invoke-Library { & $Script @args -CatalogUrl $CatalogPath -Workspace $Workspace | Out-String }
+    function Invoke-ChangedLibrary { & $Script @args -CatalogUrl $ChangedCatalogPath -Workspace $Workspace | Out-String }
+    function Get-ManifestSkills { (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).skills }
 }
 
 AfterAll { $env:PATH = $SavedPath }
@@ -97,9 +117,51 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
         Invoke-Library upgrade-all | Should -BeLike '*No skills are installed*'
     }
 
+    It 'records chosen and required skills when installing' {
+        Invoke-Library install alpha -Version 1.0.0 -Related gamma | Out-Null
+        $Skills = Get-ManifestSkills
+        $Skills.alpha.chosen | Should -BeTrue
+        $Skills.gamma.chosen | Should -BeTrue
+        $Skills.beta.chosen | Should -BeFalse
+        Invoke-Library install beta | Out-Null
+        (Get-ManifestSkills).beta.chosen | Should -BeTrue
+        Invoke-Library list | Should -Match 'beta\s+1\.0\.0\s+True\s+chosen'
+    }
+
+    It 'upgrades into changed dependencies: installs new required skills, offers new related skills and reports unneeded ones' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Remove-Item "$Workspace/specify.log"
+        $Output = Invoke-ChangedLibrary upgrade-all
+        Get-Content "$Workspace/specify.log" | Should -Be @(
+            "extension add delta --version 1.0.0 catalog=$ChangedCatalogPath"
+            "extension add alpha --version 1.1.0 --force catalog=$ChangedCatalogPath")
+        $Output | Should -Match 'epsilon\s+alpha\s+New extra\.'
+        $Output | Should -Not -Match 'gamma\s+alpha'
+        $Output | Should -BeLike '*No longer required by any chosen skill: beta. Run prune to remove them.*'
+        (Get-ManifestSkills).delta.chosen | Should -BeFalse
+        Invoke-ChangedLibrary list | Should -Match 'delta\s+1\.0\.0\s+True\s+required'
+    }
+
+    It 'prunes only skills no chosen skill requires' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Invoke-ChangedLibrary upgrade-all | Out-Null
+        Remove-Item "$Workspace/specify.log"
+        Invoke-ChangedLibrary prune | Should -BeLike '*Removed 1 skill(s).*'
+        Get-Content "$Workspace/specify.log" | Should -Be 'extension remove beta --force catalog='
+        (Get-Content -Raw "$Workspace/.specify/extensions/.registry" | ConvertFrom-Json -AsHashtable).extensions.Keys | Sort-Object | Should -Be @('alpha', 'delta', 'skill')
+        (Get-ManifestSkills).ContainsKey('beta') | Should -BeFalse
+        Invoke-ChangedLibrary prune | Should -BeLike '*Nothing to prune*'
+    }
+
+    It 'never prunes skills installed before choices were recorded' {
+        [IO.File]::WriteAllText("$Workspace/.specify/extensions/.registry", '{"schema_version":"1.0","extensions":{"skill":{"version":"1.0.0","enabled":true},"beta":{"version":"1.0.0","enabled":true}}}')
+        Invoke-Library prune | Should -BeLike '*Nothing to prune*'
+        "$Workspace/specify.log" | Should -Not -Exist
+    }
+
     It 'lists installed skills and loads their files with SKILL.md first' {
         Invoke-Library install beta | Out-Null
-        Invoke-Library list | Should -Match 'beta\s+1\.0\.0\s+True'
+        Invoke-Library list | Should -Match 'beta\s+1\.0\.0\s+True\s+chosen'
         Invoke-Library load beta | Should -BeLike '*.specify/extensions/beta/resources/.github/skills/beta/SKILL.md*'
         { Invoke-Library load gamma } | Should -Throw "*'gamma' is not installed*"
     }

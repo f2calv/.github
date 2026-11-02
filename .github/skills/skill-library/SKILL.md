@@ -153,8 +153,14 @@ Then use `/speckit-skill-library search architecture`, `/speckit-skill-library i
 add and runs `specify extension add` for each skill in dependency order. Spec Kit verifies each
 archive's SHA-256 from the catalog. Installed skills are read from `.specify/extensions/<id>/`.
 `/speckit-skill-library upgrade-all` moves every installed skill to its latest catalog version with
-`specify extension add --force`, required skills first; it does not upgrade the `skill` bootstrap,
-which `specify extension add skill --force` replaces.
+`specify extension add --force`, required skills first, and installs skills an upgraded version
+newly requires. It offers related skills that an upgraded version newly lists and reports skills no
+chosen skill requires any more; `/speckit-skill-library prune` removes those with
+`specify extension remove --force`. The helper records whether each skill was chosen or only
+required in `.specify/extensions/.skill-library.json`, because Spec Kit's registry stores only
+versions; skills installed before that file existed count as chosen and are never pruned.
+`upgrade-all` does not upgrade the `skill` bootstrap, which `specify extension add skill --force`
+replaces.
 
 Every script in `scripts/` has a matching `tests/<Name>.Tests.ps1`; the consumer helper's tests live
 there too so they are not packaged into the bootstrap. A repository test enforces the pairing.
