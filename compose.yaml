@@ -1,0 +1,97 @@
+#Test toolchains for this repository's scripts. There is no infrastructure: `docker compose up` starts
+#nothing, and each service is a one-shot test run behind the `test` profile.
+#
+#  docker compose run --rm python-tests   uv sync --locked, ruff format and check, mypy and pytest
+#  docker compose run --rm bash-tests     shellcheck and bats-core for the Bash helper
+#  docker compose run --rm pester-tests   Pester 5.7.1 skill-library suites on Linux
+#
+#CI runs the same services. The repository is mounted read-only; tool caches live in named volumes or
+#/tmp so nothing is written into the working tree. No ports are published.
+name: dotgithub-tests
+
+services:
+  python-tests:
+    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+    profiles: [test]
+    restart: "no"
+    working_dir: /repo
+    environment:
+      UV_PROJECT_ENVIRONMENT: /opt/venv
+      UV_LINK_MODE: copy
+      RUFF_CACHE_DIR: /tmp/ruff
+      MYPY_CACHE_DIR: /tmp/mypy
+      PYTEST_ADDOPTS: -p no:cacheprovider
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - .:/repo:ro
+      - python_tests_venv:/opt/venv
+      - python_tests_uv_cache:/root/.cache/uv
+    command:
+      - bash
+      - -ec
+      - |
+        apt-get update -qq > /dev/null && apt-get install -y -qq --no-install-recommends jq > /dev/null
+        uv sync --group test --locked
+        uv run --no-sync ruff format --check
+        uv run --no-sync ruff check
+        uv run --no-sync mypy
+        uv run --no-sync pytest
+
+  bash-tests:
+    #Pinned exactly: the bats/bats:1 tag is a stale Bats 0.4.0 image on Alpine 3.6.
+    image: bats/bats:1.14.0
+    profiles: [test]
+    restart: "no"
+    working_dir: /repo
+    entrypoint: [bash, -ec]
+    environment:
+      BATS_LIB_PATH: /usr/lib/bats
+    volumes:
+      - .:/repo:ro
+    command:
+      - |
+        apk add --quiet --no-cache jq shellcheck > /dev/null
+        shellcheck --version | head -n 2
+        shellcheck src/skill-library-extension/scripts/bash/skill-library.sh .github/skills/skill-library/scripts/tests/fixtures/helper/specify
+        shellcheck -s bash .github/skills/skill-library/scripts/tests/bash/skill-library.bats
+        bats .github/skills/skill-library/scripts/tests/bash
+
+  pester-tests:
+    #The PowerShell images publish no major alias; 7.5 is the newest minor with an Ubuntu 24.04 variant.
+    image: mcr.microsoft.com/powershell:7.5-ubuntu-24.04
+    profiles: [test]
+    restart: "no"
+    working_dir: /repo
+    environment:
+      #Synthetic identity for the fixture repositories the suites commit to.
+      GIT_AUTHOR_NAME: Example Author
+      GIT_AUTHOR_EMAIL: author@example.com
+      GIT_COMMITTER_NAME: Example Author
+      GIT_COMMITTER_EMAIL: author@example.com
+    volumes:
+      - .:/repo:ro
+      - pester_tests_modules:/root/.local/share/powershell/Modules
+    command:
+      - bash
+      - -ec
+      - |
+        apt-get update -qq > /dev/null && apt-get install -y -qq --no-install-recommends git curl ca-certificates > /dev/null
+        git config --global --add safe.directory '*'
+        curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$$(dpkg --print-architecture)" -o /usr/local/bin/yq
+        chmod +x /usr/local/bin/yq
+        pwsh -NoProfile -Command '
+          $$ErrorActionPreference = "Stop"
+          if (-not (Get-Module Pester -ListAvailable | Where-Object Version -EQ "5.7.1")) {
+            Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force
+          }
+          Import-Module Pester -RequiredVersion 5.7.1
+          $$Configuration = New-PesterConfiguration
+          $$Configuration.Run.Path = "./.github/skills/skill-library/scripts/tests"
+          $$Configuration.Run.PassThru = $$true
+          $$Result = Invoke-Pester -Configuration $$Configuration
+          if ($$Result.FailedCount -or $$Result.FailedContainersCount -or -not $$Result.PassedCount) { exit 1 }'
+
+volumes:
+  python_tests_venv:
+  python_tests_uv_cache:
+  pester_tests_modules:

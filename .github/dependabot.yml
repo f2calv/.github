@@ -7,6 +7,13 @@ updates:
       interval: weekly
       time: "04:00"
 
+  #Test toolchain images in compose.yaml.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      time: "04:00"
+
   - package-ecosystem: docker
     directory: /.github/skills/tooling-pre-commit
     schedule:

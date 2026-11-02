@@ -19,9 +19,21 @@ release-train command is a focused alternative, not a suite omitted by `test:ps`
 runs return a nonzero exit code. Some fixtures use `chmod` and shebang fake commands, so run the
 suite on Linux or in CI rather than on a Windows host.
 
-The Bash and Python variants of the skill bootstrap helper have their own suites, run in CI by the
-`python-helper` and `bash-helper` jobs. Locally, with uv, or in the containers the
-[scripting-tests skill](../.github/skills/scripting-tests/SKILL.md) describes:
+The Bash and Python variants of the skill bootstrap helper have their own suites. The root
+[compose.yaml](../compose.yaml) defines one-shot test services behind the `test` profile, so
+`docker compose up` starts nothing and the only host requirement is Docker. CI's `python-helper` and
+`bash-helper` jobs run the same services:
+
+```bash
+docker compose run --rm python-tests   # uv sync --locked, ruff format and check, mypy, pytest
+docker compose run --rm bash-tests     # shellcheck and bats-core
+docker compose run --rm pester-tests   # skill-library Pester suites on Linux
+```
+
+The repository is mounted read-only, and the uv environment and Pester module live in named
+volumes. `pester-tests` covers only the skill-library suites as a quick Linux check on a Windows
+host; `test:ps` remains the complete Pester run. With uv, shellcheck and bats installed, the
+equivalent native commands are:
 
 ```bash
 uv sync --group test --locked

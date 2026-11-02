@@ -29,7 +29,8 @@ How to write and run bats-core tests for Bash scripts. The always-on rules are i
 ## Running
 
 Without bats installed, use the official image, which ships bats-support, bats-assert and bats-file
-under `/usr/lib/bats`. Add any tools the script needs:
+under `/usr/lib/bats`. Pin an exact release: the `bats/bats:1` tag is a stale Bats 0.4.0 image on
+Alpine 3.6. Add any tools the script needs:
 
 ```bash
 docker run --rm -v "$PWD:/code" -w /code --entrypoint bash bats/bats:1.14.0 -c \
