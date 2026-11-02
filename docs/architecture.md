@@ -230,4 +230,4 @@ differing copy is reported.
 | Selection | Every instruction and skill | Chosen skills plus their required closure | One skill per plugin; required plugins installed by hand |
 | Instructions | Applied automatically by `applyTo` | Copied into `.github/instructions/` and applied by `applyTo` | Linked files packaged as reference |
 | Updates | `git pull` | `/speckit-skill-library upgrade-all` | Replace with the newer package |
-| Prerequisites | VS Code with Copilot | Specify CLI, PowerShell 7.4+, access to GitHub Pages and Releases | An Agent Plugins client and access to GitHub Releases |
+| Prerequisites | VS Code with Copilot | Specify CLI, access to GitHub Pages and Releases, and PowerShell 7.4+, Bash 4+ with `jq`, or Python for the chosen helper variant | An Agent Plugins client and access to GitHub Releases |

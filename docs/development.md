@@ -19,6 +19,20 @@ release-train command is a focused alternative, not a suite omitted by `test:ps`
 runs return a nonzero exit code. Some fixtures use `chmod` and shebang fake commands, so run the
 suite on Linux or in CI rather than on a Windows host.
 
+The Bash and Python variants of the skill bootstrap helper have their own suites, run in CI by the
+`python-helper` and `bash-helper` jobs. Locally, with uv, or in the containers the
+[scripting-tests skill](../.github/skills/scripting-tests/SKILL.md) describes:
+
+```bash
+uv sync --group test --locked
+uv run --no-sync ruff format --check && uv run --no-sync ruff check && uv run --no-sync mypy
+uv run --no-sync pytest
+shellcheck src/skill-library-extension/scripts/bash/skill-library.sh
+bats .github/skills/skill-library/scripts/tests/bash
+```
+
+A change to the helper's behaviour is made in all three variants and all three suites together.
+
 After changing any skill, run the [skill library checks](../.github/skills/skill-library/SKILL.md#validate-and-bump)
 before committing; CI rejects missing sidecars and unbumped or over-bumped versions.
 

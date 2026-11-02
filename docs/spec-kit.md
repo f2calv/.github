@@ -9,8 +9,18 @@ default and needs none of this.
 ## Prerequisites
 
 - The [Specify CLI](https://github.com/github/spec-kit), initialized in the consuming repository.
-- PowerShell 7.4 or later, used by the bootstrap command.
 - Network access to GitHub Pages and this repository's GitHub Releases.
+- The runtime of the helper variant Spec Kit selects from `specify init --script`:
+
+  | `--script` | Helper | Needs |
+  | --- | --- | --- |
+  | `ps` | `Invoke-SkillLibrary.ps1` | PowerShell 7.4 or later |
+  | `sh` | `bash/skill-library.sh` | Bash 4 or later, `jq`, `sha256sum` or `shasum`, and `curl` |
+  | `py` | `python/skill_library.py` | The Python that runs the Specify CLI; no packages |
+
+  All three accept the same commands and arguments, print the same output and share one state file,
+  so changing `--script` later keeps installed skills. macOS ships Bash 3.2: choose `ps` or `py` there,
+  or install a newer Bash.
 
 ## Install the Bootstrap Command
 
@@ -22,6 +32,13 @@ specify init --here --integration copilot --script ps
 $env:SPECKIT_CATALOG_URL = 'https://f2calv.github.io/.github/catalog.json'
 specify extension add skill
 Remove-Item Env:SPECKIT_CATALOG_URL
+```
+
+With Bash, choose `--script sh` or `--script py`:
+
+```bash
+specify init --here --integration copilot --script sh
+SPECKIT_CATALOG_URL=https://f2calv.github.io/.github/catalog.json specify extension add skill
 ```
 
 Repositories that installed `skill` 1.0.0 use the retired release-hosted catalog, which no longer

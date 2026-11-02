@@ -10,7 +10,7 @@ see. Run them in a disposable demo repository, never in a real project.
 | [2. Invoke a skill](#2-invoke-a-skill) | A task-specific workflow with safety gates | VS Code with Copilot |
 | [3. Version a skill change](#3-version-a-skill-change) | One bump per branch, the pin cascade and the pull request gate | PowerShell 7.4+, Git, `yq` v4 |
 | [4. Package a skill](#4-package-a-skill) | Deterministic Spec Kit extension ZIPs | As demo 3 |
-| [5. Install from the catalog](#5-install-from-the-catalog) | Required and related skills installed through Spec Kit | Specify CLI, PowerShell 7.4+ |
+| [5. Install from the catalog](#5-install-from-the-catalog) | Required and related skills installed through Spec Kit | Specify CLI and the helper variant's runtime |
 | [6. Upgrade installed skills](#6-upgrade-installed-skills) | `upgrade-all` moving every skill to its latest version, and `prune` | As demo 5 |
 | [7. Fully local catalog](#7-fully-local-catalog) | The whole pipeline offline, before anything is published | Demos 4 and 5 prerequisites, Python 3 |
 | [8. Build an Agent Plugin](#8-build-an-agent-plugin) | The same skill packaged for any Agent Plugins client | As demo 3 |
@@ -91,6 +91,9 @@ $env:SPECKIT_CATALOG_URL = 'https://f2calv.github.io/.github/catalog.json'
 specify extension add skill
 Remove-Item Env:SPECKIT_CATALOG_URL
 ```
+
+To show the portable helper, repeat in a second demo repository with `--script sh` or
+`--script py`: the same commands produce the same output from the Bash or Python variant.
 
 In Copilot Chat:
 
