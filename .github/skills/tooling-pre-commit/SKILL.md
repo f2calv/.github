@@ -39,7 +39,7 @@ Every repository must have:
 4. Release fan-in that depends on `lint` when the repository creates releases.
 5. A root Dependabot `pre-commit` ecosystem entry so hook revisions remain current.
 
-Use the account-level [baseline configuration](../../../.pre-commit-config.yaml) as the nearest
+Use the account-level [baseline configuration](https://github.com/f2calv/.github/blob/main/.pre-commit-config.yaml) as the nearest
 shared precedent. Preserve local exclusions and hooks while aligning common hook sources and
 arguments.
 
