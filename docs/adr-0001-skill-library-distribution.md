@@ -38,6 +38,22 @@ installation that Spec Kit already provides. It never published a release. Git h
    closure, offers related skills for explicit selection, installs through `specify extension add`,
    upgrades every installed skill to its latest version with `upgrade-all` and lists installed
    guidance for loading. Spec Kit verifies archive digests.
+7. **Copy installed guidance where Copilot discovers it.** After every install, upgrade, removal or
+   prune, the bootstrap mirrors each enabled skill's `resources/.github/` into the workspace
+   `.github/`, so `.github/skills/<id>/` and `.github/instructions/` load natively in new chats. It
+   records each copied file's SHA-256, owning skills and version in `.skill-library.json`. A copy is
+   replaced or deleted only while its bytes still match that record; a modified copy, or a file the
+   bootstrap did not write, is kept and reported, so removing a skill never discards local edits.
+
+### Discovery Gap
+
+Spec Kit 1.2.3 extensions provide `commands`, `hooks`, `scripts`, `templates` and `config`; there is
+no skill type. The Copilot integration writes only commands into `.github/skills/speckit-<command>/`.
+Each skill package declares its `SKILL.md` as a template, which Spec Kit records but Copilot never
+reads, so a skill installed only as an extension under `.specify/extensions/<id>/resources/` is not
+discovered: its description never reaches the agent and its instructions never apply by `applyTo`.
+It was usable only through an explicit `load` in the current chat. The `extension.yml` description
+serves the catalog, `specify extension list` and `search`, not Copilot discovery.
 
 ## Options Considered
 
@@ -48,6 +64,11 @@ installation that Spec Kit already provides. It never published a release. Git h
 | Rely on Spec Kit dependency resolution | Unavailable: Spec Kit 1.2.3 only checks `requires.speckit_version`. |
 | Native consumption only | Kept as the default route, but it offers no versioned selection. |
 | Catalog on a rolling release asset | Replaced: each publish clobbered a release asset and the URL depended on a release. Pages deploys atomically and hosts a browsable index. |
+| Discovery: rely on `load` only | Rejected: guidance applies only in the chat that loaded it, and instructions never apply by `applyTo`. |
+| Discovery: declare each skill as a Spec Kit command | Rejected: renames it `speckit-<id>` and copies only the one file, breaking links to its references and instructions. |
+| Discovery: point editor settings at extension folders | Rejected: editor-specific and needs a setting per installed skill. |
+| Discovery: symlink instead of copy | Rejected: a link has no install-time content to audit, and symlinks are unreliable on Windows checkouts. |
+| Discovery: copy with recorded SHA-256 | Chosen: native discovery in any client that reads `.github/`, plus an audit record that protects local edits on upgrade and removal. |
 
 ## Consequences
 
@@ -58,7 +79,13 @@ installation that Spec Kit already provides. It never published a release. Git h
 - Renaming a skill folder creates a new component ID. Published releases and tags are never moved.
 - Digests prove integrity, not authorship. Signing is out of scope until needed. The bootstrap
   records whether each skill was chosen or only required, so `prune` removes required skills no
-  chosen skill needs; `specify extension remove` removes a chosen skill.
+  chosen skill needs, and `remove` removes a chosen skill that no other installed skill requires.
+- Copies under `.github/` are ordinary workspace files: commit them so collaborators get the skills
+  without Spec Kit, or ignore them. `specify extension add` or `remove` run directly bypasses the
+  copy step; run the bootstrap's `sync` afterwards.
+- When several skills ship the same instruction file, the copy from the first skill by ID wins and a
+  differing copy from another skill is reported.
+- The SHA-256 record detects edits, not who made them; it is an audit aid, not tamper protection.
 - Consumers of `skill` 1.0.0 keep the retired release-hosted catalog, which stops receiving new
   versions, until they reinstall the bootstrap with `--force`.
 
@@ -90,6 +117,10 @@ installation that Spec Kit already provides. It never published a release. Git h
       removes skills no longer required (`skill` 1.2.0) with Pester coverage.
 - [x] Enable Pages for this repository, merge, and confirm the deployed catalog and index resolve
       (PR #40, release `1.6.3`).
+- [x] Record the Copilot discovery gap for extension-installed skills.
+- [x] Copy installed guidance into `.github/` with SHA-256 audit records, add `remove` and `sync`,
+      and keep modified copies on upgrade and removal (`skill` 1.3.0) with Pester coverage.
+- [ ] Confirm in a fresh consumer that a copied skill is discovered in a new chat without `load`.
 - [ ] Publish a follow-on version of a skill with required dependents and observe the pin cascade.
 
 ## Handover
@@ -124,6 +155,11 @@ standalone executable. Where `uv` is unavailable, install it with pip into a vir
 using the host's configured package index: `python -m venv ~/.venvs/specify`, then
 `~/.venvs/specify/Scripts/python -m pip install specify-cli==1.2.3` on Windows
 (`bin/python` on Linux or macOS). The end-to-end consumer run on Windows has not started.
+
+**State on 2026-11-02.** A Dev Container demo consumer installed `skill` 1.1.0, `docs-adr` and
+`skill-library` from the Pages catalog; `load docs-adr` worked, but `.github/skills/` held only the
+`speckit-*` commands, which exposed the [discovery gap](#discovery-gap). Decision 7 closes it on
+`f2calv/2026-11-updates3`.
 
 **Next session, part 0: demo the published catalog.** Run [demos 5 and 6](demo.md) against the
 Pages catalog, then delete the stale `skills-catalog` release, which only the retired `skill` 1.0.0
