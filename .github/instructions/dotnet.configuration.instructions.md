@@ -144,6 +144,10 @@ repository, never as a route for credentials into a ConfigMap.
 - Keep mutable runtime data such as tenant definitions, user preferences, workflow state and
   versioned policy outside the deployment configuration pipeline. Put it behind a dedicated store
   interface with explicit validation, versioning, cache invalidation and authorization.
+- Logging levels are part of the startup snapshot: change deployed minimums and category overrides
+  by rollout, restating only deliberate deviations from the shared logging defaults. The one runtime
+  exception is a typed, authorized, time-bounded level switch; the `dotnet-logging` skill owns the
+  level layers.
 
 ## Options Types
 

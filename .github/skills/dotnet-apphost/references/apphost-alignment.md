@@ -28,7 +28,7 @@ easier to inspect and test.
 | Special modes | Migration, ingestion, finite jobs, interactive console, help/version |
 | Argument precedence | Host-only parsing/removal, CLI override precedence, configuration arguments |
 | Configuration | Providers, ordering, secret store, rebinding, validation |
-| Logging | Bootstrap logger, provider replacement, runtime control, flush |
+| Logging | Bootstrap logger, pipeline owner, provider replacement, level layers, request-summary position, runtime control, flush |
 | Infrastructure | Time, cache, database, HTTP clients, shared singletons |
 | Observability | Resource identity, meters, sources, exporters, sensitive-data policy |
 | Features and roles | Selection, defaults, unknown values, prerequisites, workers |
@@ -65,7 +65,7 @@ An AppHost refactor should normally prove:
 4. Disabled controllers, MCP tools, gRPC services and workers remain unavailable.
 5. Authentication and authorization remain attached to the same surfaces.
 6. Middleware ordering preserves exception handling, routing, authentication, authorization and
-   request logging behavior.
+   request logging behavior; the request summary stays outermost.
 7. Liveness does not depend on failures it cannot repair; readiness reflects required dependencies.
 8. Cancellation reaches workers and transports, shutdown remains bounded, and logging flushes.
 9. No duplicate singleton, hosted service, database migration or event-stream owner is introduced.

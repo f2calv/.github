@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.2
+version: 1.0.3
 facets: [dotnet]
 related:
   - id: dotnet-dependency-injection
@@ -20,6 +20,8 @@ related:
     reason: Linked from SKILL.md.
   - id: kubernetes-helm
     reason: Linked from SKILL.md.
+  - id: dotnet-logging
+    reason: Apply the request-summary, level-policy and level-layer contract.
 externalFiles:
   - .github/instructions/dotnet.configuration.instructions.md
   - .github/instructions/dotnet.csharp.instructions.md

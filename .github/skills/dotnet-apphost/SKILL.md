@@ -23,6 +23,8 @@ turning intentional differences into one hidden framework.
   [MCP](../dotnet-mcp/SKILL.md), [CLI](../dotnet-cli/SKILL.md), and
   [background pipelines](../dotnet-background-pipelines/SKILL.md) for their protocol or lifecycle
   details. This skill owns how those capabilities are composed into the application host.
+- Use [logging](../dotnet-logging/SKILL.md) for level policy, level layers and request summaries;
+  this skill owns only where logging, telemetry and the summary middleware are registered.
 - Use [EF Core](../dotnet-efcore/SKILL.md) for schema migration correctness and
   [Helm](../kubernetes-helm/SKILL.md) for the external migration Job contract.
 - Load the [alignment reference](./references/apphost-alignment.md) for the comparison matrix,
@@ -74,7 +76,7 @@ Trace executed code in order:
 12. Web API, MCP, gRPC and other transport registration;
 13. host options and shutdown;
 14. build;
-15. middleware;
+15. middleware, starting with the request summary before exception handling;
 16. endpoint mapping;
 17. run or finite operation;
 18. cancellation, failure, logging flush, disposal and process result.
@@ -179,7 +181,7 @@ tests covering the change. When authorized, validate:
 - cancellation and shutdown are bounded;
 - unexpected faults remain failures;
 - fatal background-service faults survive graceful `StopHost` shutdown as a nonzero process result;
-- logging and telemetry initialize once and flush;
+- logging and telemetry initialize once and flush, and each event reaches each sink once;
 - the actual process or test host starts for each affected composition.
 
 Build the complete Debug solution when it uses adjacent source references. Validate the Release
