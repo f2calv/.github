@@ -167,7 +167,9 @@ and both instruction files, matching the local pilot (R3, R4 apart from the brok
 - [x] **Phase 2 pilot.** `docs-adr/apm.yml`, the `Test-SkillLibrary.ps1` drift check and the
   packaging exclusion, with Pester coverage. Installed with APM 0.35.0 from a local mirror: required
   skill and both instructions installed, uninstall clean.
-- [ ] **Phase 2 gate.** The same install from github.com once `docs-adr/1.0.3` is released.
+- [x] **Phase 2 gate.** From github.com with APM 0.35.0 after release, `apm install` of
+  `docs-adr#docs-adr/1.0.3` installed `repository-privacy` 1.1.0 transitively and both instruction
+  files into `.github/instructions/`, matching the local pilot.
 - [ ] **Phase 2 build.** The generator for every skill, with Pester coverage for dependency pins,
   instruction references and `x-skill-library` keys.
 
