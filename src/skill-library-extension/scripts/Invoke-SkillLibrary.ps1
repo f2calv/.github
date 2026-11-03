@@ -22,7 +22,8 @@ Exact version of the target skill; defaults to the catalog's current version.
 .PARAMETER Related
 Related skill IDs to install alongside the target, each with its own required skills.
 .PARAMETER CatalogUrl
-Skill library catalog; SKILL_LIBRARY_CATALOG_URL overrides the published default.
+Skill library catalog. Defaults to SKILL_LIBRARY_CATALOG_URL, then the catalog_url packaged in the
+extension's skill-library.json by the bootstrap build.
 .EXAMPLE
 ./Invoke-SkillLibrary.ps1 install patterns-ports-and-adapters -Related patterns-modular-monolith
 #>
@@ -32,15 +33,20 @@ param(
     [Parameter(Position = 1)][string]$Target = '',
     [string]$Version = '',
     [string[]]$Related = @(),
-    [string]$CatalogUrl = ($env:SKILL_LIBRARY_CATALOG_URL ?? 'https://f2calv.github.io/.github/catalog.json'),
+    [string]$CatalogUrl = ($env:SKILL_LIBRARY_CATALOG_URL ?? ''),
     [string]$Workspace = (Get-Location).Path
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 $BootstrapId = 'skill'
 $Related = @($Related | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if (-not $CatalogUrl) {
+    $Packaged = Join-Path $PSScriptRoot '../skill-library.json'
+    if (Test-Path -LiteralPath $Packaged -PathType Leaf) { $CatalogUrl = [string]((Get-Content -LiteralPath $Packaged -Raw | ConvertFrom-Json -AsHashtable)['catalog_url'] ?? '') }
+}
 
 function Get-Catalog {
+    if (-not $CatalogUrl) { throw 'No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension.' }
     if (Test-Path -LiteralPath $CatalogUrl -PathType Leaf) { return (Get-Content -LiteralPath $CatalogUrl -Raw | ConvertFrom-Json -AsHashtable).extensions }
     $Response = Invoke-WebRequest -Uri $CatalogUrl -UseBasicParsing
     $Content = if ($Response.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($Response.Content) } else { $Response.Content }

@@ -63,11 +63,13 @@ assets with a token, and whether the publishing script works against the server 
 
 ## Proposed Decision
 
-1. **Configuration.** Move the catalog URL, plugin namespace, bootstrap ID and path, repository URL
-   and the optional catalogue document path into one repository configuration file (illustrative
-   name `.github/skill-library.config.yaml`). The tooling reads it; the bootstrap build writes the
-   catalog URL into the packaged helpers so they stop hardcoding a default. Missing values keep
-   today's behaviour for this repository.
+1. **Configuration.** Move the catalog URL, plugin namespace and the optional catalogue document path
+   into [`.github/skill-library.config.yaml`](../.github/skill-library.config.yaml), validated by a
+   [schema](../.github/skills/skill-library/skill-library-config.schema.json). The tooling reads it and
+   fails without it or with template example values; the bootstrap build writes the catalog URL into
+   the packaged extension as `skill-library.json`, which the helpers read after `-CatalogUrl` and
+   `SKILL_LIBRARY_CATALOG_URL`. The bootstrap ID and path stay fixed because the bootstrap is itself
+   a managed framework file.
 2. **Framework manifest.** One committed file lists framework paths in two groups: *managed*, which a
    sync overwrites (tooling scripts and tests, the bootstrap extension, the sidecar schema, the
    reusable test workflow, the Python and Bash test setup), and *seeded*, which a sync creates once
@@ -96,8 +98,10 @@ assets with a token, and whether the publishing script works against the server 
 
 ## Validation and Delivery
 
-- [ ] Configuration externalised, with this repository's behaviour unchanged and tests passing in
-  all three helper languages.
+- [x] Configuration externalised: the config file and schema, the three helpers reading the packaged
+  catalog URL, and the plugin namespace and catalogue page taken from configuration. Pester 135/135,
+  pytest 27/27 and bats 27/27 with shellcheck pass, and this repository's packages are unchanged apart
+  from the bootstrap's new `skill-library.json`.
 - [ ] Framework manifest with a completeness check in `Test-SkillLibrary.ps1`.
 - [ ] Sync script with Pester coverage: managed overwrite, locally edited file kept, seeded file
   created once, lock contents, `-WhatIf`.

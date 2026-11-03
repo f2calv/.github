@@ -401,3 +401,21 @@ def test_does_not_treat_skills_missing_from_an_older_state_file_as_installed_out
     library.ok("sync")
     assert library.state()["skills"]["beta"]["chosen"] is True
     assert "Warning:" not in library.ok("list")
+
+
+def test_reads_the_packaged_catalog_url_and_fails_only_catalog_commands_without_one(library: Library, tmp_path: Path) -> None:
+    extension = tmp_path / "extension"
+    (extension / "scripts/python").mkdir(parents=True)
+    copy = extension / "scripts/python/skill_library.py"
+    shutil.copyfile(SCRIPT, copy)
+
+    def run(*arguments: str) -> subprocess.CompletedProcess[str]:
+        command = [sys.executable, str(copy), *arguments, "-Workspace", str(library.workspace)]
+        return subprocess.run(command, capture_output=True, text=True, env=library.env, check=False)  # noqa: S603 - the helper copy
+
+    assert "Commands: search" in run("help").stdout
+    missing = run("search", "architecture")
+    assert missing.returncode == 1
+    assert "No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension." in missing.stderr
+    (extension / "skill-library.json").write_text(json.dumps({"catalog_url": str(CATALOG)}), encoding="utf-8")
+    assert re.search(r"alpha\s+1\.1\.0", run("search", "architecture").stdout)

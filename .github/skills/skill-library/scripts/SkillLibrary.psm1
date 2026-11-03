@@ -4,14 +4,17 @@ Set-StrictMode -Version 3.0
 $script:BootstrapId = 'skill'
 $script:BootstrapPath = 'src/skill-library-extension'
 $script:SchemaPath = Join-Path $PSScriptRoot '../skill-metadata.schema.json'
+$script:ConfigSchemaPath = Join-Path $PSScriptRoot '../skill-library-config.schema.json'
+# Repository-specific values live here so framework files stay byte-identical across repositories (ADR 0004).
+$script:ConfigPath = '.github/skill-library.config.yaml'
+# The bootstrap helpers read the catalog URL from this file at the extension root.
+$script:PackagedConfigName = 'skill-library.json'
 $script:VersionPattern = '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 $script:PluginSchema = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'
-$script:PluginNamespace = 'io.github.f2calv.skill-library'
 $script:PortableFrontmatter = @('name', 'description', 'license', 'compatibility', 'metadata', 'allowed-tools')
 $script:SkillNamePattern = '^(?=.{1,64}$)[a-z0-9]+(-[a-z0-9]+)*$'
 # specify init writes its own speckit-* skills into .github/skills; they are Spec Kit's, not ours to version or publish.
 $script:SpecKitSkillPattern = 'speckit-*'
-$script:CataloguePath = 'docs/skills.md'
 
 function Invoke-SkillTool {
     param([Parameter(Mandatory)][string]$Name, [string[]]$Arguments = @(), [string]$WorkingDirectory = (Get-Location).Path)
@@ -32,6 +35,28 @@ function ConvertFrom-SkillYaml {
 function Read-SkillYaml {
     param([Parameter(Mandatory)][string]$Path, [string]$Expression = '.')
     return ConvertFrom-SkillYaml -Yaml ([IO.File]::ReadAllText($Path)) -Expression $Expression
+}
+
+function Get-SkillLibraryConfig {
+    <# Reads and validates .github/skill-library.config.yaml, rejecting the template's example values. #>
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    $Path = Join-Path $RepoRoot $script:ConfigPath
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "Missing $($script:ConfigPath); create it with this repository's catalogUrl and pluginNamespace."
+    }
+    $Config = Read-SkillYaml $Path
+    $SchemaErrors = $null
+    if (-not (Test-Json -Json (($Config ?? @{}) | ConvertTo-Json -Depth 5) -Schema ([IO.File]::ReadAllText($script:ConfigSchemaPath)) -ErrorVariable SchemaErrors -ErrorAction SilentlyContinue)) {
+        throw "$($script:ConfigPath) does not match the schema: $($SchemaErrors -join '; ')"
+    }
+    if ($Config.catalogUrl -match '://([^/]+\.)?example\.(com|org|net)(/|$)' -or $Config.pluginNamespace -match '^(com|org|net)\.example(\.|$)') {
+        throw "$($script:ConfigPath) still holds template example values; set this repository's catalogUrl and pluginNamespace."
+    }
+    [pscustomobject]@{
+        CatalogUrl        = [string]$Config.catalogUrl
+        PluginNamespace   = [string]$Config.pluginNamespace
+        CatalogueDocument = [string]($Config['catalogueDocument'] ?? '')
+    }
 }
 
 function Get-SkillFrontmatter {
@@ -157,6 +182,8 @@ function Test-SkillComponent {
     <# Returns validation errors; an empty result means the catalog of components is consistent. #>
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object[]]$Component)
     $Errors = [Collections.Generic.List[string]]::new()
+    $Config = $null
+    try { $Config = Get-SkillLibraryConfig -RepoRoot $RepoRoot } catch { $Errors.Add($_.Exception.Message) }
     foreach ($Missing in Get-SkillWithoutMetadata -RepoRoot $RepoRoot) {
         $Errors.Add("${Missing}: missing skill.metadata.yaml; run New-SkillMetadata.ps1 -Id $Missing.")
     }
@@ -208,7 +235,7 @@ function Test-SkillComponent {
         $State[$Id] = 'done'
     }
     foreach ($Item in $Component) { Visit $Item.Id @() }
-    foreach ($CatalogueError in Test-SkillCatalogue -RepoRoot $RepoRoot -Component $Component) { $Errors.Add($CatalogueError) }
+    if ($Config) { foreach ($CatalogueError in Test-SkillCatalogue -RepoRoot $RepoRoot -Component $Component) { $Errors.Add($CatalogueError) } }
     return @($Errors)
 }
 
@@ -260,14 +287,24 @@ function Get-SkillLink {
     }
 }
 
+function Get-SkillCataloguePath {
+    <# The configured catalogue page, or '' when the repository does not keep one. #>
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    return (Get-SkillLibraryConfig -RepoRoot $RepoRoot).CatalogueDocument
+}
+
 function Get-SkillCatalogueVersion {
     <# Maps each skill linked from the catalogue page to the backtick-quoted versions on its rows; $null when there is no page. #>
     param([Parameter(Mandatory)][string]$RepoRoot)
-    $Path = Join-Path $RepoRoot $script:CataloguePath
+    $Document = Get-SkillCataloguePath -RepoRoot $RepoRoot
+    if (-not $Document) { return $null }
+    $Path = Join-Path $RepoRoot $Document
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+    # Skill links are written relative to the page, so derive the prefix from its folder depth.
+    $Up = '../' * ($Document.Split('/').Count - 1)
     $Rows = @{}
     foreach ($Line in [IO.File]::ReadAllLines($Path)) {
-        $Link = [regex]::Match($Line, '\]\(\.\./\.github/skills/([a-z0-9-]+)/SKILL\.md\)')
+        $Link = [regex]::Match($Line, '\]\(' + [regex]::Escape($Up) + '\.github/skills/([a-z0-9-]+)/SKILL\.md\)')
         if (-not $Link.Success) { continue }
         $Version = [regex]::Match($Line, '`(\d+\.\d+\.\d+)`')
         $Id = $Link.Groups[1].Value
@@ -282,26 +319,30 @@ function Test-SkillCatalogue {
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object[]]$Component)
     $Rows = Get-SkillCatalogueVersion -RepoRoot $RepoRoot
     if ($null -eq $Rows) { return @() }
+    $Document = Get-SkillCataloguePath -RepoRoot $RepoRoot
     $Skills = @($Component | Where-Object Kind -eq 'skill')
     $Errors = foreach ($Item in $Skills) {
-        if (-not $Rows.ContainsKey($Item.Id)) { "$($Item.Id): missing from $($script:CataloguePath); add a row with version ``$($Item.Version)``."; continue }
+        if (-not $Rows.ContainsKey($Item.Id)) { "$($Item.Id): missing from $Document; add a row with version ``$($Item.Version)``."; continue }
         $Versions = $Rows[$Item.Id]
-        if ($Versions.Count -gt 1) { "$($Item.Id): listed $($Versions.Count) times in $($script:CataloguePath)." }
+        if ($Versions.Count -gt 1) { "$($Item.Id): listed $($Versions.Count) times in $Document." }
         elseif ($Versions[0] -cne $Item.Version) {
-            "$($Item.Id): $($script:CataloguePath) shows '$($Versions[0])' but the version is $($Item.Version); run Set-SkillVersion.ps1 or fix the row."
+            "$($Item.Id): $Document shows '$($Versions[0])' but the version is $($Item.Version); run Set-SkillVersion.ps1 or fix the row."
         }
     }
-    foreach ($Id in $Rows.Keys | Where-Object { $_ -notin $Skills.Id } | Sort-Object) { $Errors = @($Errors) + "${Id}: listed in $($script:CataloguePath) but is not a published skill." }
+    foreach ($Id in $Rows.Keys | Where-Object { $_ -notin $Skills.Id } | Sort-Object) { $Errors = @($Errors) + "${Id}: listed in $Document but is not a published skill." }
     return @($Errors)
 }
 
 function Set-SkillCatalogueVersion {
     <# Rewrites the version cell on the catalogue row for one skill; no-op when there is no page or row. #>
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$Id, [Parameter(Mandatory)][string]$Version)
-    $Path = Join-Path $RepoRoot $script:CataloguePath
+    $Document = Get-SkillCataloguePath -RepoRoot $RepoRoot
+    if (-not $Document) { return }
+    $Path = Join-Path $RepoRoot $Document
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return }
+    $Up = '../' * ($Document.Split('/').Count - 1)
     $Text = [IO.File]::ReadAllText($Path)
-    $Row = '(?m)^(.*\]\(\.\./\.github/skills/' + [regex]::Escape($Id) + '/SKILL\.md\).*?)`\d+\.\d+\.\d+`'
+    $Row = '(?m)^(.*\]\(' + [regex]::Escape($Up) + '\.github/skills/' + [regex]::Escape($Id) + '/SKILL\.md\).*?)`\d+\.\d+\.\d+`'
     $Updated = [regex]::Replace($Text, $Row, { param($Match) "$($Match.Groups[1].Value)``$Version``" })
     if ($Updated -cne $Text) { [IO.File]::WriteAllText($Path, $Updated) }
 }
@@ -451,6 +492,10 @@ function New-SkillExtensionArchive {
         $Manifest = [Text.UTF8Encoding]::new($false).GetBytes((ConvertTo-SkillYamlText (New-SkillExtensionManifest $Component)))
         $Entry['extension.yml'] = @{ Bytes = $Manifest; Mode = '100644' }
     }
+    else {
+        $Packaged = ([ordered]@{ catalog_url = (Get-SkillLibraryConfig -RepoRoot $RepoRoot).CatalogUrl } | ConvertTo-Json) + "`n"
+        $Entry[$script:PackagedConfigName] = @{ Bytes = [Text.UTF8Encoding]::new($false).GetBytes($Packaged); Mode = '100644' }
+    }
     [void][IO.Directory]::CreateDirectory($OutputDirectory)
     $Path = Join-Path $OutputDirectory "$($Component.Id)-$($Component.Version).zip"
     if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path }
@@ -459,13 +504,13 @@ function New-SkillExtensionArchive {
 }
 
 function New-SkillPluginManifest {
-    <# Agent Plugins plugin.json for one skill; required and related skills live under the skill-library extension namespace. #>
-    param([Parameter(Mandatory)][object]$Component, [string]$Repository)
+    <# Agent Plugins plugin.json for one skill; required and related skills live under the repository's configured extension namespace. #>
+    param([Parameter(Mandatory)][object]$Component, [Parameter(Mandatory)][string]$Namespace, [string]$Repository)
     $Manifest = [ordered]@{ '$schema' = $script:PluginSchema; name = $Component.Id; version = $Component.Version; description = $Component.Description }
     if ($Repository) { $Manifest.repository = "https://github.com/$Repository" }
     if ($Component.Facets.Count) { $Manifest.keywords = @($Component.Facets) }
     $Manifest.extensions = [ordered]@{
-        $script:PluginNamespace = [ordered]@{
+        $Namespace = [ordered]@{
             required = @($Component.Required | ForEach-Object { [ordered]@{ id = $_.id; version = $_.version } })
             related  = @($Component.Related | ForEach-Object { [ordered]@{ id = $_.id; reason = $_.reason } })
         }
@@ -492,7 +537,7 @@ function New-SkillPluginArchive {
         $Entry[$Name] = @{ Bytes = $Bytes; Mode = $Files[$File] }
     }
     if (-not $Entry.Contains("$SkillRoot/SKILL.md")) { throw "$($Component.Id): SKILL.md is not committed." }
-    $Manifest = (New-SkillPluginManifest -Component $Component -Repository $Repository | ConvertTo-Json -Depth 20) + "`n"
+    $Manifest = (New-SkillPluginManifest -Component $Component -Namespace (Get-SkillLibraryConfig -RepoRoot $RepoRoot).PluginNamespace -Repository $Repository | ConvertTo-Json -Depth 20) + "`n"
     $Entry['plugin.json'] = @{ Bytes = $Utf8.GetBytes($Manifest); Mode = '100644' }
     [void][IO.Directory]::CreateDirectory($OutputDirectory)
     $Path = Join-Path $OutputDirectory "$($Component.Id)-$($Component.Version)-plugin.zip"
@@ -574,7 +619,7 @@ $($Rows -join "`n")
 "@
 }
 
-Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
+Export-ModuleMember -Function Invoke-SkillTool, Read-SkillYaml, ConvertFrom-SkillYaml, Get-SkillLibraryConfig, Get-SkillFrontmatter, ConvertTo-SkillVersion, Get-SkillComponent,
     Get-SkillWithoutMetadata, Test-SkillComponent, Get-SkillLink, Get-SkillCatalogueVersion, Test-SkillCatalogue, Set-SkillCatalogueVersion,
     Get-SkillReleasedVersion, Test-SkillChanged, Set-SkillMetadataValue, Test-SkillVersion, Get-SkillPackageFile,
     New-SkillExtensionManifest, New-SkillExtensionArchive, ConvertTo-SkillPortableMarkdown, Test-SkillPortableFrontmatter, New-SkillPluginManifest,

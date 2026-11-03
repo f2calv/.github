@@ -29,6 +29,24 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @(Get-Errors) -join "`n" | Should -BeLike $Expected
     }
 
+    It 'reports <Case> skill-library configuration' -ForEach @(
+        @{ Case = 'missing'; Text = $null; Expected = '*Missing .github/skill-library.config.yaml*' }
+        @{ Case = 'schema-invalid'; Text = "catalogUrl: http://catalog.test/catalog.json`npluginNamespace: dev.test.skill-library`n"; Expected = '*does not match the schema*' }
+        @{ Case = 'an unknown key in the'; Text = "catalogUrl: https://catalog.test/catalog.json`npluginNamespace: dev.test.skill-library`nowner: me`n"; Expected = '*does not match the schema*' }
+        @{ Case = 'template example values in the'; Text = "catalogUrl: https://example.com/catalog.json`npluginNamespace: com.example.skill-library`n"; Expected = '*still holds template example values*' }
+    ) {
+        $Path = Join-Path $Repo '.github/skill-library.config.yaml'
+        if ($null -eq $Text) { Remove-Item -LiteralPath $Path } else { Write-FixtureText $Repo '.github/skill-library.config.yaml' $Text }
+        @(Get-Errors) -join "`n" | Should -BeLike $Expected
+    }
+
+    It 'skips the catalogue page when no catalogueDocument is configured' {
+        Write-FixtureText $Repo 'docs/skills.md' "| Skill | Version |`n| --- | --- |`n| [alpha](../.github/skills/alpha/SKILL.md) | ``0.1.0`` |`n"
+        @(Get-Errors) -join "`n" | Should -BeLike '*missing from docs/skills.md*'
+        Write-FixtureText $Repo '.github/skill-library.config.yaml' "catalogUrl: https://catalog.test/catalog.json`npluginNamespace: dev.test.skill-library`n"
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
     It 'reports a skill without a sidecar' {
         Write-FixtureSkill $Repo 'delta'
         @(Get-Errors) -join "`n" | Should -BeLike '*delta: missing skill.metadata.yaml*'
@@ -229,7 +247,7 @@ Describe 'Agent Plugin archives' -Tag 'Unit' {
         $Manifest.version | Should -Be '1.0.0'
         $Manifest.repository | Should -Be 'https://github.com/owner/example'
         $Manifest.keywords | Should -Be @('architecture')
-        $Manifest.extensions['io.github.f2calv.skill-library'].required[0].id | Should -Be 'beta'
+        $Manifest.extensions['dev.test.skill-library'].required[0].id | Should -Be 'beta'
         (Get-SkillFrontmatter $Skill).metadata['user-invocable'] | Should -Be 'true'
         $Skill | Should -BeLike '*See `[X`](../../instructions/x.instructions.md).*'
     }
@@ -242,9 +260,9 @@ Describe 'Agent Plugin archives' -Tag 'Unit' {
 
     It 'omits repository and keywords when there are none' {
         $Beta = Get-SkillComponent -RepoRoot $Repo | Where-Object Id -eq 'beta'
-        $Manifest = New-SkillPluginManifest -Component $Beta
+        $Manifest = New-SkillPluginManifest -Component $Beta -Namespace 'dev.test.skill-library'
         @($Manifest.Keys) | Should -Be @('$schema', 'name', 'version', 'description', 'extensions')
-        $Manifest.extensions['io.github.f2calv.skill-library'].required | Should -BeNullOrEmpty
+        $Manifest.extensions['dev.test.skill-library'].required | Should -BeNullOrEmpty
     }
 
     It 'refuses uncommitted changes' {
@@ -281,6 +299,22 @@ Describe 'Extension archives' -Tag 'Unit' {
         $Manifest.extension.description | Should -BeExactly "$((Get-Alpha).Description) Managed by the skill library: install, upgrade and remove it with /speckit-skill-library."
         $Manifest.provides.templates[0].description | Should -BeExactly (Get-Alpha).Description
         $Manifest.provides.templates[0].file | Should -Be 'resources/.github/skills/alpha/SKILL.md'
+    }
+
+    It 'packages the configured catalog URL with the bootstrap extension' {
+        Write-FixtureText $Repo 'src/skill-library-extension/extension.yml' "schema_version: '1.0'`nextension:`n  id: skill`n  name: skill-library`n  version: 1.0.0`n  description: Bootstrap.`n"
+        Write-FixtureText $Repo 'src/skill-library-extension/commands/library.md' "# Library`n"
+        Invoke-FixtureGit $Repo add -A
+        Invoke-FixtureGit $Repo commit -q -m bootstrap
+        $Bootstrap = Get-SkillComponent -RepoRoot $Repo | Where-Object Kind -eq 'bootstrap'
+        $Archive = New-SkillExtensionArchive -RepoRoot $Repo -Component $Bootstrap -OutputDirectory (Join-Path $TestDrive 'boot')
+        $Zip = [IO.Compression.ZipFile]::OpenRead($Archive.Path)
+        try {
+            $Zip.Entries.FullName | Should -Be @('commands/library.md', 'extension.yml', 'skill-library.json')
+            $Reader = [IO.StreamReader]::new($Zip.GetEntry('skill-library.json').Open())
+            try { ($Reader.ReadToEnd() | ConvertFrom-Json).catalog_url | Should -Be 'https://catalog.test/catalog.json' } finally { $Reader.Dispose() }
+        }
+        finally { $Zip.Dispose() }
     }
 
     It 'leaves apm.yml out of the Spec Kit and Agent Plugin packages' {

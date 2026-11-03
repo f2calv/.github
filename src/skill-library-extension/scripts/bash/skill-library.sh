@@ -13,7 +13,8 @@
 # Usage: skill-library.sh <command> [target] [-Version X.Y.Z] [-Related a,b]
 #        [-CatalogUrl url-or-file] [-Workspace path]
 # Requires Bash 4+, jq, sha256sum or shasum, and curl for a remote catalog.
-# Optional environment variables: SKILL_LIBRARY_CATALOG_URL overrides the published catalog.
+# Optional environment variables: SKILL_LIBRARY_CATALOG_URL overrides the catalog_url that the
+# bootstrap build packages in the extension's skill-library.json.
 
 if [[ -z ${BASH_VERSINFO[0]:-} || ${BASH_VERSINFO[0]} -lt 4 ]]; then
   echo "Bash 4 or later is required; use the ps or py variant, or install a newer Bash." >&2
@@ -24,7 +25,6 @@ fi
 set -euo pipefail
 
 readonly BOOTSTRAP_ID=skill
-readonly DEFAULT_CATALOG=https://f2calv.github.io/.github/catalog.json
 readonly STATE_FILE=.specify/extensions/.skill-library.json
 readonly STATE_SCHEMA=1.2
 readonly REGISTRY_FILE=.specify/extensions/.registry
@@ -34,7 +34,7 @@ command_name=help
 target=''
 version=''
 related=()
-catalog_url=${SKILL_LIBRARY_CATALOG_URL:-$DEFAULT_CATALOG}
+catalog_url=${SKILL_LIBRARY_CATALOG_URL:-}
 workspace=$PWD
 catalog_file=''
 temp_dir=''
@@ -120,6 +120,7 @@ print_table() {
 
 # Loads the catalog once, in the main shell, so command substitutions only read the cached file.
 ensure_catalog() {
+  [[ -n $catalog_url ]] || die "No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension."
   if [[ -z $catalog_file ]]; then
     temp_dir=${temp_dir:-$(mktemp -d)}
     catalog_file=$temp_dir/catalog.json
@@ -677,6 +678,11 @@ command_load() {
 main() {
   parse_arguments "$@"
   command -v jq > /dev/null || die "jq is required by the Bash variant; install jq or use the ps or py variant."
+  if [[ -z $catalog_url ]]; then
+    local packaged
+    packaged=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/skill-library.json
+    if [[ -f $packaged ]]; then catalog_url=$(jq -r '.catalog_url // ""' "$packaged"); fi
+  fi
   workspace=$(cd "$workspace" && pwd)
   if [[ $command_name != help ]]; then report_drift; fi
   case $command_name in

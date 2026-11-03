@@ -49,6 +49,24 @@ the pilot). `Test-SkillLibrary.ps1` requires its `name` and `version` to match t
 required skill and `<owner>/<repo>/<file>#<this-id>/<this-version>` for each external file; edit it
 after every bump. The Spec Kit and Agent Plugin packages leave it out.
 
+## Repository Configuration
+
+`.github/skill-library.config.yaml`, validated by the
+[configuration schema](./skill-library-config.schema.json), holds every value that differs between
+repositories using this framework, so the scripts and the bootstrap stay identical everywhere
+(ADR 0004):
+
+```yaml
+# yaml-language-server: $schema=skills/skill-library/skill-library-config.schema.json
+catalogUrl: https://f2calv.github.io/.github/catalog.json   # packaged into the bootstrap as skill-library.json
+pluginNamespace: io.github.f2calv.skill-library             # plugin.json extensions key
+catalogueDocument: docs/skills.md                          # optional; omit to skip the catalogue check
+```
+
+Every script fails without it, and rejects `example.com` or `com.example` template values. The
+bootstrap helpers take the catalog from `-CatalogUrl`, then `SKILL_LIBRARY_CATALOG_URL`, then the
+packaged `skill-library.json`; only commands that read the catalog fail when none is set.
+
 ## Author and Audit
 
 Write, split and audit instructions and skills against the context budget in the

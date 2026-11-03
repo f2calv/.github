@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=skills/skill-library/skill-library-config.schema.json
+catalogUrl: https://f2calv.github.io/.github/catalog.json
+pluginNamespace: io.github.f2calv.skill-library
+catalogueDocument: docs/skills.md

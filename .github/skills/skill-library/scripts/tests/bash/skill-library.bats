@@ -336,3 +336,19 @@ extension remove gamma --force catalog='
   run lib list
   refute_output --partial 'Warning:'
 }
+
+@test "reads the packaged catalog URL and fails only catalog commands without one" {
+  local extension=$BATS_TEST_TMPDIR/extension
+  mkdir -p "$extension/scripts/bash"
+  cp "$SCRIPT" "$extension/scripts/bash/skill-library.sh"
+  run bash "$extension/scripts/bash/skill-library.sh" help -Workspace "$WS"
+  assert_success
+  assert_output --partial 'Commands: search'
+  run --separate-stderr bash "$extension/scripts/bash/skill-library.sh" search architecture -Workspace "$WS"
+  assert_failure 1
+  [[ $stderr == *'No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension.'* ]]
+  printf '{"catalog_url":"%s"}\n' "$CATALOG" > "$extension/skill-library.json"
+  run bash "$extension/scripts/bash/skill-library.sh" search architecture -Workspace "$WS"
+  assert_success
+  assert_output --regexp 'alpha[[:space:]]+1\.1\.0'
+}
