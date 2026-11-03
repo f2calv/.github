@@ -33,7 +33,8 @@ from pathlib import Path
 from typing import Any
 
 BOOTSTRAP_ID = "skill"
-DEFAULT_CATALOG = "https://f2calv.github.io/.github/catalog.json"
+PACKAGED_CONFIG = Path(__file__).resolve().parents[2] / "skill-library.json"
+NO_CATALOG = "No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension."
 COMMANDS = ("help", "search", "plan", "install", "upgrade-all", "remove", "prune", "sync", "list", "load")
 STATE_FILE = ".specify/extensions/.skill-library.json"
 STATE_SCHEMA = "1.2"
@@ -114,6 +115,8 @@ def read_json(path: Path) -> Json:
 
 def get_catalog(ctx: Context) -> Json:
     """Load the catalog's extensions from a local file or an HTTP(S) URL."""
+    if not ctx.catalog_url:
+        raise HelperError(NO_CATALOG)
     local = Path(ctx.catalog_url)
     if local.is_file():
         extensions: Json = read_json(local)["extensions"]
@@ -731,6 +734,13 @@ HANDLERS = {
 }
 
 
+def packaged_catalog_url() -> str:
+    """Return the catalog URL the bootstrap build packaged beside commands/ and scripts/, or ''."""
+    if not PACKAGED_CONFIG.is_file():
+        return ""
+    return str(read_json(PACKAGED_CONFIG).get("catalog_url") or "")
+
+
 def parse_arguments(argv: list[str], environ: dict[str, str]) -> Context:
     """Parse the same arguments as the PowerShell helper, including -Version and -Related."""
     parser = argparse.ArgumentParser(prog="skill_library.py", description="Search, install and load skills from the skill library catalog.")
@@ -739,7 +749,7 @@ def parse_arguments(argv: list[str], environ: dict[str, str]) -> Context:
     parser.add_argument("-Version", "--version", dest="version", default="")
     parser.add_argument("-Related", "--related", dest="related", action="append", default=[])
     parser.add_argument(
-        "-CatalogUrl", "--catalog-url", dest="catalog_url", default=environ.get("SKILL_LIBRARY_CATALOG_URL") or DEFAULT_CATALOG
+        "-CatalogUrl", "--catalog-url", dest="catalog_url", default=environ.get("SKILL_LIBRARY_CATALOG_URL") or packaged_catalog_url()
     )
     parser.add_argument("-Workspace", "--workspace", dest="workspace", default=str(Path.cwd()))
     parsed = parser.parse_args(argv)

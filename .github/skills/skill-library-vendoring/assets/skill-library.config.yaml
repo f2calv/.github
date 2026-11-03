@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=skills/skill-library/skill-library-config.schema.json
+# Replace both example values before the first build; the tooling rejects example.com and com.example.
+catalogUrl: https://example.com/catalog.json
+pluginNamespace: com.example.skill-library
+# Optional: a Markdown page that must list every skill once at its current version.
+# catalogueDocument: docs/skills.md

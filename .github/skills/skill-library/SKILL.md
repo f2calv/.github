@@ -49,6 +49,24 @@ the pilot). `Test-SkillLibrary.ps1` requires its `name` and `version` to match t
 required skill and `<owner>/<repo>/<file>#<this-id>/<this-version>` for each external file; edit it
 after every bump. The Spec Kit and Agent Plugin packages leave it out.
 
+## Repository Configuration
+
+`.github/skill-library.config.yaml`, validated by the
+[configuration schema](./skill-library-config.schema.json), holds every value that differs between
+repositories using this framework, so the scripts and the bootstrap stay identical everywhere
+(ADR 0004):
+
+```yaml
+# yaml-language-server: $schema=skills/skill-library/skill-library-config.schema.json
+catalogUrl: https://<owner>.github.io/<repo>/catalog.json   # packaged into the bootstrap as skill-library.json
+pluginNamespace: io.github.<owner>.skill-library             # plugin.json extensions key
+catalogueDocument: docs/skills.md                            # optional; omit to skip the catalogue check
+```
+
+Every script fails without it, and rejects `example.com` or `com.example` template values. The
+bootstrap helpers take the catalog from `-CatalogUrl`, then `SKILL_LIBRARY_CATALOG_URL`, then the
+packaged `skill-library.json`; only commands that read the catalog fail when none is set.
+
 ## Author and Audit
 
 Write, split and audit instructions and skills against the context budget in the
@@ -119,7 +137,7 @@ Every skill release also carries `<id>-<version>-plugin.zip`, an
 local build to produce it. ADR 0002 under `docs/` records the design.
 
 - `plugin.json` maps id, version, description and facets; `required` and `related` go under the
-  `io.github.f2calv.skill-library` extension namespace because the format has no dependencies.
+  configured `pluginNamespace` extension key because the format has no dependencies.
 - The skill sits at `skills/<id>/`; external files drop their `.github/` prefix, so
   `../../instructions/<file>` links still resolve inside the plugin. `Test-SkillLibrary.ps1` rejects
   external files outside `.github/` before they can fail the build.
@@ -134,14 +152,14 @@ local build to produce it. ADR 0002 under `docs/` records the design.
 On `main`, CI runs `Publish-SkillRelease.ps1`. Every component whose version has no tag is published
 as GitHub Release `<id>/X.Y.Z`, which also creates that tag on the merge commit. Then `catalog.json`
 and an `index.html` listing every skill are regenerated from all releases and deployed to GitHub
-Pages at <https://f2calv.github.io/.github/>. The ZIPs stay on the releases. Published releases are
+Pages, which serves the configured `catalogUrl`. The ZIPs stay on the releases. Published releases are
 never changed. Versions live only in sidecars and tags; `package.json` holds test scripts.
 
 Pages needs a one-time repository setting with the GitHub Actions source; the repository baseline
-does not manage it because only this repository publishes a site:
+does not manage it because few repositories publish a site:
 
 ```powershell
-gh api -X POST repos/f2calv/.github/pages -f build_type=workflow
+gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow
 ```
 
 The `skill` bootstrap extension lives in [src/skill-library-extension](../../../src/skill-library-extension/).
@@ -155,7 +173,7 @@ directory on that port, and set `SPECKIT_CATALOG_URL` and `SKILL_LIBRARY_CATALOG
 
 ```powershell
 specify init --here --integration copilot --script ps
-$env:SPECKIT_CATALOG_URL = 'https://f2calv.github.io/.github/catalog.json'
+$env:SPECKIT_CATALOG_URL = '<catalogUrl from .github/skill-library.config.yaml>'
 specify extension add skill
 Remove-Item Env:SPECKIT_CATALOG_URL
 ```
@@ -192,6 +210,10 @@ there too so they are not packaged into the bootstrap. A repository test enforce
 
 ## Maintaining This Skill
 
+- New framework files (scripts, schemas, bootstrap files, test setup) go into the upstream
+  [vendoring manifest](https://github.com/f2calv/.github/blob/main/.github/skills/skill-library-vendoring/framework.yaml)
+  in the same change, and must read repository-specific values from
+  `.github/skill-library.config.yaml`, never hardcode them.
 - Context budgets and the cost model whenever a client changes how it loads instructions, skill
   descriptions or skill resources; lessons from each library audit go in the authoring reference.
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`

@@ -44,6 +44,7 @@ if (-not $Errors.Count) { $Errors = @(Test-SkillVersion -RepoRoot $RepoRoot -Com
 if ($Errors.Count) { throw "Skill library checks failed:`n$($Errors -join "`n")" }
 
 $Sha = @(Invoke-SkillTool git @('rev-parse', 'HEAD') -WorkingDirectory $RepoRoot)[0]
+$Bootstrap = $Components | Where-Object Kind -eq 'bootstrap' | Select-Object -First 1
 $Pending = @($Components | Where-Object {
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $_.Id
         $null -eq $Released -or (ConvertTo-SkillVersion $_.Version) -gt $Released
@@ -77,8 +78,8 @@ $Records = foreach ($Tag in Invoke-Gh @('release', 'list', '--limit', '1000', '-
     if (-not $Match.Success) { continue }
     $Id = $Match.Groups['id'].Value
     $Version = $Match.Groups['version'].Value
-    if ($Id -ceq 'skill') {
-        $Manifest = ConvertFrom-SkillYaml ((Invoke-SkillTool git @('show', "${Tag}:src/skill-library-extension/extension.yml") -WorkingDirectory $RepoRoot) -join "`n")
+    if ($Bootstrap -and $Id -ceq $Bootstrap.Id) {
+        $Manifest = ConvertFrom-SkillYaml ((Invoke-SkillTool git @('show', "${Tag}:$($Bootstrap.ManifestPath)") -WorkingDirectory $RepoRoot) -join "`n")
         $Metadata = @{}
         $Description = $Manifest.extension.description
     }

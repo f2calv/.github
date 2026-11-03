@@ -328,4 +328,19 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
         (Get-ManifestSkills).beta.chosen | Should -BeTrue
         Invoke-Library list | Should -Not -BeLike '*Warning:*'
     }
+
+    It 'reads the catalog URL packaged with the extension and fails only catalog commands without one' {
+        $Extension = Join-Path $TestDrive "ext-$([guid]::NewGuid())"
+        Copy-Item -Recurse -LiteralPath (Split-Path $Script) -Destination (Join-Path $Extension 'scripts')
+        $Copy = Join-Path $Extension 'scripts/Invoke-SkillLibrary.ps1'
+        $Saved = $env:SKILL_LIBRARY_CATALOG_URL
+        Remove-Item Env:SKILL_LIBRARY_CATALOG_URL -ErrorAction SilentlyContinue
+        try {
+            & $Copy help -Workspace $Workspace | Out-String | Should -BeLike '*Commands: search*'
+            { & $Copy search architecture -Workspace $Workspace } | Should -Throw '*No skill library catalog is configured; set SKILL_LIBRARY_CATALOG_URL or reinstall the skill extension.*'
+            [IO.File]::WriteAllText((Join-Path $Extension 'skill-library.json'), (@{ catalog_url = $CatalogPath } | ConvertTo-Json))
+            & $Copy search architecture -Workspace $Workspace | Out-String | Should -Match 'alpha\s+1\.1\.0'
+        }
+        finally { if ($null -ne $Saved) { $env:SKILL_LIBRARY_CATALOG_URL = $Saved } }
+    }
 }

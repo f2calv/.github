@@ -33,6 +33,7 @@ function New-SkillFixture {
     [void][IO.Directory]::CreateDirectory($Repo)
     Invoke-FixtureGit $Repo init -q -b main
     Write-FixtureText $Repo 'LICENSE' "MIT`n"
+    Write-FixtureText $Repo '.github/skill-library.config.yaml' "catalogUrl: https://catalog.test/catalog.json`npluginNamespace: dev.test.skill-library`ncatalogueDocument: docs/skills.md`n"
     Write-FixtureText $Repo '.github/instructions/x.instructions.md' "# X`n"
     Write-FixtureSkill $Repo 'alpha' "version: 1.0.0`nfacets: [architecture]`nrequired:`n  - id: beta`n    version: 1.0.0`nrelated:`n  - id: gamma`n    reason: Optional extra.`nexternalFiles:`n  - .github/instructions/x.instructions.md`n"
     Write-FixtureSkill $Repo 'beta' "version: 1.0.0`n"

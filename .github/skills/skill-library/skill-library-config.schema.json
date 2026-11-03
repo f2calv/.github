@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/f2calv/.github/blob/main/.github/skills/skill-library/skill-library-config.schema.json",
+  "title": "Skill library repository configuration",
+  "description": "Repository-specific values for the skill-library framework, read from .github/skill-library.config.yaml so framework files stay identical across repositories.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalogUrl", "pluginNamespace"],
+  "properties": {
+    "catalogUrl": {
+      "description": "Published catalog.json that the packaged skill bootstrap reads when no catalog is passed or set in SKILL_LIBRARY_CATALOG_URL.",
+      "type": "string",
+      "pattern": "^https://[^\\s]+$"
+    },
+    "pluginNamespace": {
+      "description": "Reverse-domain key under plugin.json extensions that records required and related skills in Agent Plugin packages.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "catalogueDocument": {
+      "description": "Optional repository-relative Markdown page that must list every skill once at its current version.",
+      "type": "string",
+      "pattern": "^[^/\\\\][^\\\\]*\\.md$"
+    }
+  }
+}
