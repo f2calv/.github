@@ -43,6 +43,12 @@ externalFiles:
 The [sidecar reference](https://github.com/f2calv/.github/blob/main/docs/skill-metadata.md) explains
 every field for human readers.
 
+An optional `apm.yml` beside the sidecar makes a skill installable with APM (ADR 0003; `docs-adr` is
+the pilot). `Test-SkillLibrary.ps1` requires its `name` and `version` to match the sidecar and its
+`dependencies.apm` to list exactly `<owner>/<repo>/.github/skills/<id>#<id>/<version>` for each
+required skill and `<owner>/<repo>/<file>#<this-id>/<this-version>` for each external file; edit it
+after every bump. The Spec Kit and Agent Plugin packages leave it out.
+
 ## Author and Audit
 
 Write, split and audit instructions and skills against the context budget in the

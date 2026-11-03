@@ -11,7 +11,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [README authoring](../.github/skills/docs-readme/SKILL.md) | `1.0.1` | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
-| [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.2` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
+| [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.3` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
 | [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.0.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.0` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.1.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |

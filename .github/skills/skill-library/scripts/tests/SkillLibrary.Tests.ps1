@@ -34,6 +34,28 @@ Describe 'Sidecar validation' -Tag 'Unit' {
         @(Get-Errors) -join "`n" | Should -BeLike '*delta: missing skill.metadata.yaml*'
     }
 
+    It 'accepts an apm.yml that matches the sidecar' {
+        Write-FixtureText $Repo '.github/skills/alpha/apm.yml' "name: alpha`nversion: 1.0.0`ndependencies:`n  apm:`n    - example/repo/.github/skills/beta#beta/1.0.0`n    - example/repo/.github/instructions/x.instructions.md#alpha/1.0.0`n"
+        @(Get-Errors) | Should -BeNullOrEmpty
+    }
+
+    It 'rejects an apm.yml with <Case>' -ForEach @(
+        @{ Case = 'another name'; Name = 'other'; Version = '1.0.0'; Dependencies = @('example/repo/.github/skills/beta#beta/1.0.0', 'example/repo/.github/instructions/x.instructions.md#alpha/1.0.0')
+            Expected = "*alpha: apm.yml name must be 'alpha'.*" }
+        @{ Case = 'a stale version'; Name = 'alpha'; Version = '0.9.0'; Dependencies = @('example/repo/.github/skills/beta#beta/1.0.0', 'example/repo/.github/instructions/x.instructions.md#alpha/1.0.0')
+            Expected = '*alpha: apm.yml version must be 1.0.0 to match skill.metadata.yaml.*' }
+        @{ Case = 'a stale required pin'; Name = 'alpha'; Version = '1.0.0'; Dependencies = @('example/repo/.github/skills/beta#beta/0.9.0', 'example/repo/.github/instructions/x.instructions.md#alpha/1.0.0')
+            Expected = '*alpha: apm.yml must list the dependency <owner>/<repo>/.github/skills/beta#beta/1.0.0.*' }
+        @{ Case = 'a missing external file'; Name = 'alpha'; Version = '1.0.0'; Dependencies = @('example/repo/.github/skills/beta#beta/1.0.0')
+            Expected = '*alpha: apm.yml must list the dependency <owner>/<repo>/.github/instructions/x.instructions.md#alpha/1.0.0.*' }
+        @{ Case = 'an undeclared dependency'; Name = 'alpha'; Version = '1.0.0'; Dependencies = @('example/repo/.github/skills/beta#beta/1.0.0', 'example/repo/.github/instructions/x.instructions.md#alpha/1.0.0', 'example/repo/.github/skills/gamma#gamma/1.0.0')
+            Expected = "*alpha: apm.yml lists 'example/repo/.github/skills/gamma#gamma/1.0.0', which matches no required skill or external file*" }
+    ) {
+        $List = ($Dependencies | ForEach-Object { "    - $_" }) -join "`n"
+        Write-FixtureText $Repo '.github/skills/alpha/apm.yml' "name: $Name`nversion: $Version`ndependencies:`n  apm:`n$List`n"
+        @(Get-Errors) -join "`n" | Should -BeLike $Expected
+    }
+
     It 'skips Git-ignored private skills <Case>' -ForEach @(
         @{ Case = 'with a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = "version: oops`n" }
         @{ Case = 'without a sidecar via .gitignore'; IgnoreFile = '.gitignore'; Metadata = '' }
@@ -259,6 +281,19 @@ Describe 'Extension archives' -Tag 'Unit' {
         $Manifest.extension.description | Should -BeExactly "$((Get-Alpha).Description) Managed by the skill library: install, upgrade and remove it with /speckit-skill-library."
         $Manifest.provides.templates[0].description | Should -BeExactly (Get-Alpha).Description
         $Manifest.provides.templates[0].file | Should -Be 'resources/.github/skills/alpha/SKILL.md'
+    }
+
+    It 'leaves apm.yml out of the Spec Kit and Agent Plugin packages' {
+        Write-FixtureText $Repo '.github/skills/alpha/apm.yml' "name: alpha`nversion: 1.0.0`n"
+        Invoke-FixtureGit $Repo add -A
+        Invoke-FixtureGit $Repo commit -q -m apm
+        foreach ($Archive in @(
+                New-SkillExtensionArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'apm-ext')
+                New-SkillPluginArchive -RepoRoot $Repo -Component (Get-Alpha) -OutputDirectory (Join-Path $TestDrive 'apm-plugin'))) {
+            $Zip = [IO.Compression.ZipFile]::OpenRead($Archive.Path)
+            try { @($Zip.Entries | ForEach-Object FullName | Where-Object { $_ -like '*apm.yml' }) | Should -BeNullOrEmpty }
+            finally { $Zip.Dispose() }
+        }
     }
 
     It 'produces identical bytes on rebuild' {

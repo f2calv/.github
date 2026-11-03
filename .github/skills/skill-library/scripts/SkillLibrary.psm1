@@ -174,6 +174,7 @@ function Test-SkillComponent {
             if (-not $Item.Description) { $Errors.Add("$($Item.Id): SKILL.md has no description.") }
             $Markdown = [IO.File]::ReadAllText((Join-Path $RepoRoot "$($Item.Path)/SKILL.md"))
             foreach ($PortableError in Test-SkillPortableFrontmatter -Id $Item.Id -Markdown $Markdown) { $Errors.Add($PortableError) }
+            foreach ($ApmError in Test-SkillApmManifest -RepoRoot $RepoRoot -Component $Item) { $Errors.Add($ApmError) }
             $Declared = @(@($Item.Required) + @($Item.Related) | ForEach-Object { $_.id })
             $Reported = @{}
             foreach ($Link in Get-SkillLink -RepoRoot $RepoRoot -Id $Item.Id) {
@@ -208,6 +209,33 @@ function Test-SkillComponent {
     }
     foreach ($Item in $Component) { Visit $Item.Id @() }
     foreach ($CatalogueError in Test-SkillCatalogue -RepoRoot $RepoRoot -Component $Component) { $Errors.Add($CatalogueError) }
+    return @($Errors)
+}
+
+function Test-SkillApmManifest {
+    <# Errors when a skill's optional apm.yml drifts from its sidecar, which stays authoritative (ADR 0003). #>
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][object]$Component)
+    $Path = Join-Path $RepoRoot "$($Component.Path)/apm.yml"
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return @() }
+    $Errors = [Collections.Generic.List[string]]::new()
+    $Manifest = Read-SkillYaml $Path
+    $Prefix = "$($Component.Id): apm.yml"
+    if ([string]$Manifest['name'] -cne $Component.Id) { $Errors.Add("$Prefix name must be '$($Component.Id)'.") }
+    if ([string]$Manifest['version'] -cne $Component.Version) { $Errors.Add("$Prefix version must be $($Component.Version) to match skill.metadata.yaml.") }
+    $Dependencies = $Manifest['dependencies']
+    $Actual = @(if ($Dependencies -is [Collections.IDictionary] -and $Dependencies['apm']) { $Dependencies['apm'] | ForEach-Object { [string]$_ } })
+    # Required skills resolve at their own release tags; external files at this skill's tag, which ships them.
+    $Expected = @($Component.Required | ForEach-Object { "/.github/skills/$($_.id)#$($_.id)/$($_.version)" }) +
+        @($Component.ExternalFiles | ForEach-Object { "/$_#$($Component.Id)/$($Component.Version)" })
+    $Pattern = { param([string]$Suffix) '^[^/#\s]+/[^/#\s]+' + [regex]::Escape($Suffix) + '$' }
+    foreach ($Suffix in $Expected) {
+        if (-not @($Actual | Where-Object { $_ -cmatch (& $Pattern $Suffix) }).Count) { $Errors.Add("$Prefix must list the dependency <owner>/<repo>$Suffix.") }
+    }
+    foreach ($Entry in $Actual) {
+        if (-not @($Expected | Where-Object { $Entry -cmatch (& $Pattern $_) }).Count) {
+            $Errors.Add("$Prefix lists '$Entry', which matches no required skill or external file in skill.metadata.yaml.")
+        }
+    }
     return @($Errors)
 }
 
@@ -353,8 +381,11 @@ function Get-SkillPackageFile {
     $Dirty = Invoke-SkillTool git (@('status', '--porcelain', '--') + $Paths) -WorkingDirectory $RepoRoot
     if ($Dirty) { throw "$($Component.Id): commit or stash changes before building: $($Dirty -join ', ')" }
     $Files = [ordered]@{}
+    # apm.yml is read by APM from the Git tag; the Spec Kit and Agent Plugin packages do not use it.
+    $ApmManifest = "$($Component.Path)/apm.yml"
     foreach ($Line in Invoke-SkillTool git (@('ls-files', '--stage', '--') + $Paths) -WorkingDirectory $RepoRoot) {
         $Parts = $Line -split '\s+', 4
+        if ($Component.Kind -eq 'skill' -and $Parts[3] -ceq $ApmManifest) { continue }
         if ($Parts[0] -notin @('100644', '100755')) { throw "$($Component.Id): unsupported file type for '$($Parts[3])'." }
         $Files[$Parts[3]] = $Parts[0]
     }
