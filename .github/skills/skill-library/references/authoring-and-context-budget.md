@@ -82,4 +82,7 @@ Work top-down and commit each batch separately:
 4. Split `SKILL.md` files over budget, largest first.
 5. Review descriptions for missing triggers and overlapping neighbours.
 6. Run `Set-SkillVersion.ps1`, `Test-SkillLibrary.ps1`, markdownlint and, with approval,
-   `Skills.Tests.ps1`, then re-measure and report the before and after figures.
+   `Skills.Tests.ps1`, then re-measure and report the before and after figures. Run markdownlint
+   in-process through the `tooling-pre-commit` skill's
+   `& Invoke-PreCommit.ps1 -HookId markdownlint -Files @(...)`, which falls back to Docker;
+   `pwsh -File` passes a comma list as one path, and `npx` on Windows mangles arguments.
