@@ -70,20 +70,24 @@ assets with a token, and whether the publishing script works against the server 
    the packaged extension as `skill-library.json`, which the helpers read after `-CatalogUrl` and
    `SKILL_LIBRARY_CATALOG_URL`. The bootstrap ID and path stay fixed because the bootstrap is itself
    a managed framework file.
-2. **Framework manifest.** One committed file lists framework paths in two groups: *managed*, which a
-   sync overwrites (tooling scripts and tests, the bootstrap extension, the sidecar schema, the
-   reusable test workflow, the Python and Bash test setup), and *seeded*, which a sync creates once
-   and the target then owns (configuration, a CI release-job template, test service definitions,
-   `package.json`). Skills other than `skill-library` are never framework.
-3. **Sync script.** A script, illustratively
-   `Sync-SkillLibraryFramework.ps1 -Source <clone> -Ref skill-library/X.Y.Z -Target <repo> [-WhatIf]`,
-   reads the manifest at the tag, copies managed files under V2 and V3, creates missing seeded files,
-   and writes a lock file (illustratively `.github/skill-library.framework.lock.json`).
-4. **Skill.** A new skill drives adoption and upgrades with both repositories open: run the sync with
-   `-WhatIf`, then for real; fill in configuration for the target host; bring the target's existing
-   skills up to the sidecar and Agent Skills rules with `New-SkillMetadata.ps1`,
-   `Test-SkillLibrary.ps1` and `Measure-CustomizationContext.ps1`; set up CI from the template; and
-   run the tests. It states V5 explicitly.
+2. **Framework manifest.** [framework.yaml](../.github/skills/skill-library-vendoring/framework.yaml)
+   lists framework paths in two groups: *managed*, which a sync overwrites (the `skill-library` skill
+   folder except its sidecar, and the bootstrap extension), and *seeded*, which a sync creates once
+   and the target then owns (configuration, the `skill-library` sidecar, a standalone
+   `skill-library.yml` CI workflow, the Compose test services and the Python tool configuration).
+   Skills other than `skill-library` are never framework. This repository's CI and its
+   `.scripts/Invoke-Tests.ps1` runner stay local because they test this repository's other skills.
+3. **Sync script.**
+   [`Sync-SkillLibraryFramework.ps1`](../.github/skills/skill-library-vendoring/scripts/Sync-SkillLibraryFramework.ps1)
+   `-Source <clone> -Target <repo> [-Ref skill-library/X.Y.Z] [-WhatIf]` reads the manifest at the
+   tag through `git archive`, copies managed files under V2 and V3, creates missing seeded files and
+   writes `.github/skill-library.framework.lock.json`.
+4. **Skill.** The [skill-library-vendoring](../.github/skills/skill-library-vendoring/SKILL.md) skill
+   drives adoption and upgrades with both repositories open: run the sync with `-WhatIf`, then for
+   real; fill in configuration for the target host; bring the target's existing skills up to the
+   sidecar and Agent Skills rules with `New-SkillMetadata.ps1`, `Test-SkillLibrary.ps1` and
+   `Measure-CustomizationContext.ps1`; adapt the CI workflow; and run the tests. It states V5
+   explicitly.
 
 ## Consequences
 
@@ -102,10 +106,17 @@ assets with a token, and whether the publishing script works against the server 
   catalog URL, and the plugin namespace and catalogue page taken from configuration. Pester 135/135,
   pytest 27/27 and bats 27/27 with shellcheck pass, and this repository's packages are unchanged apart
   from the bootstrap's new `skill-library.json`.
-- [ ] Framework manifest with a completeness check in `Test-SkillLibrary.ps1`.
-- [ ] Sync script with Pester coverage: managed overwrite, locally edited file kept, seeded file
-  created once, lock contents, `-WhatIf`.
-- [ ] The adoption skill, released through the normal skill pipeline.
+- [x] Framework manifest, with `Framework.Tests.ps1` checking that every listed path exists, that
+  managed files hold neither this repository's catalog host nor its plugin namespace, and that the
+  seeded configuration template is rejected until filled in.
+- [x] Sync script with Pester coverage: `-WhatIf`, added, updated, unchanged, kept (edited and
+  pre-existing), removed, retired-but-edited, seeded once, skipped, lock contents with credentials
+  stripped from the source URL, default tag by version, and rejected refs.
+- [x] The adoption skill. End-to-end in a disposable container from a local `skill-library/1.4.0`
+  tag: 30 managed files added and 6 seeded into an empty repository; after setting its
+  configuration, `Test-SkillLibrary.ps1` and all 135 skill-library Pester tests pass in the target; a
+  second sync reports every file unchanged; no copied file holds this repository's values.
+- [ ] Released through the normal skill pipeline.
 - [ ] Spike on a private GitHub Enterprise Server: catalog hosting, release-job actions, private asset
   download through `specify extension add`, and `GH_HOST` publishing.
 - [ ] One adopting repository synced and its CI green, recorded here without identifying it.
@@ -113,9 +124,7 @@ assets with a token, and whether the publishing script works against the server 
 ## Open Questions and Reconsideration
 
 - Should the reusable CI workflow be referenced across hosts, or always seeded as a template? A
-  private server cannot call a workflow on github.com without GitHub Connect.
-- Should the `skill-library` skill itself be a managed framework file in adopters, or replaced by
-  the adoption skill's guidance?
+  private server cannot call a workflow on github.com without GitHub Connect. For now it is seeded.
 - If several adopters want continuous updates, revisit the published-module option.
 
 ## Evidence and Related Decisions

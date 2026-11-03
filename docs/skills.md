@@ -34,6 +34,7 @@ gate rejects a stale or missing row.
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](../.github/skills/skill-library/SKILL.md) | `1.4.0` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
+| [Skill library vendoring](../.github/skills/skill-library-vendoring/SKILL.md) | `1.0.0` | Adopting and upgrading the skill-library framework in another repository from release tags, with a lock and a clean hard cut |
 
 ## Containers, Kubernetes and Infrastructure
 

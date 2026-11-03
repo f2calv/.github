@@ -1,0 +1,22 @@
+# Files that make up the skill-library framework, read by Sync-SkillLibraryFramework.ps1 at a
+# skill-library/X.Y.Z tag (ADR 0004). A sync overwrites managed paths while the target's copy still
+# matches its lock record; seeded paths are created once from `from` and then belong to the target.
+# Add every new framework file here; tests/Framework.Tests.ps1 checks existence and neutrality.
+managed:
+  - path: .github/skills/skill-library/
+    exclude:
+      - .github/skills/skill-library/skill.metadata.yaml
+  - path: src/skill-library-extension/
+seeded:
+  - path: .github/skill-library.config.yaml
+    from: .github/skills/skill-library-vendoring/assets/skill-library.config.yaml
+  - path: .github/skills/skill-library/skill.metadata.yaml
+    from: .github/skills/skill-library-vendoring/assets/skill.metadata.yaml
+  - path: .github/workflows/skill-library.yml
+    from: .github/skills/skill-library-vendoring/assets/skill-library.yml
+  - path: docker-compose.yml
+    from: docker-compose.yml
+  - path: pyproject.toml
+    from: pyproject.toml
+  - path: uv.lock
+    from: uv.lock
