@@ -8,7 +8,9 @@ The Python variant of the ``skill`` bootstrap helper. It behaves exactly like
 After every install, upgrade, removal and prune the helper copies each enabled skill's
 ``resources/.github/`` into the workspace ``.github/``, where Copilot discovers skills and
 instructions. It records each copy's SHA-256 and replaces or deletes a copy only while its bytes
-still match, so local edits are kept and reported.
+still match, so local edits are kept and reported. Spec Kit cannot block ``specify extension add``,
+``remove``, ``enable`` or ``disable`` on a skill, so every command except ``help`` first warns about
+skills changed that way since the helper last recorded them.
 
 Example:
     python3 skill_library.py install patterns-ports-and-adapters -Related patterns-modular-monolith
@@ -34,7 +36,9 @@ BOOTSTRAP_ID = "skill"
 DEFAULT_CATALOG = "https://f2calv.github.io/.github/catalog.json"
 COMMANDS = ("help", "search", "plan", "install", "upgrade-all", "remove", "prune", "sync", "list", "load")
 STATE_FILE = ".specify/extensions/.skill-library.json"
+STATE_SCHEMA = "1.2"
 REGISTRY_FILE = ".specify/extensions/.registry"
+MANAGE_HINT = "Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable."
 
 Json = dict[str, Any]
 
@@ -141,15 +145,76 @@ def read_state(ctx: Context) -> tuple[Json, Json]:
     return data.get("skills") or {}, data.get("files") or {}
 
 
+def is_skill_extension(ctx: Context, skill_id: str) -> bool:
+    """Return whether an installed extension ships skill guidance under resources/.github/."""
+    return skill_id != BOOTSTRAP_ID and (ctx.workspace / ".specify/extensions" / skill_id / "resources/.github").is_dir()
+
+
 def save_state(ctx: Context, skills: Json, files: Json) -> None:
-    """Write the state file, keeping choices only for installed skills."""
+    """Write the state file, recording every installed skill with its version and enabled flag."""
     installed = get_installed(ctx)
-    kept = {skill_id: skills[skill_id] for skill_id in sorted(skills) if skill_id in installed}
+    ids = {skill_id for skill_id in skills if skill_id in installed}
+    ids.update(skill_id for skill_id in installed if is_skill_extension(ctx, skill_id))
+    kept = {
+        skill_id: {
+            "chosen": is_chosen(skills, skill_id),
+            "version": str(installed[skill_id].get("version", "")),
+            "enabled": installed[skill_id].get("enabled") is not False,
+        }
+        for skill_id in sorted(ids)
+    }
     copies = {rel: files[rel] for rel in sorted(files)}
     path = ctx.workspace / STATE_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
-    document = {"schema_version": "1.1", "skills": kept, "files": copies}
+    document = {"schema_version": STATE_SCHEMA, "skills": kept, "files": copies}
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+
+
+def entry_drift(skill_id: str, entry: Json, version: str, *, enabled: bool) -> list[str]:
+    """Compare one recorded skill with its registry version and enabled flag."""
+    lines = []
+    if "version" in entry and str(entry["version"]) != version:
+        lines.append(
+            f"Warning: {skill_id} changed from {entry['version']} to {version} outside the skill library. "
+            "Run sync to update its guidance in .github/.",
+        )
+    if "enabled" in entry and bool(entry["enabled"]) != enabled:
+        if enabled:
+            lines.append(f"Warning: {skill_id} was enabled outside the skill library. Run sync to copy its guidance into .github/.")
+        else:
+            lines.append(f"Warning: {skill_id} was disabled outside the skill library. Run sync to delete its guidance from .github/.")
+    return lines
+
+
+def drift_warnings(ctx: Context) -> list[str]:
+    """Report skills that direct specify extension commands changed; Spec Kit cannot block them."""
+    path = ctx.workspace / STATE_FILE
+    if not path.is_file():
+        return []
+    data = read_json(path)
+    skills: Json = data.get("skills") or {}
+    # Before schema 1.2 the state did not record every installed skill, so an unrecorded one is not evidence of drift.
+    complete = data.get("schema_version") == STATE_SCHEMA
+    installed = get_installed(ctx)
+    lines: list[str] = []
+    for skill_id in sorted(set(skills) | {item for item in installed if is_skill_extension(ctx, item)}):
+        if skill_id not in installed:
+            lines.append(
+                f"Warning: {skill_id} was removed outside the skill library. "
+                f"Run install {skill_id} to restore it, or sync to delete its guidance from .github/.",
+            )
+            continue
+        version = str(installed[skill_id].get("version", ""))
+        if skill_id not in skills:
+            if complete:
+                lines.append(
+                    f"Warning: {skill_id} {version} was installed outside the skill library. Run sync to copy its guidance into .github/.",
+                )
+            continue
+        lines.extend(entry_drift(skill_id, skills[skill_id], version, enabled=installed[skill_id].get("enabled") is not False))
+    if lines:
+        lines.append(MANAGE_HINT)
+    return lines
 
 
 def save_manifest(ctx: Context, skills: Json) -> None:
@@ -686,6 +751,8 @@ def main(argv: list[str] | None = None) -> int:
     """Run one helper command and map failures to exit code 1."""
     ctx = parse_arguments(sys.argv[1:] if argv is None else argv, dict(os.environ))
     try:
+        if ctx.command != "help":
+            emit(*drift_warnings(ctx))
         HANDLERS[ctx.command](ctx)
     except HelperError as error:
         sys.stderr.write(f"{error}\n")

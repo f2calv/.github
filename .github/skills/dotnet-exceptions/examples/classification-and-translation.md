@@ -16,7 +16,9 @@ application's public exception contract.
 | A user-entered value fails ordinary validation | Return the application's explicit validation result | Expected invalid input need not be exceptional |
 
 Do not wrap these merely to make exception types uniform. Configuration errors belong in options
-validation rather than ad hoc domain exceptions.
+validation rather than ad hoc domain exceptions; a startup check that options validation cannot
+express uses the shared `ConfigurationException` unless the area already has its own configuration
+type.
 
 ## When an Area Exception Helps
 

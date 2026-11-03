@@ -1,11 +1,13 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.3
+version: 1.0.4
 facets: [dotnet]
 related:
   - id: tooling-rest-client
     reason: Linked from SKILL.md.
   - id: dotnet-grpc
     reason: Linked from SKILL.md.
+  - id: dotnet-logging
+    reason: Apply the request-summary, level-policy and level-layer contract.
 externalFiles:
   - .github/instructions/dotnet.csharp.instructions.md
   - .github/instructions/dotnet.testing.instructions.md

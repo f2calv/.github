@@ -1,0 +1,12 @@
+# TODO: Pilot for ADR 0003 phase 2, maintained by hand. Generate it from skill.metadata.yaml once
+# APM resolves same-repository dependencies (microsoft/apm#3071) and the pilot proves the install;
+# until then Test-SkillLibrary.ps1 checks name, version and dependencies against the sidecar.
+name: docs-adr
+version: 1.0.3
+description: Create, refine, review and supersede architecture decision records and design proposals.
+license: MIT
+dependencies:
+  apm:
+    - f2calv/.github/.github/skills/repository-privacy#repository-privacy/1.1.0
+    - f2calv/.github/.github/instructions/markdown.instructions.md#docs-adr/1.0.3
+    - f2calv/.github/.github/instructions/markdown.mermaid.instructions.md#docs-adr/1.0.3

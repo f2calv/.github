@@ -26,6 +26,7 @@ FIXTURES = TESTS / "fixtures/helper"
 CATALOG = FIXTURES / "catalog.json"
 CHANGED = FIXTURES / "catalog-changed.json"
 REGISTRY = ".specify/extensions/.registry"
+MANAGE_HINT = "Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable."
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +86,18 @@ class Library:
     def text(self, rel: str) -> str:
         """Return a workspace file's text without its trailing newline."""
         return (self.workspace / rel).read_text(encoding="utf-8").rstrip("\n")
+
+    def direct(self, *arguments: str) -> None:
+        """Run the fake specify directly, the way a user bypassing the helper would."""
+        executable = shutil.which("specify", path=self.env["PATH"])
+        assert executable is not None
+        subprocess.run([executable, *arguments], cwd=self.workspace, env=self.env, capture_output=True, check=True)  # noqa: S603 - the fake CLI
+
+    def set_enabled(self, skill_id: str, *, enabled: bool) -> None:
+        """Flip a skill's enabled flag in the registry, as specify extension enable or disable would."""
+        registry = json.loads((self.workspace / REGISTRY).read_text(encoding="utf-8"))
+        registry["extensions"][skill_id]["enabled"] = enabled
+        (self.workspace / REGISTRY).write_text(json.dumps(registry), encoding="utf-8")
 
 
 @pytest.fixture
@@ -315,3 +328,76 @@ def test_restores_missing_copies_on_sync(library: Library) -> None:
 
     assert "Guidance in .github/: 1 copied, 0 updated, 0 removed." in library.ok("sync")
     assert library.text(".github/skills/beta/SKILL.md") == "# Skill beta 1.0.0"
+
+
+def test_records_the_version_and_enabled_flag_of_every_installed_skill(library: Library) -> None:
+    assert "Warning:" not in library.ok("install", "alpha", "-Version", "1.0.0")
+
+    state = library.state()
+    raw = json.loads((library.workspace / ".specify/extensions/.skill-library.json").read_text(encoding="utf-8"))
+    assert raw["schema_version"] == "1.2"
+    assert state["skills"]["alpha"]["version"] == "1.0.0"
+    assert state["skills"]["alpha"]["enabled"] is True
+    assert state["skills"]["beta"]["version"] == "1.0.0"
+    assert "Warning:" not in library.ok("upgrade-all")
+    assert library.state()["skills"]["alpha"]["version"] == "1.1.0"
+
+
+def test_warns_about_a_skill_removed_outside_the_skill_library_until_sync_deletes_its_guidance(library: Library) -> None:
+    library.ok("install", "gamma")
+    library.direct("extension", "remove", "gamma", "--force")
+
+    output = library.ok("list")
+
+    expected = (
+        "Warning: gamma was removed outside the skill library. "
+        "Run install gamma to restore it, or sync to delete its guidance from .github/."
+    )
+    assert expected in output
+    assert MANAGE_HINT in output
+    assert "Warning:" not in library.ok("help")
+    assert "Guidance in .github/: 0 copied, 0 updated, 2 removed." in library.ok("sync")
+    assert not (library.workspace / ".github/skills/gamma").exists()
+    assert "Warning:" not in library.ok("list")
+
+
+def test_warns_about_skills_installed_or_upgraded_outside_the_skill_library_until_sync_copies_their_guidance(library: Library) -> None:
+    library.ok("install", "alpha", "-Version", "1.0.0")
+    library.direct("extension", "add", "gamma", "--version", "1.0.0")
+    library.direct("extension", "add", "alpha", "--version", "1.1.0", "--force")
+
+    output = library.ok("list")
+
+    assert "Warning: alpha changed from 1.0.0 to 1.1.0 outside the skill library. Run sync to update its guidance in .github/." in output
+    assert "Warning: gamma 1.0.0 was installed outside the skill library. Run sync to copy its guidance into .github/." in output
+    assert MANAGE_HINT in output
+    assert "Guidance in .github/: 1 copied, 1 updated, 0 removed." in library.ok("sync")
+    assert library.text(".github/skills/alpha/SKILL.md") == "# Skill alpha 1.1.0"
+    assert library.text(".github/skills/gamma/SKILL.md") == "# Skill gamma 1.0.0"
+    output = library.ok("list")
+    assert "Warning:" not in output
+    assert re.search(r"gamma\s+1\.0\.0\s+True\s+chosen", output)
+
+
+def test_warns_about_a_skill_disabled_or_enabled_outside_the_skill_library_until_sync_applies_it(library: Library) -> None:
+    library.ok("install", "beta")
+    library.set_enabled("beta", enabled=False)
+
+    assert "Warning: beta was disabled outside the skill library. Run sync to delete its guidance from .github/." in library.ok("list")
+    assert "Guidance in .github/: 0 copied, 0 updated, 2 removed." in library.ok("sync")
+    assert "Warning:" not in library.ok("list")
+    library.set_enabled("beta", enabled=True)
+    assert "Warning: beta was enabled outside the skill library. Run sync to copy its guidance into .github/." in library.ok("list")
+    assert "Guidance in .github/: 2 copied, 0 updated, 0 removed." in library.ok("sync")
+    assert "Warning:" not in library.ok("list")
+
+
+def test_does_not_treat_skills_missing_from_an_older_state_file_as_installed_outside(library: Library) -> None:
+    state = library.workspace / ".specify/extensions/.skill-library.json"
+    state.write_text('{"schema_version":"1.1","skills":{},"files":{}}', encoding="utf-8")
+    library.direct("extension", "add", "beta", "--version", "1.0.0")
+
+    assert "Warning:" not in library.ok("list")
+    library.ok("sync")
+    assert library.state()["skills"]["beta"]["chosen"] is True
+    assert "Warning:" not in library.ok("list")

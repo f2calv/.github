@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet, observability]
+related:
+  - id: dotnet-apphost
+    reason: Register logging, telemetry and the request-summary middleware in the right order.
+  - id: dotnet-webapi
+    reason: Keep controllers free of request logging and map exceptions to one event.
+  - id: dotnet-performance
+    reason: Make measured hot-path logging allocation-free.
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md

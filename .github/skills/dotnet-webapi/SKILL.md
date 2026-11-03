@@ -21,6 +21,8 @@ MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negot
 - [REST Client skill](../tooling-rest-client/SKILL.md) owns request-file layout and secret handling.
 - [gRPC skill](../dotnet-grpc/SKILL.md) owns RPC contracts, HTTP/2 transport and stream recovery;
   HTTP result and OpenAPI conventions here do not apply to gRPC services.
+- [Logging skill](../dotnet-logging/SKILL.md) owns request summaries, level policy and the
+  exception-event contract; controllers add no request or outcome logging.
 
 These repository-owned authorities take precedence over conflicting generic/plugin defaults.
 Do not edit a generated plugin installation to store shared conventions.
@@ -115,7 +117,8 @@ Development access must be explicit; do not loosen Production to make tests pass
 Use existing exception handlers and Problem Details. Do not map all `ArgumentException` or
 `InvalidOperationException` instances to client errors: these can be programming faults. Map
 specific domain failures and keep details safe. Account for .NET 10 handled-exception diagnostics
-suppression, avoiding both missing telemetry and duplicate logging.
+suppression: exactly one event carries each exception, and the request summary records only its
+status.
 
 When an exception handler is scoped by endpoint/controller metadata, inspect
 `IExceptionHandlerFeature.Endpoint`: exception middleware clears the active endpoint before
@@ -150,6 +153,8 @@ Build the smallest affected project, then run approved focused tests. Verify:
 - All expected actions are controllers and method/path/name/policy mappings remain correct.
 - Actual HTTP status codes, JSON shapes, validation errors and Location targets match the contract.
 - Streaming is incremental and ownership failures still surface before success.
+- Each request writes one summary with its route template, not the raw path, at the level the
+  logging skill assigns to its status.
 - API Explorer or the configured OpenAPI document contains inferred success/error responses and
   explicit middleware/dynamic responses. Reflection over attributes alone is not enough.
 - If a generator is configured, inspect its generated document as well; API Explorer assertions

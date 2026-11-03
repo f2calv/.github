@@ -2,7 +2,7 @@ schema_version: '1.0'
 extension:
   id: skill
   name: skill-library
-  version: 1.4.0
+  version: 1.5.0
   description: Search, install, upgrade, remove and load independently versioned skills, copying them into .github/ for Copilot discovery.
 requires:
   speckit_version: '>=1.2.3'

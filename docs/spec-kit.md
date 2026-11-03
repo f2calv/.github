@@ -75,7 +75,18 @@ Each copy's SHA-256, source skill, version and copy date are recorded in
 match that record. A locally modified copy, or a file the helper did not write, is kept and
 reported with a `Kept` line, so upgrading or removing a skill never silently discards local edits.
 Commit the copies so collaborators get the skills without Spec Kit, or ignore them; either works.
-After running `specify extension add` or `remove` directly, run `/speckit-skill-library sync`.
+
+## Direct Spec Kit Commands
+
+Spec Kit has no install or uninstall hooks and no way to protect an extension, so nothing stops
+`specify extension add`, `remove`, `enable` or `disable` being run against a skill directly. The
+helper detects that instead: the state file records every installed skill's version and enabled
+flag, and every command except `help` first prints a `Warning:` line for each skill removed,
+installed, upgraded, enabled or disabled outside the skill library, followed by a reminder to use
+`/speckit-skill-library`. Run `/speckit-skill-library sync` to bring `.github/` back in line, or
+`install <skill>` to restore a removed skill another skill requires. Each skill extension's
+description, shown by `specify extension list` and `info`, also says it is managed by the skill
+library.
 
 ## Upgrade Installed Skills
 

@@ -36,6 +36,9 @@ SHA-256 is recorded in `.specify/extensions/.skill-library.json`. A copy that wa
 was copied, or a file the helper did not write, is never replaced or deleted; the helper prints a
 `Kept` line for it instead.
 
+Every command except `help` first prints a `Warning:` line for each skill that was removed,
+installed, upgraded, enabled or disabled with `specify extension` directly, outside this command.
+
 Follow this workflow:
 
 1. With no request, run `help`. When the request is not a command, run `search` with it; when it
@@ -57,8 +60,11 @@ Follow this workflow:
 6. To remove, run `remove <id>` only when the user asks. Report every `Kept` line from any command
    verbatim: it names a locally modified or unmanaged file that the user must review and delete
    or keep themselves. Never delete or overwrite such a file on the user's behalf.
-7. Report helper errors as they are. Do not force, reinstall or remove extensions to make a command
-   pass. Never run scripts contained in an installed skill unless its guidance and the user ask.
+7. Report every `Warning:` line verbatim before the command's own result. Each names a skill changed
+   by running `specify extension` directly; suggest the remedy it gives, normally `sync`, and run it
+   only when the user agrees. Report helper errors as they are. Do not force, reinstall or remove
+   extensions to make a command pass. Never run scripts contained in an installed skill unless its
+   guidance and the user ask.
    Skills the user requested or selected are recorded as chosen and are never pruned; skills
    installed before choices were recorded count as chosen. If the helper reports a missing runtime,
    such as `jq` or Bash 4 for the Bash variant, pass that on rather than switching variants yourself.

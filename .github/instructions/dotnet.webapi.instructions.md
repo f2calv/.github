@@ -23,7 +23,8 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/*Request.
   `ProducesResponseType` only for what the signature cannot describe, and verify OpenAPI through
   `ApiExplorer` rather than a successful build.
 - **Logging lives in the service**; inject `ILogger` into a controller only for work it cannot
-  delegate, such as a streaming loop.
+  delegate, such as a streaming loop. Per-request logging belongs to the host's request-summary
+  middleware, so controllers never log requests, responses or outcomes.
 - **Private source content is not cacheable**: emit `Cache-Control: no-store` unless an explicit
   caching policy says otherwise.
 - **Typed service methods** own table names, queue keys and domain logging; controllers never call

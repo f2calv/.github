@@ -21,6 +21,9 @@ invariants. C#, Web API, configuration and testing rules stay in their own instr
   base component rather than repeating it in every page.
 - Put component styles in an isolated `.razor.css` file. Avoid inline `style` attributes except for
   values computed at runtime; use the component library's own parameters for its styling.
+- For RCL native controls, account for host CSS resets and anchor `::deep` rules to a real wrapper
+  when styling child-component or field-fragment elements. Verify applied control styles, not only
+  a successful stylesheet download.
 - Use one component library per application. Do not mix its primitives with a second library's.
 - Split a component once it owns more than one screen concern, such as a list and an editor dialog.
 - Check the paired Razor markup before removing a code-behind member flagged as unread. If markup

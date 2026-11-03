@@ -7,7 +7,8 @@ applyTo: '**/*.cs'
 
 Scoped companions carry the rest: configuration types in `dotnet.configuration`, controllers and
 DTOs in `dotnet.webapi`, tests in `dotnet.testing`. Skills own deeper procedures: `dotnet-apphost`
-for bootstrapping, `dotnet-exceptions` for exception types, `dotnet-background-pipelines` for queued
+for bootstrapping, `dotnet-logging` for operational level policy, request summaries and level
+configuration, `dotnet-exceptions` for exception types, `dotnet-background-pipelines` for queued
 work, `dotnet-performance` for measured hot paths and [dotnet-grpc](../skills/dotnet-grpc/SKILL.md)
 for RPC.
 
@@ -109,6 +110,9 @@ rules:
     `InvalidOperationException`, `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
   - Protocol boundaries: `JsonException` in converters, `RpcException` in gRPC services and
     `McpException` in MCP tools.
+  - Configuration: options validation with `ValidateOnStart()`; a startup or composition check it
+    cannot express, such as no enabled feature or registered sink, throws the shared library's
+    configuration exception (`ConfigurationException`).
   - Domain and runtime failures: a type derived from the solution's shared domain exception base,
     with a dedicated `<Area>Exception` for recurring failures in one area; throw the base itself only
     for a one-off failure nobody would catch separately. Contract packages that
@@ -151,16 +155,19 @@ rules:
   add a method parameter only to log an ID. Scopes flow through `await` and are exported when the
   provider sets `IncludeScopes = true`. Still include the ID explicitly in Warning, Error and
   Critical templates.
-- Level by who must act: missing data or configuration that should exist is a Warning; a feature
-  deliberately not configured is Debug, as is routine per-item progress.
+- **Levels by who must act**, balancing noise against silence: Information scales with work and
+  state changes (lifecycle, transitions, one summary per request or unit of work, recovery), never
+  with elapsed time or polling. Missing data or configuration that should exist is a Warning; a
+  feature deliberately not configured is Debug, as are per-item progress, successful polls and
+  repeats of an already reported failure. Log each fact once, at the boundary that handles it.
 - **Hot paths** (loops, channel readers, stream consumers, message processors) use
   source-generated `[LoggerMessage]` `private static partial void` methods, first parameter
   `ILogger logger`, at the bottom of the class or in `{ClassName}.Logging.cs`. Give their
   parameters the value's own type rather than calling `ToString()`. Leave dynamic-level
   `logger.Log(level, ...)` calls unconverted.
 - Guard every other `logger.LogXxx(...)` with `if (logger.IsEnabled(LogLevel.Xxx))` (CA1873).
-- Never log secrets, tokens, authorisation headers, connection strings, signed-URL queries, full
-  local paths or personal data.
+- Never log secrets, tokens, authorisation headers, connection strings, signed-URL queries, raw
+  request paths or query strings carrying identifiers, full local paths or personal data.
 
 ## XML Documentation
 
