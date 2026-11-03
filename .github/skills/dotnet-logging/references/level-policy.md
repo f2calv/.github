@@ -57,7 +57,8 @@ public sealed partial class InventoryPollBgService(ILogger<InventoryPollBgServic
     {
         if (_consecutiveFailures == 0)
             return;
-        LogPollRecovered(logger, nameof(InventoryPollBgService), _consecutiveFailures, timeProvider.GetUtcNow() - _failingSince);
+        var downtime = timeProvider.GetUtcNow() - _failingSince;
+        LogPollRecovered(logger, nameof(InventoryPollBgService), _consecutiveFailures, downtime);
         _consecutiveFailures = 0;
     }
 
@@ -97,3 +98,11 @@ log that once.
 | Lowering the minimum level produces nothing new | The code emits no event there, or an override still filters it; add the missing event at the right level |
 | Quiet log viewer while the console shows events | Delivery: a buffering proxy, collector or viewer; diagnose the transport, not the levels |
 | Raw path, query string, claims or payloads in properties | Route template, safe identifiers removed, operator diagnostics only behind an explicit expiring switch |
+| A missing optional setting warned on every event that needs it | Warn once per setting, then `Debug` |
+| A custom resilience `OnRetry` callback logging `Warning` | The resilience library already logs each retry at `Warning`; keep the callback at `Debug` |
+| A periodic heartbeat or summary every few seconds | An interval of minutes, or a summary only when work happened |
+| A library logging and rethrowing, then the caller logging again | Libraries throw with context; the application boundary logs once |
+| A `static readonly` logger created before logging is configured | Create it lazily, or inject `ILogger<T>`; an early static logger can stay silent for the process lifetime |
+
+Compute values such as a downtime into a local before passing them to a logging call; an
+expression argument triggers CA1873 even inside a source-generated method call.
