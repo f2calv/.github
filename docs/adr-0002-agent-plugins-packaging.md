@@ -165,6 +165,9 @@ Implemented in PR #41 and released as `skill-library` 1.1.0:
   That would remove the build transform.
 - Would facet bundles serve users better than per-skill plugins once real install UX is known?
 - Should instructions ship under a client extension directory once a client defines one for Copilot?
+- [ADR 0003](adr-0003-apm-distribution.md) proposes APM as an additional consumer of the same
+  releases. APM resolves dependencies, which the `extensions` entry cannot, and live-loads Agent
+  Plugins in Copilot CLI, but only from Git, not from release ZIPs.
 
 ## Evidence and Related Decisions
 
