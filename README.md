@@ -328,6 +328,7 @@ covers the options.
 | [ADR 0001](docs/adr-0001-skill-library-distribution.md) | Skill library distribution design and status |
 | [ADR 0002](docs/adr-0002-agent-plugins-packaging.md) | Agent Plugins packaging design and status |
 | [ADR 0003](docs/adr-0003-apm-distribution.md) | Proposed APM installation route and status |
+| [ADR 0004](docs/adr-0004-skill-library-vendoring.md) | Proposed framework vendoring into other repositories |
 
 This public account-level repository also supplies GitHub's default issue forms, pull request
 template, [contribution guidance](CONTRIBUTING.md) and [support guidance](SUPPORT.md) to
