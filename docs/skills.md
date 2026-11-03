@@ -76,7 +76,7 @@ gate rejects a stale or missing row.
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.2` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.3` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.2` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
-| [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.0.1` | Throw-site audits and area-specific domain exception types |
+| [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.2` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.1` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |

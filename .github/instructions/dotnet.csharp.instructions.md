@@ -109,6 +109,9 @@ rules:
     `InvalidOperationException`, `NotSupportedException` and `ObjectDisposedException.ThrowIf`.
   - Protocol boundaries: `JsonException` in converters, `RpcException` in gRPC services and
     `McpException` in MCP tools.
+  - Configuration: options validation with `ValidateOnStart()`; a startup or composition check it
+    cannot express, such as no enabled feature or registered sink, throws the shared library's
+    configuration exception (`ConfigurationException`).
   - Domain and runtime failures: a type derived from the solution's shared domain exception base,
     with a dedicated `<Area>Exception` for recurring failures in one area; throw the base itself only
     for a one-off failure nobody would catch separately. Contract packages that
