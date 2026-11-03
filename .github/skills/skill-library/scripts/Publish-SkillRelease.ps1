@@ -44,7 +44,7 @@ if (-not $Errors.Count) { $Errors = @(Test-SkillVersion -RepoRoot $RepoRoot -Com
 if ($Errors.Count) { throw "Skill library checks failed:`n$($Errors -join "`n")" }
 
 $Sha = @(Invoke-SkillTool git @('rev-parse', 'HEAD') -WorkingDirectory $RepoRoot)[0]
-$Bootstrap = @($Components | Where-Object Kind -eq 'bootstrap')[0]
+$Bootstrap = $Components | Where-Object Kind -eq 'bootstrap' | Select-Object -First 1
 $Pending = @($Components | Where-Object {
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $_.Id
         $null -eq $Released -or (ConvertTo-SkillVersion $_.Version) -gt $Released

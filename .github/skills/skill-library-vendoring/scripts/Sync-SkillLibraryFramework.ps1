@@ -68,8 +68,8 @@ $TargetRoot = Get-RepositoryRoot $Target 'Target'
 if ($SourceRoot -eq $TargetRoot) { throw 'Source and Target must be different repositories.' }
 
 if (-not $Ref) {
-    $Ref = @(Invoke-Git $SourceRoot @('tag', '--list', "$TagPrefix*") | Where-Object { $_.Substring($TagPrefix.Length) -match '^\d+\.\d+\.\d+$' } |
-        Sort-Object { [version]$_.Substring($TagPrefix.Length) } -Descending | Select-Object -First 1)[0]
+    $Ref = Invoke-Git $SourceRoot @('tag', '--list', "$TagPrefix*") | Where-Object { $_.Substring($TagPrefix.Length) -match '^\d+\.\d+\.\d+$' } |
+        Sort-Object { [version]$_.Substring($TagPrefix.Length) } -Descending | Select-Object -First 1
     if (-not $Ref) { throw "Source has no $TagPrefix<version> tags; run git fetch --tags." }
 }
 if (-not $Ref.StartsWith($TagPrefix, [StringComparison]::Ordinal)) { throw "Ref must be a $TagPrefix<version> tag, got '$Ref'." }

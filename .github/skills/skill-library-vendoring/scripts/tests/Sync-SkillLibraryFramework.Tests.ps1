@@ -59,7 +59,7 @@ seeded:
         if ($Ref) { $Parameters.Ref = $Ref }
         @(& $Script @Parameters -WhatIf:$WhatIf)
     }
-    function Get-Action($Results, [string]$Path) { @($Results | Where-Object Path -CEQ $Path)[0].Action }
+    function Get-Action($Results, [string]$Path) { $Results | Where-Object Path -CEQ $Path | Select-Object -First 1 | ForEach-Object Action }
     function Get-Lock { Get-Content -Raw (Join-Path $Target '.github/skill-library.framework.lock.json') | ConvertFrom-Json -AsHashtable }
     function Read-Target([string]$Path) { [IO.File]::ReadAllText((Join-Path $Target $Path)) }
 }
