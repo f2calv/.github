@@ -371,9 +371,11 @@ function ConvertTo-SkillYamlText {
 function New-SkillExtensionManifest {
     param([Parameter(Mandatory)][object]$Component)
     $Description = $Component.Description
+    # Spec Kit cannot block specify extension remove, so the installed description names the supported path.
+    $Managed = "$Description Managed by the skill library: install, upgrade and remove it with /speckit-skill-library."
     [ordered]@{
         schema_version = '1.0'
-        extension      = [ordered]@{ id = $Component.Id; name = $Component.Id; version = $Component.Version; description = $Description }
+        extension      = [ordered]@{ id = $Component.Id; name = $Component.Id; version = $Component.Version; description = $Managed }
         requires       = [ordered]@{ speckit_version = '>=1.2.3' }
         provides       = [ordered]@{ templates = @([ordered]@{ name = $Component.Id; file = "resources/$($Component.Path)/SKILL.md"; description = $Description }) }
     }

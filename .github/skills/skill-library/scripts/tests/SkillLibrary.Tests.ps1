@@ -256,6 +256,8 @@ Describe 'Extension archives' -Tag 'Unit' {
         finally { $Zip.Dispose() }
         $Manifest.extension.id | Should -Be 'alpha'
         $Manifest.extension.version | Should -Be '1.0.0'
+        $Manifest.extension.description | Should -BeExactly "$((Get-Alpha).Description) Managed by the skill library: install, upgrade and remove it with /speckit-skill-library."
+        $Manifest.provides.templates[0].description | Should -BeExactly (Get-Alpha).Description
         $Manifest.provides.templates[0].file | Should -Be 'resources/.github/skills/alpha/SKILL.md'
     }
 
