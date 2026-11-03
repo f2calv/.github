@@ -152,7 +152,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         if: steps.publish.outputs.site-directory != ''
         with:
           path: ${{ steps.publish.outputs.site-directory }}
@@ -171,7 +171,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
         id: deploy
 
   #The final fan-in: the repository tag moves only after skill releases and the catalog succeed.
