@@ -7,7 +7,7 @@
 #
 #CI runs the same services. The repository is mounted read-only; tool caches live in named volumes or
 #/tmp so nothing is written into the working tree. No ports are published.
-name: dotgithub-tests
+name: skill-library-tests
 
 services:
   python-tests:

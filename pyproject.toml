@@ -1,6 +1,6 @@
 #Test tooling for the Python skill library helper; this repository publishes no Python package.
 [project]
-name = "f2calv-github-tooling"
+name = "skill-library-tooling"
 version = "0.0.0"
 description = "Lint, type-check and test tooling for the Python variant of the skill library helper."
 requires-python = ">=3.11"
