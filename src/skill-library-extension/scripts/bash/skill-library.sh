@@ -6,7 +6,9 @@
 # .specify/extensions/.skill-library.json state, so a workspace can switch variants at any time.
 # After every install, upgrade, removal and prune it copies each enabled skill's
 # resources/.github/ into the workspace .github/, recording each copy's SHA-256, and replaces or
-# deletes a copy only while its bytes still match, so local edits are kept and reported.
+# deletes a copy only while its bytes still match, so local edits are kept and reported. Spec Kit
+# cannot block specify extension add, remove, enable or disable on a skill, so every command except
+# help first warns about skills changed that way since the helper last recorded them.
 #
 # Usage: skill-library.sh <command> [target] [-Version X.Y.Z] [-Related a,b]
 #        [-CatalogUrl url-or-file] [-Workspace path]
@@ -24,7 +26,9 @@ set -euo pipefail
 readonly BOOTSTRAP_ID=skill
 readonly DEFAULT_CATALOG=https://f2calv.github.io/.github/catalog.json
 readonly STATE_FILE=.specify/extensions/.skill-library.json
+readonly STATE_SCHEMA=1.2
 readonly REGISTRY_FILE=.specify/extensions/.registry
+readonly MANAGE_HINT='Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable.'
 
 command_name=help
 target=''
@@ -145,16 +149,66 @@ state_part() {
   if [[ -f $path ]]; then jq --arg part "$1" '.[$part] // {}' "$path"; else echo '{}'; fi
 }
 
+# Prints a JSON array of installed extensions that ship skill guidance under resources/.github/.
+skill_extension_ids() {
+  local id ids=()
+  while read -r id; do
+    [[ -z $id || $id == "$BOOTSTRAP_ID" ]] && continue
+    if [[ -d $workspace/.specify/extensions/$id/resources/.github ]]; then ids+=("$id"); fi
+  done < <(installed | jq -r 'keys[]')
+  if ((${#ids[@]})); then printf '%s\n' "${ids[@]}" | jq -R . | jq -sc .; else echo '[]'; fi
+}
+
+# Records every installed skill with its version and enabled flag, so report_drift can spot direct specify changes.
 save_state() {
-  local skills=$1 files=$2
+  local skills=$1 files=$2 installed_json extensions
+  installed_json=$(installed)
+  extensions=$(skill_extension_ids)
   mkdir -p "$workspace/.specify/extensions"
-  jq -n --indent 2 --argjson skills "$skills" --argjson files "$files" --argjson installed "$(installed)" '
-    {schema_version: "1.1",
-     skills: ($skills | with_entries(select(.key as $id | $installed | has($id))) | to_entries | sort_by(.key) | from_entries),
+  jq -n --indent 2 --arg schema "$STATE_SCHEMA" --argjson skills "$skills" --argjson files "$files" \
+    --argjson installed "$installed_json" --argjson extensions "$extensions" '
+    {schema_version: $schema,
+     skills: ((($skills | keys | map(. as $id | select($installed | has($id)))) + $extensions) | unique
+       | map(. as $id | {key: $id, value: {
+           chosen: (if $skills | has($id) then $skills[$id].chosen == true else true end),
+           version: ($installed[$id].version // "" | tostring),
+           enabled: ($installed[$id].enabled != false)}})
+       | from_entries),
      files: ($files | to_entries | sort_by(.key) | from_entries)}' > "$workspace/$STATE_FILE"
 }
 
 save_manifest() { save_state "$1" "$(state_part files)"; }
+
+# Spec Kit cannot block direct specify extension commands, so report skills they changed behind the helper's back.
+report_drift() {
+  local path=$workspace/$STATE_FILE installed_json extensions
+  [[ -f $path ]] || return 0
+  installed_json=$(installed)
+  extensions=$(skill_extension_ids)
+  # Before schema 1.2 the state did not record every installed skill, so an unrecorded one is not evidence of drift.
+  jq -r --arg schema "$STATE_SCHEMA" --arg hint "$MANAGE_HINT" --argjson installed "$installed_json" --argjson extensions "$extensions" '
+    (.skills // {}) as $skills | (.schema_version == $schema) as $complete
+    | [((($skills | keys) + $extensions) | unique[]) as $id
+       | if ($installed | has($id) | not) then
+           "Warning: \($id) was removed outside the skill library. Run install \($id) to restore it, or sync to delete its guidance from .github/."
+         else
+           ($installed[$id].version // "" | tostring) as $version
+           | ($installed[$id].enabled != false) as $enabled
+           | if ($skills | has($id) | not) then
+               (if $complete then "Warning: \($id) \($version) was installed outside the skill library. Run sync to copy its guidance into .github/." else empty end)
+             else
+               $skills[$id] as $entry
+               | (if ($entry | has("version")) and (($entry.version | tostring) != $version) then
+                    "Warning: \($id) changed from \($entry.version) to \($version) outside the skill library. Run sync to update its guidance in .github/."
+                  else empty end),
+                 (if ($entry | has("enabled")) and ($entry.enabled != $enabled) then
+                    (if $enabled then "Warning: \($id) was enabled outside the skill library. Run sync to copy its guidance into .github/."
+                     else "Warning: \($id) was disabled outside the skill library. Run sync to delete its guidance from .github/." end)
+                  else empty end)
+             end
+         end]
+    | if length > 0 then (.[], $hint) else empty end' "$path"
+}
 
 # Prints {id, version, required, related} for the current or an exact release, or fails.
 release() {
@@ -624,6 +678,7 @@ main() {
   parse_arguments "$@"
   command -v jq > /dev/null || die "jq is required by the Bash variant; install jq or use the ps or py variant."
   workspace=$(cd "$workspace" && pwd)
+  if [[ $command_name != help ]]; then report_drift; fi
   case $command_name in
     search | plan | install | upgrade-all | remove | prune | list) ensure_catalog ;;
   esac

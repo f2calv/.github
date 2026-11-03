@@ -172,8 +172,12 @@ newly requires. It offers related skills that an upgraded version newly lists an
 chosen skill requires any more; `/speckit-skill-library prune` removes those with
 `specify extension remove --force`, and `remove <id>` removes one chosen skill nothing else requires.
 The helper records whether each skill was chosen or only
-required in `.specify/extensions/.skill-library.json`, because Spec Kit's registry stores only
-versions; skills installed before that file existed count as chosen and are never pruned.
+required, with its version and enabled flag, in `.specify/extensions/.skill-library.json`, because
+Spec Kit's registry stores only versions; skills installed before that file existed count as chosen
+and are never pruned. Spec Kit has no install or uninstall hooks and cannot protect an extension, so
+every command except `help` warns about skills removed, installed, upgraded, enabled or disabled with
+`specify extension` directly, and each skill's generated `extension.yml` description says it is
+managed by the skill library.
 `upgrade-all` does not upgrade the `skill` bootstrap, which `specify extension add skill --force`
 replaces.
 
@@ -186,6 +190,8 @@ there too so they are not packaged into the bootstrap. A repository test enforce
   descriptions or skill resources; lessons from each library audit go in the authoring reference.
 - Spec Kit releases: recheck `extension.yml` fields, `provides.templates`, the catalog `releases`
   format, `SPECKIT_CATALOG_URL` precedence and the catalog cache file naming used by the helper.
+  Watch for extension install or remove lifecycle hooks or a protected/managed-by field, which
+  would let the helper's drift warnings become a prompt at removal time.
 - `yq` major versions: recheck `-i` comment preservation and YAML/JSON conversion.
 - Git ignore discovery on Windows and paths requiring Git quoting: verify ignored skills with and
   without sidecars remain excluded, and Git failures are reported rather than treated as unignored.

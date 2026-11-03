@@ -29,6 +29,13 @@ write_registry() { printf '{"schema_version":"1.0","extensions":%s}\n' "$1" > "$
 lib() { bash "$SCRIPT" "$@" -CatalogUrl "$CATALOG" -Workspace "$WS"; }
 changed_lib() { bash "$SCRIPT" "$@" -CatalogUrl "$CHANGED" -Workspace "$WS"; }
 state() { jq -r "$1" "$WS/.specify/extensions/.skill-library.json"; }
+# Simulates a user running specify extension commands directly, outside the helper.
+direct() { (cd "$WS" && specify "$@") > /dev/null; }
+set_enabled() {
+  jq --arg id "$1" --argjson enabled "$2" '.extensions[$id].enabled = $enabled' "$WS/.specify/extensions/.registry" > "$WS/registry.tmp"
+  mv "$WS/registry.tmp" "$WS/.specify/extensions/.registry"
+}
+MANAGE_HINT='Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable.'
 
 @test "lists commands by default" {
   run lib
@@ -251,4 +258,81 @@ extension remove gamma --force catalog='
   assert_success
   assert_output --partial 'Guidance in .github/: 1 copied, 0 updated, 0 removed.'
   [ "$(cat "$WS/.github/skills/beta/SKILL.md")" = '# Skill beta 1.0.0' ]
+}
+
+@test "records the version and enabled flag of every installed skill" {
+  run lib install alpha -Version 1.0.0
+  assert_success
+  refute_output --partial 'Warning:'
+  [ "$(state '.schema_version')" = 1.2 ]
+  [ "$(state '.skills.alpha.version')" = 1.0.0 ]
+  [ "$(state '.skills.alpha.enabled')" = true ]
+  [ "$(state '.skills.beta.version')" = 1.0.0 ]
+  run lib upgrade-all
+  refute_output --partial 'Warning:'
+  [ "$(state '.skills.alpha.version')" = 1.1.0 ]
+}
+
+@test "warns about a skill removed outside the skill library until sync deletes its guidance" {
+  lib install gamma > /dev/null
+  direct extension remove gamma --force
+  run lib list
+  assert_success
+  assert_output --partial 'Warning: gamma was removed outside the skill library. Run install gamma to restore it, or sync to delete its guidance from .github/.'
+  assert_output --partial "$MANAGE_HINT"
+  run lib help
+  refute_output --partial 'Warning:'
+  run lib sync
+  assert_output --partial 'Guidance in .github/: 0 copied, 0 updated, 2 removed.'
+  [ ! -e "$WS/.github/skills/gamma" ]
+  run lib list
+  refute_output --partial 'Warning:'
+}
+
+@test "warns about skills installed or upgraded outside the skill library until sync copies their guidance" {
+  lib install alpha -Version 1.0.0 > /dev/null
+  direct extension add gamma --version 1.0.0
+  direct extension add alpha --version 1.1.0 --force
+  run lib list
+  assert_success
+  assert_output --partial 'Warning: alpha changed from 1.0.0 to 1.1.0 outside the skill library. Run sync to update its guidance in .github/.'
+  assert_output --partial 'Warning: gamma 1.0.0 was installed outside the skill library. Run sync to copy its guidance into .github/.'
+  assert_output --partial "$MANAGE_HINT"
+  run lib sync
+  assert_output --partial 'Guidance in .github/: 1 copied, 1 updated, 0 removed.'
+  [ "$(cat "$WS/.github/skills/alpha/SKILL.md")" = '# Skill alpha 1.1.0' ]
+  [ "$(cat "$WS/.github/skills/gamma/SKILL.md")" = '# Skill gamma 1.0.0' ]
+  run lib list
+  refute_output --partial 'Warning:'
+  assert_output --regexp 'gamma[[:space:]]+1\.0\.0[[:space:]]+True[[:space:]]+chosen'
+}
+
+@test "warns about a skill disabled or enabled outside the skill library until sync applies it" {
+  lib install beta > /dev/null
+  set_enabled beta false
+  run lib list
+  assert_output --partial 'Warning: beta was disabled outside the skill library. Run sync to delete its guidance from .github/.'
+  run lib sync
+  assert_output --partial 'Guidance in .github/: 0 copied, 0 updated, 2 removed.'
+  run lib list
+  refute_output --partial 'Warning:'
+  set_enabled beta true
+  run lib list
+  assert_output --partial 'Warning: beta was enabled outside the skill library. Run sync to copy its guidance into .github/.'
+  run lib sync
+  assert_output --partial 'Guidance in .github/: 2 copied, 0 updated, 0 removed.'
+  run lib list
+  refute_output --partial 'Warning:'
+}
+
+@test "does not treat skills missing from an older state file as installed outside" {
+  echo '{"schema_version":"1.1","skills":{},"files":{}}' > "$WS/.specify/extensions/.skill-library.json"
+  direct extension add beta --version 1.0.0
+  run lib list
+  assert_success
+  refute_output --partial 'Warning:'
+  lib sync > /dev/null
+  [ "$(state '.skills.beta.chosen')" = true ]
+  run lib list
+  refute_output --partial 'Warning:'
 }

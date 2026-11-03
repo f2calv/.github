@@ -57,6 +57,15 @@ exit 0
     function Invoke-ChangedLibrary { & $Script @args -CatalogUrl $ChangedCatalogPath -Workspace $Workspace | Out-String }
     function Get-ManifestSkills { (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).skills }
     function Get-ManifestFiles { (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).files }
+    # Simulates a user running specify extension commands directly, outside the helper.
+    function Invoke-DirectSpecify { Push-Location -LiteralPath $Workspace; try { & specify @args | Out-Null } finally { Pop-Location } }
+    function Set-RegistryEnabled([string]$Id, [bool]$Enabled) {
+        $Registry = "$Workspace/.specify/extensions/.registry"
+        $Data = Get-Content -Raw $Registry | ConvertFrom-Json -AsHashtable
+        $Data.extensions[$Id].enabled = $Enabled
+        [IO.File]::WriteAllText($Registry, ($Data | ConvertTo-Json -Depth 5))
+    }
+    $ManageHint = 'Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable.'
 }
 
 AfterAll { $env:PATH = $SavedPath }
@@ -258,5 +267,65 @@ Describe 'Invoke-SkillLibrary' -Tag 'Unit' {
         Remove-Item "$Workspace/.github/skills/beta/SKILL.md"
         Invoke-Library sync | Should -BeLike '*Guidance in .github/: 1 copied, 0 updated, 0 removed.*'
         Get-Content "$Workspace/.github/skills/beta/SKILL.md" | Should -Be '# Skill beta 1.0.0'
+    }
+
+    It 'records the version and enabled flag of every installed skill' {
+        Invoke-Library install alpha -Version 1.0.0 | Should -Not -BeLike '*Warning:*'
+        $Skills = Get-ManifestSkills
+        $Skills.alpha.version | Should -Be '1.0.0'
+        $Skills.alpha.enabled | Should -BeTrue
+        $Skills.beta.version | Should -Be '1.0.0'
+        (Get-Content -Raw "$Workspace/.specify/extensions/.skill-library.json" | ConvertFrom-Json -AsHashtable).schema_version | Should -Be '1.2'
+        Invoke-Library upgrade-all | Should -Not -BeLike '*Warning:*'
+        (Get-ManifestSkills).alpha.version | Should -Be '1.1.0'
+    }
+
+    It 'warns about a skill removed outside the skill library until sync deletes its guidance' {
+        Invoke-Library install gamma | Out-Null
+        Invoke-DirectSpecify extension remove gamma --force
+        $Output = Invoke-Library list
+        $Output | Should -BeLike '*Warning: gamma was removed outside the skill library. Run install gamma to restore it, or sync to delete its guidance from .github/.*'
+        $Output | Should -BeLike "*$ManageHint*"
+        Invoke-Library help | Should -Not -BeLike '*Warning:*'
+        Invoke-Library sync | Should -BeLike '*Guidance in .github/: 0 copied, 0 updated, 2 removed.*'
+        "$Workspace/.github/skills/gamma" | Should -Not -Exist
+        Invoke-Library list | Should -Not -BeLike '*Warning:*'
+    }
+
+    It 'warns about skills installed or upgraded outside the skill library until sync copies their guidance' {
+        Invoke-Library install alpha -Version 1.0.0 | Out-Null
+        Invoke-DirectSpecify extension add gamma --version 1.0.0
+        Invoke-DirectSpecify extension add alpha --version 1.1.0 --force
+        $Output = Invoke-Library list
+        $Output | Should -BeLike '*Warning: alpha changed from 1.0.0 to 1.1.0 outside the skill library. Run sync to update its guidance in .github/.*'
+        $Output | Should -BeLike '*Warning: gamma 1.0.0 was installed outside the skill library. Run sync to copy its guidance into .github/.*'
+        $Output | Should -BeLike "*$ManageHint*"
+        Invoke-Library sync | Should -BeLike '*Guidance in .github/: 1 copied, 1 updated, 0 removed.*'
+        Get-Content "$Workspace/.github/skills/alpha/SKILL.md" | Should -Be '# Skill alpha 1.1.0'
+        Get-Content "$Workspace/.github/skills/gamma/SKILL.md" | Should -Be '# Skill gamma 1.0.0'
+        $Output = Invoke-Library list
+        $Output | Should -Not -BeLike '*Warning:*'
+        $Output | Should -Match 'gamma\s+1\.0\.0\s+True\s+chosen'
+    }
+
+    It 'warns about a skill disabled or enabled outside the skill library until sync applies it' {
+        Invoke-Library install beta | Out-Null
+        Set-RegistryEnabled beta $false
+        Invoke-Library list | Should -BeLike '*Warning: beta was disabled outside the skill library. Run sync to delete its guidance from .github/.*'
+        Invoke-Library sync | Should -BeLike '*Guidance in .github/: 0 copied, 0 updated, 2 removed.*'
+        Invoke-Library list | Should -Not -BeLike '*Warning:*'
+        Set-RegistryEnabled beta $true
+        Invoke-Library list | Should -BeLike '*Warning: beta was enabled outside the skill library. Run sync to copy its guidance into .github/.*'
+        Invoke-Library sync | Should -BeLike '*Guidance in .github/: 2 copied, 0 updated, 0 removed.*'
+        Invoke-Library list | Should -Not -BeLike '*Warning:*'
+    }
+
+    It 'does not treat skills missing from an older state file as installed outside the skill library' {
+        [IO.File]::WriteAllText("$Workspace/.specify/extensions/.skill-library.json", '{"schema_version":"1.1","skills":{},"files":{}}')
+        Invoke-DirectSpecify extension add beta --version 1.0.0
+        Invoke-Library list | Should -Not -BeLike '*Warning:*'
+        Invoke-Library sync | Out-Null
+        (Get-ManifestSkills).beta.chosen | Should -BeTrue
+        Invoke-Library list | Should -Not -BeLike '*Warning:*'
     }
 }

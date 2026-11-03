@@ -7,7 +7,9 @@ Searches, installs and loads skills from the skill library catalog through the S
 After every install, upgrade, removal and prune, the helper copies each enabled skill's
 resources/.github/ into the workspace .github/, where Copilot discovers skills and instructions.
 It records each copy's SHA-256 in .specify/extensions/.skill-library.json and replaces or deletes a
-copy only while its bytes still match, so local edits are kept and reported. bash/skill-library.sh
+copy only while its bytes still match, so local edits are kept and reported. Spec Kit cannot block
+specify extension add, remove, enable or disable on a skill, so every command except help first
+warns about skills changed that way since the helper last recorded them. bash/skill-library.sh
 and python/skill_library.py implement the same commands, output and state; change all three together.
 .PARAMETER Command
 help, search, plan, install, upgrade-all, remove, prune, sync, list or load. The helper records
@@ -64,14 +66,63 @@ function Read-State {
 
 function Get-Manifest { return (Read-State).skills }
 
+function Test-SkillExtension([string]$Id) {
+    return $Id -cne $BootstrapId -and (Test-Path -LiteralPath (Join-Path $Workspace ".specify/extensions/$Id/resources/.github") -PathType Container)
+}
+
+function Get-OrdinalSet([string[]]$Ids) {
+    $Set = [Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($Id in $Ids) { [void]$Set.Add($Id) }
+    return , $Set
+}
+
+# Records every installed skill with its version and enabled flag, so Show-Drift can spot direct specify changes.
 function Save-State([hashtable]$Skills, [hashtable]$Files) {
     $Installed = Get-Installed
+    $Ids = Get-OrdinalSet (@($Skills.Keys | Where-Object { $Installed.ContainsKey($_) }) + @($Installed.Keys | Where-Object { Test-SkillExtension $_ }))
     $Kept = [ordered]@{}
-    foreach ($Id in @($Skills.Keys | Sort-Object)) { if ($Installed.ContainsKey($Id)) { $Kept[$Id] = $Skills[$Id] } }
+    foreach ($Id in $Ids) {
+        $Kept[$Id] = [ordered]@{ chosen = (Test-Chosen $Skills $Id); version = [string]$Installed[$Id]['version']; enabled = ($Installed[$Id]['enabled'] -ne $false) }
+    }
     $Copies = [ordered]@{}
     foreach ($Rel in @($Files.Keys | Sort-Object)) { $Copies[$Rel] = $Files[$Rel] }
     $Path = Join-Path $Workspace '.specify/extensions/.skill-library.json'
-    [IO.File]::WriteAllText($Path, ([ordered]@{ schema_version = '1.1'; skills = $Kept; files = $Copies } | ConvertTo-Json -Depth 5) + "`n")
+    [IO.File]::WriteAllText($Path, ([ordered]@{ schema_version = '1.2'; skills = $Kept; files = $Copies } | ConvertTo-Json -Depth 5) + "`n")
+}
+
+# Spec Kit cannot block direct specify extension commands, so report skills they changed behind the helper's back.
+function Show-Drift {
+    $Path = Join-Path $Workspace '.specify/extensions/.skill-library.json'
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    $Data = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable
+    $Skills = $Data['skills'] ?? @{}
+    # Before schema 1.2 the state did not record every installed skill, so an unrecorded one is not evidence of drift.
+    $Complete = $Data['schema_version'] -ceq '1.2'
+    $Installed = Get-Installed
+    $Lines = foreach ($Id in (Get-OrdinalSet (@($Skills.Keys) + @($Installed.Keys | Where-Object { Test-SkillExtension $_ })))) {
+        if (-not $Installed.ContainsKey($Id)) {
+            "Warning: $Id was removed outside the skill library. Run install $Id to restore it, or sync to delete its guidance from .github/."
+            continue
+        }
+        $Version = [string]$Installed[$Id]['version']
+        $Enabled = $Installed[$Id]['enabled'] -ne $false
+        $Entry = $Skills[$Id]
+        if ($null -eq $Entry) {
+            if ($Complete) { "Warning: $Id $Version was installed outside the skill library. Run sync to copy its guidance into .github/." }
+            continue
+        }
+        if ($Entry.ContainsKey('version') -and [string]$Entry['version'] -cne $Version) {
+            "Warning: $Id changed from $($Entry['version']) to $Version outside the skill library. Run sync to update its guidance in .github/."
+        }
+        if ($Entry.ContainsKey('enabled') -and [bool]$Entry['enabled'] -ne $Enabled) {
+            if ($Enabled) { "Warning: $Id was enabled outside the skill library. Run sync to copy its guidance into .github/." }
+            else { "Warning: $Id was disabled outside the skill library. Run sync to delete its guidance from .github/." }
+        }
+    }
+    if (@($Lines).Count) {
+        $Lines | Write-Output
+        Write-Output 'Manage skills with /speckit-skill-library instead of specify extension add, remove, enable or disable.'
+    }
 }
 
 function Save-Manifest([hashtable]$Skills) { Save-State $Skills (Read-State).files }
@@ -293,6 +344,8 @@ function Invoke-Specify([object[]]$Steps) {
 }
 
 function Assert-Target { if (-not $Target) { throw "The $Command command needs a skill ID." } }
+
+if ($Command -cne 'help') { Show-Drift }
 
 switch ($Command) {
     'help' {
