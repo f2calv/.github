@@ -116,11 +116,15 @@ procedures live in skills.
     appending. Leave one-off incident details in memory or repository documentation.
   - **Report**: end every completion report with `Customization feedback:` followed by the files
     updated, or `none, because <reason>`.
-- **Place rules centrally**, in the owning scoped `*.instructions.md` file or skill, unless a rule
-  names something specific to one repository or deliberately deviates from a central rule. When
-  unclear, name the intended file before editing. Apply a new convention retroactively.
-- **Keep each rule in exactly one place**; amend rather than near-duplicate, and keep language-,
-  tool- and framework-specific rules in their own scoped file.
+- **Place requested conventions deliberately**: before editing, search existing instructions and
+  skills for equivalent or overlapping rules; amend or consolidate the owner rather than duplicate.
+  Put concise always-on or file-scoped invariants in the owning `*.instructions.md`; put on-demand
+  procedures, routines and worked examples in the owning skill. Switch destinations when that fits
+  better, even if the request named another surface, and explain the choice. Only repository-specific
+  rules or deliberate deviations belong locally. When unclear, name the intended file before
+  editing. Apply a new convention retroactively.
+- **Keep each rule in exactly one place**, with language-, tool- and framework-specific rules in
+  their own scope; link to the owner instead of repeating it.
 - **Write requested conventions for durability**: keep the full intent in the clearest concise
   wording rather than copying the request verbatim; offer a UI choice when interpretations differ
   materially.
