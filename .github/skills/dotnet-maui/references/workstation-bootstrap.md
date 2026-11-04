@@ -46,20 +46,25 @@ after raising the project's Android API level.
 
 ## 5. Android Emulator
 
-1. Enable the **Windows Hypervisor Platform** optional feature and reboot if it was off.
+1. Enable the **Windows Hypervisor Platform** optional feature and reboot if it was off. Check free
+   space first: the emulator, one system image and one virtual device need roughly 10 GB. On a small
+   system drive, install the SDK on another drive and set `ANDROID_HOME`, `ANDROID_AVD_HOME` and the
+   IDE's Android SDK location to match; `sdkmanager` can leave a broken image folder behind when it
+   runs out of space, so delete it before retrying.
 2. Install the emulator and an `x86_64` system image for the app's target API. `sdkmanager` and
    `avdmanager` need `JAVA_HOME`:
 
    ```powershell
    $sdk = "$env:LOCALAPPDATA\Android\Sdk\cmdline-tools\latest\bin"
    & "$sdk\sdkmanager.bat" 'emulator' 'system-images;android-36;google_apis;x86_64'
-   & "$sdk\avdmanager.bat" create avd -n pixel7-api36 -d pixel_7 -k 'system-images;android-36;google_apis;x86_64'
+   & "$sdk\avdmanager.bat" create avd -n phone-api36 -d <device-profile> -k 'system-images;android-36;google_apis;x86_64'
    ```
 
+   List device profiles with `avdmanager list device -c` and pick one close to the target phones.
    Choose a `google_apis_playstore` image only when the test needs Play services. Visual Studio's
    **Tools > Android > Android Device Manager** does the same interactively.
 3. Start it from the IDE device list, or with
-   `& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd pixel7-api36`, and confirm
+   `& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd phone-api36`, and confirm
    `adb devices` lists it.
 
 ## 6. IDE
@@ -87,5 +92,5 @@ adb devices
 ```
 
 Ask before running tests or deploying. Then start the Windows target once and deploy to the
-emulator once. A physical phone needs developer options and USB or wireless debugging; on a
-managed phone, check the device-management policy before enabling them.
+emulator once. A physical phone needs developer options and USB or wireless debugging; if it is
+enrolled in device management, check that policy before enabling them.

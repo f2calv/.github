@@ -1,8 +1,7 @@
 # Container Image Patterns
 
-Copy-ready fragments for the conventions in `docker.instructions.md`. As reference implementations
-that follow these patterns stage for stage, see the public f2calv `multi-arch-container-dotnet`,
-`-go`, `-rust` and `-python` repositories.
+Copy-ready fragments for the conventions in `docker.instructions.md`. The
+[real-world examples](#real-world-examples) follow these patterns stage for stage.
 
 ## Header and Stage Banners
 
@@ -221,8 +220,8 @@ same image instead, and copy the published output into it.
 
 ## Optional Test Target (.NET)
 
-Place the stage between `build` and `final`. For a working example, see the Release `Dockerfile`
-in the public f2calv `yamlizr` repository.
+Place the stage between `build` and `final`. The [real-world examples](#real-world-examples) include
+a working Release `Dockerfile`.
 
 ```dockerfile
 # In the build stage, keep the tests out of the publish layer:
@@ -323,3 +322,9 @@ EOF
 
 `set -eu` omits `-x` so the token never reaches the build log. Never let a tool persist the secret,
 for example a package manager writing it into a configuration file inside the layer.
+
+## Real-World Examples
+
+- The public f2calv `multi-arch-container-dotnet`, `-go`, `-rust` and `-python` repositories
+  follow these patterns stage for stage.
+- The public f2calv `yamlizr` repository's Release `Dockerfile` includes the optional test target.

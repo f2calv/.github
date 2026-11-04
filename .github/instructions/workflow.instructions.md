@@ -123,6 +123,11 @@ procedures live in skills.
   better, even if the request named another surface, and explain the choice. Only repository-specific
   rules or deliberate deviations belong locally. When unclear, name the intended file before
   editing. Apply a new convention retroactively.
+- **`INSTR` shorthand**: a request containing the token `INSTR` (any case) asks for the task and for
+  its underlying convention to be captured. Complete the task, then add or amend the convention in
+  its owning instruction or skill without asking, following the placement rules above, and name the
+  file changed in the report. When the task carries no reusable convention, say so instead of
+  inventing one.
 - **Keep each rule in exactly one place**, with language-, tool- and framework-specific rules in
   their own scope; link to the owner instead of repeating it.
 - **Write requested conventions for durability**: keep the full intent in the clearest concise

@@ -1,6 +1,6 @@
 ---
 name: dotnet-maui
-description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, managed-phone debugging and Android CI builds. Use when setting up a MAUI machine in Visual Studio or VS Code, adding a platform target, wiring platform services, or when a MAUI build, workload or deployment fails.'
+description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, device debugging and Android CI builds. Use when setting up a MAUI machine in Visual Studio or VS Code, adding a platform target, wiring platform services, or when a MAUI build, workload or deployment fails.'
 compatibility: 'Workstation bootstrap covers Windows with Visual Studio 2026 or VS Code. Android builds also run on Linux and macOS; the Windows target builds only on Windows.'
 ---
 
@@ -46,11 +46,11 @@ installing anything that needs elevation or large downloads.
 | Android emulator | Android APIs, runtime permissions, media providers, lifecycle | Vendor behavior, real camera output, performance |
 | Physical phone | Final device validation | Nothing, but it costs the most setup |
 
-Move to Android only when the change depends on Android behavior. On a phone managed by mobile
-device management, enabling developer options, USB debugging or wireless debugging can mark it
-non-compliant and block work apps; wireless debugging uses the same debugging service as USB, so a
-policy covering one covers both. Prefer the emulator there. A spare phone helps only when it runs
-the app's minimum API level; wireless pairing without a cable needs Android 11 or later.
+Move to Android only when the change depends on Android behavior. If a phone is enrolled in device
+management, check its policy before enabling developer options or debugging: some policies treat
+that as non-compliance. Wireless debugging uses the same debugging service as USB, so a policy that
+blocks one blocks both; use the emulator instead. A spare phone helps only when it runs the app's
+minimum API level, and wireless pairing without a cable needs Android 11 or later.
 
 ### 4. Add a Windows Development Target
 

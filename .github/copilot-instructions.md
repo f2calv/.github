@@ -28,7 +28,8 @@ files are not copied into other repositories, a change here never triggers their
 ## Authoring Rules
 
 - These files are public. They must contain no personally identifiable information, no credentials, no private repository names, and no project-specific examples. Write every rule so it reads sensibly in any repository.
-- Name repositories, packages and types generically (`owner/example`, "the shared library", "the domain exception base"). Where a concrete case genuinely helps, put it in a section headed as a real-world example, naming only public repositories, and keep the rule itself generic.
+- Keep the author's own circumstances out of the rules: their devices, employer or device-management policies, workstation layout, drives and accounts. When such a situation teaches something general, state it as a condition any reader could meet ("if a phone is enrolled in device management…") rather than as the default case.
+- Name repositories, packages and types generically (`owner/example`, "the shared library", "the domain exception base"). The author's public repositories and packages, such as `CasCap.Common`, may be named, but always as example libraries ("for example, the public `CasCap.Common.Caching` package; other libraries may serve"), never as the required choice, and keep the rule itself library-neutral. Name private repositories nowhere. A longer worked case goes in a section headed as a real-world example.
 - Scoped `*.instructions.md` files carry YAML frontmatter with a `description` and an `applyTo`
   glob. Skills instead require `name` and a discovery-focused `description`; `applyTo` does not
   invoke a skill. Ordinary supporting documentation has no customization frontmatter.

@@ -11,11 +11,13 @@ Use these defaults for new projects and explicitly approved naming migrations. P
 application names over product-qualified variants; reusable capability libraries retain their own
 role names. A naming default does not require extracting another project.
 
+`<Prefix>` is the organisation or product namespace prefix, for example `CasCap`.
+
 | Responsibility | Default project name | Boundary |
 | --- | --- | --- |
-| Application-owned backend | `CasCap.Backend` | Not every execution or integration library is the whole backend |
-| Shared application composition | `CasCap.App.Hosting` | Keep single-host composition application-owned unless sharing is justified |
-| Application-owned EF persistence | `CasCap.Data` | Not a shared schema or a general DTO collection |
+| Application-owned backend | `<Prefix>.Backend` | Not every execution or integration library is the whole backend |
+| Shared application composition | `<Prefix>.App.Hosting` | Keep single-host composition application-owned unless sharing is justified |
+| Application-owned EF persistence | `<Prefix>.Data` | Not a shared schema or a general DTO collection |
 | Test suite | `<subject>.Tests` | Name for the production subject, including executable MTP suites |
 | Independently reusable test support | `<subject>.Testing` | Single-suite helpers stay internal to that suite |
 | Test-only executable host | `<subject>.TestHost` | Started by tests; not a runnable sample application |

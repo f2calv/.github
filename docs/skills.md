@@ -15,7 +15,7 @@ gate rejects a stale or missing row.
 | [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.0.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.0` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.1.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
-| [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.2` | Issue quality, pull request descriptions, review findings and merge readiness |
+| [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.3` | Issue quality, pull request descriptions, review findings and merge readiness |
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
@@ -26,7 +26,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.2` | Configured lint hooks, pinned runtimes and native or Docker execution |
-| [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.1` | Shared formatting profiles, analyzer rules and drift |
+| [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.2` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
 | [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.1` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
@@ -40,7 +40,7 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [Container images](../.github/skills/containers-images/SKILL.md) | `1.0.2` | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Container images](../.github/skills/containers-images/SKILL.md) | `1.0.3` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.6` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.2` | Chart contracts, values, dependencies, documentation and OCI packaging |
@@ -75,10 +75,10 @@ gate rejects a stale or missing row.
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.0.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and managed-phone debugging |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.0.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.4` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
-| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.3` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
+| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.4` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |

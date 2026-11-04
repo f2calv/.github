@@ -52,7 +52,7 @@ to the generator so a standalone skill copy does not require the central checkou
 
 Designate one public .NET repository whose analyzer fallout has been fixed across a multi-target
 library and test suite, and use its tracked root `.editorconfig` as the proven reference for future
-audits and rollouts. For f2calv repositories this is `CasCap.Common`.
+audits and rollouts. The [real-world example](#real-world-example) names one.
 
 The central fragments remain the source of truth: never hand-copy or edit the reference file as
 policy. Before rolling out to another .NET repository, run the generator `-Check` against the
@@ -237,6 +237,10 @@ Report:
 
 Keep public reports free of private repository names, coordinates, paths, topology, and operational
 details.
+
+## Real-World Example
+
+The f2calv repositories use the public `CasCap.Common` repository as their .NET reference baseline.
 
 ## Maintaining This Skill
 
