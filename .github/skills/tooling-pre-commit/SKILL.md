@@ -195,6 +195,7 @@ and pre-commit 4.6.2. A named cache volume preserves hook environments between r
 | Docker reports unsafe repository ownership | Use the bundled entrypoint, which configures `/src` as a safe directory |
 | First Docker run is slow | Keep the named cache volume; hook environments are reused afterwards |
 | Hook changes files and exits 1 | Review the diff, then rerun the same command once |
+| Every hook reports `no files to check` for `-Files a,b` | `pwsh ./script.ps1 -Files a,b` passes one comma-joined string; invoke the script in-process with `& ./script.ps1 -Files a,b` |
 | A direct linter disagrees with CI | Run pre-commit from the repository root so config arguments and exclusions apply |
 | `autoupdate` changes a justified frozen revision | Restore the intentional pin and document its constraint beside the revision |
 | CI passes but release bypasses lint | Add `lint` to the release job's `needs` fan-in |

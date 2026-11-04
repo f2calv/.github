@@ -25,7 +25,7 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.1` | Configured lint hooks, pinned runtimes and native or Docker execution |
+| [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.2` | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.1` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.1` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
@@ -75,6 +75,7 @@ gate rejects a stale or missing row.
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.3` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.4` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.4` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.0.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and managed-phone debugging |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.3` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.4` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.3` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
