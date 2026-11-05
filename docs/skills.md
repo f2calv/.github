@@ -11,10 +11,10 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [README authoring](../.github/skills/docs-readme/SKILL.md) | `1.0.1` | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
-| [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.3` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
+| [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.4` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
 | [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.0.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.0` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
-| [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.1.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
+| [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.2.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
 | [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.3` | Issue quality, pull request descriptions, review findings and merge readiness |
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
@@ -84,4 +84,4 @@ gate rejects a stale or missing row.
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.1` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.0.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
-| [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.0` | Dependency-ordered NuGet updates, releases and consumer propagation |
+| [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |
