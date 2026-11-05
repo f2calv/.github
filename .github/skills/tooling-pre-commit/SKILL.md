@@ -139,6 +139,9 @@ Verify matching generated paths and nonmatching maintained skills when changing 
 
 Use the bundled entry point from the central repository:
 
+When chaining validation with Git, use terminating PowerShell errors and explicitly check native
+exit codes. A failed hook must stop the caller before staging, committing or pushing.
+
 ```powershell
 # Run every hook against every tracked file. Native pre-commit is preferred.
 pwsh ./.github/skills/tooling-pre-commit/scripts/Invoke-PreCommit.ps1 `

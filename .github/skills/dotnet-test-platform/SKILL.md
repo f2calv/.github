@@ -63,6 +63,10 @@ into the target repository rather than copying over existing policy.
 
 ## Workflows and Actions
 
+Large in-process host suites can exhaust Linux inotify instances. Pass the native runner option
+`--environment DOTNET_USE_POLLING_FILE_WATCHER=1` when needed; verify the same selected cases pass
+without privileged host changes or test exclusions.
+
 - Shared workflows and actions require the MTP selection and fail with an actionable error when it
   is absent.
 - Do not retain VSTest detection, fallback command lines or dual coverage pipelines.

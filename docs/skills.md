@@ -19,7 +19,7 @@ gate rejects a stale or missing row.
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
-| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.1` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
+| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.2` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
 
 ## Tooling and Agent Setup
 
@@ -34,7 +34,7 @@ gate rejects a stale or missing row.
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](../.github/skills/skill-library/SKILL.md) | `1.4.1` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
-| [Skill library vendoring](../.github/skills/skill-library-vendoring/SKILL.md) | `1.0.0` | Adopting and upgrading the skill-library framework in another repository from release tags, with a lock and a clean hard cut |
+| [Skill library vendoring](../.github/skills/skill-library-vendoring/SKILL.md) | `1.0.1` | Adopting and upgrading the skill-library framework in another repository from release tags, with a lock and a clean hard cut |
 
 ## Containers, Kubernetes and Infrastructure
 
@@ -85,12 +85,12 @@ gate rejects a stale or missing row.
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.0.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
-| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.4` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
+| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.5` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.4` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
-| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.1` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
+| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.2` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.1.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.0` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |

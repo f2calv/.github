@@ -28,7 +28,7 @@ jobs:
 
   #Exercise the action from this commit; replace with assertions on its outputs or side effects.
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:

@@ -132,6 +132,11 @@ At minimum, validation should cover:
 6. documentation and version consistency;
 7. semantic comparison with the previous rendering during migrations.
 
+Render every workload kind when asserting dormant defaults or pod contracts. A Job can ignore
+replica count, so gate an optional migration dependency with an owned, schema-validated boolean
+condition. Check effective shutdown and probe fields for Job/ScaledJob separately from Deployment;
+shared values alone do not prove those fields render.
+
 For additive reusable-chart changes, render every existing fixture from the previous and candidate
 chart, normalize only intentional metadata such as the chart-version label, and require semantic
 equality. Keep `appVersion` unchanged when it supplies a default image tag and the packaged

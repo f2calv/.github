@@ -17,8 +17,8 @@ templates, and release changes to shared workflows or Actions safely.
   `docker.compose.instructions.md`: supported major tags by default, verified version-specific
   exceptions when no major alias exists, and no routine digest requirement. This is distinct from
   action `uses:` references and production Dockerfile base-image pinning.
-- Pin GitHub-hosted Linux jobs to `ubuntu-24.04`; never use the moving `ubuntu-latest` label.
-- Expose a kebab-case `runs-on` string input with a default of `ubuntu-24.04` in reusable workflows, and use it for each Linux job that is not intentionally platform-specific. Callers override the input only when they need another runner.
+- Pin GitHub-hosted Linux jobs to `ubuntu-26.04`; never use the moving `ubuntu-latest` label.
+- Expose a kebab-case `runs-on` string input with a default of `ubuntu-26.04` in reusable workflows, and use it for each Linux job that is not intentionally platform-specific. Callers override the input only when they need another runner.
 - Keep composite actions runner-agnostic. The workflow job that calls a composite action owns `runs-on`.
 - Set `fetch-depth: 0` on `actions/checkout` whenever GitVersion is used, so it can read the full commit history. Use `fetch-depth: 1` only for lint-only workflows where history is unnecessary.
 - Declare an explicit `permissions` block on every job and grant the minimum required, such as `contents: read`. This includes jobs in reusable workflows, unless callers legitimately grant the same job different permissions, such as a shared release wrapper that versions with `contents: read` and releases with `contents: write`; say so in a comment.

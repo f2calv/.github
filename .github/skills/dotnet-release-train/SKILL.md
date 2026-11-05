@@ -6,15 +6,14 @@ argument-hint: '[start={tooling|<first-producer>}] [packages={all|internal}]'
 
 # .NET Release Train
 
-Move through dependent .NET repositories in package order. Finish and publish each producer before
+Move across .NET repositories in package order. Finish and publish each producer before
 updating its consumers. Use the repositories' existing branches, workflows, package holds, and
 release conventions rather than maintaining a separate release state machine.
 
 ## Repository Order
 
-The [producer/consumer worked example](./examples/producer-consumer.md) connects Debug project
-references, Release package references, a local partial-publication failure and the existing
-availability gate. It is a synthetic laboratory, not permission to publish or start a train.
+The [producer/consumer example](./examples/producer-consumer.md) demonstrates Debug/Release graphs
+and partial-publication recovery in a synthetic laboratory; it grants no publication permission.
 
 Build the order from the actual package graph: a repository moves only after every package it
 consumes is published. The waves below are the general shape; the
@@ -58,6 +57,9 @@ user explicitly asks for parallel sessions.
 
 - **Inspect**
   - Read the repository instructions and documented package holds first.
+    If a hold contradicts an already-shipped major, inspect the existing platform references and
+    adaptations before proposing a downgrade. Ask which policy is intended, validate the affected
+    platform and remove a stale hold only with approval.
   - Fetch the default branch and inspect the current branch, worktree, existing pull request, and
     open Dependabot pull requests.
     - If an Action repository's tag fetch rejects a moved floating alias, inspect the remote target,
@@ -92,6 +94,8 @@ user explicitly asks for parallel sessions.
 - **Validate locally**
   - Ask once for authorization to run the train's builds and tests; do not ask again for every
     repository while that scope remains unchanged.
+  - Use the [native test-platform commands](../dotnet-test-platform/SKILL.md#command-syntax)
+    from the target repository; absolute project paths do not select its runner.
   - Restore and build the repository's Debug solution when it uses local `ProjectReference` paths.
   - Restore and build its Release solution to prove the published `PackageReference` path.
   - Audit the Release dependency graph too. For `dotnet list package --vulnerable --include-transitive`,
@@ -99,22 +103,19 @@ user explicitly asks for parallel sessions.
     conditional references, and default Debug evaluation can disagree with restored Release assets.
   - Run the repository's lint command and all relevant unit tests.
   - Run integration tests when authorized and their dependencies are available.
+    - Classify by actual dependencies, not the Integration trait alone. Include explicitly reviewed
+      offline in-process host contracts; broad CI exclusions can hide shared-worker registration
+      regressions. Keep live, credentialed and mutating cases separately gated.
     - Classify failures caused by unavailable external services, credentials, market hours, or local
       infrastructure separately from code regressions.
     - Do not expand the release into speculative repairs for retired or offline providers. Record a
       durable skip/TODO when the test can no longer run.
   - Fix build, analyzer, packaging, and deterministic test failures before continuing.
 - **Review the READMEs against the release**
-  - Before opening the pull request, compare the root README and every packable project's README
-    with the branch diff and the evaluated list of packable projects.
-  - Every published package needs a package table row or badge, and a short description with an
-    install command. Add rows for new packages; remove rows for retired ones.
-  - Describe new features, configuration options and breaking changes where the README covers that
-    area. For a major release, add migration notes or link to them.
-  - Check version numbers, target frameworks, examples and API names against the code being released.
-  - Fix stale content in the release pull request itself, or record it in the pull request
-    description with a follow-up when it is too large for this release. Use the `docs-readme` skill
-    for structure and wording.
+  - Compare the root and every packable project's README with the full diff and evaluated package
+    graph before opening the pull request. Follow the
+    [release documentation checklist](references/release-decisions-and-rollouts.md#release-documentation),
+    including migration notes and fulfilled publication caveats.
 - **Commit and open the pull request**
   - Follow the normal auto-commit and auto-push switches; the skill grants no extra Git permission.
   - For public repositories, run the privacy scan before committing.
@@ -127,6 +128,11 @@ user explicitly asks for parallel sessions.
     template asks for one.
   - Apply accurate labels and assign the authenticated user.
 - **Review and merge**
+  - Inspect expected analysis setup before opening the pull request. Enable missing CodeQL only
+    with explicit setting-change approval, and require analysis on the release head rather than
+    its initial default-branch scan. Do not dispatch a dynamic workflow that has no dispatch trigger.
+  - Budget for newly analyzed source when promoting Debug-only features to Release; the first real
+    analysis can expose previously hidden fixture, regex and complexity findings.
   - For a large or breaking pull request, complete the
     [release-version decision](references/release-decisions-and-rollouts.md#release-version-decision) before merging, even when auto-merge is
     enabled. Do not silently accept the default patch increment.
@@ -172,11 +178,8 @@ user explicitly asks for parallel sessions.
     [clean-semver workload rollout](references/release-decisions-and-rollouts.md#clean-semver-workload-rollouts) after verifying its release.
     Publication alone does not establish that the released version has been deployed.
 - **Update documentation downstream**
-  - In each consumer's pull request, remove README statements the release has made untrue, such as
-    "Debug-only", "Release build not supported", "not yet published" or adjacent-checkout
-    requirements, and add package badges or version rows for packages that now exist.
-  - Search for them before opening the pull request rather than relying on memory, for example
-    `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
+  - Apply the same [release documentation checklist](references/release-decisions-and-rollouts.md#release-documentation)
+    in every consumer's pull request after its upstream publication is verified.
 
 ## Unpushed Attribution Cleanup
 
@@ -202,9 +205,8 @@ published-history rewrite. Stop the train if it fails.
 
 ## Practical Rules
 
-- Package publication, not merge completion, unlocks the next consumer.
-- Release builds matter even when Debug builds pass, because Debug commonly uses local project
-  references while Release consumes NuGet packages.
+- Verified publication unlocks consumers; passing Debug builds with project references does not
+  prove their Release package graph.
 - A successful package push is not proof that NuGet clients can restore it. Verify every expected
   package ID at the exact version through the package source's restore endpoint, and stop the chain
   when any package from a multi-package producer is absent.

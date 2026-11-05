@@ -126,6 +126,10 @@ captured forwarded-provider records over live environments. Prove:
 - startup, normal work, cancellation, shutdown and failure output is coherent for each host shape;
 - each event reaches each sink once, and the forwarded provider receives it.
 
+For broad level-guard or privacy sweeps, also require the existing duplication and cognitive
+complexity checks. Consolidate repeated operation logging rather than copying guarded catch
+blocks; behavior tests alone do not establish maintainability.
+
 ## Reporting
 
 Report the pipeline inventory, the event budget applied per workload, configuration layers before
