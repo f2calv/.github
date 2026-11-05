@@ -63,9 +63,14 @@ not need:
 
 ### Step 3: Author
 
-Start .NET service images from the bundled
-[published](templates/dotnet-service.dockerfile.tmpl) or
-[Debug](templates/dotnet-service-debug.dockerfile.tmpl) template. Start other workloads from the
+Start .NET service images from the bundled managed
+[published](templates/dotnet-service.dockerfile.tmpl),
+[Debug](templates/dotnet-service-debug.dockerfile.tmpl) or
+[Native AOT](templates/dotnet-service-aot.dockerfile.tmpl) template. The
+[dotnet-aot skill](../dotnet-aot/SKILL.md) owns application compatibility; this skill owns the image.
+Use shared version inputs, not per-major template copies; keep .NET 10 usable and gate .NET 11 on
+verified GA, tags and target manifests. Native AOT defaults to native builders per Linux amd64/arm64
+target, not generic RID cross-publish or a `single-arch` classification. Start other workloads from the
 [patterns reference](references/patterns.md) or the matching public `multi-arch-container-*`
 repository. Preserve template ordering and formatting; explain workload-required deviations beside
 them. Update the `.dockerignore` allow-list for every file the build reads.
@@ -116,5 +121,5 @@ multi-platform loading, shell-less images and tag casing.
 * `docker buildx build --check` coverage: drop audit rules the checker now enforces and add the
   ones it still misses.
 * Script parameters in the Script Reference whenever the scripts change.
-* Keep template substitutions, ignore-file inputs and entrypoint guidance aligned; exercise both
-  published and Debug templates through the existing Dockerfile audit regressions.
+* Keep shared version inputs, verified GA/tag/platform gates, AOT toolchains, globalization,
+  ignore-file inputs and entrypoints aligned; exercise managed, Debug and AOT audit regressions.

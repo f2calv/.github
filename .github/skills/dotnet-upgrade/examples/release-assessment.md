@@ -23,9 +23,11 @@ After GA availability and compatible providers are verified, its requested targe
 | --- | --- |
 | Application TFM | Raise to `net11.0` after target approval; preserve RID/platform settings. |
 | Library with a retained .NET 10 consumer | Preserve `net10.0`; add `net11.0` only when justified. Validate every retained target rather than breaking the consumer for cosmetic alignment. |
+| Approved retirement of .NET 8/9 library assets | After .NET 11 GA and support verification, replace the selected matrix with `net10.0;net11.0`; validate both package assets and consumers. Keep C# 14-compatible shared source where required. |
 | `Directory.Packages.props` | Verify released compatible EF/provider/tool versions from their feeds. Keep unrelated packages on their own version schemes and preserve documented holds. |
 | `global.json` selecting Microsoft.Testing.Platform | Keep the runner selection. Do not replace the file with a new SDK-only pin. |
 | Container SDK/runtime stages and CI setup | Align their verified available versions while preserving image profile and platforms. One new SDK does not prove the deployed runtime supports the target. |
+| Native AOT candidate worker beside an MVC host | Assess separately through the Native AOT skill. Keep the MVC host managed unless an endpoint migration is approved; do not make AOT part of a version-only bump. |
 | Generated lock files | Regenerate through restore; do not replace version strings manually. |
 | Central C# instruction still naming a previous language version | Verify the new default, then update the owning rule at a scope compatible with retained TFMs. Do not force all consumers to use newer syntax. |
 | Test-platform skill examples using changed CLI options | Verify the installed SDK/runner contract; update the owning examples and validate their affected usage with approval. |

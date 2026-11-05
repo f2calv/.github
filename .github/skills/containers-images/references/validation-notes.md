@@ -10,6 +10,10 @@ Practical limits and checks when validating an image locally, after the audit an
   a bare `docker run`. That still proves the image starts and reads its configuration; confirm the
   failure names the missing input.
 * `--pull` stops a stale local base image masking a broken build.
+* Native AOT needs native builders for each declared target, normally Linux amd64 and arm64.
+  The template intentionally fails if build and target platforms differ; a single amd64 workstation
+  is not proof of arm64 support. Audit output cannot verify a linker, sysroot, libc or executable.
+  Recheck [version/tag/platform evidence](dotnet-version-inputs.md) before changing version inputs.
 * A `--version` smoke test must compare exactly with the effective `VERSION` build argument.
   If CI lowercases image tags and uses that tag as `VERSION`, normalize the expected prerelease
   label too; raw GitVersion output can differ in case. Exercise both preview and clean versions.

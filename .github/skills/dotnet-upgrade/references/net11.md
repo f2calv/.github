@@ -1,9 +1,11 @@
 # .NET 11 Upgrade Highlights
 
-Research entry points for .NET 10 to 11, checked **2026-10-24** against Microsoft's RC2
-documentation. **Not a GA checklist:** .NET 11 is currently a release candidate, with GA expected
-in November 2026. Recheck release and feature status before proposing changes; prerelease
-adoption requires explicit approval. This reference contains no fixed package versions.
+Research entry points for .NET 10 to 11, rechecked **2026-11-05** against Microsoft's feature
+documentation, which still identifies its snapshot as **RC2**, with GA expected in November 2026.
+The feature snapshot is not the current release/support record or a GA checklist. Recheck those
+records separately before proposing changes; prerelease adoption requires explicit approval.
+No specific GA day or future package version is asserted here. For retained .NET 10 assets, use the
+[target/language matrix](./library-targeting.md) rather than adopting C# 15 across shared files.
 
 ## Official Starting Points
 
@@ -26,6 +28,7 @@ semantics. Read the complete applicable breaking-change indexes, not only the wa
 | Runtime-native async, JIT and NativeAOT dispatch improvements | Async-heavy services, allocation/startup profiles, interface-heavy AOT paths | Benchmark the platform upgrade first; separate automatic runtime gains from compiler/configuration-dependent gains. Check Runtime Async activation requirements; don't rewrite `Task`/`ValueTask` signatures by rote. | [Runtime](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/runtime) |
 | C# 15 collection expression arguments | Collection construction that needs capacity or a custom comparer and therefore couldn't use collection expressions cleanly | Simplify initialization while retaining capacity and equality semantics; syntax alone is not a measured speedup. | [Collection expression arguments](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-15#collection-expression-arguments) |
 | C# 15 unions and closed hierarchies | Internal discriminated results, tagged payloads, exhaustive switches and boilerplate case hierarchies | Consider clearer domain modeling and exhaustiveness checks. Verify serializer/generator support and public API consequences before replacing established abstractions. | [Unions](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-15#union-types), [closed hierarchies](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-15#closed-hierarchies) |
+| C# 15 extension indexers and labeled loop control | Indexing helper methods, nested loops with flag variables solely to exit/continue an outer loop | Consider simpler access or control flow only where clearer; preserve bounds, side effects and loop ordering. Not suitable for C# 14 shared source. | [C# 15](https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-15) |
 | Memory-backed stream types | `MemoryStream` wrappers, `ToArray()` copies, custom streams around memory/sequences/strings | Investigate `ReadOnlyMemoryStream`, `WritableMemoryStream`, `ReadOnlySequenceStream` and `StringStream` for fewer copies/custom wrappers. Verify buffer lifetime, writability and seeking contracts. | [Libraries](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/libraries) |
 | System.Text.Json JSONL, union and source-generation improvements | Hand-rolled JSON Lines writers, custom converters and reflection-heavy serialization | Remove proven redundant plumbing or allocations; preserve wire format, polymorphism, null/ignore rules and generated metadata. | [Libraries](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/libraries) |
 | Async validation and cache diagnostics | Custom async validation pipelines, startup validators, bespoke `MemoryCache` instrumentation | Investigate `AsyncValidationAttribute`, `IAsyncValidatableObject`, `IAsyncStartupValidator` and built-in cache metrics. Verify integration, cancellation and metric naming/cardinality before adoption. | [Libraries](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/libraries) |

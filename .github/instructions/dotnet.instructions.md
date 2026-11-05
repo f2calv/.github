@@ -84,6 +84,10 @@ role names. A naming default does not require extracting another project.
 
 - Libraries intended for wide consumption multi-target the supported .NET releases; applications target a single framework.
 - A change that compiles on one target framework must be verified on every target framework before it is considered done.
+- Use the `dotnet-upgrade` skill's release-verified library/language matrix when retiring targets;
+  preserve .NET 10 compatibility while introducing .NET 11 assets and source modernizations.
+- Native AOT is an explicitly selected executable deployment mode, not a library TFM policy.
+  Use the `dotnet-aot` skill before setting `PublishAot` or promising `IsAotCompatible`.
 
 ## SDK Selection
 

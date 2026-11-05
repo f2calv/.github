@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-upgrade
+    reason: Verify platform and language migrations independently from native deployment.
+  - id: containers-images
+    reason: Author matching native toolchain, runtime-deps and managed fallback images.
+  - id: dotnet-webapi
+    reason: Preserve HTTP contracts when selecting supported AOT endpoints.
+  - id: dotnet-efcore
+    reason: Verify provider maturity, query generation and persistence behavior.
+  - id: dotnet-grpc
+    reason: Validate concrete RPC and serialization implementations for Native AOT.

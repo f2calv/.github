@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.5
+version: 1.1.0
 facets: [dotnet]
 related:
+  - id: dotnet-aot
+    reason: Select supported endpoints and generated serialization for approved Native AOT hosts.
   - id: tooling-rest-client
     reason: Linked from SKILL.md.
   - id: dotnet-grpc

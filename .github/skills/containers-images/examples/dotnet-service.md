@@ -1,6 +1,6 @@
 # .NET Service Template Inputs
 
-Use these templates for a framework-dependent .NET service with central build/package properties.
+Use these templates for managed or Native AOT .NET services with central build/package properties.
 They are authoring inputs, not Dockerfiles ready to build before substitution. No renderer is
 required: replace the literal tokens and retain the remaining ordering.
 
@@ -10,12 +10,28 @@ required: replace the literal tokens and retain the remaining ordering.
 | --- | --- | --- | --- |
 | Published | [Service](../templates/dotnet-service.dockerfile.tmpl) | [Service ignore](../templates/dotnet-service.dockerignore.tmpl) | `Dockerfile`, `.dockerignore` |
 | Sibling-source Debug | [Debug service](../templates/dotnet-service-debug.dockerfile.tmpl) | [Debug ignore](../templates/dotnet-service-debug.dockerignore.tmpl) | `Dockerfile.Debug`, `Dockerfile.Debug.dockerignore` |
+| Native AOT | [AOT service](../templates/dotnet-service-aot.dockerfile.tmpl) | [Service ignore](../templates/dotnet-service.dockerignore.tmpl) | `Dockerfile`, `.dockerignore` |
 
 Dockerfile-specific ignore files replace, rather than extend, the root ignore file. Keep the
 build-output and secret exclusions in both. These examples keep test sources in the context for
 an optional isolated test target; the publish-stage `COPY --exclude` keeps them out of that layer.
 
 ## Resolve Inputs
+
+Choose the version bundle first from [the version gate](../references/dotnet-version-inputs.md).
+The same three inputs serve every major version; do not copy templates or construct tags from a TFM.
+Usable .NET 10 inputs:
+
+| Template | `{{SDK_TAG}}` | `{{TARGET_FRAMEWORK}}` | `{{RUNTIME_TAG}}` |
+| --- | --- | --- | --- |
+| Managed published | `10.0-noble` | `net10.0` | `10.0-noble-chiseled` |
+| Managed Debug | `10.0-noble` | `net10.0` | `10.0-noble` |
+| Native AOT | `10.0-noble-aot` | `net10.0` | `10.0-noble-chiseled-extra` |
+
+These are Ubuntu Noble SDK/runtime pairs. The AOT bundle uses
+`{{INVARIANT_GLOBALIZATION}}=false`: the extra runtime supplies ICU, tzdata and libstdc++.
+Retain invariant mode only when the application contract permits it; match the runtime libraries
+to that choice, rather than assuming a minimal base contains ICU.
 
 | Token | Synthetic value | Meaning |
 | --- | --- | --- |
@@ -47,8 +63,15 @@ workflow owns that generated directory.
   admits, narrow it to owned build inputs, and exclude additional local-only configuration patterns.
 * Choose a runtime supporting the project's framework references and native dependencies.
   Add `EXPOSE` for actual HTTP/gRPC listeners; do not invent ports for a background worker.
-* Both templates create `entrypoint.dll` and execute `dotnet entrypoint.dll`. Do not mix in an
+* Managed templates create `entrypoint.dll` and execute `dotnet entrypoint.dll`. Do not mix in an
   apphost entrypoint or a runtime shell to expand the assembly name.
+* AOT instead aliases the native `$WORKLOAD` executable as `/app/publish/entrypoint` and uses
+  `ENTRYPOINT ["/app/entrypoint"]`. No `dotnet` host, managed runtime or build tools reach `final`.
+  Restore selects the RID once, with the same TFM, configuration, self-contained, AOT and
+  globalization settings as offline publish.
+* AOT's native-builder guard rejects emulated or mismatched builders. Use matching native amd64
+  and arm64 Buildx nodes to publish a single multi-platform image; unsupported OS/variants fail.
+  See [native build choices](../references/options.md#build-strategy) for cross-toolchain exceptions.
 
 ## Validate
 

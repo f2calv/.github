@@ -9,7 +9,9 @@ applyTo: '**/*Controller.cs,**/Controllers/**/*.cs,**/*Endpoints.cs,**/*Request.
 
 - **Controllers are the default** for application Web APIs, new ones included; this overrides a
   generic minimal-API default. Minimal mappings suit only small host or protocol endpoints such as
-  health checks. Convert an existing minimal API in its own focused change, preserving routes,
+  health checks. Exception: an explicitly approved Native AOT HTTP workload uses supported Minimal
+  APIs, guided by the `dotnet-aot` skill; never convert it back to MVC. Other workloads retain the
+  controller default. Convert an existing minimal API in its own focused change, preserving routes,
   authentication, validation, streaming and response contracts.
 - **Thin pass-through**: one service call mapped to an HTTP result, with no business logic, LINQ
   projections, lookups or logging; permitted minimal handlers follow the same boundary.

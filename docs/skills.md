@@ -40,7 +40,7 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [Container images](../.github/skills/containers-images/SKILL.md) | `1.0.3` | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Container images](../.github/skills/containers-images/SKILL.md) | `1.1.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.6` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.2` | Chart contracts, values, dependencies, documentation and OCI packaging |
@@ -71,7 +71,7 @@ gate rejects a stale or missing row.
 | [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.4` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
 | [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.3` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.4` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
-| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.0.5` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.1.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
@@ -83,5 +83,6 @@ gate rejects a stale or missing row.
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.1` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.0.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.1.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.0` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |
