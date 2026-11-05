@@ -75,8 +75,8 @@ role names. A naming default does not require extracting another project.
 ## Solution Format
 
 - Use the modern XML `.slnx` solution format. Convert legacy `.sln` files rather than maintaining the old format alongside.
+- Name every solution after the repository, using its exact name including case and hyphens: `<repository-name>.slnx`, or `<repository-name>.sln` until a legacy file is converted. Where Debug and Release variants exist, name them `<repository-name>.Debug.slnx` and `<repository-name>.Release.slnx` instead, without an unsuffixed copy alongside. Rename a mismatched solution with `git mv` and update every script, workflow, task and README that references it in the same change. Forks keep their upstream solution names.
 - Add every new test project to the repository's default `.slnx` or `.sln` file in the same change. Do not create a separate test-only solution instead of keeping the default solution complete.
-- Where Debug and Release variants exist, name them `<Name>.Debug.slnx` and `<Name>.Release.slnx`, matching the repository name.
 - The Debug solution wires local `ProjectReference` items to sibling libraries; the Release solution uses published `PackageReference` items.
 - Prefer the Debug solution for local builds; CI builds the Release solution.
 
