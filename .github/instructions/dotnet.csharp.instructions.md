@@ -212,6 +212,9 @@ rules:
 
 ## Correctness and Security
 
+- A conditional whose branches are a struct and `null` (`x is { } v ? new Tier(v) : null`) converts
+  `null` through any implicit conversion the struct declares, such as the string conversion on Azure
+  SDK extensible enums, and throws at run time. Cast the struct branch to its nullable type.
 - Compare calculated `float`/`double` values against a domain tolerance unless exact identity is
   the contract; remove invariant expressions such as `value - value`.
 - Use `RandomNumberGenerator` for tokens, secrets, identifiers and security-sensitive paths, and
