@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [architecture, integration, dotnet]
+related:
+  - id: patterns-ports-and-adapters
+    reason: Application-owned contracts and replaceable inference/search adapters.
+  - id: dotnet-dependency-injection
+    reason: Provider and persistence lifetimes, scoped execution and composition tests.
+  - id: dotnet-apphost
+    reason: Feature-selected RAG workers and application startup boundaries.
+  - id: dotnet-http-integrations
+    reason: Inference transports, credentials, bounded responses and retry contracts.
+  - id: dotnet-background-pipelines
+    reason: Worker supervision, backpressure and durable-delivery boundaries.
+  - id: dotnet-leadership-election
+    reason: Distributed worker ownership when the application requires it.
+  - id: dotnet-efcore
+    reason: Durable manifests, receipts, publication transactions and database-backed queries.
+  - id: dotnet-redis
+    reason: Redis vector/state/cache role selection and consistency.
+  - id: docs-adr
+    reason: Canonical RAG architecture decisions and current acceptance handovers.

@@ -64,6 +64,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Edge inference](../.github/skills/ai-edge-inference/SKILL.md) | `1.0.0` | Local/edge model runtime tuning, GPU and host memory budgets, quantization, context, concurrency and reproducible measurements, with separate llama.cpp guidance |
+| [Retrieval-augmented generation](../.github/skills/ai-rag/SKILL.md) | `1.0.0` | Language-neutral document RAG, cloud/edge embedding contracts, durable budgets, vector publication, authorized retrieval and evaluation, with optional .NET integration guidance |
 
 ## .NET
 
