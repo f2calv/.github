@@ -14,6 +14,9 @@ repeatable dependency resolution, consumer-focused documentation, and representa
 Keep reusable chart mechanics generic. Keep application names, endpoints, credentials, deployment
 topology, dashboard queries, and release automation details in the consuming repository.
 
+Use [gitops-helm-upgrade](../gitops-helm-upgrade/SKILL.md) to upgrade deployed third-party chart
+pins, values snapshots and bootstrap definitions; this skill owns chart authoring and packaging.
+
 ## Prerequisites
 
 * Read the target repository instructions, chart README, release workflow, and existing chart

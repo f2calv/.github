@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [gitops]
+related:
+  - id: kubernetes-helm
+    reason: Author chart contracts and use Helm rendering or schema validation for changed overrides.
+  - id: gitops-repository-structure
+    reason: Handle discovery, ownership or namespace migrations separately from routine chart upgrades.

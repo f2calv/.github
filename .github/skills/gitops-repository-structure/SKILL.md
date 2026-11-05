@@ -11,6 +11,9 @@ neatness as a runtime boundary. Keep root discovery restricted to Argo Applicati
 AppProjects and namespaces as deliberate authorization boundaries, use sync waves for ordering, and
 separate Application ownership changes from namespace and data migrations.
 
+Use [gitops-helm-upgrade](../gitops-helm-upgrade/SKILL.md) for routine third-party chart upgrades
+without changing discovery, ownership or namespaces.
+
 The Kubernetes GitOps instructions (`.github/instructions/kubernetes.gitops.instructions.md`) own the baseline layout,
 App-of-Apps, Application manifest, AppProject, namespace and naming rules. This skill owns the
 construction, audit and migration workflow and does not restate those rules.
