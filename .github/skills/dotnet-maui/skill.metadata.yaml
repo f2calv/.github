@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [dotnet]
+related:
+  - id: dotnet-test-platform
+    reason: Set up the platform-neutral unit test project and its runner.
+  - id: dotnet-dependency-injection
+    reason: Choose lifetimes and optional dependencies for platform services and pages.
+  - id: github-actions-workflows
+    reason: Build and publish the Android target in CI with the shared workflow.
+externalFiles:
+  - .github/instructions/dotnet.configuration.instructions.md
+  - .github/instructions/dotnet.csharp.instructions.md
+  - .github/instructions/dotnet.instructions.md
+  - .github/instructions/dotnet.testing.instructions.md

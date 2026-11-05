@@ -65,15 +65,17 @@ Name the shape in the header comment when it is not `service`.
 
 ## Multi-Architecture Builds
 
-- Pin every build stage that runs commands to `--platform=$BUILDPLATFORM`. Cross-compile compiled
+- Normally pin build stages that run commands to `--platform=$BUILDPLATFORM`. Cross-compile compiled
   languages; build architecture-neutral output (pure-Python wheels, .NET IL, JVM bytecode) once.
-  QEMU emulation is typically an order of magnitude slower. Native per-target builds belong to the
-  `single-arch` profile and say why in the header.
+  QEMU emulation is typically an order of magnitude slower. Native AOT uses explicit target-native
+  builders, a declared strategy and matching build/target platform guard; it can still publish one
+  multi-arch image. Only actual hardware constraints warrant `single-arch`. See the
+  [build strategy choices](options.md#build-strategy).
 - Never put `--platform` on `final`; buildx then resolves the runtime base for `$TARGETPLATFORM`.
 - Declare `ARG TARGETARCH` and `ARG TARGETVARIANT` after every platform-agnostic layer. Each `RUN`
   after an `ARG` carries its value in the cache key, so an early declaration splits layers that all
   platforms could share.
-- Map platforms with a single `case "${TARGETARCH}${TARGETVARIANT}"` whose `*)` arm exits non-zero.
+- Map platforms with a single `case "${TARGETOS}/${TARGETARCH}${TARGETVARIANT}"` whose `*)` arm exits non-zero.
   An unrecognised platform must fail the build, never fall through with an empty value.
 - The platform set is a contract between the `case`, the base images, the build scripts, CI and the
   README; change them together. Confirm with `docker buildx imagetools inspect` that every base image

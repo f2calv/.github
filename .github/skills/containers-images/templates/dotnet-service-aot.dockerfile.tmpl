@@ -1,0 +1,110 @@
+# syntax=docker/dockerfile:1
+#
+# {{IMAGE_DESCRIPTION}}
+# Build strategy: native-aot
+# Published multi-arch image: linux/amd64,linux/arm64, with a native builder per target.
+
+# ------------------------------------------------------------------------------
+# Stage 1 of 3: build
+#
+# Target-native SDK AOT toolchain; no BUILDPLATFORM pin and no emulated fallback.
+# ------------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/sdk:{{SDK_TAG}} AS build
+WORKDIR /repo
+COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
+
+ARG WORKLOAD={{WORKLOAD}}
+ARG PROJECT={{PROJECT}}
+ARG CONFIGURATION=Release
+ARG TARGET_FRAMEWORK={{TARGET_FRAMEWORK}}
+ARG INVARIANT_GLOBALIZATION={{INVARIANT_GLOBALIZATION}}
+ARG VERSION=0.0.0-local
+ARG GIT_REPOSITORY=n/a
+ARG GIT_BRANCH=n/a
+ARG GIT_COMMIT=n/a
+ARG GITHUB_WORKFLOW=n/a
+ARG GITHUB_RUN_ID=0
+ARG GITHUB_RUN_NUMBER=0
+
+# -- Dependency layer ----------------------------------------------------------
+COPY --parents {{SOURCE_MANIFESTS}} ./
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked <<EOF
+set -eux
+test "$BUILDPLATFORM" = "$TARGETPLATFORM"
+case "${TARGETOS}/${TARGETARCH}${TARGETVARIANT}" in
+    linux/amd64) RID=linux-x64   ;;
+    linux/arm64) RID=linux-arm64 ;;
+    *) echo "unsupported platform: ${TARGETOS}/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
+esac
+dotnet restore "$PROJECT" \
+    --runtime "$RID" \
+    -p:Configuration="$CONFIGURATION" \
+    -p:TargetFramework="$TARGET_FRAMEWORK" \
+    -p:SelfContained=true \
+    -p:PublishAot=true \
+    -p:InvariantGlobalization="$INVARIANT_GLOBALIZATION"
+printf '%s' "$RID" > /repo/target-rid
+EOF
+
+# -- Compile layer -------------------------------------------------------------
+COPY --exclude=src/*.Tests . .
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
+set -eux
+RID="$(cat /repo/target-rid)"
+dotnet publish "$PROJECT" \
+    --configuration "$CONFIGURATION" \
+    --framework "$TARGET_FRAMEWORK" \
+    --output /app/publish \
+    --runtime "$RID" \
+    --self-contained true \
+    --no-restore \
+    -p:PublishAot=true \
+    -p:InvariantGlobalization="$INVARIANT_GLOBALIZATION" \
+    -p:Version="$VERSION" \
+    -p:SourceRevisionId="$GIT_COMMIT" \
+    -p:GitRepository="$GIT_REPOSITORY" \
+    -p:GitBranch="$GIT_BRANCH" \
+    -p:BuildWorkflow="$GITHUB_WORKFLOW" \
+    -p:BuildRunId="$GITHUB_RUN_ID" \
+    -p:BuildRunNumber="$GITHUB_RUN_NUMBER"
+ln -s "$WORKLOAD" /app/publish/entrypoint
+EOF
+
+# ------------------------------------------------------------------------------
+# Stage 2 of 3: runtime
+#
+# runtime-deps only; select ICU/tzdata support to match the globalization input.
+# ------------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/runtime-deps:{{RUNTIME_TAG}} AS runtime
+WORKDIR /app
+COPY --link --from=build /app/publish .
+
+# -- Provenance ----------------------------------------------------------------
+ARG WORKLOAD={{WORKLOAD}}
+ARG GIT_REPOSITORY=n/a
+ARG GIT_BRANCH=n/a
+ARG GIT_COMMIT=n/a
+ARG GIT_TAG=n/a
+ARG GITHUB_WORKFLOW=n/a
+ARG GITHUB_RUN_ID=0
+ARG GITHUB_RUN_NUMBER=0
+
+LABEL org.opencontainers.image.title="$WORKLOAD" \
+    org.opencontainers.image.description="{{IMAGE_DESCRIPTION}}" \
+    org.opencontainers.image.source="{{IMAGE_SOURCE}}" \
+    org.opencontainers.image.licenses="{{SPDX_LICENSE}}" \
+    org.opencontainers.image.version="$GIT_TAG" \
+    org.opencontainers.image.revision="$GIT_COMMIT"
+
+USER $APP_UID
+ENTRYPOINT ["/app/entrypoint"]
+
+# ------------------------------------------------------------------------------
+# Stage 3 of 3: final
+# ------------------------------------------------------------------------------
+FROM runtime AS final

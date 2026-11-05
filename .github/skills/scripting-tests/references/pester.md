@@ -44,6 +44,12 @@ $Result = Invoke-Pester -Configuration $Configuration
 '{0} passed, {1} failed' -f $Result.PassedCount, $Result.FailedCount
 ```
 
+Before pushing, run through the repository's `Invoke-Tests.ps1` when it has one, because CI does:
+a runner that sets `Set-StrictMode -Version 3.0` imposes it on every script and module the tests
+call, so code such as indexing `[0]` into an empty result passes a bare `Invoke-Pester` and fails
+in CI. On Windows, call it with `pwsh -Command "& ./Invoke-Tests.ps1 -TestPath @('a', 'b')"`;
+`pwsh -File` does not pass an array parameter.
+
 ## Continuous Integration
 
 Install the pinned module in the job, then run the suite through its runner:

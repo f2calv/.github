@@ -1,9 +1,13 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.1.0
+version: 1.1.1
 facets: [dotnet]
 required:
   - id: repository-privacy
-    version: 1.1.0
+    version: 1.2.0
 related:
+  - id: docs-readme
+    reason: Update package tables, migration notes and fulfilled publication caveats.
+  - id: dotnet-test-platform
+    reason: Select and run native Microsoft.Testing.Platform commands.
   - id: containers-workflows
-    reason: Linked from SKILL.md.
+    reason: Verify explicitly approved released-image workload rollouts.

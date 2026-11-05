@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.2
+version: 1.1.0
 facets: [containers]
 related:
+  - id: dotnet-aot
+    reason: Check application and dependency compatibility before choosing Native AOT container publishing.
   - id: dotnet-grpc
     reason: Linked from references/patterns.md.
 externalFiles:

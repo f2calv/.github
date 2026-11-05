@@ -371,6 +371,70 @@ function Get-StageChain {
 
 #region Audit
 
+function Get-NativeAotContractIssue {
+    <#
+    .SYNOPSIS
+        Checks the canonical target-native AOT contract before allowing native build exceptions.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Stage,
+        [Parameter(Mandatory = $true)][pscustomobject]$Model
+    )
+
+    $runs = @($Stage.Instructions | Where-Object Keyword -EQ 'RUN' | ForEach-Object {
+            ((@($_.Arguments) + $_.Heredocs) -join "`n") -replace '\\[ \t]*\r?\n', ' '
+        }) -join "`n"
+    $restore = [regex]::Match($runs, '(?m)\bdotnet\s+restore\s+[^\r\n]+').Value
+    $publish = [regex]::Match($runs, '(?m)\bdotnet\s+publish\s+[^\r\n]+').Value
+    $argsText = @($Stage.Instructions | Where-Object Keyword -EQ 'ARG' | ForEach-Object { $_.Arguments }) -join "`n"
+    if ($argsText -notmatch '(?m)^INVARIANT_GLOBALIZATION=(true|false)$') {
+        'AOT must explicitly default INVARIANT_GLOBALIZATION to true or false.'
+    }
+    if ($Model.Header -notcontains '# Build strategy: native-aot') {
+        'Declare # Build strategy: native-aot for the canonical target-native AOT build.'
+    }
+    if ($Stage.Platform) {
+        'A target-native AOT build must leave its stage platform unset and use a native builder per target.'
+    }
+    if ($runs -notmatch 'test\s+"\$BUILDPLATFORM"\s+=\s+"\$TARGETPLATFORM"') {
+        'A target-native AOT build must fail unless BUILDPLATFORM equals TARGETPLATFORM.'
+    }
+    if ($runs -notmatch 'case\s+"\$\{TARGETOS\}/\$\{TARGETARCH\}\$\{TARGETVARIANT\}"' -or
+        $runs -notmatch '\*\)\s*[^;\n]*;\s*exit\s+1\s*;;') {
+        'AOT restore must map the target OS/architecture/variant with a failing default arm.'
+    }
+    foreach ($token in @('dotnet restore "$PROJECT"', '--runtime "$RID"', '-p:Configuration="$CONFIGURATION"',
+            '-p:TargetFramework="$TARGET_FRAMEWORK"', '-p:SelfContained=true', '-p:PublishAot=true',
+            '-p:InvariantGlobalization="$INVARIANT_GLOBALIZATION"')) {
+        if (-not $restore.Contains($token)) {
+            "AOT restore is missing matching input '$token'."
+        }
+    }
+    foreach ($token in @('dotnet publish "$PROJECT"', '--configuration "$CONFIGURATION"',
+            '--framework "$TARGET_FRAMEWORK"', '--runtime "$RID"', '--self-contained true', '-p:PublishAot=true',
+            '-p:InvariantGlobalization="$INVARIANT_GLOBALIZATION"')) {
+        if (-not $publish.Contains($token)) {
+            "AOT publish is missing matching input '$token'."
+        }
+    }
+    if (-not $runs.Contains('printf ''%s'' "$RID" > /repo/target-rid') -or
+        -not $runs.Contains('RID="$(cat /repo/target-rid)"')) {
+        'AOT publish must reuse the RID selected during restore via /repo/target-rid.'
+    }
+    if ($runs -notmatch 'ln\s+-s\s+"\$WORKLOAD"\s+/app/publish/entrypoint(?:\s|$)') {
+        'AOT publish must alias the native executable as /app/publish/entrypoint, not a DLL.'
+    }
+    $officialToolchain = $Stage.Resolved -match '^mcr\.microsoft\.com/dotnet/sdk:[^@\s]*-aot(?:-|@|$)'
+    $ubuntuToolchain = $Stage.Resolved -match '^mcr\.microsoft\.com/dotnet/sdk:[^@\s]*-(noble|resolute)(?:-|@|$)' -and
+        $runs -match '\bapt-get\s+install\b[^\r\n]*\bclang\b' -and
+        $runs -match '\bapt-get\s+install\b[^\r\n]*\bzlib1g-dev\b'
+    if (-not $officialToolchain -and -not $ubuntuToolchain) {
+        'AOT needs a version-selected official SDK -aot toolchain, or Ubuntu SDK builder-only clang and zlib1g-dev.'
+    }
+}
+
 function ConvertTo-Finding {
     <#
     .SYNOPSIS
@@ -473,6 +537,20 @@ function Get-RawFinding {
     $finalChainIndexes = @($finalChain | ForEach-Object { $_.Index })
     $finalInstructions = @($finalChain | ForEach-Object { $_.Instructions })
 
+    $nativeAotStages = @{}
+    foreach ($stage in @($stages | Where-Object { $_.Resolved -match 'mcr\.microsoft\.com/dotnet/sdk:' })) {
+        $text = @($stage.Instructions | Where-Object Keyword -EQ 'RUN' | ForEach-Object {
+                (@($_.Arguments) + $_.Heredocs) -join "`n"
+            }) -join "`n"
+        if ($text -match '\bdotnet\s+publish\b' -and $text -match '-p:PublishAot=(true|"?\$)') {
+            $issues = @(Get-NativeAotContractIssue -Stage $stage -Model $Model)
+            $nativeAotStages[$stage.Index] = $issues.Count -eq 0
+            foreach ($issue in $issues) {
+                ConvertTo-Finding $stage.Line 'DF026' 'error' $issue
+            }
+        }
+    }
+
     foreach ($stage in $stages) {
         $image = $stage.Resolved
         $isStageReference = $image.ToLowerInvariant() -in $stageNames
@@ -489,8 +567,9 @@ function Get-RawFinding {
         $hasRun = @($stage.Instructions | Where-Object Keyword -EQ 'RUN').Count -gt 0
         $pinned = $null -ne $stage.Platform -and $stage.Platform -match 'BUILDPLATFORM'
         $runtimeSide = @(Get-StageChain -Stage $stage -Stages $stages | Where-Object { $_.Index -in $finalChainIndexes }).Count -gt 0
-        if (-not $runtimeSide -and $hasRun -and -not $pinned) {
-            ConvertTo-Finding $stage.Line 'DF004' 'warning' "Stage '$($stage.Name)' runs commands but is not pinned to --platform=`$BUILDPLATFORM."
+        $nativeAot = $nativeAotStages.ContainsKey($stage.Index) -and $nativeAotStages[$stage.Index]
+        if (-not $runtimeSide -and $hasRun -and -not $pinned -and -not $nativeAot) {
+            ConvertTo-Finding $stage.Line 'DF004' 'warning' "Stage '$($stage.Name)' needs --platform=`$BUILDPLATFORM or the explicit, validated target-native AOT contract."
         }
     }
 
@@ -545,7 +624,7 @@ function Get-RawFinding {
                     ConvertTo-Finding $instruction.Line 'DF011' 'error' 'Heredoc does not open with `set -eux`, so earlier failures are ignored.'
                 }
             }
-            if ($flat -match 'case\s+"?\$\{?TARGET(ARCH|PLATFORM|VARIANT)' -and $flat -notmatch '(^|\s)\*\s*\)') {
+            if ($flat -match 'case\s+"?\$\{?TARGET(OS|ARCH|PLATFORM|VARIANT)' -and $flat -notmatch '(^|\s)\*\s*\)') {
                 ConvertTo-Finding $instruction.Line 'DF012' 'error' 'Platform case statement has no failing *) arm.'
             }
             if ($flat -match '\bif\s+\[\s*"?\$\{?TARGET(ARCH|PLATFORM|VARIANT)' -and $flat -notmatch '\belse\b') {
@@ -561,6 +640,7 @@ function Get-RawFinding {
     }
 
     $dotNetPublishCount = 0
+    $nativeAotPublishCount = 0
     foreach ($stage in @($stages | Where-Object { $_.Resolved -match 'mcr\.microsoft\.com/dotnet/sdk:' })) {
         $publishInstructions = @($stage.Instructions | Where-Object {
                 $_.Keyword -eq 'RUN' -and ((@($_.Arguments) + $_.Heredocs) -join "`n") -match '\bdotnet\s+publish\b'
@@ -569,6 +649,10 @@ function Get-RawFinding {
             continue
         }
         $dotNetPublishCount += $publishInstructions.Count
+        $nativeAot = $nativeAotStages.ContainsKey($stage.Index) -and $nativeAotStages[$stage.Index]
+        if ($nativeAot) {
+            $nativeAotPublishCount += $publishInstructions.Count
+        }
 
         $buildArgNames = @(foreach ($instruction in @($stage.Instructions | Where-Object Keyword -EQ 'ARG')) {
                 foreach ($pair in @(ConvertFrom-KeyValueArgument -Arguments $instruction.Arguments)) {
@@ -598,7 +682,7 @@ function Get-RawFinding {
                 }
                 $previousIndex = [Math]::Max($previousIndex, $index)
             }
-            if ($text -notmatch 'ln\s+-s\s+"\$WORKLOAD\.dll"\s+/app/publish/entrypoint\.dll') {
+            if (-not $nativeAot -and $text -notmatch 'ln\s+-s\s+"\$WORKLOAD\.dll"\s+/app/publish/entrypoint\.dll') {
                 ConvertTo-Finding $instruction.Line 'DF026' 'error' 'The .NET publish stage must create /app/publish/entrypoint.dll from $WORKLOAD.dll.'
             }
         }
@@ -636,8 +720,39 @@ function Get-RawFinding {
             ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET OCI title must use $WORKLOAD.'
         }
         $entrypoints = @($finalInstructions | Where-Object Keyword -EQ 'ENTRYPOINT')
-        if ($entrypoints.Count -ne 1 -or $entrypoints[0].Arguments -ne '["dotnet", "entrypoint.dll"]') {
-            ConvertTo-Finding $final.Line 'DF026' 'error' 'The .NET runtime entrypoint must be ["dotnet", "entrypoint.dll"].'
+        $nativeRuntime = $nativeAotPublishCount -gt 0 -and $nativeAotPublishCount -eq $dotNetPublishCount
+        $expectedEntrypoint = if ($nativeRuntime) { '["/app/entrypoint"]' } else { '["dotnet", "entrypoint.dll"]' }
+        if ($entrypoints.Count -ne 1 -or $entrypoints[0].Arguments -ne $expectedEntrypoint) {
+            ConvertTo-Finding $final.Line 'DF026' 'error' "The .NET runtime entrypoint must be $expectedEntrypoint for its validated publish contract."
+        }
+        if ($nativeRuntime -and $finalChain[0].Resolved -notmatch '^mcr\.microsoft\.com/dotnet/runtime-deps:') {
+            ConvertTo-Finding $final.Line 'DF026' 'error' 'The canonical AOT runtime must use runtime-deps, without an SDK or managed runtime.'
+        }
+        if ($nativeRuntime) {
+            $copies = @($finalInstructions | Where-Object Keyword -EQ 'COPY' | ForEach-Object { $_.Arguments }) -join ' '
+            $nativeBuildNames = @($stages | Where-Object {
+                    $nativeAotStages.ContainsKey($_.Index) -and $nativeAotStages[$_.Index]
+                } | ForEach-Object { [regex]::Escape($_.Name) })
+            if ($copies -notmatch "--from=($($nativeBuildNames -join '|'))\s+/app/publish\s+\.") {
+                ConvertTo-Finding $final.Line 'DF026' 'error' 'The AOT runtime must copy /app/publish from its validated native build stage.'
+            }
+            $runtimeImage = $finalChain[0].Resolved
+            foreach ($build in @($stages | Where-Object {
+                        $nativeAotStages.ContainsKey($_.Index) -and $nativeAotStages[$_.Index]
+                    })) {
+                $sdkVersion = [regex]::Match($build.Resolved, '/sdk:(\d+\.\d+)').Groups[1].Value
+                $runtimeVersion = [regex]::Match($runtimeImage, '/runtime-deps:(\d+\.\d+)').Groups[1].Value
+                $sdkDistro = [regex]::Match($build.Resolved, '-(noble|resolute|alpine\d+\.\d+|azurelinux\d+\.\d+)').Groups[1].Value
+                $runtimeDistro = [regex]::Match($runtimeImage, '-(noble|resolute|alpine\d+\.\d+|azurelinux\d+\.\d+)').Groups[1].Value
+                if ($sdkVersion -ne $runtimeVersion -or $sdkDistro -ne $runtimeDistro) {
+                    ConvertTo-Finding $final.Line 'DF026' 'error' 'The canonical AOT SDK/runtime-deps pair must align .NET version, distribution and libc.'
+                }
+                $buildArgs = @($build.Instructions | Where-Object Keyword -EQ 'ARG' | ForEach-Object { $_.Arguments }) -join "`n"
+                if ($buildArgs -match '(?m)^INVARIANT_GLOBALIZATION=false$' -and
+                    $runtimeImage -match '-(chiseled|distroless)(?:@|$)') {
+                    ConvertTo-Finding $final.Line 'DF026' 'error' 'Culture-aware AOT needs an ICU-capable runtime-deps variant such as chiseled-extra.'
+                }
+            }
         }
     }
 

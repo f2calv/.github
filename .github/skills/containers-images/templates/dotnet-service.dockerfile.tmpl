@@ -7,14 +7,14 @@
 #
 # Pinned to $BUILDPLATFORM and cross-compiles to $TARGETPLATFORM.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:{{SDK_TAG}} AS build
 WORKDIR /repo
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
 ARG WORKLOAD={{WORKLOAD}}
 ARG PROJECT={{PROJECT}}
 ARG CONFIGURATION=Release
-ARG TARGET_FRAMEWORK=net10.0
+ARG TARGET_FRAMEWORK={{TARGET_FRAMEWORK}}
 ARG VERSION=0.0.0-local
 ARG GIT_REPOSITORY=n/a
 ARG GIT_BRANCH=n/a
@@ -28,20 +28,23 @@ COPY --parents {{SOURCE_MANIFESTS}} ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" \
         -p:Configuration="$CONFIGURATION" \
+        -p:TargetFramework="$TARGET_FRAMEWORK" \
+        -p:SelfContained=false \
         "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 COPY --exclude=src/*.Tests . .
 
+ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
 set -eux
-case "${TARGETARCH}${TARGETVARIANT}" in
-    amd64) RID=linux-x64   ;;
-    arm64) RID=linux-arm64 ;;
-    armv7) RID=linux-arm   ;;
-    *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
+case "${TARGETOS}/${TARGETARCH}${TARGETVARIANT}" in
+    linux/amd64) RID=linux-x64   ;;
+    linux/arm64) RID=linux-arm64 ;;
+    linux/armv7) RID=linux-arm   ;;
+    *) echo "unsupported platform: ${TARGETOS}/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
 esac
 dotnet publish "$PROJECT" \
     --configuration "$CONFIGURATION" \
@@ -63,7 +66,7 @@ EOF
 # ------------------------------------------------------------------------------
 # Stage 2 of 3: runtime
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:{{RUNTIME_TAG}} AS runtime
 WORKDIR /app
 COPY --link --from=build /app/publish .
 

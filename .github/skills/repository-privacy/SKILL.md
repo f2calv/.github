@@ -1,6 +1,6 @@
 ---
 name: repository-privacy
-description: 'Check that a commit, issue, pull request, review or release note is safe to publish: PII scanning, placeholders, the public/private boundary and stripping agent attribution from unpushed commits. Use before committing, pushing or posting GitHub content.'
+description: 'Check that a commit, issue, pull request, review or release note is safe to publish: PII scanning, owner-specific references in shared guidance, placeholders, the public/private boundary and stripping agent attribution from unpushed commits. Use before committing, pushing or posting GitHub content.'
 compatibility: 'The scripts require PowerShell 7.4 and git. Run them against the repository being checked with -RepoRoot.'
 ---
 
@@ -54,6 +54,27 @@ first kind of hit is decisive; the second needs judgement.
   detectable. Never bypass a seeded finding without resolving its classification.
 - `-IncludeHistory` is the only way to find a value that was committed and later deleted. Removing it
   from the working tree does not remove it from the history a clone carries.
+
+### Shared Guidance Files
+
+Instructions, skills, prompts and agents meant for reuse must also stay free of the owner's
+specific repositories, author name and circumstances. Scan them separately; the scanner seeds itself
+from the owner's GitHub repositories through `gh`, so it holds no private value:
+
+```powershell
+& ./.github/skills/repository-privacy/scripts/Find-SpecificReferences.ps1 -RepoRoot <path-to-repo>
+& ./.github/skills/repository-privacy/scripts/Find-SpecificReferences.ps1 -RepoRoot <path-to-repo> `
+    -Exclude '*/tests/*','*/policies/*' -IgnoreName 'Serilog' -Term 'lab.example.internal' -FailOnError
+```
+
+- **Errors are blocking**: a private repository name, the author's name or a `-Term` value.
+- **Review items need judgement**: a public repository or the owner login named outside example
+  wording ("for example", "such as"), a real-world-example section or file, an `examples/` or
+  `templates/` folder, or a later mention of a name the file already introduced as an example.
+  Reframe a legitimate reference as an example library; remove anything else.
+- Forks and one-word names such as `rust` collide with technology names, so forks are skipped and
+  one-word names match only as `owner/name`. Pass genuine collisions with `-IgnoreName`.
+- The output names private repositories; keep it local.
 
 ## Step 3 — Check What The Scanner Cannot See
 
@@ -133,4 +154,6 @@ pwsh ./.github/skills/repository-privacy/scripts/Remove-CommitAttribution.ps1 -R
 ## Maintaining This Skill
 
 - Scanner patterns, and each newly found leak category the scanner cannot see (Step 3).
+- Example-wording and collision heuristics in `Find-SpecificReferences.ps1` when a review item proves
+  a false positive or a real reference slips through.
 - Attribution line patterns as harnesses and extensions change how they credit agents (Step 6).

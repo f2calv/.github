@@ -26,9 +26,11 @@ Compose files follow `docker.compose.instructions.md`; dev container Dockerfiles
 - One Dockerfile per image; every stage named; `final` is last. Banner each stage. In the runtime
   stage: `FROM`, `WORKDIR`, runtime packages, `COPY --from=build`, runtime `ENV`/`EXPOSE`/`VOLUME`,
   provenance, `LABEL`, `USER`, `ENTRYPOINT`/`CMD`. No commented-out instructions.
-- Build stages that run commands use `--platform=$BUILDPLATFORM` and cross-compile; `final` never
-  has `--platform`. Declare `TARGETARCH`/`TARGETVARIANT` late, map them in one `case` whose `*)` arm
-  fails, and change the platform set everywhere at once.
+- Build stages normally use `--platform=$BUILDPLATFORM` and cross-compile. Native AOT instead uses
+  explicit target-native builders (normally Linux amd64 and arm64), which can publish one multi-arch
+  image without the `single-arch` profile; a RID alone is not a cross toolchain. `final` never has
+  `--platform`. Declare target arguments late, map OS/architecture/variant in one failing-default
+  `case`, and change the platform set everywhere at once.
 
 ## Inputs
 
@@ -50,6 +52,12 @@ Compose files follow `docker.compose.instructions.md`; dev container Dockerfiles
   publish and to the tag and OCI labels; the
   [.NET artifact identity reference](../skills/containers-images/references/dotnet-artifact-identity.md)
   holds the contract.
+- Choose managed versus Native AOT explicitly; `dotnet-aot` owns application compatibility, trimming
+  and dependency checks. Select SDK, TFM and runtime inputs together; .NET 11 requires verified GA,
+  actual tags and platform manifests, never guessed tags. AOT uses matching self-contained
+  `PublishAot` restore/publish inputs, a builder-only native toolchain, compatible `runtime-deps`
+  and a native executable entrypoint; retain provenance and select ICU/globalization deliberately.
+  Cross-architecture AOT is opt-in only with a real target toolchain/sysroot and matching libc.
 - Published images declare the provenance build arguments with safe defaults and set the OCI
   `title`, `description`, `source`, `licenses`, `version` and `revision` labels in one `LABEL`. Build
   arguments hold only public values.

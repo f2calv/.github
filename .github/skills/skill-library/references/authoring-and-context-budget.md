@@ -60,12 +60,17 @@ description that makes its relevance obvious from the listing.
   `examples/` from the first version, not after the file outgrows its budget.
 - When a rule depends on agent compliance that harnesses or extensions may override, such as commit
   attribution, enforce it with a tested script that the rule calls, not with a longer procedure.
+- Keep reusable mechanics in the central owner and repository-specific policy, coordinates and
+  automation in a thin local adapter. Retain a separate local skill only when its invocation adds
+  domain behavior; otherwise use repository instructions or a linked operational profile.
 
 ## Splitting Safely
 
 1. Move text essentially verbatim into `references/<topic>.md`, each with one H1 and a purpose line.
 2. Add one level to relative links (`../../instructions/` becomes `../../../instructions/`).
-3. Search the repository for `<skill-id>/SKILL.md#` and keep linked headings or update the links.
+3. Search all available consumer repositories for `<skill-id>/SKILL.md#` links and plain skill-name
+   references. Keep linked headings or update the links; when renaming, migrate every caller to the
+   canonical name, including local adapters that stop if it is unavailable.
 4. Keep each rule in one file; replace a duplicate with a link.
 5. Compare the skill's total Markdown size before and after: it should stay level or grow slightly.
 6. List any newly linked instruction file in the sidecar's `externalFiles`, then run

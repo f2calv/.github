@@ -18,6 +18,13 @@ into `.github/instructions/`. Route 3 carries the instruction files a skill link
 agent reads when it follows the link. Pick one route per workspace to avoid loading the same skill
 twice.
 
+Two more routes are under investigation and not yet supported:
+
+| Route | Status | Decision record |
+| --- | --- | --- |
+| [APM](https://github.com/microsoft/apm) (Agent Package Manager) | `apm install` from a skill's release tag installs that skill into `.agents/skills/`; only `docs-adr`, which carries a pilot `apm.yml`, also brings its required skills and linked instructions | [ADR 0003](docs/adr-0003-apm-distribution.md) |
+| [NuGet package skills](https://devblogs.microsoft.com/dotnet/delivering-skills-in-nuget-packages/) | Proposed only for guidance about the owner's own .NET libraries, shipped inside those packages so it matches the referenced version | [ADR 0005](docs/adr-0005-nuget-package-skills.md) |
+
 ## What It Provides
 
 - **[Instructions](.github/instructions/)**: language, tool and documentation conventions that
@@ -329,6 +336,7 @@ covers the options.
 | [ADR 0002](docs/adr-0002-agent-plugins-packaging.md) | Agent Plugins packaging design and status |
 | [ADR 0003](docs/adr-0003-apm-distribution.md) | Proposed APM installation route and status |
 | [ADR 0004](docs/adr-0004-skill-library-vendoring.md) | Proposed framework vendoring into other repositories |
+| [ADR 0005](docs/adr-0005-nuget-package-skills.md) | Proposed skills inside the owner's NuGet packages |
 
 This public account-level repository also supplies GitHub's default issue forms, pull request
 template, [contribution guidance](CONTRIBUTING.md) and [support guidance](SUPPORT.md) to

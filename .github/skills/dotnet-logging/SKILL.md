@@ -83,9 +83,10 @@ Emit one completion event per HTTP request from host middleware, not from contro
 - ASP.NET Core's hosting scope attaches the raw `RequestPath` to **every** event during a request;
   remove it in the pipeline where paths can carry identifiers.
 
-CasCap hosts use `UseCasCapRequestLogging` and `AddCasCapDefaults` from
-[CasCap.Common.Hosting.AspNetCore](https://github.com/f2calv/CasCap.Common/tree/main/src/CasCap.Common.Hosting.AspNetCore),
-which implement these rules; adopt them rather than copying the middleware.
+For example, the public
+[CasCap.Common.Hosting.AspNetCore](https://github.com/f2calv/CasCap.Common/tree/main/src/CasCap.Common.Hosting.AspNetCore)
+library implements these rules in `UseCasCapRequestLogging` and `AddCasCapDefaults`. Where the
+application already uses such a shared library, adopt it rather than copying the middleware.
 
 ### 4. Configure the Level Layers
 
@@ -124,6 +125,10 @@ captured forwarded-provider records over live environments. Prove:
 - a runtime level change applies to the actual pipeline and expires back to the startup baseline;
 - startup, normal work, cancellation, shutdown and failure output is coherent for each host shape;
 - each event reaches each sink once, and the forwarded provider receives it.
+
+For broad level-guard or privacy sweeps, also require the existing duplication and cognitive
+complexity checks. Consolidate repeated operation logging rather than copying guarded catch
+blocks; behavior tests alone do not establish maintainability.
 
 ## Reporting
 

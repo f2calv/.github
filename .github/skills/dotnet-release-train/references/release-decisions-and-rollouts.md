@@ -2,6 +2,24 @@
 
 How the train chooses each release version and rolls released workloads out to Kubernetes.
 
+## Release Documentation
+
+- Before opening the pull request, compare the root README and every packable project's README
+  with the branch diff and the evaluated list of packable projects.
+- Every published package needs a package table row or badge, and a short description with an
+  install command. Add rows for new packages; remove rows for retired ones.
+- Describe new features, configuration options and breaking changes where the README covers that
+  area. For a major release, add migration notes or link to them.
+- Check version numbers, target frameworks, examples and API names against the code being released.
+- Fix stale content in the release pull request itself, or record it in the pull request
+  description with a follow-up when it is too large for this release. Use the
+  [README skill](../../docs-readme/SKILL.md) for structure and wording.
+- In each consumer's pull request, remove README statements the release has made untrue, such as
+  "Debug-only", "Release build not supported", "not yet published" or adjacent-checkout
+  requirements, and add package badges or version rows for packages that now exist.
+- Search for them before opening the pull request rather than relying on memory, for example
+  `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
+
 ## Clean-SemVer Workload Rollouts
 
 Development deployments through `deploy.ps1` may still be running Debug images after a successful
@@ -36,20 +54,22 @@ decline this rollout. Respect existing publication and deployment holds.
 ## Release-Version Decision
 
 - Review the full branch diff and commits for consumer impact, not only the pull-request title.
-  Prompt for a substantial feature, architectural migration, or broad refactor, and always for
-  removed or renamed public contracts, incompatible configuration, or other breaking behaviour.
+  Classify substantial features, architectural migrations, broad refactors, removed or renamed
+  public contracts, incompatible configuration and other breaking behaviour explicitly.
   Diff size alone does not determine a semantic version.
 - Inspect the repository's `GitVersion.yml`, release workflow and scoped versioning instructions,
   the latest immutable release tag, and any existing version directives on the branch. Do not
   assume that conventional-commit wording or `BREAKING CHANGE` automatically controls GitVersion.
-- Before merging, use a UI choice to ask whether to deliberately bump **major**, bump **minor**, or
+- Unless semver was explicitly delegated for this train, use a UI choice before merging to ask
+  whether to deliberately bump **major**, bump **minor**, or
   retain the **patch/default increment**. Show the current version, expected outcome of each
   choice, and relevant compatibility impact. Recommend major for breaking changes, minor for
   compatible new functionality, and patch for compatible fixes or internal-only refactoring.
   For pre-1.0 packages, explain the repository's established breaking-change policy.
-- Wait for an explicit decision for that pull request; general merge approval or an active
-  auto-merge instruction does not select a version. Reconfirm if subsequent changes materially
-  alter the compatibility assessment.
+- Wait for an explicit decision unless the user has explicitly delegated semver decisions for the
+  named train. Under that delegation, choose and document each repository's increment and rationale
+  without asking again. General merge approval or auto-merge does not imply delegation; reconfirm
+  material changes outside the delegated scope.
 - Apply the selected increment using the repository's established mechanism. When it uses
   `+semver:` commit directives, inspect every commit since the merge base, reuse or correct the
   existing directive rather than stacking conflicting requests, and verify which directive maps

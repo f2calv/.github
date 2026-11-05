@@ -11,11 +11,13 @@ Use these defaults for new projects and explicitly approved naming migrations. P
 application names over product-qualified variants; reusable capability libraries retain their own
 role names. A naming default does not require extracting another project.
 
+`<Prefix>` is the organisation or product namespace prefix, for example `CasCap`.
+
 | Responsibility | Default project name | Boundary |
 | --- | --- | --- |
-| Application-owned backend | `CasCap.Backend` | Not every execution or integration library is the whole backend |
-| Shared application composition | `CasCap.App.Hosting` | Keep single-host composition application-owned unless sharing is justified |
-| Application-owned EF persistence | `CasCap.Data` | Not a shared schema or a general DTO collection |
+| Application-owned backend | `<Prefix>.Backend` | Not every execution or integration library is the whole backend |
+| Shared application composition | `<Prefix>.App.Hosting` | Keep single-host composition application-owned unless sharing is justified |
+| Application-owned EF persistence | `<Prefix>.Data` | Not a shared schema or a general DTO collection |
 | Test suite | `<subject>.Tests` | Name for the production subject, including executable MTP suites |
 | Independently reusable test support | `<subject>.Testing` | Single-suite helpers stay internal to that suite |
 | Test-only executable host | `<subject>.TestHost` | Started by tests; not a runnable sample application |
@@ -73,8 +75,8 @@ role names. A naming default does not require extracting another project.
 ## Solution Format
 
 - Use the modern XML `.slnx` solution format. Convert legacy `.sln` files rather than maintaining the old format alongside.
+- Name every solution after the repository, using its exact name including case and hyphens: `<repository-name>.slnx`, or `<repository-name>.sln` until a legacy file is converted. Where Debug and Release variants exist, name them `<repository-name>.Debug.slnx` and `<repository-name>.Release.slnx` instead, without an unsuffixed copy alongside. Rename a mismatched solution with `git mv` and update every script, workflow, task and README that references it in the same change. Forks keep their upstream solution names.
 - Add every new test project to the repository's default `.slnx` or `.sln` file in the same change. Do not create a separate test-only solution instead of keeping the default solution complete.
-- Where Debug and Release variants exist, name them `<Name>.Debug.slnx` and `<Name>.Release.slnx`, matching the repository name.
 - The Debug solution wires local `ProjectReference` items to sibling libraries; the Release solution uses published `PackageReference` items.
 - Prefer the Debug solution for local builds; CI builds the Release solution.
 
@@ -82,6 +84,10 @@ role names. A naming default does not require extracting another project.
 
 - Libraries intended for wide consumption multi-target the supported .NET releases; applications target a single framework.
 - A change that compiles on one target framework must be verified on every target framework before it is considered done.
+- Use the `dotnet-upgrade` skill's release-verified library/language matrix when retiring targets;
+  preserve .NET 10 compatibility while introducing .NET 11 assets and source modernizations.
+- Native AOT is an explicitly selected executable deployment mode, not a library TFM policy.
+  Use the `dotnet-aot` skill before setting `PublishAot` or promising `IsAotCompatible`.
 
 ## SDK Selection
 

@@ -22,6 +22,10 @@ under the always-on [testing instructions](../../../instructions/dotnet.testing.
 - Dispose any `ServiceProvider` the fixture creates through `IDisposable` or `IAsyncDisposable`.
 - Dispose fixture-owned configuration providers/watchers through a disposable concrete owner such
   as `ConfigurationManager`; do not assume `IConfigurationRoot` implements `IDisposable`.
+- Give each in-process host a unique EF InMemory database name, so mutable fixture rows cannot leak
+  across hosts even when tests run sequentially. Prove isolation with a two-host regression.
+- Keep configuration-skip environment overrides local to the fixture that owns them and restore
+  previous values; missing-configuration guard tests may require those settings to remain absent.
 - Skip rather than fail when no credential is configured, so a contributor without access still gets a green credential-free run.
 - Read CI credentials only from secret-backed environment variables. Never commit a credential, token, account identifier or tenant-specific name, and never write a resolved secret to test output.
 - Never commit a secret to an `appsettings*.json` file to make a test pass.

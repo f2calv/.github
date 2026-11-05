@@ -43,6 +43,9 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 - **Wrap in `@()` whenever a collection leaves an `if`, `switch`, or `foreach`.** A single-element array collapses to a bare object on assignment, which silently serialises as an object instead of an array and is rejected by REST APIs as an empty collection.
 - Wrap native command output in `@()` before indexing or counting it. One line of output is a bare
   string, so `[0]` returns its first character and `.Count` is misleading.
+- A function that returns an array with the unary comma (`return , $items`) already preserves it;
+  assign or return the call directly. Wrapping that call in `@()` nests the array, so an empty result
+  counts as one element.
 - Type a parameter that must be a collection as `[array]` or `[object[]]`.
 - Do not assume a REST response shape. Handle both a bare array and a `count`/`value` envelope.
 - `ConvertFrom-Json` can materialize ISO timestamps as `DateTime`. Convert typed timestamps directly

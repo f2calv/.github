@@ -27,14 +27,24 @@ serves both.
 
 | Strategy | Use when | Shape |
 | --- | --- | --- |
-| Cross-compile (default for compiled languages) | The toolchain can target other architectures: Go, Rust, C and C++ with a cross toolchain, .NET RID-specific publish | `build` on `$BUILDPLATFORM`; map the target in one `case` |
+| Cross-compile (default for managed/portable output) | The toolchain can target other architectures: Go, Rust, C and C++ with a cross toolchain, managed .NET RID-specific publish | `build` on `$BUILDPLATFORM`; map the target in one `case` |
 | Architecture-neutral | The output runs on every target unchanged: pure-Python wheels, .NET IL, JVM bytecode | `build` on `$BUILDPLATFORM`; the `case` only validates the platform |
-| Native per target (`single-arch` profile) | The build executes target-architecture tools, or tunes for one CPU | No `$BUILDPLATFORM` pin; one declared platform; the header explains why |
+| Native per target (published multi-arch allowed) | Native AOT or another target-native compiler/linker | Unpinned target stage, native Buildx node per target; AOT declares `# Build strategy: native-aot` and checks build equals target |
+| Hardware-bound (`single-arch` profile) | The workload really cannot support other platforms | One declared platform; explain the hardware constraint |
+
+For Native AOT, recommend native Linux amd64 and arm64 nodes in the same multi-platform builder.
+The canonical template rejects a mismatched builder instead of silently using QEMU. An ordinary
+`dotnet publish -r` is not a native cross-compilation toolchain. Cross-architecture AOT is opt-in
+custom engineering: provision an actual target compiler/linker and sysroot, configure the compiler
+target and paths, and align glibc/musl, RID, SDK and runtime native libraries. Demonstrate native
+execution on each target before publishing. The static audit only recognizes the canonical native
+AOT contract; it cannot certify a custom cross toolchain.
 
 ## Platform Set
 
 - The default set is `linux/amd64`, `linux/arm64` and `linux/arm/v7`. Drop a platform when a
   required base image or native dependency does not publish it, and say which one in the header.
+  Native AOT defaults to `linux/amd64,linux/arm64`; do not inherit managed arm/v7 support.
 - A platform change touches the `case`, the base images, the build scripts, CI and the README in
   the same change.
 - Check what a base image publishes before relying on it:

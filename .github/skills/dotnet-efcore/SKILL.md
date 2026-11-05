@@ -119,6 +119,8 @@ With approval, select only the checks required by the change:
   EF InMemory are not PostgreSQL substitutes.
 - Verify old and new application compatibility with the expanded schema, fresh initialization and
   upgrade of existing data. Schema rollback and application rollback are separate operations.
+  Seed upgrade fixtures through the historical schema, not the newer entity model. Bootstrap
+  operator-owned extensions only inside the isolated fixture database before real migrations.
 - For performance changes, compare the claimed metric with representative data and equivalent
   conditions; verify result correctness as well as latency, allocations, query count or row volume.
 - Exercise authorization, duplicate writes, stale revisions, cancellation and failure paths when

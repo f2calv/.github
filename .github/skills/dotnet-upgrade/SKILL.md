@@ -22,7 +22,8 @@ features, obsolete APIs and behavior changes in the actual codebase.
 - Use `dotnet-release-train` for producer ordering, publication and consumer propagation;
   `containers-images`, `containers-devcontainer` and `containers-workflows` for their respective surfaces;
   `dotnet-test-platform` for runner changes; `dotnet-blazor` and `dotnet-webapi` for frontend/API
-  migrations; `dotnet-efcore` for provider/model/query and schema migrations; and
+  migrations; `dotnet-efcore` for provider/model/query and schema migrations;
+  [dotnet-aot](../dotnet-aot/SKILL.md) for Native AOT readiness and adoption; and
   `dotnet-performance` for measured hot-path changes. Reuse these authorities
   rather than reimplementing their procedures here.
 - Ask before builds and tests, stating the intended scope and external prerequisites. Do not
@@ -35,7 +36,8 @@ frozen feature catalogue or permission to enable experimental features.
 
 | Target | Highlights and official sources | Reference status |
 | --- | --- | --- |
-| .NET 11 from .NET 10 | [Runtime, C# 15, libraries, web, EF and migration watchlist](./references/net11.md) | RC2 evidence checked 2026-10-24; recheck at GA |
+| .NET 10, including retained library targets | [C# 14 and .NET 10 assessment](./references/net10.md) | Stable baseline; recheck servicing and workload support |
+| .NET 11 from .NET 10 | [Runtime, C# 15, libraries, web, EF and migration watchlist](./references/net11.md) | Feature docs rechecked 2026-11-05; prerelease, recheck at GA |
 
 For a skipped major, review every intervening release's breaking changes and deprecations. If a
 target has no reference yet, research it using the procedure below, then add a concise version
@@ -122,7 +124,8 @@ Before editing, separate:
 - **Automatic gains:** runtime/JIT/library improvements obtained by upgrading and recompiling;
   do not prescribe source rewrites for benefits that need none.
 - **Optional improvements:** new APIs, C# idioms, removed workarounds, configuration or tooling
-  simplifications justified by real code.
+  simplifications justified by real code. Always assess both library/API and language opportunities,
+  even for a request phrased as a TFM bump; report no applicable matches rather than skipping them.
 - **Deprecations and breaks:** affected usages, replacements and behavior changes, even when the
   old code still compiles.
 
@@ -145,7 +148,8 @@ changes need explicit scope. New syntax alone is not a reason for a repository-w
 
 ### 4. Apply the Approved Upgrade
 
-1. Update the owning TFM declarations and SDK selectors, preserving required multi-targeting,
+1. Follow the [library target and language matrix](./references/library-targeting.md).
+   Update the owning TFM declarations and SDK selectors, preserving required multi-targeting,
    conditions and platform suffixes. Raising an application's TFM does not authorize dropping
    supported library consumers. Follow central SDK policy rather than adding a stable SDK pin
    automatically; preserve test-runner and other unrelated `global.json` settings.
@@ -196,6 +200,8 @@ changes need explicit scope. New syntax alone is not a reason for a repository-w
   Retain prior references while they are needed for supported or skipped-major upgrade paths.
 - Recheck the .NET 11 RC2 reference at GA: remove withdrawn/renamed features, distinguish features
   still experimental, and update status and source links instead of appending contradictory notes.
+- Recheck retirement dates and the library/language matrix before dropping TFMs; retain .NET 10
+  guidance and managed container coverage while they remain supported.
 - Reassess the customization-review inventory when new .NET domains/skills are added, and ensure
   release-specific guidance updates reach the relevant instructions, examples and templates.
 - Refresh references when servicing releases change compatibility, provider/tool support catches

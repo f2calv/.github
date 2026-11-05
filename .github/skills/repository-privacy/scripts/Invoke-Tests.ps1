@@ -5,8 +5,9 @@
 .SYNOPSIS
     Runs the repository-privacy regression suites.
 .DESCRIPTION
-    Imports installed Pester 5.7.1 without installing tools and runs the PII scanner and
-    attribution cleanup tests against synthetic repositories under Pester's TestDrive.
+    Imports installed Pester 5.7.1 without installing tools and runs the PII scanner, the
+    specific-reference scanner and the attribution cleanup tests against synthetic files and
+    repositories under Pester's TestDrive.
 .EXAMPLE
     ./Invoke-Tests.ps1
 .NOTES

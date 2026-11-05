@@ -23,6 +23,10 @@ The `github-issues-and-pull-requests` skill owns issue and pull-request procedur
   non-interactive tool or API, never a confirmation form in chat, and report the URL.
 - Review pull requests locally or with a local subagent. Never request Copilot code review, a cloud
   coding agent or another remote workflow unless the user explicitly asks for that remote operation.
+- Before pushing a branch to create or update a pull request, fetch `origin` and merge its default
+  branch (resolved from the remote, usually `main` or `master`) into the feature branch; never
+  rebase a pushed branch. Resolve conflicts, then rerun the validation they affect, within the
+  user's build and test approvals.
 - Link an issue only between repositories of the same visibility; never link or identify an issue
   across the public/private boundary.
 

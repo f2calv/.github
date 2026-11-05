@@ -50,6 +50,9 @@ ENTRYPOINT ["/app/app"]
 
     $templatePath = Join-Path $PSScriptRoot '../../templates/dotnet-service.dockerfile.tmpl'
     $script:DotNetCompliant = (Get-Content -LiteralPath $templatePath -Raw)
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SDK_TAG}}', '10.0-noble')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{RUNTIME_TAG}}', '10.0-noble-chiseled')
+    $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{TARGET_FRAMEWORK}}', 'net10.0')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{WORKLOAD}}', 'Example.App')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{PROJECT}}', 'src/Example.App/Example.App.csproj')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SOURCE_MANIFESTS}}', 'src/**/*.csproj')
@@ -57,6 +60,24 @@ ENTRYPOINT ["/app/app"]
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{IMAGE_SOURCE}}', 'https://example.com/source')
     $script:DotNetCompliant = $script:DotNetCompliant.Replace('{{SPDX_LICENSE}}', 'MIT')
     $script:DotNetCompliant = $script:DotNetCompliant -replace "`r`n", "`n"
+
+    $aotTemplate = Join-Path $PSScriptRoot '../../templates/dotnet-service-aot.dockerfile.tmpl'
+    $script:AotCompliant = (Get-Content -LiteralPath $aotTemplate -Raw) -replace "`r`n", "`n"
+    $aotValues = @{
+        SDK_TAG = '10.0-noble-aot'
+        RUNTIME_TAG = '10.0-noble-chiseled-extra'
+        TARGET_FRAMEWORK = 'net10.0'
+        INVARIANT_GLOBALIZATION = 'false'
+        WORKLOAD = 'Example.App'
+        PROJECT = 'src/Example.App/Example.App.csproj'
+        SOURCE_MANIFESTS = 'src/**/*.csproj'
+        IMAGE_DESCRIPTION = 'Example native service'
+        IMAGE_SOURCE = 'https://example.com/source'
+        SPDX_LICENSE = 'MIT'
+    }
+    foreach ($entry in $aotValues.GetEnumerator()) {
+        $script:AotCompliant = $script:AotCompliant.Replace("{{$($entry.Key)}}", $entry.Value)
+    }
 
     function script:New-Fixture {
         param(
@@ -124,14 +145,20 @@ Describe 'Read-DockerfileModel' {
 
 Describe 'Bundled .NET template pairs' {
     It 'renders and audits the <Name> template with its matching ignore file' -TestCases @(
-        @{ Name = 'dotnet-service'; Dockerfile = 'Dockerfile' }
-        @{ Name = 'dotnet-service-debug'; Dockerfile = 'Dockerfile.Debug' }
+        @{ Name = 'dotnet-service'; Dockerfile = 'Dockerfile'; Sdk = '10.0-noble'; Runtime = '10.0-noble-chiseled' }
+        @{ Name = 'dotnet-service-debug'; Dockerfile = 'Dockerfile.Debug'; Sdk = '10.0-noble'; Runtime = '10.0-noble' }
+        @{ Name = 'dotnet-service-aot'; Dockerfile = 'Dockerfile'; Sdk = '10.0-noble-aot'; Runtime = '10.0-noble-chiseled-extra' }
     ) {
-        param($Name, $Dockerfile)
+        param($Name, $Dockerfile, $Sdk, $Runtime)
         $templates = Join-Path $PSScriptRoot '../../templates'
         $content = Get-Content -LiteralPath (Join-Path $templates "$Name.dockerfile.tmpl") -Raw
-        $ignore = Get-Content -LiteralPath (Join-Path $templates "$Name.dockerignore.tmpl") -Raw
+        $ignoreName = if ($Name -eq 'dotnet-service-aot') { 'dotnet-service' } else { $Name }
+        $ignore = Get-Content -LiteralPath (Join-Path $templates "$ignoreName.dockerignore.tmpl") -Raw
         $values = @{
+            SDK_TAG = $Sdk
+            RUNTIME_TAG = $Runtime
+            TARGET_FRAMEWORK = 'net10.0'
+            INVARIANT_GLOBALIZATION = 'false'
             WORKLOAD = 'Example.Service'
             PROJECT = 'src/Example.Host/Example.Host.csproj'
             SOURCE_MANIFESTS = 'src/**/*.csproj'
@@ -148,7 +175,16 @@ Describe 'Bundled .NET template pairs' {
         $content | Should -Not -Match '\{\{.+?\}\}'
         $ignore | Should -Not -Match '\{\{.+?\}\}'
         $content | Should -Match '# Stage 1 of 3: build'
-        $content | Should -Match 'ENTRYPOINT \["dotnet", "entrypoint.dll"\]'
+        $content | Should -Match ([regex]::Escape("sdk:$Sdk"))
+        $content | Should -Match ([regex]::Escape(":$Runtime AS runtime"))
+        $content | Should -Match 'ARG TARGET_FRAMEWORK=net10.0'
+        if ($Name -eq 'dotnet-service-aot') {
+            $content | Should -Match 'ENTRYPOINT \["/app/entrypoint"\]'
+            $content | Should -Not -Match '# Profile: single-arch'
+        }
+        else {
+            $content | Should -Match 'ENTRYPOINT \["dotnet", "entrypoint.dll"\]'
+        }
         $file = New-Fixture -Content $content -Name $Dockerfile -DockerIgnore $ignore
         @(Get-DockerfileFinding -FilePath $file) | Should -BeNullOrEmpty
         foreach ($pattern in @('!Directory.Build.props', '!Directory.Packages.props', '!global.json',
@@ -161,6 +197,115 @@ Describe 'Bundled .NET template pairs' {
         else {
             $ignore | Should -Not -Match '!deps/'
         }
+    }
+
+    It 'keeps shared version inputs rather than version-specific template copies' {
+        foreach ($name in @('dotnet-service', 'dotnet-service-debug', 'dotnet-service-aot')) {
+            $content = Get-Content (Join-Path $PSScriptRoot "../../templates/$name.dockerfile.tmpl") -Raw
+            foreach ($token in @('SDK_TAG', 'RUNTIME_TAG', 'TARGET_FRAMEWORK')) {
+                $content | Should -Match ([regex]::Escape("{{$token}}"))
+            }
+            $content | Should -Not -Match ':(10|11)\.0|=net(10|11)\.0'
+            $content | Should -Match '\$\{TARGETOS\}/\$\{TARGETARCH\}\$\{TARGETVARIANT\}'
+            $content | Should -Match '\*\) echo "unsupported platform:'
+        }
+    }
+
+    It 'substitutes independently selected SDK runtime and framework inputs without deriving tags' {
+        $content = Get-Content (Join-Path $PSScriptRoot '../../templates/dotnet-service.dockerfile.tmpl') -Raw
+        $content = $content.Replace('{{SDK_TAG}}', 'verified-sdk').Replace('{{RUNTIME_TAG}}', 'verified-runtime').Replace(
+            '{{TARGET_FRAMEWORK}}', 'verified-tfm')
+        $content | Should -Match 'sdk:verified-sdk AS build'
+        $content | Should -Match 'aspnet:verified-runtime AS runtime'
+        $content | Should -Match 'ARG TARGET_FRAMEWORK=verified-tfm'
+    }
+}
+
+Describe 'Native AOT publish contract' {
+    It 'accepts a published multi-platform image with native per-target builders' {
+        $script:AotCompliant | Should -Not -Match '\{\{'
+        Get-Rule -Content $script:AotCompliant | Should -BeNullOrEmpty
+    }
+
+    It 'accepts Ubuntu builder-only clang and zlib development tools without an official aot SDK' {
+        $content = $script:AotCompliant.Replace('10.0-noble-aot AS build', '10.0-noble AS build').Replace(
+            'WORKDIR /repo', "WORKDIR /repo`nRUN <<EOF`nset -eux`napt-get update`napt-get install -y --no-install-recommends clang zlib1g-dev`nrm -rf /var/lib/apt/lists/*`nEOF")
+        Get-Rule -Content $content | Should -BeNullOrEmpty
+    }
+
+    It 'accepts an explicitly invariant AOT build with a verified minimal runtime' {
+        $content = $script:AotCompliant.Replace('INVARIANT_GLOBALIZATION=false', 'INVARIANT_GLOBALIZATION=true').Replace(
+            '10.0-noble-chiseled-extra', '10.0-noble-chiseled')
+        Get-Rule -Content $content | Should -BeNullOrEmpty
+    }
+
+    It 'reports DF026 when <Scenario>' -TestCases @(
+        @{ Scenario = 'the strategy is undeclared'; Find = '# Build strategy: native-aot'; Replace = '' }
+        @{ Scenario = 'native compilation is replaced with generic RID cross-publish'; Find = 'FROM mcr.microsoft.com/dotnet/sdk:'; Replace = 'FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:' }
+        @{ Scenario = 'the native builder guard is missing'; Find = 'test "$BUILDPLATFORM" = "$TARGETPLATFORM"'; Replace = '' }
+        @{ Scenario = 'the toolchain is missing'; Find = '10.0-noble-aot AS build'; Replace = '10.0-noble AS build' }
+        @{ Scenario = 'restore uses another framework'; Find = '-p:TargetFramework="$TARGET_FRAMEWORK"'; Replace = '-p:TargetFramework=net8.0' }
+        @{ Scenario = 'publish uses another framework'; Find = '--framework "$TARGET_FRAMEWORK"'; Replace = '--framework net8.0' }
+        @{ Scenario = 'restore uses another configuration'; Find = '-p:Configuration="$CONFIGURATION"'; Replace = '-p:Configuration=Debug' }
+        @{ Scenario = 'restore uses another RID'; Find = '    --runtime "$RID" \'; Replace = '    --runtime linux-x64 \' }
+        @{ Scenario = 'restore omits PublishAot'; Find = '    -p:PublishAot=true \'; Replace = '' }
+        @{ Scenario = 'restore is not self-contained'; Find = '-p:SelfContained=true'; Replace = '-p:SelfContained=false' }
+        @{ Scenario = 'publish is not self-contained'; Find = '--self-contained true'; Replace = '--self-contained false' }
+        @{ Scenario = 'restore and publish do not share the selected RID'; Find = 'RID="$(cat /repo/target-rid)"'; Replace = 'RID=linux-x64' }
+        @{ Scenario = 'publish restores online'; Find = '--network=none'; Replace = '' }
+        @{ Scenario = 'publish omits no-restore'; Find = '--no-restore'; Replace = '' }
+        @{ Scenario = 'publish omits source revision'; Find = '-p:SourceRevisionId="$GIT_COMMIT" \'; Replace = '' }
+        @{ Scenario = 'culture mode is not explicitly chosen'; Find = 'ARG INVARIANT_GLOBALIZATION=false'; Replace = '' }
+        @{ Scenario = 'culture-aware output lacks ICU'; Find = '10.0-noble-chiseled-extra'; Replace = '10.0-noble-chiseled' }
+        @{ Scenario = 'the runtime targets another dotnet version'; Find = '10.0-noble-chiseled-extra'; Replace = '8.0-noble-chiseled-extra' }
+        @{ Scenario = 'SDK and runtime distributions differ'; Find = '10.0-noble-chiseled-extra'; Replace = '10.0-resolute-chiseled-extra' }
+        @{ Scenario = 'a glibc executable is paired with musl'; Find = '10.0-noble-chiseled-extra'; Replace = '10.0-alpine3.24-extra' }
+        @{ Scenario = 'the executable alias is missing'; Find = 'ln -s "$WORKLOAD" /app/publish/entrypoint'; Replace = '' }
+        @{ Scenario = 'the entrypoint starts dotnet'; Find = 'ENTRYPOINT ["/app/entrypoint"]'; Replace = 'ENTRYPOINT ["dotnet", "entrypoint.dll"]' }
+        @{ Scenario = 'the runtime includes a managed runtime'; Find = 'dotnet/runtime-deps:'; Replace = 'dotnet/aspnet:' }
+        @{ Scenario = 'published output is not copied'; Find = 'COPY --link --from=build /app/publish .'; Replace = '' }
+        @{ Scenario = 'OCI licensing is absent'; Find = 'org.opencontainers.image.licenses='; Replace = 'org.example.licenses=' }
+    ) {
+        param($Find, $Replace)
+        $content = $script:AotCompliant.Replace($Find, $Replace)
+        $content | Should -Not -Be $script:AotCompliant
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'does not relax DF004 for a marker without an AOT publish contract' {
+        $content = $script:DotNetCompliant.Replace('FROM --platform=$BUILDPLATFORM', 'FROM').Replace(
+            '# Example .NET service', "# Example .NET service`n# Build strategy: native-aot")
+        Get-Rule -Content $content | Should -Contain 'DF004'
+    }
+
+    It 'does not relax DF004 for unrelated unpinned stages beside a valid AOT build' {
+        $content = $script:AotCompliant.Replace('FROM mcr.microsoft.com/dotnet/sdk:',
+            "FROM ubuntu:24.04 AS helper`nRUN echo unrelated`nFROM mcr.microsoft.com/dotnet/sdk:")
+        Get-Rule -Content $content | Should -Contain 'DF004'
+    }
+
+    It 'does not allow a native entrypoint for managed publish even with an AOT marker' {
+        $content = $script:DotNetCompliant.Replace('ENTRYPOINT ["dotnet", "entrypoint.dll"]',
+            'ENTRYPOINT ["/app/entrypoint"]').Replace('# Example .NET service', "# Example .NET service`n# Build strategy: native-aot")
+        Get-Rule -Content $content | Should -Contain 'DF026'
+    }
+
+    It 'does not relax DF004 when native AOT restore is incomplete' {
+        Get-Rule -Content $script:AotCompliant.Replace('-p:SelfContained=true', '') | Should -Contain 'DF004'
+    }
+
+    It 'continues to require non-root runtime users and builder-only development packages' {
+        Get-Rule -Content $script:AotCompliant.Replace('USER $APP_UID', 'USER root') | Should -Contain 'DF005'
+        $content = $script:AotCompliant.Replace('WORKDIR /app',
+            "WORKDIR /app`nRUN apt-get update && apt-get install -y --no-install-recommends zlib1g-dev && rm -rf /var/lib/apt/lists/*")
+        Get-Rule -Content $content | Should -Contain 'DF021'
+    }
+
+    It 'reports a missing failing target default arm' {
+        $content = $script:AotCompliant.Replace('    *) echo "unsupported platform: ${TARGETOS}/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;', '')
+        $rules = Get-Rule -Content $content
+        $rules | Should -Contain 'DF012'
+        $rules | Should -Contain 'DF026'
     }
 }
 

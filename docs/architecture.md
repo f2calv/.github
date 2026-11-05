@@ -1,9 +1,9 @@
 # How the Repository Works
 
 This repository is the single source of truth for shared Copilot instructions and skills. It serves
-them in two ways: directly from the working tree to Copilot, and as independently versioned Spec Kit
-extensions published to GitHub Releases. This document explains the structure, the versioning rules
-and the release and packaging workflow behind both.
+them through Copilot workspace guidance, independently versioned Spec Kit extensions and Agent
+Plugins. This document explains the structure, versioning, packaging and installation behind
+the three supported routes.
 
 ## Repository Layout
 
@@ -26,13 +26,13 @@ packaged inside the skill's extension. **Facets** are search tags. The
 
 ```mermaid
 graph LR
-    adr([docs-adr 1.0.1])
-    privacy([repository-privacy 1.0.0])
+    adr([docs-adr])
+    privacy([repository-privacy])
     issues([github-issues-and-pull-requests])
     md[markdown.instructions.md]
     mermaid[markdown.mermaid.instructions.md]
 
-    adr -- "required, pinned 1.0.0" --> privacy
+    adr -- "required, exact sidecar version" --> privacy
     adr -. "related, offered" .-> issues
     adr -- "external file, packaged" --> md
     adr -- "external file, packaged" --> mermaid
@@ -86,7 +86,7 @@ stateDiagram-v2
 ## Deployment Flow
 
 Releases are published by jobs in the [CI workflow](../.github/workflows/ci.yml). Every pull request
-and push runs the checks; only `main` publishes.
+and default-branch push runs the checks; only `main` publishes.
 
 ```mermaid
 flowchart LR
@@ -95,16 +95,20 @@ flowchart LR
 
     edit([Edit a skill]) --> bump[Set-SkillVersion.ps1<br/>bump once from last tag]
     bump --> lint[lint]:::ci
-    bump --> test[skills-library-tests<br/>then test]:::ci
+    bump --> test[skills-library-tests and Windows/macOS platform tests<br/>then test aggregate]:::ci
     bump --> versions[skill-versions<br/>Test-SkillLibrary.ps1]:::ci
+    bump --> examples[dotnet-examples]:::ci
     lint --> main{On main?}
     test --> main
     versions --> main
+    examples --> main
     main -- no --> done([Checks only])
     main -- yes --> releases[skill-releases<br/>Publish-SkillRelease.ps1<br/>ZIP per untagged version]:::ci
     releases --> release[(GitHub Release<br/>id/X.Y.Z)]:::store
     releases -->|"site generated"| catalog[skill-catalog<br/>deploy Pages]:::ci
     catalog --> pages[(GitHub Pages<br/>catalog.json and index.html)]:::store
+    releases --> repository[Repository release after all validation and catalog results]:::ci
+    catalog --> repository
 ```
 
 On `main`, CI publishes each component whose version has no tag yet. Publishing the release creates
@@ -119,7 +123,7 @@ Each skill becomes one Spec Kit extension ZIP. Required skills are separate exte
 
 ```mermaid
 graph TD
-    zip([docs-adr-1.0.1.zip])
+    zip([docs-adr-X.Y.Z.zip])
     manifest[extension.yml<br/>id, version, description]
     res[resources/]
     skill[.github/skills/docs-adr/...]
@@ -145,7 +149,7 @@ built from the same commit and version. The decision is recorded in
 
 ```mermaid
 graph TD
-    zip([docs-adr-1.0.1-plugin.zip])
+    zip([docs-adr-X.Y.Z-plugin.zip])
     manifest[plugin.json<br/>name, version, keywords, extensions]
     skill[skills/docs-adr/...<br/>portable frontmatter]
     ext[instructions/markdown*.instructions.md]
@@ -182,7 +186,7 @@ sequenceDiagram
     User->>Chat: /speckit-skill-library install docs-adr
     Chat->>Cmd: run install docs-adr
     Cmd->>Catalog: fetch catalog.json
-    Cmd->>Cmd: resolve required closure<br/>repository-privacy 1.0.0, docs-adr 1.0.1
+    Cmd->>Cmd: resolve required closure<br/>exact sidecar and catalog versions
     Cmd->>User: offer related github-issues-and-pull-requests
     User->>Cmd: accept or decline
     loop each skill in dependency order

@@ -1,3 +1,6 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.1
+version: 1.1.0
 facets: [dotnet]
+related:
+  - id: dotnet-aot
+    reason: Assess Native AOT separately from platform and language upgrades.

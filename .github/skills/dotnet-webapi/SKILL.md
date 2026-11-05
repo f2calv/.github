@@ -9,6 +9,8 @@ Build thin controller APIs with explicit HTTP semantics and verified documentati
 team-owned JSON APIs on `TypedResults`, string enum values and validation Problem Details.
 Controllers remain the application default rather than following the minimal-API template trend.
 MVC `ActionResult<T>` is reserved for an explicit output-formatter/content-negotiation requirement.
+For explicitly approved Native AOT hosts, use [dotnet-aot](../dotnet-aot/SKILL.md) and supported
+Minimal APIs instead; do not apply the controller conversion workflow or MVC-only registration.
 
 ## Authorities
 
@@ -98,7 +100,9 @@ services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 ```
 
-The sample requires `System.Text.Json.Serialization`. Register each converter once.
+The sample requires `System.Text.Json.Serialization`. Register each converter once. It is the
+managed MVC pattern, not an AOT recipe: AOT hosts need generated JSON metadata and compatible
+converters as described by the Native AOT skill.
 Capture actual enum-bearing response bodies, request binding and OpenAPI enum schemas in focused
 tests. During an authorized standardization of team-owned APIs, update consumers to string values
 and `ValidationProblemDetails`; do not preserve superseded formats with compatibility shims.

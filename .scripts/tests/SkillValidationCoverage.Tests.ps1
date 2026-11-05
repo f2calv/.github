@@ -52,7 +52,7 @@ Describe 'Persistent .NET example validation' -Tag 'Unit' {
 
     It 'runs the correct runner from its discovery root and gates release without benchmarking' {
         $job = $workflow.jobs['dotnet-examples']
-        $job.'runs-on' | Should -Be 'ubuntu-24.04'
+        $job.'runs-on' | Should -Be 'ubuntu-26.04'
         $job.permissions.contents | Should -Be 'read'
         $job.defaults.run.'working-directory' | Should -Be $fixtureRelativePath
         $workflow.jobs.release.needs | Should -Contain 'dotnet-examples'

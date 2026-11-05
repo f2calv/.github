@@ -76,7 +76,8 @@ do not emulate zones by adding a fixed offset.
 
 ### 3. Reuse Sequential Timing Mechanics
 
-The current shared-services checkout exposes `CasCap.Common.Services.CoalescingScheduleRunner`:
+Reuse a shared schedule runner where one exists. For example, the public `CasCap.Common.Services`
+library exposes `CasCap.Common.Services.CoalescingScheduleRunner`:
 
 - `RunAsync(cron, timeProvider, callback, cancellationToken)` selects UTC occurrences strictly
   after its cursor, awaits each callback and coalesces missed occurrences after completion.

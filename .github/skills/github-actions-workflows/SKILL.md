@@ -106,6 +106,7 @@ alone), and anything deliberately deferred.
 | Self-test tags the shared-workflows repository | A nested release ran; pass `release: false` or guard by repository |
 | Long-standing workaround such as `chart-testing-cli-command: skip` | Check the callee's history: the defect may already be fixed upstream |
 | Pinned tool fails on a new language version | Bump the pinned tool, such as staticcheck for a new Go release |
+| actionlint rejects a newly supported hosted-runner label | Verify a successful GitHub job used that exact label, then list only those verified labels in `.github/actionlint.yaml`; remove the workaround when actionlint recognises them |
 
 ## Maintaining This Skill
 

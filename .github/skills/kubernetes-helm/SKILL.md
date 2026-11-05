@@ -14,6 +14,9 @@ repeatable dependency resolution, consumer-focused documentation, and representa
 Keep reusable chart mechanics generic. Keep application names, endpoints, credentials, deployment
 topology, dashboard queries, and release automation details in the consuming repository.
 
+Use [gitops-helm-upgrade](../gitops-helm-upgrade/SKILL.md) to upgrade deployed third-party chart
+pins, values snapshots and bootstrap definitions; this skill owns chart authoring and packaging.
+
 ## Prerequisites
 
 * Read the target repository instructions, chart README, release workflow, and existing chart
@@ -128,6 +131,11 @@ At minimum, validation should cover:
 5. packaged contents, including `.helmignore` exclusions;
 6. documentation and version consistency;
 7. semantic comparison with the previous rendering during migrations.
+
+Render every workload kind when asserting dormant defaults or pod contracts. A Job can ignore
+replica count, so gate an optional migration dependency with an owned, schema-validated boolean
+condition. Check effective shutdown and probe fields for Job/ScaledJob separately from Deployment;
+shared values alone do not prove those fields render.
 
 For additive reusable-chart changes, render every existing fixture from the previous and candidate
 chart, normalize only intentional metadata such as the chart-version label, and require semantic
