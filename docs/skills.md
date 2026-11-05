@@ -59,6 +59,12 @@ gate rejects a stale or missing row.
 | [Ports and adapters](../.github/skills/patterns-ports-and-adapters/SKILL.md) | `1.0.4` | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
 | [Architecture review](../.github/skills/patterns-architecture-review/SKILL.md) | `1.0.1` | Evidence-backed architecture smells with proportionate fixes, and realigning code to its components view |
 
+## AI And Retrieval
+
+| Skill | Version | Use it for |
+| --- | --- | --- |
+| [Edge inference](../.github/skills/ai-edge-inference/SKILL.md) | `1.0.0` | Local/edge model runtime tuning, GPU and host memory budgets, quantization, context, concurrency and reproducible measurements, with separate llama.cpp guidance |
+
 ## .NET
 
 | Skill | Version | Use it for |
