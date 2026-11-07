@@ -65,6 +65,7 @@ applyTo: '**/*.ps1,**/*.psm1,**/*.psd1'
 
 - Accept credentials as `[securestring]`, or read them from an environment variable or git-ignored `.env`. Never accept a plain-text credential as a defaulted parameter.
 - Never write a credential, an `Authorization` header, or a value derived from either to any stream, including verbose and debug output.
+- Pass credentials to native CLIs through their environment variables, such as `AZURE_STORAGE_KEY`, never as arguments. On Windows `az` is a `.cmd` wrapper: when an argument containing `[`, `?`, quotes or other characters breaks `cmd.exe` parsing, it echoes the whole command line, secret included. Filter CLI output in PowerShell rather than with complex `--query` expressions on such calls.
 - Strip the query string before including a Uri in an error message.
 - Never commit a populated `.env`. Ship a `.env.example` documenting each variable instead.
 
