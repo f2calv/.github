@@ -133,4 +133,5 @@ alone), and anything deliberately deferred.
 - Pitfalls observed while changing shared workflows; keep invariants in the instructions file.
 - Workflow architecture pages when job dependencies, artifact formats, platform handling or
    side-effect and permission boundaries change.
+- GitHub referenced-workflow SHA reporting and annotated-tag alias resolution.
 - Validate templates with `actionlint` after every change.
