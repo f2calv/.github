@@ -50,7 +50,7 @@ gate rejects a stale or missing row.
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.2` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.4` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
-| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.0.1` | Network discovery, VLANs, host networking and performance diagnostics |
+| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.1.0` | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Architecture Patterns
 
