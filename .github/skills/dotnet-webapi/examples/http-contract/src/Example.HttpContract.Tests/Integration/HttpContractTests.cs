@@ -8,6 +8,33 @@ namespace Example.HttpContract.Tests.Integration;
 [Trait("Category", "Integration")]
 public sealed class HttpContractTests : TestBase
 {
+    /// <summary>Checks startup crashes report drained stderr and exit status without exposing local paths.</summary>
+    [Fact]
+    public async Task StartupFailureDiagnostics()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "synthetic-invalid-fixture.dll");
+        var previousPath = Environment.GetEnvironmentVariable("EXAMPLE_MINIMAL_PATH");
+        try
+        {
+            await File.WriteAllTextAsync(path, "synthetic-invalid-fixture", TestContext.Current.CancellationToken);
+            Environment.SetEnvironmentVariable("EXAMPLE_MINIMAL_PATH", path);
+            var failure = await Assert.ThrowsAsync<Xunit.Sdk.FailException>(() => StartHostAsync("Minimal"));
+            Assert.Contains("Exit status:", failure.Message);
+            Assert.DoesNotContain("still running", failure.Message);
+            Assert.Contains("stderr:", failure.Message);
+            Assert.DoesNotContain("stderr: <empty>", failure.Message);
+            Assert.DoesNotContain(directory, failure.Message);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("EXAMPLE_MINIMAL_PATH", previousPath);
+            await DisposeAsync();
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     /// <summary>Checks generated DTO JSON for the seeded widget.</summary>
     [Theory]
     [InlineData("Controller")]

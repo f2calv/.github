@@ -20,10 +20,12 @@ See the [build and test commands](../../README.md).
 | `DuplicateWidget` | 1 | 2 | Conflict status, title and problem media type |
 | `StreamWidget` | 1 | 2 | Attachment headers and fixed synthetic bytes |
 | `DisabledWidgets` | 1 | 2 | Absent feature route without a DI failure |
-| Total | 7 | 18 | 9 cases per adapter |
+| `StartupFailureDiagnostics` | 1 | 1 | Invalid managed DLL startup reports exit status and drained stderr without local paths |
+| Total | 8 | 19 | 18 HTTP theory cases (9 per adapter) plus 1 startup regression |
 
 All cases have `Category=Integration` because they reach locally started application processes.
-Observed managed result on 2026-11-07: 18 passed, 0 failed, 0 skipped. No native cases have run.
+Observed managed HTTP result on 2026-11-07: 18 passed, 0 failed, 0 skipped. The full-class command
+executes 19 cases including the startup regression. No native cases have run.
 
 ## Skipped Tests
 

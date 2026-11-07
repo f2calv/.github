@@ -32,8 +32,10 @@ retire infrastructure in reverse order.
    no tests. Match platform-native test paths and reject zero-case success or filter warnings.
    A `.terraform` folder created inside a Dev Container can hold provider symlinks into its plugin
    cache, so host `init` fails with "cannot install package into target directory ... because it is
-   a symlink". Delete the Git-ignored `.terraform` folder and initialize again; the lock file is
-   kept.
+   a symlink". Remove only the confirmed stale provider-cache entries and initialize again; keep
+   the lock file, backend metadata and workspace selection. If the entire `.terraform` folder
+   must be rebuilt, first record the backend initialization arguments and selected workspace,
+   then restore both and verify `terraform workspace show` before planning or applying.
 2. Obtain permission for the exact cloud/state scope. Confirm the account and existing backend.
    Before cloud-backed initialization, verify that both the target and the state-backend
    subscriptions are enabled; a disabled backend can block even the storage-key lookup. An

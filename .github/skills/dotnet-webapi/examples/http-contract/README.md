@@ -23,9 +23,10 @@ The fixture needs no credentials, database, containers or remote application ser
 dotnet build Example.HttpContract.slnx -c Release
 ```
 
-With test approval, run the managed comparison. Each case starts a fresh process on a dynamically
-allocated loopback port and terminates it after the test. Artifact paths are absolute and supplied
-only to the test process; no working-tree configuration changes are required.
+With test approval, run the managed comparison. The full-class command executes 19 cases: 18 HTTP
+theory cases and one `StartupFailureDiagnostics` regression. Each HTTP case starts a fresh process
+on a dynamically allocated loopback port and terminates it after the test. Artifact paths are
+absolute and supplied only to the test process; no working-tree configuration changes are required.
 
 ```powershell
 $previousController = $env:EXAMPLE_CONTROLLER_PATH
@@ -90,7 +91,9 @@ run as native evidence.
 ## Evidence and Limits
 
 Verified on 2026-11-07 with SDK 10.0.403, target `net10.0`, and xUnit 4.0.2: Release build succeeded
-without warnings; all 18 managed HTTP cases passed, none skipped. Generated request-delegate code
+without warnings; all 18 managed HTTP cases passed, none skipped. The additional startup regression
+checks exit status, drained stderr and local-path redaction for an invalid managed DLL.
+Generated request-delegate code
 contains all three route mappings. Request, widget, validation-problem and conflict-problem JSON
 were exercised with reflection fallback disabled in the Minimal host.
 

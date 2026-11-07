@@ -71,9 +71,10 @@ For each chart:
 3. Compare effective overrides with the target schema/defaults and release notes. Preserve
    intentional settings, migrate removed or renamed settings, and retain useful upstream comments
    and property ordering.
-   Argo CD uses `valuesObject` instead of `values` when both exist, and Kubernetes prunes explicit
-   null object keys. Null-sensitive overrides require the complete inline payload in `helm.values`
-   YAML; verify the persisted live source rather than splitting overrides between both fields.
+   Argo CD uses `valuesObject` instead of `values` when both exist. For null-sensitive overrides,
+   verify the installed Application schema and persisted source rather than assuming null keys
+   are pruned. If the actual persistence path drops required nulls, use the complete inline payload
+   in `helm.values` YAML and remove `valuesObject`; do not split overrides between both fields.
 4. Synchronize every active bootstrap or provisioning pin that installs the same release, including
    bootstrap-only definitions the local profile designates. Preserve deliberate non-installation
    and adoption boundaries; do not add a second controller or release merely for symmetry.
