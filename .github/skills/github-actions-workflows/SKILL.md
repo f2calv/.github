@@ -88,6 +88,25 @@ naming, packaging coordinates and release validation.
    switch the workflows to `@v1`.
 5. Merge to release; the floating aliases move. Re-run one real caller against the released tag.
 
+### Document Complex Workflows
+
+Use the [architecture diagrams skill](../docs-architecture-diagrams/SKILL.md) when branching,
+matrix fan-out/fan-in, artifact transfer or credential boundaries make the catalog insufficient.
+Keep simple pass-through workflows in the catalog rather than creating an architecture page for each.
+
+1. Trace actual `needs`, conditions, scripts and nested actions before drawing. Distinguish
+   caller-owned dependencies from callee orchestration, and execution order from action references.
+2. Explain the hand-off artifact and its consumer, including identity and coverage checks. For
+   multi-platform images, show an index referencing per-platform manifests, not merged binaries;
+   separate registry digest publication from archive-based no-publication verification.
+   Keep platform inputs distinct from index evidence so retries cannot ingest their own outputs.
+3. Include a minimal caller with its permission union, runner selection, required secrets and
+   explicit side-effect gates. Trace each off switch: disabling release or publication may still
+   allow edits, authentication, tests or another publishing step.
+4. Link the catalog to the topic page and state which behavior is source-derived, locally checked
+   or still awaiting hosted CI, authentication or deployment validation. Mark unreleased contracts
+   rather than implying an existing floating alias already supports them.
+
 ### 5. Report
 
 List callers changed, check names renamed, validation evidence (job and test counts, not exit codes
@@ -112,4 +131,7 @@ alone), and anything deliberately deferred.
 
 - The building-block table and templates when gha-workflows adds, renames or retires a workflow.
 - Pitfalls observed while changing shared workflows; keep invariants in the instructions file.
+- Workflow architecture pages when job dependencies, artifact formats, platform handling or
+   side-effect and permission boundaries change.
+- GitHub referenced-workflow SHA reporting and annotated-tag alias resolution.
 - Validate templates with `actionlint` after every change.

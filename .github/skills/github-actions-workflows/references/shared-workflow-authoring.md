@@ -27,3 +27,13 @@ or `owner/workflows/.github/workflows/build.yml@v1`; `@v2.1` must not satisfy an
 Include that validation job in the release job's `needs`, and pass its validated
 `major.minor.patch` values to the release step rather than a `FullSemVer` value that may contain
 build metadata.
+
+## Verify Released References
+
+- Refresh a local moving Action alias with a scoped forced refspec, for example
+    `git -C <repository> fetch origin +refs/tags/v1:refs/tags/v1`. Do not force-fetch immutable tags.
+- GitHub's `referenced_workflows.sha` can identify an annotated tag object rather than its commit.
+    Peel the tag with `git rev-parse 'v1^{commit}'`, or follow the API tag object, before comparing
+    the caller's resolved reference with the released commit.
+- Verify the caller's current-head CI against that released reference; a prior feature-ref run
+    does not validate the published alias.
