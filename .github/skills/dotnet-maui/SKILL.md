@@ -106,6 +106,11 @@ Ask before building, testing or deploying. Then:
    by process ID, invoke buttons through `InvokePattern` by their text, wait for the busy control to
    disable, then read the status `Text` elements. Use synthetic files and a disposable container.
 4. Deploy to the emulator with `dotnet build <app>.csproj -t:Run -f net10.0-android` or from the IDE.
+   Drive it without a person through `adb`: `adb shell uiautomator dump` and `adb pull` give the UI
+   hierarchy with each control's text and bounds, and `adb shell input tap <x> <y>` presses one. For
+   media apps, push synthetic files with `adb push`, index them with `adb shell content call --method
+   scan_volume --uri content://media --arg external_primary`, and replay permission prompts with
+   `adb shell pm reset-permissions -p <package>`.
 5. Run the repository's lint hooks; files created by agent tooling on Windows may need CRLF
    converted to the `.editorconfig` line ending.
 
