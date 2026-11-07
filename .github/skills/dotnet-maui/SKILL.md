@@ -121,6 +121,7 @@ Ask before building, testing or deploying. Then:
 | `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
 | `NU1102` for `Microsoft.NETCore.App.Runtime.Mono.win-x64` when publishing Windows | `-r win-x64` applies the runtime to every target framework, including Android. Publish with `-f <windows TFM> -p:RuntimeIdentifierOverride=win-x64` instead |
+| `CS0104` ambiguity on `OperationCanceledException` in Android code | `Android.OS` defines its own. A `CancellationSignal` cancellation throws `Android.OS.OperationCanceledException`; catch that type and rethrow `System.OperationCanceledException` with the caller's token |
 | NuGet restore cannot replace a locked MAUI build-task DLL | Use a short isolated `NUGET_PACKAGES` path instead of stopping an IDE or deleting its shared cache. A long session path can break Android AAR extraction; clean the affected Android intermediates with `dotnet clean` after switching caches, then rebuild |
 
 ## Maintaining This Skill
