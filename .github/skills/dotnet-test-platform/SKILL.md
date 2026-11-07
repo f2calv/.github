@@ -16,6 +16,11 @@ credentials.
 Never run tests without explicit user approval; they may be integration tests needing credentials
 or external services.
 
+For credential-free approval, inspect the selected test sources and fixtures before choosing a
+filter. Excluding `Category=Integration` does not prove offline scope: unlabelled cases can still
+call Redis, storage or other services. Select verified offline classes or methods; an unexpected
+connection failure does not authorize starting a service or expanding the approved scope.
+
 ## Required Configuration
 
 Use the [minimal MTP worked example](./examples/minimal-mtp.md) to see the complete configuration,

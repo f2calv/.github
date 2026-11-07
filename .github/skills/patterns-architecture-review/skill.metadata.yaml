@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.1
+version: 1.0.2
 facets: [architecture, review, refactoring]
 required:
   - id: docs-architecture-diagrams
-    version: 1.0.0
+    version: 1.1.0
 related:
   - id: patterns-modular-monolith
     reason: Module boundaries and dependency direction for a realigned container.

@@ -1,8 +1,8 @@
 ---
 name: network-unifi
-description: 'Discover, design, change, benchmark and recover UniFi-managed networks safely. Use for VLANs, DHCP reservations, switch-port native networks, multi-NIC Linux hosts, dedicated storage networks, routing asymmetry, MetalLB/ARP incidents, and before/after network performance validation.'
+description: 'Discover, design, change, benchmark and recover UniFi-managed networks safely. Use for WireGuard workstation onboarding, split-tunnel routing, private DNS and home.arpa TLS trust, VLANs, DHCP reservations, switch ports, multi-NIC Linux hosts, storage networks, routing asymmetry, MetalLB/ARP incidents and network performance validation.'
 argument-hint: '[mode={audit|plan|apply|benchmark|recover}] [client-or-port] [network-purpose]'
-compatibility: 'Requires an authenticated UniFi Network browser session for controller changes. Host validation may additionally require SSH, NetworkManager, iproute2, ethtool and iperf3.'
+compatibility: 'Requires an authenticated UniFi Network browser session for controller changes. Workstation VPN setup requires WireGuard and OS DNS/certificate tools; Linux network validation may require SSH, NetworkManager, iproute2, ethtool and iperf3.'
 ---
 
 # UniFi Network Management
@@ -18,6 +18,11 @@ the owning private infrastructure repository. This skill carries only the reusab
 
 Use [the storage-network reference](references/storage-network.md) for dual-NIC NAS and benchmark
 patterns.
+
+Use [the workstation VPN reference](references/wireguard-workstation.md) to add a unique client to
+an existing WireGuard server, preserve split routing, configure private DNS and install public CA
+trust. Follow its onboarding sequence instead of the network-creation sequence below; identical
+access does not mean copying another device's keys.
 
 Use the [worked change-evidence record](./examples/change-evidence.md) to distinguish controller,
 port, endpoint and application observations, compare measurements, and withhold acceptance when
@@ -234,6 +239,8 @@ Report:
 ## Maintaining This Skill
 
 - UniFi Network application behaviour and UI paths, which move between releases.
+- WireGuard client routing/DNS behaviour, Windows trust stores and application-specific CA or
+  encrypted-DNS handling; keep workstation onboarding and rollback aligned with those changes.
 - Safety-model steps and benchmark commands proven or corrected during a change or recovery.
 - Keep the evidence example's layer boundaries, measurement conditions and rollback gates aligned;
   static fixture validation never proves live connectivity or performance.

@@ -1,6 +1,6 @@
 ---
 name: dotnet-maui
-description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, device debugging and Android CI builds. Use when setting up a MAUI machine in Visual Studio or VS Code, adding a platform target, wiring platform services, or when a MAUI build, workload or deployment fails.'
+description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, Android WorkManager background work, device debugging and Android CI builds. Use when setting up a MAUI machine in Visual Studio or VS Code, adding a platform target, wiring platform services or background work, or when a MAUI build, workload or deployment fails.'
 compatibility: 'Workstation bootstrap covers Windows with Visual Studio 2026 or VS Code. Android builds also run on Linux and macOS; the Windows target builds only on Windows.'
 ---
 
@@ -94,14 +94,38 @@ Use Windows as a development-only target when Android is the product platform:
 - `AddOptionsWithValidateOnStart` still binds, but MAUI never starts a host, so validation runs at
   the first `.Value` read. Handle it at that use site.
 
-### 6. Validate
+### 6. Add Android Background Work
+
+For deferrable work that must continue after the app closes, such as backing up new media, follow
+[Android background work](references/background-work.md):
+
+- choose a WorkManager package version compatible with MAUI;
+- give the worker a fixed Java name;
+- re-arm content triggers by replacement;
+- scan incrementally from a MediaStore generation checkpoint;
+- never prompt from a worker.
+
+### 7. Validate
 
 Ask before building, testing or deploying. Then:
 
 1. Build the whole solution from the repository root; on Windows this covers both targets.
 2. Run the platform-neutral unit tests; they need no workload, device or emulator.
-3. Start the Windows executable once and confirm the main window appears.
+3. Start the Windows executable once and confirm the main window appears. To smoke-test a CI artifact
+   end to end, download it with `gh run download`, set configuration in the launching process's
+   environment only, and drive it with Windows UI Automation (`UIAutomationClient`): find the window
+   by process ID, invoke buttons through `InvokePattern` by their text, wait for the busy control to
+   disable, then read the status `Text` elements. Use synthetic files and a disposable container.
 4. Deploy to the emulator with `dotnet build <app>.csproj -t:Run -f net10.0-android` or from the IDE.
+   Drive it without a person through `adb`: `adb shell uiautomator dump` and `adb pull` give the UI
+   hierarchy with each control's text and bounds, and `adb shell input tap <x> <y>` presses one. Type
+   with `adb shell input text` in chunks of about 10 characters, escaping `:` and spaces, and press Back
+   between fields. `uiautomator dump` does not expose `WebView` content such as browser sign-in fields,
+   so locate those from `adb shell screencap` and convert scaled screenshot positions to device pixels
+   (`adb shell wm size`). For
+   media apps, push synthetic files with `adb push`, index them with `adb shell content call --method
+   scan_volume --uri content://media --arg external_primary`, and replay permission prompts with
+   `adb shell pm reset-permissions -p <package>`.
 5. Run the repository's lint hooks; files created by agent tooling on Windows may need CRLF
    converted to the `.editorconfig` line ending.
 
@@ -113,10 +137,16 @@ Ask before building, testing or deploying. Then:
 | Workload packs exist but `dotnet workload list` is empty | The install ran under another SDK band or did not finish; rerun from the repository root |
 | `sdkmanager` or `avdmanager` exits 1 with no output | Set `JAVA_HOME` to the installed JDK first |
 | Emulator does not start or is very slow | Enable the Windows Hypervisor Platform optional feature, reboot, and use an `x86_64` system image |
+| Emulator hangs, goes unresponsive or exits with `DisplaySurfaceGlContextHelper` or snapshot `gfxstream` errors | The AVD was created with the GPU disabled or too little RAM. Enable the host GPU and 4 GB RAM in its `config.ini`, then cold-boot; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
+| The emulator browser cannot reach a sign-in host | Start the emulator with `-dns-server 1.1.1.1,8.8.8.8` and check with `adb shell ping -c 1 <host>` |
+| `sdkmanager` reports `There is not enough space on the disk`, then `Package path is not valid` | Free at least 15 GB on the SDK's drive or move the SDK, delete the empty image folder it left, then retry; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
 | `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
 | `NU1102` for `Microsoft.NETCore.App.Runtime.Mono.win-x64` when publishing Windows | `-r win-x64` applies the runtime to every target framework, including Android. Publish with `-f <windows TFM> -p:RuntimeIdentifierOverride=win-x64` instead |
+| `CS0104` ambiguity on `OperationCanceledException` in Android code | `Android.OS` defines its own. A `CancellationSignal` cancellation throws `Android.OS.OperationCanceledException`; catch that type and rethrow `System.OperationCanceledException` with the caller's token |
 | NuGet restore cannot replace a locked MAUI build-task DLL | Use a short isolated `NUGET_PACKAGES` path instead of stopping an IDE or deleting its shared cache. A long session path can break Android AAR extraction; clean the affected Android intermediates with `dotnet clean` after switching caches, then rebuild |
+| `NU1608` for `Xamarin.AndroidX.Lifecycle.*` or `Collection.*` after adding an AndroidX binding | The binding's dependencies are newer than the ranges MAUI pins. Choose the binding release whose AndroidX Core and Lifecycle dependencies match MAUI's; see [Android background work](references/background-work.md#package) |
+| A WorkManager content-trigger run starts the process but the worker never runs after a cold start | Stale job records from an append-chained trigger make WorkManager reconcile and reschedule, which stops the starting job. Re-arm with `ExistingWorkPolicy.Replace` instead; see [Android background work](references/background-work.md#media-triggers) |
 
 ## Maintaining This Skill
 
@@ -125,3 +155,5 @@ Ask before building, testing or deploying. Then:
 - Recheck the JDK version recommended by the .NET for Android and MAUI installation pages, which
   have disagreed.
 - Recheck the VS Code .NET MAUI extension commands and the Android emulator system image names.
+- Each MAUI or WorkManager release: recheck which `Xamarin.AndroidX.Work.Runtime` release fits MAUI's
+  AndroidX ranges, and whether WorkManager still reconciles jobs on cold start as described.

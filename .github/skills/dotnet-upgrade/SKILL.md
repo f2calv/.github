@@ -153,6 +153,8 @@ changes need explicit scope. New syntax alone is not a reason for a repository-w
    conditions and platform suffixes. Raising an application's TFM does not authorize dropping
    supported library consumers. Follow central SDK policy rather than adding a stable SDK pin
    automatically; preserve test-runner and other unrelated `global.json` settings.
+  Apply its [conditional compatibility workflow](./references/library-targeting.md#conditional-compatibility)
+  to API differences, preprocessor-guard retirement and per-framework package selection.
 2. Update compatible NuGet families, analyzers, source generators, test SDK/runner, provider
    packages and tool manifests through their structured configuration. Respect holds and
    supported TFM combinations. Remove a redundant package only after verifying the target's

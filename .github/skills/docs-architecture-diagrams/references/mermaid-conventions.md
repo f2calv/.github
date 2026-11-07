@@ -82,8 +82,11 @@ must carry any distinction a reader needs, such as current versus planned.
 - Never use `end` as a node identifier in a flowchart; it closes a subgraph. Avoid identifiers that
   start with `o` or `x` directly after an arrow, which Mermaid reads as edge markers.
 - Declare a subgraph with an identifier and label: `subgraph api [API host]`.
-- Do not use `click`, `%%{init}%%` theme overrides or HTML beyond `<br/>`; renderers handle them
-  inconsistently.
+- Use URL-only `click node href "https://github.com/owner/repository" "Open repository" _blank`
+  directives for public dependency repositories. Keep ordinary Markdown links beside the diagram
+  as a fallback: renderer security settings can disable node links. Verify SVG hyperlink targets
+  when rendering; do not claim GitHub or VS Code interaction was tested from a local preview alone.
+- Never use JavaScript callbacks, `%%{init}%%` security/theme overrides or HTML beyond `<br/>`.
 - Keep a diagram to about fifteen nodes. Split by zoom level or by concern before adding more.
 
 ## Rendering
@@ -101,6 +104,9 @@ packages through `npx -p` nor install peer dependencies:
 npm install @mermaid-js/mermaid-cli puppeteer
 ./node_modules/.bin/mmdc -q -i diagram.mmd -o diagram.svg
 ```
+
+For diagrams with node hyperlinks, inspect the SVG anchors as well as the layout. Verify that each
+target matches the dependency's repository and that its fallback Markdown link is present.
 
 Rendering to PNG with `-b white -s 1.5` gives an image that can be viewed to check layout, not just
 syntax. Render each revision to a new file name; an image viewer can keep showing the earlier render
