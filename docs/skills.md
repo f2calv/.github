@@ -19,7 +19,7 @@ gate rejects a stale or missing row.
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
-| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.2` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
+| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.1.0` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
 
 ## Tooling and Agent Setup
 
@@ -91,6 +91,6 @@ gate rejects a stale or missing row.
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.2` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.1.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
-| [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.0` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.1` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |

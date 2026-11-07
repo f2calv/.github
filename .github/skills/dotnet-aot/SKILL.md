@@ -88,6 +88,10 @@ no newer than the deployment base. Delegate exact image inputs to the container 
   non-root/read-only execution, health/readiness and graceful cancellation/shutdown.
 - Exercise serialization, configuration, auth, endpoints, persistence, RPC and native-library paths
   actually used in production; development-mode managed tests cannot prove the published binary.
+- Inspect generated configuration bindings and smoke-test actual file, environment and provenance
+  overrides, not just default values. A successful publish can conceal omitted assignments: the
+  .NET 10 generator can leave init-only scalar properties at their defaults. Use supported setters
+  where the selected generator cannot populate init-only properties, then recheck startup validation.
 - Compare managed and AOT on identical hardware/configuration: cold startup to readiness, steady
   RSS, image/artifact size, representative throughput/latency and build time. Do not promise faster
   throughput or lower memory without measurements; retain the managed path on regression.
