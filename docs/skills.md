@@ -29,7 +29,7 @@ gate rejects a stale or missing row.
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.2` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
-| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.2` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
+| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.3` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
@@ -46,9 +46,9 @@ gate rejects a stale or missing row.
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |
-| [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.0` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |
+| [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.1` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
-| [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.2` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
+| [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.3` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.4` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.1.0` | Network discovery, VLANs, host networking and performance diagnostics |
 
@@ -79,7 +79,7 @@ gate rejects a stale or missing row.
 | [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.4` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
 | [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.3` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.4` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
-| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.1.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |

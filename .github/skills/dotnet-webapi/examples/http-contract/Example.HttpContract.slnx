@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Example.Controllers.SampleApp/Example.Controllers.SampleApp.csproj" />
+    <Project Path="src/Example.HttpContract.Tests/Example.HttpContract.Tests.csproj" />
+    <Project Path="src/Example.Widgets/Example.Widgets.csproj" />
+    <Project Path="src/Example.Minimal.SampleApp/Example.Minimal.SampleApp.csproj" />
+  </Folder>
+</Solution>

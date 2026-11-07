@@ -1,6 +1,6 @@
 ---
 name: dotnet-webapi
-description: 'Create, migrate and validate ASP.NET Core controller Web APIs, TypedResults, DTO services, authorization, validation, streaming and OpenAPI response metadata. Use when modifying controllers, HTTP contracts or minimal-to-controller migrations.'
+description: 'Create, migrate and validate ASP.NET Core controller Web APIs, TypedResults, DTO services, authorization, validation, streaming and OpenAPI response metadata. Use when modifying controllers, HTTP contracts, minimal-to-controller migrations or bounded Controller/Minimal API contract comparisons.'
 ---
 
 # ASP.NET Core Web API
@@ -176,6 +176,22 @@ Static collection checks do not establish live responses and do not authorize se
 Do not commit, push, deploy, run live requests or
 execute tests without the applicable authorization.
 
+## Executable Comparison
+
+The [compilable HTTP contract fixture](examples/http-contract/README.md) implements equivalent MVC
+and explicit feature-group Minimal adapters over one HTTP-neutral service. Its shared black-box
+suite checks lookup, named creation Location, domain invalid/conflict outcomes, synthetic content
+and disabled routes. Keep its SDK, packages and invocation commands together inside the example.
+
+For AOT-enabled named-route results, use `RouteValueDictionary` instead of anonymous route objects;
+the latter trigger IL2026 under the fixture's .NET 10 trimming analysis. Preserve Location semantics
+and verify the published artifact using the same HTTP cases. Keep deployment compatibility gates
+in the Native AOT skill rather than treating this example as whole-application proof.
+
+The recorded managed checks pass, but native execution is blocked by a missing platform linker.
+The fixture omits authentication, OpenAPI and framework validation generators; it does not establish
+those gates or change the controller default. A broader framework choice remains an investigation.
+
 ## Sources
 
 Use the target framework's current Microsoft documentation, not recommendations from popularity
@@ -196,3 +212,5 @@ rankings or older templates:
 - Keep the worked example aligned with shared controller and service-boundary instructions.
 - Verify the outcome extension's actual media types, named Location and inferred response metadata
   when framework behavior changes; do not infer wire behavior from DTO names.
+- Rebuild the compilable comparison and rerun its shared HTTP suite after SDK, package, generated
+  metadata or named-route changes; distinguish managed checks from published native execution.

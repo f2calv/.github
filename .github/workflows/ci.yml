@@ -116,6 +116,25 @@ jobs:
           --configuration Release --no-build --filter-trait "Category=Parsing"
           --minimum-expected-tests 16
 
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.403
+
+      - name: dotnet build Example.HttpContract.slnx --configuration Release
+        working-directory: .github/skills/dotnet-webapi/examples/http-contract
+        run: dotnet build Example.HttpContract.slnx --configuration Release
+
+      - name: dotnet test HTTP contract example
+        working-directory: .github/skills/dotnet-webapi/examples/http-contract
+        env:
+          EXAMPLE_CONTROLLER_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Controllers.SampleApp/bin/Release/net10.0/Example.Controllers.SampleApp.dll
+          EXAMPLE_MINIMAL_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Minimal.SampleApp/bin/Release/net10.0/Example.Minimal.SampleApp.dll
+        run: >-
+          dotnet test --project src/Example.HttpContract.Tests/Example.HttpContract.Tests.csproj
+          --configuration Release --no-build
+          --filter-class Example.HttpContract.Tests.Integration.HttpContractTests
+          --minimum-expected-tests 19
+
   skill-versions:
     runs-on: ubuntu-26.04
     permissions:
