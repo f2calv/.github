@@ -100,7 +100,11 @@ Ask before building, testing or deploying. Then:
 
 1. Build the whole solution from the repository root; on Windows this covers both targets.
 2. Run the platform-neutral unit tests; they need no workload, device or emulator.
-3. Start the Windows executable once and confirm the main window appears.
+3. Start the Windows executable once and confirm the main window appears. To smoke-test a CI artifact
+   end to end, download it with `gh run download`, set configuration in the launching process's
+   environment only, and drive it with Windows UI Automation (`UIAutomationClient`): find the window
+   by process ID, invoke buttons through `InvokePattern` by their text, wait for the busy control to
+   disable, then read the status `Text` elements. Use synthetic files and a disposable container.
 4. Deploy to the emulator with `dotnet build <app>.csproj -t:Run -f net10.0-android` or from the IDE.
 5. Run the repository's lint hooks; files created by agent tooling on Windows may need CRLF
    converted to the `.editorconfig` line ending.
