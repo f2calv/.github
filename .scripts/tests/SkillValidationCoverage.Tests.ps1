@@ -56,11 +56,12 @@ Describe 'Persistent .NET example validation' -Tag 'Unit' {
         $job.permissions.contents | Should -Be 'read'
         $job.defaults.run.'working-directory' | Should -Be $fixtureRelativePath
         $workflow.jobs.release.needs | Should -Contain 'dotnet-examples'
-        ($job.steps | Where-Object { $_.ContainsKey('uses') -and $_.uses -like 'actions/setup-dotnet@*' }).with.'dotnet-version' |
-            Should -Be '10.0.x'
+        $sdkVersions = @($job.steps | Where-Object { $_.ContainsKey('uses') -and $_.uses -like 'actions/setup-dotnet@*' } |
+            ForEach-Object { $_.with['dotnet-version'] })
+        $sdkVersions | Should -Contain '10.0.x'
         $runs = @($job.steps | Where-Object { $_.ContainsKey('run') } | ForEach-Object { $_.run })
         $runs | Should -Contain 'dotnet build Example.CountParsing.slnx --configuration Release'
-        $test = @($runs | Where-Object { $_ -match '^dotnet test ' })
+        $test = @($runs | Where-Object { $_ -match '^dotnet test ' -and $_ -match 'Example\.CountParsing\.Tests\.csproj' })
         $test.Count | Should -Be 1
         $test[0] | Should -Match '--project src/Example.CountParsing.Tests/Example.CountParsing.Tests.csproj'
         $test[0] | Should -Match '--no-build'
@@ -71,6 +72,37 @@ Describe 'Persistent .NET example validation' -Tag 'Unit' {
         ($runs -join "`n") | Should -Not -Match 'dotnet run|BenchmarkSwitcher|--filter "\*CountParsingBenchmarks'
         $global = Get-Content -LiteralPath (Join-Path $fixtureRoot 'global.json') -Raw | ConvertFrom-Json
         $global.test.runner | Should -Be 'Microsoft.Testing.Platform'
+    }
+
+    It 'builds and tests the HTTP fixture with its pinned SDK, artifact paths and complete case count' {
+        $job = $workflow.jobs['dotnet-examples']
+        $httpRelativePath = '.github/skills/dotnet-webapi/examples/http-contract'
+        $httpRoot = Join-Path $repositoryRoot $httpRelativePath
+        $global = Get-Content -LiteralPath (Join-Path $httpRoot 'global.json') -Raw | ConvertFrom-Json
+        $sdkVersions = @($job.steps | Where-Object { $_.ContainsKey('uses') -and $_.uses -like 'actions/setup-dotnet@*' } |
+            ForEach-Object { $_.with['dotnet-version'] })
+        $sdkVersions | Should -Contain $global.sdk.version
+        $global.test.runner | Should -Be 'Microsoft.Testing.Platform'
+        $build = @($job.steps | Where-Object { $_.ContainsKey('run') -and $_.run -eq 'dotnet build Example.HttpContract.slnx --configuration Release' })
+        $build.Count | Should -Be 1
+        $build[0]['working-directory'] | Should -Be $httpRelativePath
+        $test = @($job.steps | Where-Object { $_.ContainsKey('run') -and $_.run -match '^dotnet test ' -and $_.run -match 'Example\.HttpContract\.Tests\.csproj' })
+        $test.Count | Should -Be 1
+        $test[0]['working-directory'] | Should -Be $httpRelativePath
+        foreach ($adapter in @(
+                @{ Variable = 'EXAMPLE_CONTROLLER_PATH'; Project = 'Example.Controllers.SampleApp' },
+                @{ Variable = 'EXAMPLE_MINIMAL_PATH'; Project = 'Example.Minimal.SampleApp' }
+            )) {
+            $project = $adapter.Project
+            $expected = '${{ github.workspace }}/' + "$httpRelativePath/src/$project/bin/Release/net10.0/$project.dll"
+            $test[0].env[$adapter.Variable] | Should -Be $expected
+        }
+        $test[0].run | Should -Match '--configuration Release'
+        $test[0].run | Should -Match '--no-build'
+        $test[0].run | Should -Match '--filter-class Example\.HttpContract\.Tests\.Integration\.HttpContractTests'
+        $source = Get-Content -LiteralPath (Join-Path $httpRoot 'src/Example.HttpContract.Tests/Integration/HttpContractTests.cs') -Raw
+        $count = [regex]::Matches($source, '\[InlineData\(').Count + [regex]::Matches($source, '\[Fact\]').Count
+        $test[0].run | Should -Match "--minimum-expected-tests $count(?:\s|$)"
     }
 
     It 'updates only the maintained runnable package root, not illustrative package fragments' {
