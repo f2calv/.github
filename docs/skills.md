@@ -12,14 +12,14 @@ gate rejects a stale or missing row.
 | --- | --- | --- |
 | [README authoring](../.github/skills/docs-readme/SKILL.md) | `1.0.1` | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
 | [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.4` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
-| [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.0.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
+| [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.1.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.0` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.2.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
 | [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.3` | Issue quality, pull request descriptions, review findings and merge readiness |
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
 | [Summarize for PR](../.github/skills/repository-pr-summary/SKILL.md) | `1.0.1` | An explicitly requested temporary branch-change summary for review |
 | [Dependabot management](../.github/skills/github-dependabot/SKILL.md) | `1.0.1` | Coverage, grouping and troubleshooting across dependency ecosystems |
-| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.0.2` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
+| [GitHub Actions workflows](../.github/skills/github-actions-workflows/SKILL.md) | `1.1.0` | Composing CI from shared reusable workflows, starter templates and releasing shared-workflow changes safely |
 
 ## Tooling and Agent Setup
 
@@ -58,7 +58,7 @@ gate rejects a stale or missing row.
 | --- | --- | --- |
 | [Modular monolith](../.github/skills/patterns-modular-monolith/SKILL.md) | `1.0.4` | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
 | [Ports and adapters](../.github/skills/patterns-ports-and-adapters/SKILL.md) | `1.0.4` | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
-| [Architecture review](../.github/skills/patterns-architecture-review/SKILL.md) | `1.0.1` | Evidence-backed architecture smells with proportionate fixes, and realigning code to its components view |
+| [Architecture review](../.github/skills/patterns-architecture-review/SKILL.md) | `1.0.2` | Evidence-backed architecture smells with proportionate fixes, and realigning code to its components view |
 
 ## AI And Retrieval
 
@@ -90,7 +90,7 @@ gate rejects a stale or missing row.
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
-| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.2` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.1.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
-| [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.0` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
+| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.3` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.1` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |

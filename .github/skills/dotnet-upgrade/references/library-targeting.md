@@ -45,7 +45,106 @@ public metadata, serializer/source-generator support and dependency version. Pre
 public API shape unless a versioned contract change is approved. A .NET 11 optimized path must have
 a correct .NET 10 implementation, not a throwing or silently degraded fallback.
 
+## Conditional Compatibility
+
+Review source `#if`/`#elif` branches and MSBuild conditions together whenever the target matrix
+changes. Compiler symbols describe the compilation target, not the installed SDK or the version
+of a referenced NuGet package.
+
+1. For APIs whose availability, signatures or behavior differ between retained frameworks, use
+    narrow target-specific preprocessor branches around the affected operation. Preserve the public
+    contract, cancellation, disposal and error behavior in every branch. Prefer `NET11_0_OR_GREATER`
+    for an implementation valid on .NET 11 and later; use an exact symbol only for a version-specific
+    incompatibility. Preserve platform restrictions independently.
+2. Re-evaluate every old guard against all retained targets. Remove a wrapper that is always true
+    and its dead fallback; remove branches for retired targets. Raise an older `OR_GREATER` guard to
+    the oldest retained runtime where it still separates that runtime from `netstandard` or another
+    retained target. Do not replace `NET8_0_OR_GREATER` with `NET11_0_OR_GREATER` mechanically: that
+    would disable the operation on a retained .NET 10 target. Keep non-version feature/platform
+    symbols, and check compound and negated conditions.
+3. Evaluate package references and central versions for each retained TFM. Keep exact compatible
+    versions in conditioned `PackageVersion` items in `Directory.Packages.props`, and versionless
+    references in projects. Condition a `PackageReference` too when only some targets need the
+    package, for example when a newer shared framework supplies it. Update or remove retired
+    framework conditions and obsolete compatibility references rather than leaving unreachable
+    declarations. Preserve documented holds and Debug/Release substitutions.
+4. Restore and build every retained target and configuration, then run approved tests that exercise
+    each surviving branch. Check the evaluated package graph, not just literal XML or the newest
+    target's build. Target-guard cleanup is part of the required migration; optional API adoption
+    still needs the upgrade's modernization approval.
+
+### Runtime API Example
+
+For a library retaining `netstandard2.0;net10.0;net11.0`, use the modern stream overload on both
+runtime targets, with a correct older-target implementation:
+
+```csharp
+private static async Task WritePayloadAsync(
+   Stream destination,
+   byte[] payload,
+   CancellationToken cancellationToken
+)
+{
+#if NET10_0_OR_GREATER
+      await destination.WriteAsync(payload.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+      await destination.WriteAsync(payload, 0, payload.Length, cancellationToken).ConfigureAwait(false);
+#endif
+}
+```
+
+After dropping `netstandard2.0` as a separately approved support change, remove the directive and
+fallback because every retained target supports the modern overload. A .NET 11-only API instead
+needs a `NET11_0_OR_GREATER` branch and a semantically equivalent .NET 10 implementation.
+
+For example, .NET 11 makes Blazor's `EditContext.Validate()` obsolete. In an asynchronous component
+handler using matching framework-bound packages, select the supported API for each target:
+
+```csharp
+#if NET11_0_OR_GREATER
+var valid = await editContext.ValidateAsync(cancellationToken);
+#else
+cancellationToken.ThrowIfCancellationRequested();
+var valid = editContext.Validate();
+#endif
+if (!valid || cancellationToken.IsCancellationRequested)
+   return;
+```
+
+Run this inside the handler's busy-state and cancellation lifecycle. Synchronous validators work
+on both targets; asynchronous validators require the .NET 11 path. A component targeting only
+.NET 11 uses `ValidateAsync` directly, without a dead .NET 10 fallback. A newer SDK alone does not
+make this API available when the project still references the .NET 10 package.
+
+### Framework-Bound Package Example
+
+A Razor library retaining .NET 10 and explicitly adopting .NET 11 RC3 can select matching
+framework-bound packages centrally:
+
+```xml
+<Project>
+   <PropertyGroup>
+      <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+   </PropertyGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+      <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.14" />
+   </ItemGroup>
+   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+      <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.3.26522.148" />
+   </ItemGroup>
+</Project>
+```
+
+The project uses `<PackageReference Include="Microsoft.AspNetCore.Components.Web" />` without a
+version. These versions illustrate an approved prerelease migration, not permanent defaults:
+verify feed availability and support on each use. For platform-suffixed targets, use the evaluated
+framework identifier/version rather than conditions that match only an unsuffixed TFM.
+
 ## Verification
+
+If an SDK/TFM change fails in generated source or implicit usings, rebuild the affected project
+to regenerate its intermediate files before changing dependencies or adding compatibility code.
+Do not edit generated files; distinguish stale output from a current SDK or API incompatibility.
 
 With execution approval, build/test **both** retained TFMs and relevant Debug/Release graphs.
 Inspect the packed `lib/net10.0` and `lib/net11.0` assets and any reference assemblies, and restore
