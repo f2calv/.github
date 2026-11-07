@@ -71,6 +71,9 @@ For each chart:
 3. Compare effective overrides with the target schema/defaults and release notes. Preserve
    intentional settings, migrate removed or renamed settings, and retain useful upstream comments
    and property ordering.
+   Argo CD uses `valuesObject` instead of `values` when both exist, and Kubernetes prunes explicit
+   null object keys. Null-sensitive overrides require the complete inline payload in `helm.values`
+   YAML; verify the persisted live source rather than splitting overrides between both fields.
 4. Synchronize every active bootstrap or provisioning pin that installs the same release, including
    bootstrap-only definitions the local profile designates. Preserve deliberate non-installation
    and adoption boundaries; do not add a second controller or release merely for symmetry.
@@ -86,6 +89,8 @@ For each chart:
 2. Propose the smallest repository-configured render/schema/lint checks that cover changed
    overrides and migration paths. Obtain approval before tests or cluster-connected validation.
    A syntactically valid version pin alone does not establish upgrade compatibility.
+   Match the deployment renderer's Helm version, Kubernetes capabilities and actual values
+   precedence; inspect service-level behavior as well as resource readiness when deployment is approved.
 3. Run `git diff --check`; check for stale versioned filenames and inconsistent pins. Git may
    display a heavily replaced snapshot as delete/add despite using `git mv`; inspect history and
    content rather than repeatedly moving the file to force a similarity heuristic.

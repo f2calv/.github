@@ -46,7 +46,7 @@ gate rejects a stale or missing row.
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |
-| [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.0` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |
+| [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.1` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.3` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.4` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
