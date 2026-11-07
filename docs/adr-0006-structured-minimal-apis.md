@@ -2,6 +2,9 @@
 
 Status: Proposed. Date: 2026-11-07.
 
+Implementation status: Initial managed fixture delivered; native publication blocked by the
+missing Windows C++ linker. Framework selection and production guidance remain incomplete.
+
 Tracking: [issue #54](https://github.com/f2calv/.github/issues/54).
 
 ## Scope and Current State
@@ -10,9 +13,10 @@ Investigate a structured Minimal API option for explicitly selected Native AOT H
 Retain controllers as the supported default for managed application APIs. This proposal does
 not authorize application migrations, dependency installation, builds, tests or publishing.
 
-The initial ownership review and documentation comparison are complete. No representative
-application has been built or native-published. No framework/package combination is validated
-by this record. Exact versions, adoption evidence and runtime verification remain open.
+The initial ownership review and documentation comparison are complete. A bounded .NET 10
+Controller/Minimal API fixture now builds and passes shared managed HTTP tests. Native publication
+is blocked by a missing platform linker; no native artifact has been executed. The full compatibility
+matrix, external-framework comparison and production framework decision remain open.
 
 ## Ownership Review
 
@@ -90,6 +94,38 @@ stream. Handlers perform one typed service call and map its outcome to concrete 
 unions. Services remain HTTP-framework-neutral. Follow existing cancellation, error, logging
 and privacy owners rather than reproducing their rules here.
 
+## Initial Executable Evidence
+
+The [compilable HTTP comparison](../.github/skills/dotnet-webapi/examples/http-contract/README.md)
+contains a shared HTTP-neutral widget service, a managed MVC adapter, an explicit Minimal route group
+and one black-box xUnit v3 suite. This slice was explicitly authorized, including builds, a native
+publication attempt and local-process HTTP tests; no branch, application or deployment changes were
+authorized. These approvals do not cover future expanded tests or toolchain installation.
+
+Verified on 2026-11-07: SDK 10.0.403, target `net10.0`, xUnit 4.0.2. Release builds passed without
+warnings and 18 managed HTTP cases passed with none skipped. They cover lookup/absence, creation
+and following named Location, null/empty-name domain validation, conflict problems, fixed synthetic
+content headers/bytes and feature-disabled lookup. The Minimal host disables JSON reflection
+fallback. Generated request delegates contain all three mapped handlers.
+
+The `win-x64` native attempt resolved compiler package 10.0.14 and rejected anonymous named-route
+values with IL2026. `RouteValueDictionary` removed that diagnostic without suppression. Publication
+then stopped at the missing platform linker. This is not completed native compilation, whole-program
+trimming evidence or runtime proof. The same HTTP suite can target the native executable once a
+supported toolchain is available and publication succeeds.
+
+No external endpoint framework, OpenAPI package or framework-validation package was added.
+Authentication, configuration/validation generators, malformed/missing request bodies,
+enum/collection JSON, incremental streaming/cancellation/disposal failures and generated OpenAPI
+remain unverified. The small in-memory content stream is not evidence of incremental delivery.
+No .NET 11, FastEndpoints or startup benchmark comparison has run.
+
+The existing Web API skill and its catalogue entry were updated to version 1.2.0 using the
+skill-library versioning tool. The read-only metadata/version validator passed for all 60
+components. Editor diagnostics and the tracked-change whitespace check passed. These are local
+checks, not remote CI evidence; full pre-commit lint was unavailable and has not run. No fixture
+host processes remained after the tests. The skill version has not been published.
+
 ## Compatibility and Contract Gates
 
 The pilot is not a template until every applicable row has exact-version evidence.
@@ -158,16 +194,23 @@ benchmarks are future work, not authorization granted by the current investigati
 
 - [x] Review existing Web API, Native AOT and AppHost ownership and identify the local gap.
 - [x] Compare documented organization and generator/tooling costs without certifying compatibility.
-- [ ] Verify framework adoption/maintenance evidence and select exact dependency versions.
-- [ ] Obtain build/native-publish and test consent for a bounded representative comparison.
-- [ ] Implement equivalent first-party and FastEndpoints pilots; record exact compatibility results.
+- [x] Pin the initial first-party fixture to SDK 10.0.403, `net10.0` and xUnit 4.0.2.
+- [x] Obtain build/native-publish and test consent for the initial bounded first-party fixture slice.
+- [x] Implement equivalent managed Controller and first-party Minimal adapters over a shared service.
+- [x] Run the shared 18-case managed HTTP suite and inspect generated request delegates and JSON behavior.
+- [x] Link the compilable example from the existing Web API skill and bump its version to 1.2.0.
+- [x] Validate skill metadata and versions locally; record passing editor and whitespace checks.
+- [ ] Obtain native-toolchain setup approval, complete native publication and run the shared suite against its artifact.
+- [ ] Extend the fixture to the remaining compatibility gates, including authentication, validation, OpenAPI and stream lifecycle.
+- [ ] Verify external-framework adoption/maintenance evidence and select exact comparison dependencies.
+- [ ] Implement the FastEndpoints comparison and record exact compatibility results.
 - [ ] Accept or revise the approach and companion-versus-extension decision from those results.
-- [ ] Author the owning skill and representative examples; link shared contract semantics and clarify scoped instructions.
-- [ ] Add focused structural/regression checks, metadata and versions through the skill-library workflow.
-- [ ] Verify discovery descriptions, links, executed test counts and required repository validation.
+- [ ] Complete production skill guidance and representative examples; link shared semantics and clarify scoped instructions.
+- [ ] Add remaining focused structural/regression coverage and complete required repository lint/CI validation.
 
-The issue remains open. Its final acceptance criteria are not met by this documentation phase.
-No existing skill, instruction or package version changes in this phase.
+The issue remains open. Its final acceptance criteria are not met by the initial fixture slice.
+The existing Web API skill now links the compilable comparison; the full companion-versus-extension
+decision and shared instruction realignment are still deferred.
 
 ## Revisit Triggers
 
@@ -179,8 +222,12 @@ adapter workflow. Performance claims require measurements on equivalent configur
 
 ## Handover
 
-Next: choose exact .NET 10 and framework/extension versions, verify authoritative validation and
-OpenAPI generator documentation, then obtain approval for the pilot build and test matrix.
+Next: obtain approval for native-toolchain setup, finish native publication and execute the same
+HTTP suite against its artifact. Separately extend the bounded comparison to the remaining gates
+and select exact FastEndpoints/validation/OpenAPI dependencies before recommending an approach.
+The initial fixture and Web API skill version 1.2.0 complete the bounded managed phase; native
+proof, full lint and remote CI remain outstanding. Publishing or pushing requires separate
+authorization.
 Once the skill is complete, await the separate application-review request and use the criteria
 above to assess .NET 11 Native AOT adoption across the selected workspace hosts.
 The canonical local decision record is this proposed ADR; issue #54 remains the delivery tracker.

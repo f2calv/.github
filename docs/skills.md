@@ -79,7 +79,7 @@ gate rejects a stale or missing row.
 | [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.4` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
 | [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.3` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.4` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
-| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.1.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |

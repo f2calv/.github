@@ -88,6 +88,11 @@ controller's automatic-validation metadata for the GET and MVC pipeline; avoid a
 per-action attributes. Check API Explorer or the configured OpenAPI output, not reflection alone.
 This example adds no enum or custom serializer contract.
 
+The [compilable Controller/Minimal comparison](http-contract/README.md) exercises the alternate
+409 problem-result contract over HTTP. Its `ProblemHttpResult` branch declares the configurable
+409 status explicitly and verifies `application/problem+json`; it is not evidence that this
+`Conflict<ProblemDetails>` branch changes its media type.
+
 ## Validation Matrix
 
 With approval, use an isolated HTTP fixture with a fake domain service and a fixture authentication
