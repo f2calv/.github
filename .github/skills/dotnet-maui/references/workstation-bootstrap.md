@@ -61,21 +61,77 @@ after raising the project's Android API level.
    reports `There is not enough space on the disk` and then `Package path is not valid`, leaving an
    empty `system-images\<api>\<tag>\<abi>` folder. Delete that folder before retrying, or `sdkmanager`
    treats the image as installed.
-3. Install the emulator and an `x86_64` system image for the app's target API. `sdkmanager` and
-   `avdmanager` need `JAVA_HOME`:
+3. Confirm hardware acceleration and the GPU the emulator can use:
 
    ```powershell
+   & "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -accel-check   # expect "WHPX ... is installed and usable"
+   Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion
+   ```
+
+4. Install the emulator and an `x86_64` system image for the app's target API. `sdkmanager` and
+   `avdmanager` exit 1 with no output when `JAVA_HOME` is unset, which is common in a fresh shell
+   even after the JDK MSI, so set it for the process first:
+
+   ```powershell
+   $env:JAVA_HOME = (Get-ChildItem 'C:\Program Files\Microsoft\jdk-*' -Directory |
+       Sort-Object Name -Descending | Select-Object -First 1).FullName
    $sdk = "$env:LOCALAPPDATA\Android\Sdk\cmdline-tools\latest\bin"
-   & "$sdk\sdkmanager.bat" 'emulator' 'system-images;android-36;google_apis;x86_64'
+   & "$sdk\sdkmanager.bat" 'emulator' 'platform-tools' 'system-images;android-36;google_apis;x86_64'
    & "$sdk\avdmanager.bat" create avd -n phone-api36 -d <device-profile> -k 'system-images;android-36;google_apis;x86_64'
    ```
 
    List device profiles with `avdmanager list device -c` and pick one close to the target phones.
    Choose a `google_apis_playstore` image only when the test needs Play services. Visual Studio's
    **Tools > Android > Android Device Manager** does the same interactively.
-4. Start it from the IDE device list, or with
-   `& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd phone-api36`, and confirm
-   `adb devices` lists it.
+5. Tune the virtual device before its first boot. `avdmanager` can create it with the GPU disabled and
+   2 GB of RAM. The emulator then renders on the CPU, so it hangs, stops responding or exits with
+   `DisplaySurfaceGlContextHelper` or snapshot `gfxstream` errors:
+
+   ```powershell
+   $cfg = "$env:USERPROFILE\.android\avd\phone-api36.avd\config.ini"   # or $env:ANDROID_AVD_HOME
+   (Get-Content $cfg) -replace '^hw.gpu.enabled = .*', 'hw.gpu.enabled = yes' `
+       -replace '^hw.gpu.mode = .*', 'hw.gpu.mode = host' `
+       -replace '^hw.ramSize = .*', 'hw.ramSize = 4096' `
+       -replace '^vm.heapSize = .*', 'vm.heapSize = 512M' | Set-Content $cfg
+   ```
+
+   Keep `hw.cpu.ncore` at 4 and leave at least 8 GB of host RAM free. Avoid `-gpu swiftshader_indirect`,
+   which renders on the CPU; use `-gpu host` even with only integrated graphics.
+6. Start it from the IDE device list, or cold-boot it from a terminal that stays open, such as a
+   background job:
+
+   ```powershell
+   & "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd phone-api36 -no-snapshot-load `
+       -no-snapshot-save -no-boot-anim -gpu host -memory 4096 -dns-server 1.1.1.1,8.8.8.8
+   ```
+
+   A cold boot avoids a snapshot saved under different graphics settings. Explicit DNS servers fix
+   browser sign-in pages that report a host "cannot be contacted". Wait for the boot to finish, which
+   takes about 20 to 30 seconds with acceleration, then check network access from the device:
+
+   ```powershell
+   $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+   & $adb wait-for-device
+   while (((& $adb shell getprop sys.boot_completed) -join '').Trim() -ne '1') { Start-Sleep 3 }
+   & $adb devices
+   & $adb shell ping -c 1 login.microsoftonline.com
+   ```
+
+   If it hangs, run `adb emu kill` or stop the shell that launched it; restart `adb` with
+   `adb kill-server` and `adb start-server` if `adb devices` lists nothing.
+7. Prepare it for scripted testing. Turn off animations so taps and UI dumps settle quickly, and turn off
+   stylus handwriting, which otherwise intercepts `adb shell input text`:
+
+   ```powershell
+   foreach ($s in 'window_animation_scale', 'transition_animation_scale', 'animator_duration_scale') {
+       & $adb shell settings put global $s 0
+   }
+   & $adb shell settings put secure stylus_handwriting_enabled 0
+   ```
+
+   The first browser launch shows Chrome's first-run screens; complete them once by hand. Sign-in
+   pages may raise Chrome's saved-password sheet; dismiss it with `adb shell input keyevent
+   KEYCODE_BACK` rather than choosing an account.
 
 ## 6. IDE
 

@@ -29,7 +29,7 @@ gate rejects a stale or missing row.
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.2` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
-| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.1` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
+| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.2` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
@@ -83,7 +83,7 @@ gate rejects a stale or missing row.
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.0.1` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.1.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.5` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.4` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
