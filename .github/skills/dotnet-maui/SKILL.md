@@ -117,6 +117,7 @@ Ask before building, testing or deploying. Then:
 | Workload packs exist but `dotnet workload list` is empty | The install ran under another SDK band or did not finish; rerun from the repository root |
 | `sdkmanager` or `avdmanager` exits 1 with no output | Set `JAVA_HOME` to the installed JDK first |
 | Emulator does not start or is very slow | Enable the Windows Hypervisor Platform optional feature, reboot, and use an `x86_64` system image |
+| `sdkmanager` reports `There is not enough space on the disk`, then `Package path is not valid` | Free at least 15 GB on the SDK's drive or move the SDK, delete the empty image folder it left, then retry; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
 | `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
 | `NU1102` for `Microsoft.NETCore.App.Runtime.Mono.win-x64` when publishing Windows | `-r win-x64` applies the runtime to every target framework, including Android. Publish with `-f <windows TFM> -p:RuntimeIdentifierOverride=win-x64` instead |

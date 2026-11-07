@@ -46,12 +46,22 @@ after raising the project's Android API level.
 
 ## 5. Android Emulator
 
-1. Enable the **Windows Hypervisor Platform** optional feature and reboot if it was off. Check free
-   space first: the emulator, one system image and one virtual device need roughly 10 GB. On a small
-   system drive, install the SDK on another drive and set `ANDROID_HOME`, `ANDROID_AVD_HOME` and the
-   IDE's Android SDK location to match; `sdkmanager` can leave a broken image folder behind when it
-   runs out of space, so delete it before retrying.
-2. Install the emulator and an `x86_64` system image for the app's target API. `sdkmanager` and
+1. Enable the **Windows Hypervisor Platform** optional feature and reboot if it was off.
+2. Check free space before downloading. A current `x86_64` system image downloads as a compressed
+   archive of about 2 GB, which then extracts beside it. The emulator itself is about 1 GB, and a
+   virtual device's data and snapshots grow to several more. Allow at least 15 GB on the SDK's drive:
+
+   ```powershell
+   Get-PSDrive -PSProvider FileSystem | Where-Object Used |
+       Select-Object Name, @{ n = 'FreeGB'; e = { [math]::Round($_.Free / 1GB, 1) } }
+   ```
+
+   On a small system drive, install the SDK on another drive and set `ANDROID_HOME`,
+   `ANDROID_AVD_HOME` and the IDE's Android SDK location to match. When space runs out, `sdkmanager`
+   reports `There is not enough space on the disk` and then `Package path is not valid`, leaving an
+   empty `system-images\<api>\<tag>\<abi>` folder. Delete that folder before retrying, or `sdkmanager`
+   treats the image as installed.
+3. Install the emulator and an `x86_64` system image for the app's target API. `sdkmanager` and
    `avdmanager` need `JAVA_HOME`:
 
    ```powershell
@@ -63,7 +73,7 @@ after raising the project's Android API level.
    List device profiles with `avdmanager list device -c` and pick one close to the target phones.
    Choose a `google_apis_playstore` image only when the test needs Play services. Visual Studio's
    **Tools > Android > Android Device Manager** does the same interactively.
-3. Start it from the IDE device list, or with
+4. Start it from the IDE device list, or with
    `& "$env:LOCALAPPDATA\Android\Sdk\emulator\emulator.exe" -avd phone-api36`, and confirm
    `adb devices` lists it.
 
