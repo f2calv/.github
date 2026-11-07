@@ -174,6 +174,9 @@ repository, never as a route for credentials into a ConfigMap.
   its nested objects explicitly. Preserve existing validation when changing an options model.
 - **Attribute layout**: inline same-family attributes (`[Required, Range(1, 65535)]`); keep different
   families on separate lines (`[Required, Url]` above `[JsonPropertyName]`).
+- **Setters**: give bindable properties public `set` accessors, not `init`. The configuration binding
+  source generator, which trimmed and Native AOT apps need, binds into an existing instance and
+  silently skips `init`-only properties, leaving their defaults.
 - **Boolean naming**: describe state with a `{Feature}{State}` form (`DistributedLockingEnabled`),
   never an imperative prefix (`EnableDistributedLocking`).
 - **Constants extraction**: move `const` keys, profile names and identifiers that are not bindable
