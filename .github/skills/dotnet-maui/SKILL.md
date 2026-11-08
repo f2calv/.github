@@ -75,6 +75,9 @@ Use Windows as a development-only target when Android is the product platform:
 - With SDK 10.0.4xx the Windows target built with only `maui-android` installed; install the
   `maui-windows` workload only if the build reports it missing.
 - Update the repository's platform-scope instructions and READMEs in the same change.
+- When Windows is a product target being proven first, start with only the Windows framework, keep the
+  project out of any solution that Linux CI or container builds restore, and add Android when its
+  phase starts rather than carrying an untested target.
 
 ### 5. Compose Platform Services
 
@@ -142,6 +145,8 @@ Ask before building, testing or deploying. Then:
 | `sdkmanager` reports `There is not enough space on the disk`, then `Package path is not valid` | Free at least 15 GB on the SDK's drive or move the SDK, delete the empty image folder it left, then retry; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
 | `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
+| `CS1591` in `Resources_Styles_*.xaml.sg.cs` under `obj` | `MauiXamlInflator=SourceGen` emits undocumented public types, which fail repositories that generate documentation with warnings as errors. Set `GenerateDocumentationFile` to `false` in the application project only |
+| Microphone access reports granted on Windows but capture fails | MAUI's `Permissions.Microphone` is not implemented on Windows. Treat `E_ACCESSDENIED` (`0x80070005`) from starting capture as the privacy-setting denial and tell the user where to allow desktop apps |
 | `NU1102` for `Microsoft.NETCore.App.Runtime.Mono.win-x64` when publishing Windows | `-r win-x64` applies the runtime to every target framework, including Android. Publish with `-f <windows TFM> -p:RuntimeIdentifierOverride=win-x64` instead |
 | `CS0104` ambiguity on `OperationCanceledException` in Android code | `Android.OS` defines its own. A `CancellationSignal` cancellation throws `Android.OS.OperationCanceledException`; catch that type and rethrow `System.OperationCanceledException` with the caller's token |
 | NuGet restore cannot replace a locked MAUI build-task DLL | Use a short isolated `NUGET_PACKAGES` path instead of stopping an IDE or deleting its shared cache. A long session path can break Android AAR extraction; clean the affected Android intermediates with `dotnet clean` after switching caches, then rebuild |
