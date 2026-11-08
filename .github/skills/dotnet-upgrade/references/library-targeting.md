@@ -4,6 +4,33 @@ Framework retirement is an explicit package-support change, not a side effect of
 application. Read the actual consumers and package graph, including platform-suffixed projects
 and conditional references, before editing target declarations.
 
+## Framework Support Policy
+
+Independently published NuGet libraries support the current LTS and current STS .NET releases.
+Recheck Microsoft's lifecycle before each support change; when an LTS or STS release reaches end
+of support, remove its targets from the class libraries and associated tests in the release train.
+Do not retire a still-supported target merely because a consuming application upgrades. Retain
+`netstandard2.0` only in the older libraries whose existing compatibility contract requires it;
+do not add it to every package or remove it as an incidental platform upgrade.
+
+Choose targets by distribution and ownership, not project names or the fact that a project is a
+class library or test assembly:
+
+| Project boundary | Target policy |
+| --- | --- |
+| Independently published NuGet library, contracts, client or testing companion | Supported LTS/STS package matrix |
+| Published .NET global tool | Supported LTS/STS tool matrix |
+| Unit or integration tests associated with those packages | Exercise every retained package target |
+| Deployed application and libraries distributed only with it | Application's single target |
+| Application-only server, backend, execution or evaluation tests | Same single target as the application component |
+| Dedicated support host for published-library tests | Retained package targets needed by those tests |
+
+An application repository can contain both boundaries. Its published packages and their tests
+retain the package matrix; its private implementation libraries and application tests do not.
+Do not invent an older-framework application host or retarget private dependencies solely to
+multi-target application tests. Remove incidental application dependencies from package tests or
+separate the application-specific fixtures instead.
+
 ## Planned .NET 10/11 Migration
 
 For an approved migration from .NET 8/9/10 libraries to .NET 10/11:
@@ -14,8 +41,10 @@ For an approved migration from .NET 8/9/10 libraries to .NET 10/11:
    Do not derive the .NET 11 GA day or lifetime from a release-candidate expiry date.
 2. Before .NET 11 GA, keep production .NET 10 targets and prepare the change. Adding a .NET 11
    prerelease target or preview SDK requires explicit prerelease authorization.
-3. After GA and dependency/toolchain verification, the selected ordinary class-library matrix is
-   `net10.0;net11.0`, replacing `net8.0` and `net9.0`. Applications remain single-targeted.
+3. After GA and dependency/toolchain verification, the selected published-package matrix is
+   `net10.0;net11.0`, replacing `net8.0` and `net9.0`, with associated tests on both targets.
+   An explicitly approved RC readiness train may prepare that same matrix before GA.
+   Applications, application-only libraries and their tests remain single-targeted on `net11.0`.
    Preserve necessary OS suffixes and framework references. Do not retain retired targets merely
    to avoid completing the approved consumer migration.
 4. Change the owning imported props/targets, CI test/pack matrices, conditional package groups,
@@ -118,7 +147,7 @@ make this API available when the project still references the .NET 10 package.
 
 ### Framework-Bound Package Example
 
-A Razor library retaining .NET 10 and explicitly adopting .NET 11 RC3 can select matching
+A Razor library retaining .NET 10 and explicitly adopting .NET 11 can select matching
 framework-bound packages centrally:
 
 ```xml

@@ -86,8 +86,11 @@ lessons back into that authority, not only into this skill's version-reference f
 2. Trace CI/reusable workflow inputs, setup steps, build/test scripts, SDK and runtime container
    stages, Compose, Dev Containers, deployment runtime requirements, examples and documentation.
    Identify the owning setting rather than replacing every occurrence of the old version.
-3. Determine applications versus published libraries, all retained TFMs, RIDs, OS/CPU targets,
-   framework-dependent versus self-contained deployment, AOT/trimming and actual EF providers.
+3. Determine independently published libraries, tools and testing companions versus application-only
+  components, and classify their associated tests using the
+  [framework support policy](./references/library-targeting.md#framework-support-policy).
+  Record retained TFMs, RIDs, OS/CPU targets, framework-dependent versus self-contained deployment,
+  AOT/trimming and actual EF providers.
    Identify Debug local-project substitution versus Release published-package dependencies.
 4. Record current diagnostics and behavior evidence from existing artifacts; request a baseline
    build/test or benchmark when needed. Do not invent a clean baseline if execution is declined.

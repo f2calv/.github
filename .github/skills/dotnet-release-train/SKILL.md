@@ -56,6 +56,9 @@ user explicitly asks for parallel sessions.
 ## Repeat For Each Repository
 
 - **Inspect**
+  - Establish each project's distribution boundary and evaluated target/test matrix using the
+    [framework support policy](../dotnet-upgrade/references/library-targeting.md#framework-support-policy)
+    before changing package support. Do not infer that matrix from the application's target.
   - Read the repository instructions and documented package holds first.
     If a hold contradicts an already-shipped major, inspect the existing platform references and
     adaptations before proposing a downgrade. Ask which policy is intended, validate the affected
@@ -98,6 +101,8 @@ user explicitly asks for parallel sessions.
     from the target repository; absolute project paths do not select its runner.
   - Restore and build the repository's Debug solution when it uses local `ProjectReference` paths.
   - Restore and build its Release solution to prove the published `PackageReference` path.
+  - Build and run approved package-associated tests on every retained TFM, checking nonzero test
+    counts and packed assets. Keep application-only suites on their application target.
   - Audit the Release dependency graph too. For `dotnet list package --vulnerable --include-transitive`,
     set the process environment's `Configuration=Release`; the solution filename does not select
     conditional references, and default Debug evaluation can disagree with restored Release assets.

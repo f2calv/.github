@@ -1,10 +1,12 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.1.1
+version: 1.1.2
 facets: [dotnet]
 required:
   - id: repository-privacy
     version: 1.2.0
 related:
+  - id: dotnet-upgrade
+    reason: Select supported library, tool and test framework matrices before platform releases.
   - id: docs-readme
     reason: Update package tables, migration notes and fulfilled publication caveats.
   - id: dotnet-test-platform

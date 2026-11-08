@@ -81,7 +81,7 @@ gate rejects a stale or missing row.
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.4` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
 | [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
-| [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
+| [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.6` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
@@ -91,6 +91,6 @@ gate rejects a stale or missing row.
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.3` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.1` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
-| [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.1` | Dependency-ordered NuGet updates, releases and consumer propagation |
+| [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.2` | Dependency-ordered NuGet updates, releases and consumer propagation |

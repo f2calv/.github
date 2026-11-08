@@ -16,6 +16,11 @@ applyTo: '**/*.csproj,**/*.fsproj,**/*.vbproj,**/Directory.Build.props,**/Direct
 - Include the package README, licence and symbols through shared build properties rather than
   repeating metadata in every project.
 
+## Framework Support
+
+Use the [library, tool and test support matrix](../skills/dotnet-upgrade/references/library-targeting.md#framework-support-policy)
+before choosing or retiring targets for published NuGets and their associated tests.
+
 ## Central Package Management
 
 - Define every NuGet package version in the root `Directory.Packages.props` and keep
