@@ -105,7 +105,26 @@ For deferrable work that must continue after the app closes, such as backing up 
 - scan incrementally from a MediaStore generation checkpoint;
 - never prompt from a worker.
 
-### 7. Validate
+### 7. Build Sideload APKs
+
+For testing on your own devices without a store, build a Release APK signed with a sideload keystore
+that stays the same across builds, so each build installs over the last and keeps sign-in and settings.
+
+- Locally, run [`scripts/Build-Apk.ps1`](scripts/Build-Apk.ps1) through a repository-root
+  `build-apk.ps1` shim. Resolve it from `~/.copilot/skills/dotnet-maui/scripts`, then from a sibling
+  clone of this repository, as the containers-workflows shims do, and pass `-RepositoryRoot`,
+  `-Project` and the keystore's `-KeyAlias`, `-KeyVaultKeystoreSecret` and `-KeyVaultPasswordSecret`.
+  A `build-apk.sh` shim calls the PowerShell one. The script signs from
+  `ANDROID_SIGNING_KEYSTORE_BASE64`/`_PASSWORD`, else the Key Vault in `ANDROID_SIGNING_KEY_VAULT`,
+  else the debug key, and `-Install` replaces the app over `adb`.
+- In CI, call the shared `deploy-maui-android` workflow with `package-format: apk`, `sign: true`,
+  `version-code-from-clock: true` and an `artifact-name`, mapping the keystore to its signing secrets.
+  Skip fork and Dependabot events, which receive no secrets.
+- Both use the minutes since 2025-01-01 UTC as the version code, so local and CI builds signed with
+  the same keystore update each other. One sideload keystore may serve several apps.
+- Never ship configuration in the APK: users enter tenant, client and endpoint values on the device.
+
+### 8. Validate
 
 Ask before building, testing or deploying. Then:
 
@@ -157,3 +176,5 @@ Ask before building, testing or deploying. Then:
 - Recheck the VS Code .NET MAUI extension commands and the Android emulator system image names.
 - Each MAUI or WorkManager release: recheck which `Xamarin.AndroidX.Work.Runtime` release fits MAUI's
   AndroidX ranges, and whether WorkManager still reconciles jobs on cold start as described.
+- When the shared Android workflow's inputs change, recheck the CI half of the sideload APK section;
+  keep the script's and the workflow's version-code schemes identical.
