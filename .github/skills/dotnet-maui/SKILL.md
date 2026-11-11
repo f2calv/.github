@@ -1,6 +1,6 @@
 ---
 name: dotnet-maui
-description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, Android WorkManager background work, device debugging and Android CI builds. Use when setting up a MAUI machine in Visual Studio or VS Code, adding a platform target, wiring platform services or background work, or when a MAUI build, workload or deployment fails.'
+description: 'Bootstrap developer workstations for, create, extend and troubleshoot .NET MAUI apps: SDK-band workloads, JDK, Android SDK and emulators, a Windows development target, platform service registration, MSAL sign-in, HybridWebView pages, Android WorkManager background work, emulator and device testing, sideload APKs and Android CI builds. Use when setting up a MAUI machine, adding a platform target, wiring platform services, sign-in or background work, or when a MAUI build, deployment or Android run fails.'
 compatibility: 'Workstation bootstrap covers Windows with Visual Studio 2026 or VS Code. Android builds also run on Linux and macOS; the Windows target builds only on Windows.'
 ---
 
@@ -92,7 +92,10 @@ Use Windows as a development-only target when Android is the product platform:
 - Event handlers are `async void`: catch every expected failure, including
   `OptionsValidationException`, and show an actionable message without paths or exception details.
 - `AddOptionsWithValidateOnStart` still binds, but MAUI never starts a host, so validation runs at
-  the first `.Value` read. Handle it at that use site.
+  the first `.Value` read. Handle it at that use site, and never trigger it from a page constructor.
+- Code that works on Windows can still fail on Android. Before adding an Android target, apply
+  [Android app construction](references/android-app-construction.md): MSAL redirects, settings
+  entered on the device, HybridWebView threading and permissions, and Shell tabs.
 
 ### 6. Add Android Background Work
 
@@ -136,6 +139,8 @@ Ask before building, testing or deploying. Then:
    by process ID, invoke buttons through `InvokePattern` by their text, wait for the busy control to
    disable, then read the status `Text` elements. Use synthetic files and a disposable container.
 4. Deploy to the emulator with `dotnet build <app>.csproj -t:Run -f net10.0-android` or from the IDE.
+   [Emulator testing](references/emulator-testing.md) covers launch options, private endpoints and
+   certificates, the microphone, crash logs and app preferences.
    Drive it without a person through `adb`: `adb shell uiautomator dump` and `adb pull` give the UI
    hierarchy with each control's text and bounds, and `adb shell input tap <x> <y>` presses one. Type
    with `adb shell input text` in chunks of about 10 characters, escaping `:` and spaces, and press Back
@@ -157,7 +162,11 @@ Ask before building, testing or deploying. Then:
 | `sdkmanager` or `avdmanager` exits 1 with no output | Set `JAVA_HOME` to the installed JDK first |
 | Emulator does not start or is very slow | Enable the Windows Hypervisor Platform optional feature, reboot, and use an `x86_64` system image |
 | Emulator hangs, goes unresponsive or exits with `DisplaySurfaceGlContextHelper` or snapshot `gfxstream` errors | The AVD was created with the GPU disabled or too little RAM. Enable the host GPU and 4 GB RAM in its `config.ini`, then cold-boot; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
-| The emulator browser cannot reach a sign-in host | Start the emulator with `-dns-server 1.1.1.1,8.8.8.8` and check with `adb shell ping -c 1 <host>` |
+| The emulator browser cannot reach a sign-in host | Start the emulator with `-dns-server <private-dns>,1.1.1.1` and check with `adb shell ping -c 1 <host>` |
+| Emulator call or recording hears only silence | Launch with `-allow-host-audio`, then run `adb emu avd hostmicon`; see [emulator testing](references/emulator-testing.md#microphone) |
+| Android app exits with `CalledFromWrongThreadException` after a web view message | `RawMessageReceived` runs on a background thread on Android; dispatch the handler with `Dispatcher.Dispatch` |
+| App crashes on first launch with `OptionsValidationException` | A page constructor resolved a client whose options are not entered yet; inject `Func<TClient>` and resolve it on use |
+| `InvokeJavaScriptAsync` never returns | `Resources\Raw` is not a `MauiAsset`, so the page is a 404; see [HybridWebView](references/android-app-construction.md#hybridwebview) |
 | `sdkmanager` reports `There is not enough space on the disk`, then `Package path is not valid` | Free at least 15 GB on the SDK's drive or move the SDK, delete the empty image folder it left, then retry; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
 | `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
