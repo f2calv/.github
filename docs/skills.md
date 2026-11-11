@@ -42,7 +42,7 @@ gate rejects a stale or missing row.
 | --- | --- | --- |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.1.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.6` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
-| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
+| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.2` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |

@@ -39,6 +39,8 @@ function ConvertTo-DeployBuildArguments {
     $result = [Collections.Generic.List[string]]::new()
     $items = @($Arguments | Where-Object { $null -ne $_ })
     for ($index = 0; $index -lt $items.Count; $index++) {
+        # Deployment already passes -Push; a second one binds to build.ps1's positional version.
+        if ($items[$index] -match '^-Push(?::.*)?$') { throw 'Deployment always pushes the image; remove -Push.' }
         if ($items[$index] -match '^-Configuration(?::(.+))?$') {
             $value = if ($Matches[1]) { $Matches[1] } elseif ($index + 1 -lt $items.Count) { $items[++$index] } else { 'Debug' }
             if ($value -ne 'Debug') { throw "Deployment only performs Debug builds; '-Configuration $value' is not supported." }

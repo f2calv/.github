@@ -57,7 +57,8 @@ never redefine the version.
 `deploy.local.psd1`. Explicit command-line parameters take precedence.
 
 Deployment builds are Debug-only. Both `-Configuration Debug` and `-Configuration:Debug` are
-accepted; Release is rejected before side effects. Normalize forwarded arguments in the invoking
+accepted; Release is rejected before side effects. Deployment always pushes, so a redundant `-Push`
+is rejected too rather than binding as the build version and failing restore with NU1105. Normalize forwarded arguments in the invoking
 deployment scope so a caller-bound `Rest` parameter cannot shadow the normalized value and bind
 `Debug` accidentally as a positional build version. Cover this through the deployment entry point
 and an actual build shim, not only by testing the normalization helper.
