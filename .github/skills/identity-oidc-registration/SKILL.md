@@ -212,6 +212,7 @@ deliberately:
 | --- | --- |
 | `AADSTS50011` redirect URI mismatch | The application built an `http://` or internal-host callback; enable forwarded headers or fix the registered URI |
 | `AADSTS50105` user not assigned | Required assignment is on and the user lacks an app role assignment |
+| Entra `DuplicateValue` when exposing a permission | Custom app roles and delegated scopes share a value namespace; give them distinct values. Separate Terraform resources or apply ordering cannot make identical values valid |
 | Consent prompt for every guest | Admin consent was not granted for the delegated scopes |
 | Google `redirect_uri_mismatch` | The URI differs by scheme, host, port or path from the authorized list |
 | Google `access_denied` for an outside account | The consent screen is Internal, or External but unpublished without the user as a tester |
