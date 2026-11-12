@@ -131,6 +131,10 @@ and `ShowMessageBoxAsync`.
   before issuing or validating a token. Controllers registered with `AddControllers` lack MVC's
   view-feature antiforgery filters, so `[AutoValidateAntiforgeryToken]` fails at runtime; validate
   with `IAntiforgery` in a small authorization filter instead.
+- CodeQL's `cs/web/missing-token-validation` matches attributes by name (`*Validate*Anti*forgery*`),
+  so name that custom filter attribute accordingly and apply it to cookie mutations. It ignores
+  bearer-only APIs poorly: give machine policies an explicit JwtBearer scheme, then dismiss the
+  remaining bearer-only alerts as false positives with that reason.
 - Sign-in and sign-out are full page loads to host routes that the client router does not own:
   navigate with `forceLoad: true`, and post sign-out as a plain form carrying the token field.
 - Derive audit actors from the validated principal, never from a request body.

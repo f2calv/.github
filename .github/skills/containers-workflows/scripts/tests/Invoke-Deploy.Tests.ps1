@@ -144,6 +144,10 @@ exit 0
         { ConvertTo-DeployBuildArguments @('-Configuration', 'Release') } | Should -Throw '*Debug builds*'
     }
 
+    It 'rejects a redundant push switch instead of forwarding it as the build version' {
+        { ConvertTo-DeployBuildArguments @('-Push') } | Should -Throw '*always pushes*'
+    }
+
     It 'requires the selected manifest path' {
         { Resolve-DeploymentManifestPath -ManifestPath '' } | Should -Throw '*ManifestPath is required*'
     }

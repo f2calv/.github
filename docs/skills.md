@@ -42,14 +42,15 @@ gate rejects a stale or missing row.
 | --- | --- | --- |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.1.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.6` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
-| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.1` | Shared local container build and GitOps deployment scripts |
+| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.2` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |
 | [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.1` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.3` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
-| [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.4` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
+| [Azure reporting](../.github/skills/azure-reporting/SKILL.md) | `1.0.0` | Subscription cost by service or resource group, model token usage per deployment and retail prices for cost estimates |
+| [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.5` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.1.0` | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Architecture Patterns
@@ -82,8 +83,8 @@ gate rejects a stale or missing row.
 | [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.5` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
-| [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.5` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.1.0` | Workstation bootstrap, emulators, a Windows development target, platform service registration and device debugging |
+| [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.6` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.0` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.5` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.4` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
