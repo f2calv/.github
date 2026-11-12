@@ -27,7 +27,7 @@ gate rejects a stale or missing row.
 | --- | --- | --- |
 | [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.2` | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
-| [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.2` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
+| [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.3` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
 | [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.3` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
