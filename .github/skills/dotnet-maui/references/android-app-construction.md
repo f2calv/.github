@@ -77,6 +77,8 @@ device. Each one fixed a defect that only appeared on Android, after the same co
 - A self-hosted endpoint behind a private certificate authority needs
   `android:networkSecurityConfig` trusting `user` certificates as well as `system` ones, with
   `cleartextTrafficPermitted="false"`. Drop the user anchor once the endpoint has a public certificate.
+- Set `android:usesCleartextTraffic="false"` on the manifest `<application>` element as well;
+  SonarQube rule `xml:S5332` flags the manifest even when the network security config forbids it.
 
 ## Shell Pages
 
