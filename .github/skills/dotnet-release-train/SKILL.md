@@ -147,8 +147,9 @@ user explicitly asks for parallel sessions.
     head. Never rebase or force-push a published release branch for this.
   - Merge only after the user authorizes it or an active auto-merge instruction covers it.
 - **Verify the release**
-  - Switch the local checkout to the default branch, fast-forward from origin, and delete the merged
-    local branch when no other worktree owns it.
+  - Once the pull request reports `MERGED`, and never earlier, switch the local checkout to the
+    default branch, fast-forward from origin, and delete the merged local branch when no other
+    worktree owns it.
   - Wait for default-branch CI and the immutable GitHub release tag. Select the run by the merge
     commit SHA (`gh run list --commit <sha>`), not by the latest run on the branch, which may still
     be the previous push.

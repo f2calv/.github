@@ -38,8 +38,11 @@ The `github-issues-and-pull-requests` skill owns issue and pull-request procedur
   analysis, record that limitation in the merge report and rely on the required checks.
 - Merge with a regular merge commit only, so the individual commits stay in history; never squash or
   rebase. If merge commits are disabled or blocked, stop and ask.
-- After the merge, switch the local checkout to the default branch and fast-forward it. Delete the
-  local feature branch only when its commits are reachable from the updated default branch.
+- Stay on the local feature branch until the merge is confirmed: every gate passed and the pull
+  request reports `MERGED`. A refused, draft or failed merge changes nothing locally. Only then
+  switch to the default branch and fast-forward it, and delete the feature branch only when its
+  commits are reachable from the updated default branch. Run the cleanup as a separate step, never
+  chained after the merge command in one invocation.
 
 ## Releases
 
