@@ -121,7 +121,7 @@ Describe 'Get-DesiredRuleset' -Tag 'Unit' {
         }
         @{
             Repository = 'f2calv/.github'
-            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'test')
+            Expected   = @('lint / lint', 'versioning / gha-release-versioning', 'test', 'skill-versions')
         }
         @{
             Repository = 'f2calv/doorbird-rs'
