@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [azure, cost, observability]
+related:
+  - id: terraform-infrastructure
+    reason: Resource ownership and cost controls for the infrastructure being reported on.
+  - id: ai-edge-inference
+    reason: Comparing cloud model cost with local or edge inference.
