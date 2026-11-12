@@ -2,7 +2,7 @@
 
 Use this integration example only with a verified `CasCap.Common.Caching` checkout or package
 that exposes `CasCap.Common.Abstractions.ILeadershipRunner.RunAsync`. The API is provisional;
-do not infer published availability from these snippets. Target .NET 8 or later.
+do not infer published availability from these snippets. Target a supported .NET release (.NET 10 or 11).
 
 The shared runner already owns acquisition, RedLock renewal observation, loss cancellation,
 awaited cleanup and reacquisition. **Do not copy that implementation into the application.**

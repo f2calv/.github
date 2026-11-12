@@ -78,7 +78,7 @@ gate rejects a stale or missing row.
 | [Polymorphic configuration](../.github/skills/dotnet-polymorphic-configuration/SKILL.md) | `1.0.3` | Discriminator-based DTO graphs, merged configuration bridges and derived-type startup validation |
 | [Background pipelines](../.github/skills/dotnet-background-pipelines/SKILL.md) | `1.0.4` | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
 | [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.4` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
-| [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.3` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
+| [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.4` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.4` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
 | [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.0` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.4` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
@@ -87,11 +87,11 @@ gate rejects a stale or missing row.
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.0` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.4` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.5` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
-| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.4` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
+| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.4` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.3` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
-| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.0` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
+| [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.1` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.1.2` | Dependency-ordered NuGet updates, releases and consumer propagation |

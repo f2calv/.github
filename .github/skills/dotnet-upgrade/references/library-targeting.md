@@ -4,27 +4,26 @@ Framework retirement is an explicit package-support change, not a side effect of
 application. Read the actual consumers and package graph, including platform-suffixed projects
 and conditional references, before editing target declarations.
 
-## Planned .NET 10/11 Migration
+## Current Framework Support
 
-For an approved migration from .NET 8/9/10 libraries to .NET 10/11:
+Select targets from the project's delivery role and the supported releases:
 
 1. Recheck the [support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)
-   and release records. As checked 2026-11-05, .NET 8 and 9 reach end of support on **2026-11-10**:
-   they are not already unsupported on the assessment date. .NET 10 is LTS through 2028-11-14.
-   Do not derive the .NET 11 GA day or lifetime from a release-candidate expiry date.
-2. Before .NET 11 GA, keep production .NET 10 targets and prepare the change. Adding a .NET 11
-   prerelease target or preview SDK requires explicit prerelease authorization.
-3. After GA and dependency/toolchain verification, the selected ordinary class-library matrix is
-   `net10.0;net11.0`, replacing `net8.0` and `net9.0`. Applications remain single-targeted.
+   and release records. Verify GA status, support lifetime and dependency/toolchain compatibility.
+2. Independently published libraries, tools and testing companions target the supported LTS and
+   STS releases, currently `net10.0;net11.0`. Their associated tests exercise both targets.
+   Application-only projects and tests target the application's single framework, currently `net11.0`.
+3. Keep target declarations and documentation focused on that current support matrix.
    Preserve necessary OS suffixes and framework references. Do not retain retired targets merely
    to avoid completing the approved consumer migration.
-4. Change the owning imported props/targets, CI test/pack matrices, conditional package groups,
-   lock files, container test targets, examples and supported-framework documentation together.
+4. Change the owning imported props/targets, SDK install lists, CI test/pack matrices, conditional
+   package groups, lock files, container test targets, examples and supported-framework documentation
+   together. Do not retain retired SDKs in shared tooling for compatibility after their support ends.
    Inspect evaluated MSBuild output; literal XML searches miss inherited or conditional TFMs.
 5. Remove dead target guards and obsolete workarounds when no retained consumer needs them.
    Do not remove independent `netstandard` or platform targets without a separate support decision.
-6. Publish producers in dependency order through the release-train skill. Dropping .NET 8/9 package
-   assets breaks those consumers; choose the appropriate package release level and migrate them
+6. Publish producers in dependency order through the release-train skill. Changing supported package
+   assets can break consumers; choose the appropriate package release level and migrate them
    deliberately. A successful Debug build using sibling source does not prove NuGet compatibility.
 
 ## Compiler Syntax Is Not Runtime API Availability
@@ -33,7 +32,7 @@ For an approved migration from .NET 8/9/10 libraries to .NET 10/11:
 | --- | --- | --- |
 | .NET 10 only | Target-default stable C# 14 and .NET 10 APIs | Do not opt into previews just because a newer SDK is installed |
 | .NET 10 and 11 | Per-TFM compiler defaults, or an explicitly supported common stable language version | Shared syntax must compile for both; .NET 11-only APIs need a target-specific implementation |
-| .NET 11 only, after GA | Target-default stable C# 15 and .NET 11 APIs | Verify each feature is released; language memory-safety previews remain a separate opt-in |
+| .NET 11 only | Target-default stable C# 15 and .NET 11 APIs | Verify each feature is released; language memory-safety previews remain a separate opt-in |
 
 Do not set `LangVersion=latest`/`preview` repository-wide to force C# 15 syntax through .NET 10
 assets. A compiler accepting syntax is not evidence that the target/runtime combination is supported.
@@ -59,8 +58,8 @@ of a referenced NuGet package.
 2. Re-evaluate every old guard against all retained targets. Remove a wrapper that is always true
     and its dead fallback; remove branches for retired targets. Raise an older `OR_GREATER` guard to
     the oldest retained runtime where it still separates that runtime from `netstandard` or another
-    retained target. Do not replace `NET8_0_OR_GREATER` with `NET11_0_OR_GREATER` mechanically: that
-    would disable the operation on a retained .NET 10 target. Keep non-version feature/platform
+   retained target. Do not raise a guard to `NET11_0_OR_GREATER` mechanically when the operation
+   must also run on a retained .NET 10 target. Keep non-version feature/platform
     symbols, and check compound and negated conditions.
 3. Evaluate package references and central versions for each retained TFM. Keep exact compatible
     versions in conditioned `PackageVersion` items in `Directory.Packages.props`, and versionless
@@ -118,7 +117,7 @@ make this API available when the project still references the .NET 10 package.
 
 ### Framework-Bound Package Example
 
-A Razor library retaining .NET 10 and explicitly adopting .NET 11 RC3 can select matching
+A Razor library targeting .NET 10 and .NET 11 can select matching
 framework-bound packages centrally:
 
 ```xml
@@ -130,13 +129,13 @@ framework-bound packages centrally:
       <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.14" />
    </ItemGroup>
    <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
-      <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.3.26522.148" />
+      <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
    </ItemGroup>
 </Project>
 ```
 
 The project uses `<PackageReference Include="Microsoft.AspNetCore.Components.Web" />` without a
-version. These versions illustrate an approved prerelease migration, not permanent defaults:
+version. These versions illustrate target-specific stable package selection, not permanent defaults:
 verify feed availability and support on each use. For platform-suffixed targets, use the evaluated
 framework identifier/version rather than conditions that match only an unsuffixed TFM.
 
