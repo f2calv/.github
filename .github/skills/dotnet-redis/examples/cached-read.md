@@ -2,7 +2,7 @@
 
 A synthetic catalog service that reads products through `IDistributedCache`, expires entries with
 absolute jitter, and invalidates on write. It shows the shape only; the product store stands in for
-the application's authoritative database or API. Target .NET 8 or later.
+the application's authoritative database or API. Target a supported .NET release (.NET 10 or 11).
 
 ## Key and Role
 
@@ -84,7 +84,7 @@ builder.Services.AddSingleton<IProductStore, ProductStore>();
 builder.Services.AddSingleton<ProductCatalogService>();
 ```
 
-`AddCasCapCaching` registers `TimeProvider.System` on .NET 8 or later when none is registered.
+`AddCasCapCaching` registers `TimeProvider.System` when none is registered.
 
 ## `appsettings.json`
 

@@ -1,8 +1,8 @@
 ---
 name: containers-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing a Dockerfile, including rules docker buildx build --check misses; Compose stacks belong to containers-docker-compose.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing a Dockerfile, including rules docker buildx build --check misses, or considering WSLC on Windows without Docker; Compose stacks belong to containers-docker-compose.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
-compatibility: 'The audit requires PowerShell 7.4. Build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers.'
+compatibility: 'The audit requires PowerShell 7.4. Full build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers. Windows users without Docker can use WSLC for capability-checked local validation.'
 ---
 
 # Container Images
@@ -21,6 +21,8 @@ those.
 * PowerShell 7.4 for `scripts/Test-Dockerfile.ps1`.
 * Docker Buildx for `--check` and platform builds. The containerd image store is needed to load a
   multi-platform image with `--load`.
+* Without Docker on Windows, follow the [WSLC path](references/validation-notes.md#windows-without-docker)
+  for local validation; it does not replace the Docker/Buildx publication gates.
 
 ## Quick Start
 
@@ -123,3 +125,5 @@ multi-platform loading, shell-less images and tag casing.
 * Script parameters in the Script Reference whenever the scripts change.
 * Keep shared version inputs, verified GA/tag/platform gates, AOT toolchains, globalization,
   ignore-file inputs and entrypoints aligned; exercise managed, Debug and AOT audit regressions.
+* WSLC release availability, installed CLI options and Dockerfile feature support before changing
+  the Windows validation path.

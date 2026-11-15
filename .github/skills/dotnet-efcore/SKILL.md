@@ -114,6 +114,8 @@ With approval, select only the checks required by the change:
   local project substitutions differ.
 - Check model/snapshot drift and inspect generated migrations and SQL before producing deployable
   artifacts. A migration file's presence does not establish model consistency or deployment safety.
+  Update any test that pins the migration list; it often carries an integration trait that a
+  credential-free local filter skips, so it first fails in CI.
 - Test query translation, constraints, JSON/provider types, transactions and races against an
   isolated instance of the production database engine where those semantics matter. SQLite and
   EF InMemory are not PostgreSQL substitutes.

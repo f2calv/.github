@@ -1,6 +1,6 @@
 ---
 name: repository-privacy
-description: 'Check that a commit, issue, pull request, review or release note is safe to publish: PII scanning, owner-specific references in shared guidance, placeholders, the public/private boundary and stripping agent attribution from unpushed commits. Use before committing, pushing or posting GitHub content.'
+description: 'Check that a commit, issue, pull request, review, release note or generated documentation is safe to publish: PII, confidential package feeds, owner-specific references, placeholders, the public/private boundary and attribution in unpushed commits. Use before committing, pushing or posting GitHub content.'
 compatibility: 'The scripts require PowerShell 7.4 and git. Run them against the repository being checked with -RepoRoot.'
 ---
 
@@ -54,6 +54,32 @@ first kind of hit is decisive; the second needs judgement.
   detectable. Never bypass a seeded finding without resolving its classification.
 - `-IncludeHistory` is the only way to find a value that was committed and later deleted. Removing it
   from the working tree does not remove it from the history a clone carries.
+
+### Private Workstation Inputs
+
+Private package-source endpoints, organization-specific feed paths, machine-local overlays and
+workstation guidance are confidential even when they contain no credentials. Never copy them into
+public instructions, examples, fixtures, build logs, workflow annotations or publication metadata.
+
+- Ordinary workstations need no private feed configuration: `-PrivateTerm` and `-ScanFile` default
+  to empty arrays. Never require a corporate skill, private runner, package feed or installation to
+  run the scanner. Missing default local configuration files remain optional.
+- When confidential workstation inputs exist, read only reviewed ignored local guidance or settings
+  and pass selected exact hosts, paths or identifiers through `Invoke-PiiScan -PrivateTerm` in memory.
+  Do not put real terms in command history, a tracked denylist or shared guidance. Supply the same
+  terms when scanning another repository; the scanner does not discover unrelated local guidance.
+- Explicit terms bypass public-domain and placeholder allowlists. Select the private host or feed
+  path, not an entire public vendor domain; public documentation and ordinary package sources must
+  remain usable. Include both the private URL and identifying host/path fragments when relevant.
+- Console summaries show counts only. Returned `Seeds`, `Findings`, `Value` and `Text`, and optional
+  CSV reports, still contain confidential data: inspect locally, never echo the full result or
+  attach it to a public report.
+
+For an untracked draft or generated text artifact, supply its explicit path through `-ScanFile`.
+Enumerate the reviewed final publication files, including rendered HTML, search indexes and text
+assets, rather than claiming that a Git-only scan covers them. Missing selected files fail the scan.
+Generate documentation from tracked, reviewed public inputs, not every file in the checkout;
+ignored guidance and private package-source overlays must never become pages or downloadable assets.
 
 ### Shared Guidance Files
 
@@ -113,7 +139,8 @@ Re-read the exact text that will become public, not the change that prompted it:
 the labels, the branch name and the commit messages being pushed. Branch names travel with a pull
 request and are easy to overlook.
 
-The repository scanner only sees Git content. Separately inspect every proposed issue, pull-request,
+The default repository scan only sees tracked Git content; `-ScanFile` adds explicitly selected text
+files. Separately inspect every proposed issue, pull-request,
 review, release and workflow-dispatch title or body before sending it. Replace local absolute paths
 rooted in an operating-system user profile with repository-relative paths or portable placeholders.
 After creating or updating public metadata, retrieve it from the remote service and verify the
@@ -154,6 +181,8 @@ pwsh ./.github/skills/repository-privacy/scripts/Remove-CommitAttribution.ps1 -R
 ## Maintaining This Skill
 
 - Scanner patterns, and each newly found leak category the scanner cannot see (Step 3).
+- Optional private feed terms, generated-file coverage and redacted reporting; retain regression
+  coverage for ordinary workstations without confidential package configuration.
 - Example-wording and collision heuristics in `Find-SpecificReferences.ps1` when a review item proves
   a false positive or a real reference slips through.
 - Attribution line patterns as harnesses and extensions change how they credit agents (Step 6).

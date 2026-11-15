@@ -37,7 +37,7 @@ rules:
 - Allman braces; omit braces for single-statement `if`/`else`/`foreach`/`for`/`while`/`using`
   bodies.
 - PascalCase types and members; no `this.`; `var` unless the type is not obvious; pattern matching;
-  nullable reference types and implicit usings enabled; the latest stable C# (currently 14.0).
+  nullable reference types and implicit usings enabled; the latest stable C# (currently 15.0).
 - Expression bodies for accessors, properties, indexers, lambdas, constructors and single-expression
   methods, not operators or local functions; move `=>` to the next line when it would scroll.
 - Interface members declare explicit `public`. Explicit interface properties use accessor blocks

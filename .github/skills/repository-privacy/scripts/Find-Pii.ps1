@@ -38,6 +38,14 @@
     Also scan every commit reachable from all refs (git rev-list --all). Slower, but this
     is what finds PII that was committed and later removed from the working tree.
 
+.PARAMETER PrivateTerm
+    Exact confidential literals supplied in memory, including private feed hosts or paths.
+    These bypass public-domain and placeholder allowlists. Do not put real values in CLI history.
+
+.PARAMETER ScanFile
+    Additional explicit UTF-8 text files, including untracked drafts or generated artifacts.
+    Relative paths are resolved against RepoRoot. Missing files fail the scan.
+
 .PARAMETER OutFile
     Optional path to write the full result set as CSV.
 
@@ -105,6 +113,9 @@ param(
         '.env'
     ),
     [switch]$IncludeHistory,
+    [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) -and $_.Length -ge 3 })]
+    [string[]]$PrivateTerm = @(),
+    [string[]]$ScanFile = @(),
     [string]$OutFile,
     [switch]$FailOnFind
 )
@@ -125,6 +136,10 @@ function Invoke-PiiScan {
         Repository-relative files from which exact seed values are extracted.
     .PARAMETER IncludeHistory
         Scans all reachable commits in addition to the working tree.
+    .PARAMETER PrivateTerm
+        Exact confidential literals supplied in memory, without public-domain allowlisting.
+    .PARAMETER ScanFile
+        Additional explicit UTF-8 text files to scan, including generated artifacts and drafts.
     .PARAMETER OutFile
         Optional CSV output path.
     .OUTPUTS
@@ -143,6 +158,13 @@ function Invoke-PiiScan {
 
         [Parameter(Mandatory = $false)]
         [switch]$IncludeHistory,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) -and $_.Length -ge 3 })]
+        [string[]]$PrivateTerm = @(),
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$ScanFile = @(),
 
         [Parameter(Mandatory = $false)]
         [string]$OutFile
@@ -246,7 +268,11 @@ function Invoke-PiiScan {
         # Drop allowlisted / too-short seeds.
         $seeds = @($seedValues | Where-Object { $_.Length -ge 3 -and -not (Test-Allowlisted $_) } | Sort-Object)
 
-        Write-Host "Seed files used:   $([string]::Join(', ', $seedFilesFound))" -ForegroundColor Cyan
+        $explicitTerms = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($term in $PrivateTerm) { [void]$explicitTerms.Add($term) }
+        $seeds = @(@($seeds) + @($explicitTerms) | Sort-Object -Unique)
+
+        Write-Host "Seed files used:   $($seedFilesFound.Count)" -ForegroundColor Cyan
         Write-Host "Seed values found: $($seeds.Count)" -ForegroundColor Cyan
 
         # ----------------------------------------------------------------------------------
@@ -259,9 +285,11 @@ function Invoke-PiiScan {
             'AzureStorage' = $rxStorage
             'UserPath'     = [regex]'(?i)(?:[a-z]:\\Users\\[a-z0-9][a-z0-9._-]*|/(?:Users|home)/[a-z0-9][a-z0-9._-]*)'
         }
+        $seedIndex = 0
         foreach ($s in $seeds) {
             $escapedSeed = [regex]::Escape($s)
-            $matchers["Seed:$s"] = if ($s -match '^\d{1,3}(?:\.\d{1,3}){3}$') {
+            $seedIndex++
+            $matchers["Seed:$seedIndex"] = if ($s -match '^\d{1,3}(?:\.\d{1,3}){3}$') {
                 [regex]("(?i)(?<![0-9.])$escapedSeed(?![0-9.])")
             }
             else {
@@ -320,7 +348,7 @@ function Invoke-PiiScan {
                 $outB = @(& git @argsB 2>&1)
                 $exitCode = $LASTEXITCODE
                 if ($exitCode -notin @(0, 1)) {
-                    throw "git grep failed with exit code ${exitCode}: $($outB -join [Environment]::NewLine)"
+                    throw "Seeded git grep failed with exit code ${exitCode}; inspect the repository locally."
                 }
                 if ($outB) { $outB | ForEach-Object { $lines.Add($_) } }
             }
@@ -337,7 +365,7 @@ function Invoke-PiiScan {
             foreach ($name in $matchers.Keys) {
                 foreach ($m in $matchers[$name].Matches($Content)) {
                     $val = $m.Value
-                    if (Test-Allowlisted $val) { continue }
+                    if (-not $explicitTerms.Contains($val) -and (Test-Allowlisted $val)) { continue }
                     $confidence = if ($name -like 'Seed:*') {
                         'seed'
                     }
@@ -375,6 +403,34 @@ function Invoke-PiiScan {
                         Confidence = $hit.Confidence
                         Text       = $content.Trim()
                     })
+            }
+        }
+
+        foreach ($additionalFile in $ScanFile) {
+            $additionalPath = if ([IO.Path]::IsPathRooted($additionalFile)) {
+                $additionalFile
+            }
+            else {
+                Join-Path $RepoRoot $additionalFile
+            }
+            if (-not (Test-Path -LiteralPath $additionalPath -PathType Leaf)) {
+                throw 'An additional scan file is missing or is not a regular file; verify the selected text inputs.'
+            }
+            $lineNumber = 0
+            foreach ($content in (Get-Content -LiteralPath $additionalPath -Encoding utf8)) {
+                $lineNumber++
+                foreach ($hit in (Get-Matches $content)) {
+                    $findings.Add([pscustomobject]@{
+                            Source     = 'additional-file'
+                            Commit     = ''
+                            File       = $additionalFile
+                            Line       = $lineNumber
+                            Pattern    = $hit.Pattern
+                            Value      = $hit.Value
+                            Confidence = $hit.Confidence
+                            Text       = $content.Trim()
+                        })
+                }
             }
         }
 
@@ -426,18 +482,15 @@ function Invoke-PiiScan {
             Write-Host "`n$Heading ($($Items.Count) match(es))" -ForegroundColor $Color
             if ($Items.Count -eq 0) { return }
             $Items |
-            Group-Object Value |
+            Group-Object Confidence |
             Sort-Object Count -Descending |
             ForEach-Object {
-                $files = @($_.Group | Select-Object -ExpandProperty File -Unique)
-                $shown = ($files | Select-Object -First 6) -join ', '
-                if ($files.Count -gt 6) { $shown += ", (+$($files.Count - 6) more)" }
-                Write-Host ("  {0,-38} x{1,-4} {2}" -f $_.Name, $_.Count, $shown)
+                Write-Host ("  {0}: {1} match(es); values and locations redacted" -f $_.Name, $_.Count)
             }
         }
 
-        $workFindings = @($findings | Where-Object Source -eq 'working-tree')
-        Write-Host "`n----- WORKING TREE -----" -ForegroundColor Green
+        $workFindings = @($findings | Where-Object Source -ne 'history')
+        Write-Host "`n----- WORKING TREE AND ADDITIONAL FILES -----" -ForegroundColor Green
         Write-Group -Items @($workFindings | Where-Object Confidence -ne 'heuristic') `
             -Heading 'HIGH CONFIDENCE (seeded values and user-profile paths)' -Color Red
         Write-Group -Items @($workFindings | Where-Object Confidence -eq 'heuristic') `
@@ -450,25 +503,23 @@ function Invoke-PiiScan {
             Write-Host "`nHIGH CONFIDENCE (seeded values and user-profile paths) ($($histHighConfidence.Count) match(es))" -ForegroundColor Red
             if ($histHighConfidence.Count -gt 0) {
                 $histHighConfidence |
-                Group-Object Value |
+                Group-Object Confidence |
                 Sort-Object Count -Descending |
                 ForEach-Object {
                     $commits = @($_.Group | Select-Object -ExpandProperty Commit -Unique)
-                    $shown = ($commits | Select-Object -First 8) -join ', '
-                    if ($commits.Count -gt 8) { $shown += ", (+$($commits.Count - 8) more)" }
-                    Write-Host ("  {0,-38} x{1,-4} in {2} commit(s): {3}" -f $_.Name, $_.Count, $commits.Count, $shown)
+                    Write-Host ("  {0}: {1} match(es) in {2} commit(s); values redacted" -f $_.Name, $_.Count, $commits.Count)
                 }
             }
             $histHeur = @($histFindings | Where-Object Confidence -eq 'heuristic')
             Write-Host "`nHEURISTIC (generic patterns - review) ($($histHeur.Count) match(es))" -ForegroundColor Yellow
             if ($histHeur.Count -gt 0) {
                 $histHeur |
-                Group-Object Value |
+                Group-Object Confidence |
                 Sort-Object Count -Descending |
                 Select-Object -First 30 |
                 ForEach-Object {
                     $commits = @($_.Group | Select-Object -ExpandProperty Commit -Unique)
-                    Write-Host ("  {0,-38} x{1,-4} in {2} commit(s)" -f $_.Name, $_.Count, $commits.Count)
+                    Write-Host ("  {0}: {1} match(es) in {2} commit(s); values redacted" -f $_.Name, $_.Count, $commits.Count)
                 }
             }
         }
@@ -476,7 +527,7 @@ function Invoke-PiiScan {
         if ($OutFile) {
             $findings | Sort-Object Source, Confidence, File, Line |
             Export-Csv -LiteralPath $OutFile -NoTypeInformation -Encoding utf8
-            Write-Host "`nFull report written to: $OutFile" -ForegroundColor Cyan
+            Write-Host "`nFull report written to the selected local destination; keep it private." -ForegroundColor Cyan
         }
 
         $seedHits = @($findings | Where-Object Confidence -eq 'seed').Count
@@ -506,6 +557,8 @@ if ($MyInvocation.InvocationName -ne '.') {
             -RepoRoot $RepoRoot `
             -SeedFile $SeedFile `
             -IncludeHistory:$IncludeHistory `
+            -PrivateTerm $PrivateTerm `
+            -ScanFile $ScanFile `
             -OutFile $OutFile
         if ($FailOnFind -and $Result.HighConfidenceHits -gt 0) {
             exit 1

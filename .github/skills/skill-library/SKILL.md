@@ -155,6 +155,11 @@ and an `index.html` listing every skill are regenerated from all releases and de
 Pages, which serves the configured `catalogUrl`. The ZIPs stay on the releases. Published releases are
 never changed. Versions live only in sidecars and tags; `package.json` holds test scripts.
 
+For a read-only preview, use `Publish-SkillRelease.ps1 -CatalogOnly`: it builds the catalog from
+existing immutable releases without publishing pending versions. `-RefreshCatalog` refreshes the
+catalog after the normal release pass even when no version was published. Shared Pages consumers
+assemble their outputs with that authoritative catalog before the single site deployment.
+
 Pages needs a one-time repository setting with the GitHub Actions source; the repository baseline
 does not manage it because few repositories publish a site:
 

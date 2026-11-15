@@ -14,6 +14,8 @@ owner/name used for release URLs; defaults to GITHUB_REPOSITORY.
 Build and report pending releases without creating anything.
 .PARAMETER RefreshCatalog
 Regenerate the catalog site even when nothing new is published.
+.PARAMETER CatalogOnly
+Build the catalog from existing immutable releases without publishing pending skills.
 .PARAMETER SiteDirectory
 Directory that receives catalog.json and index.html.
 .EXAMPLE
@@ -24,6 +26,7 @@ param(
     [string]$Repository = $env:GITHUB_REPOSITORY,
     [switch]$DryRun,
     [switch]$RefreshCatalog,
+    [switch]$CatalogOnly,
     [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path,
     [string]$OutputDirectory = (Join-Path ([IO.Path]::GetTempPath()) "skill-releases-$PID"),
     [string]$SiteDirectory = (Join-Path $OutputDirectory 'site')
@@ -46,6 +49,7 @@ if ($Errors.Count) { throw "Skill library checks failed:`n$($Errors -join "`n")"
 $Sha = @(Invoke-SkillTool git @('rev-parse', 'HEAD') -WorkingDirectory $RepoRoot)[0]
 $Bootstrap = $Components | Where-Object Kind -eq 'bootstrap' | Select-Object -First 1
 $Pending = @($Components | Where-Object {
+    if ($CatalogOnly) { return $false }
         $Released = Get-SkillReleasedVersion -RepoRoot $RepoRoot -Id $_.Id
         $null -eq $Released -or (ConvertTo-SkillVersion $_.Version) -gt $Released
     })
@@ -67,7 +71,7 @@ foreach ($Component in $Pending) {
     }
 }
 if ($DryRun) { Write-Host "$($Pending.Count) pending release(s); nothing was published."; return }
-if (-not $Pending.Count -and -not $RefreshCatalog) { Write-Host 'Nothing to publish.'; return }
+if (-not $Pending.Count -and -not $RefreshCatalog -and -not $CatalogOnly) { Write-Host 'Nothing to publish.'; return }
 # gh creates tags on GitHub, so fetch them before reading historical metadata.
 if (@(Invoke-SkillTool git @('remote') -WorkingDirectory $RepoRoot) -contains 'origin') {
     Invoke-SkillTool git @('fetch', '--quiet', '--tags', 'origin') -WorkingDirectory $RepoRoot | Out-Null

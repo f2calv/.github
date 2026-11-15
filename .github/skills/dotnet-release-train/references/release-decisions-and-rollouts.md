@@ -2,6 +2,45 @@
 
 How the train chooses each release version and rolls released workloads out to Kubernetes.
 
+## Upfront Agreement
+
+Gather foreseeable questions into one UI batch with recommendations and compatibility risks;
+reuse decisions already given.
+
+- Confirm the repositories, package-update scope, documented holds and excluded work.
+- Batch needed minor/major decisions or obtain explicit semantic-versioning delegation, including
+  breaking changes, pre-1.0 policy and retired framework targets. Follow the
+  [version decision procedure](#release-version-decision).
+- Settle build, test and integration prerequisites and missing publishing or analysis setup.
+  Confirm task-scoped commit, push, pull-request and merge permissions without changing the global
+  auto-commit or auto-push switches.
+- Confirm whether deployments are excluded or included. If included, collect named applications,
+  environments, rollout timing and exact versions or an explicit bounded selection rule under the
+  [rollout procedure](#clean-semver-workload-rollouts).
+- Offer interactive execution or explicitly approved unattended execution. Summarize the agreed
+  scope, permissions, version policy, exclusions and stop conditions before starting.
+
+In unattended mode, execute routine decisions within that agreement without asking again per
+repository. It grants no blanket permission and waives no validation, security, merge or immutable
+release gate. Stop for unresolved failures, secrets, conflicting instructions, material changes
+outside the agreement or decisions its policy cannot resolve; never guess permission. On resume,
+retain the agreement but recheck current evidence and ask only about changed scope or unresolved
+decisions. Use the existing conversation or task notes, not a new release state file.
+
+## Repository Preparation
+
+- Before releasing a producer, confirm every consumer's Release graph is complete: a reference
+  that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
+  consumer's Release build after the producer ships. Fix the graph on the consumer's branch before
+  releasing the producer. Identify producer references by evaluated project paths within its
+  repository, not name prefixes that can include unrelated, similarly named projects.
+- For a repository's first package release, confirm that CI actually publishes. An application
+  repository may only build and test, so add a default-branch `package` job using the shared NuGet
+  publish action, mirroring an existing app-plus-package repository, and gate `release` on it. Ask
+  the user to create the nuget.org Trusted Publishing policy (owner, repository, `ci.yml`) before
+  merging. Replace "no NuGet listing" README caveats with install commands and badges in the same
+  pull request.
+
 ## Release Documentation
 
 - Before opening the pull request, compare the root README and every packable project's README
@@ -20,21 +59,38 @@ How the train chooses each release version and rolls released workloads out to K
 - Search for them before opening the pull request rather than relying on memory, for example
   `Debug[- ]only|Release (build|graph)|not (yet )?(published|released)|adjacent (checkout|clone)`.
 
+## Package Publication Verification
+
+- Take package IDs from the `.nupkg` files CI created or pushed, or from each project's evaluated
+  `PackageId`. Global tools often set a short `PackageId` such as `yamlizr`, so a project file name
+  is not a reliable package ID.
+- Check the publication action's branch gates before choosing a workflow-dispatch ref.
+  For example, `gha-dotnet-nuget` publishes stable packages from the default branch, not a tag dispatch.
+  Recover missing packages using the exact release source without rebuilding or replacing an
+  already-published image or chart; skipped publication steps are not success.
+- From this skill's directory, PowerShell:
+  `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
+  Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
+- Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
+
 ## Clean-SemVer Workload Rollouts
 
 Development deployments through `deploy.ps1` may still be running Debug images after a successful
-pull-request merge and release. After verifying a .NET Kubernetes application's release, use a UI
-question: "Do you wish to roll out a new version of `<application>` (`<released X.Y.Z>`) from the GitHub
-workflows?" Offer rollout now, defer to the next agreed batch, hold until the end of the train, or
-decline this rollout. Respect existing publication and deployment holds.
+pull-request merge and release. During the skill's [upfront decisions](../SKILL.md#upfront-decisions),
+ask which applications and environments may receive clean-semver releases through GitHub workflows,
+and whether to roll out after each release, at agreed milestones, at the end of the train or not
+at all. Respect existing publication and deployment holds.
 
 - Let the user choose end-of-train rollouts or batches at useful milestones. Keep deferred
   applications and their verified versions in the existing task list, not a separate release state
   machine, and revisit them at the selected milestone and before the final report.
-- Obtain explicit dispatch approval for the named application/version/environment, individually or
-  as a clearly identified batch. Deferral is not approval to dispatch later; confirm the pending
-  batch when it is due. Merge, release, auto-push and prior Debug-deployment permissions do not
-  authorize these workflow runs.
+- Obtain explicit dispatch approval for the named application/environment and exact version,
+  individually or as a clearly identified batch. For unattended execution, the user may instead
+  explicitly approve a bounded version-selection rule, such as the next verified clean-semver
+  release produced by this train for each named application/environment. Match the actual release
+  to that approval before dispatch and report its resolved version. Deferral alone is not approval;
+  ask when due only if the upfront agreement did not authorize dispatch. Merge, release, auto-push
+  and prior Debug-deployment permissions do not authorize these workflow runs.
 - Inspect the repository's existing GitHub deployment workflow and declared inputs. Use its
   release path to build or select the published Release artifact with a clean `X.Y.Z` version,
   such as `1.2.3`, tied to the verified release commit. Do not invent workflow inputs, substitute
@@ -60,16 +116,18 @@ decline this rollout. Respect existing publication and deployment holds.
 - Inspect the repository's `GitVersion.yml`, release workflow and scoped versioning instructions,
   the latest immutable release tag, and any existing version directives on the branch. Do not
   assume that conventional-commit wording or `BREAKING CHANGE` automatically controls GitVersion.
-- Unless semver was explicitly delegated for this train, use a UI choice before merging to ask
-  whether to deliberately bump **major**, bump **minor**, or
-  retain the **patch/default increment**. Show the current version, expected outcome of each
-  choice, and relevant compatibility impact. Recommend major for breaking changes, minor for
-  compatible new functionality, and patch for compatible fixes or internal-only refactoring.
-  For pre-1.0 packages, explain the repository's established breaking-change policy.
-- Wait for an explicit decision unless the user has explicitly delegated semver decisions for the
-  named train. Under that delegation, choose and document each repository's increment and rationale
-  without asking again. General merge approval or auto-merge does not imply delegation; reconfirm
-  material changes outside the delegated scope.
+- GitVersion handles patch increments automatically. Do not ask for patch-version approval or add
+  a patch directive for routine fixes or internal-only refactoring; verify its computed version.
+- During the skill's [upfront decisions](../SKILL.md#upfront-decisions), batch questions only for
+  deliberate minor or major increments, unless semantic versioning was explicitly delegated for
+  this train. Show current versions, proposed outcomes and compatibility impact. Recommend major
+  for breaking changes and minor for compatible new functionality. For pre-1.0 packages, explain
+  the repository's established breaking-change policy.
+- Wait for those explicit decisions or semantic-versioning delegation before execution. Reuse them
+  before each merge; under delegation, choose and document each repository's increment and
+  rationale without asking again. General merge approval, auto-merge or unattended mode alone does
+  not imply versioning delegation. Ask again only when a material change falls outside the agreed
+  policy. Automatic patch increments need no separate decision.
 - Apply the selected increment using the repository's established mechanism. When it uses
   `+semver:` commit directives, inspect every commit since the merge base, reuse or correct the
   existing directive rather than stacking conflicting requests, and verify which directive maps

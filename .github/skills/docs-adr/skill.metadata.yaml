@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.4
+version: 1.0.5
 facets: [documentation, architecture]
 required:
   - id: repository-privacy
-    version: 1.2.0
+    version: 1.3.0
 related:
   - id: docs-architecture-diagrams
     reason: Draw current and proposed architecture views for a decision record.

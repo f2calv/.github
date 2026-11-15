@@ -52,6 +52,51 @@ BeforeAll {
 }
 
 Describe 'Invoke-PiiScan' -Tag 'Unit' {
+    It 'Works without private workstation guidance or feed configuration' {
+        $RepositoryPath = Join-Path $TestDrive 'ordinary-workstation'
+        Initialize-TestRepository -Path $RepositoryPath
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath `
+            -Content 'https://api.nuget.org/v3/index.json https://registry.npmjs.org/'
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @('missing-local.json')
+
+        $Result.Seeds.Count | Should -Be 0
+        $Result.Findings.Count | Should -Be 0
+        $Result.HighConfidenceHits | Should -Be 0
+    }
+
+    It 'Blocks an explicit confidential feed path without blocking its shared public host' {
+        $RepositoryPath = Join-Path $TestDrive 'confidential-feed'
+        Initialize-TestRepository -Path $RepositoryPath
+        $PrivateEndpoint = 'https://packages.example.com/private-team/v3/index.json'
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath `
+            -Content "$PrivateEndpoint https://packages.example.com/public/v3/index.json"
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @() -PrivateTerm @($PrivateEndpoint)
+
+        $Result.HighConfidenceHits | Should -Be 1
+        $Result.Findings[0].Value | Should -Be $PrivateEndpoint
+        $Result.Findings[0].Pattern | Should -Not -Match 'private-team'
+    }
+
+    It 'Scans explicitly selected generated text and keeps console output redacted' {
+        $RepositoryPath = Join-Path $TestDrive 'generated-feed-leak'
+        Initialize-TestRepository -Path $RepositoryPath
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content 'Public source only.'
+        $PrivateEndpoint = 'https://packages.example.com/private-team/v3/index.json'
+        $ArtifactPath = Join-Path $RepositoryPath 'search-index.json'
+        @{ text = $PrivateEndpoint } | ConvertTo-Json | Set-Content -LiteralPath $ArtifactPath
+
+        $Result = Invoke-PiiScan -RepoRoot $RepositoryPath -SeedFile @() `
+            -PrivateTerm @($PrivateEndpoint) -ScanFile @($ArtifactPath)
+
+        $Result.HighConfidenceHits | Should -Be 1
+        $Result.Findings[0].Source | Should -Be 'additional-file'
+        Should -Invoke Write-Host -Times 0 -Exactly -ParameterFilter {
+            "$Object" -match 'private-team'
+        }
+    }
+
     It 'Allows the shared Microsoft authority domain while retaining private-domain and tenant seeds' {
         $RepositoryPath = Join-Path $TestDrive 'public-identity-authority'
         Initialize-TestRepository -Path $RepositoryPath
@@ -162,6 +207,33 @@ Describe 'Invoke-PiiScan' -Tag 'Unit' {
 
 
 Describe 'Find-Pii script exit behavior' -Tag 'Unit' {
+    It 'Fails the process for a generated confidential endpoint without printing the endpoint' {
+        $RepositoryPath = Join-Path $TestDrive 'artifact-process-gate'
+        Initialize-TestRepository -Path $RepositoryPath
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content 'Public content.'
+        $PrivateEndpoint = 'https://packages.example.com/private-team/v3/index.json'
+        $ArtifactPath = Join-Path $RepositoryPath 'generated.html'
+        $PrivateEndpoint | Set-Content -LiteralPath $ArtifactPath
+
+        $Output = & pwsh -NoProfile -File $script:ScriptPath -RepoRoot $RepositoryPath `
+            -PrivateTerm $PrivateEndpoint -ScanFile $ArtifactPath -FailOnFind 2>&1
+
+        $LASTEXITCODE | Should -Be 1
+        ($Output -join ' ') | Should -Not -Match 'private-team|packages\.example\.com'
+        ($Output -join ' ') | Should -Match 'high-confidence: 1'
+    }
+
+    It 'Fails the process when an explicitly selected generated file is missing' {
+        $RepositoryPath = Join-Path $TestDrive 'missing-artifact'
+        Initialize-TestRepository -Path $RepositoryPath
+        Add-TestTrackedFile -RepositoryPath $RepositoryPath -Content 'Public content.'
+
+        & pwsh -NoProfile -File $script:ScriptPath -RepoRoot $RepositoryPath `
+            -ScanFile 'missing.html' -FailOnFind *> $null
+
+        $LASTEXITCODE | Should -Be 1
+    }
+
     It 'Returns exit code 1 for FailOnFind when a seeded value is tracked' {
         $RepositoryPath = Join-Path $TestDrive 'fail-on-find'
         Initialize-TestRepository -Path $RepositoryPath -IncludeSeedFile
