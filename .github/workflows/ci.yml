@@ -2,11 +2,6 @@ name: ci
 
 'on':
   workflow_dispatch:
-    inputs:
-      publish-pages:
-        description: Publish the complete feature preview e.g. true
-        type: boolean
-        default: false
   push:
     branches: [main]
   pull_request:
@@ -33,9 +28,8 @@ jobs:
     permissions:
       contents: read
 
-  #TODO: switch to released @v1 only after the MkDocs workflow is tested and published.
   docs:
-    uses: f2calv/gha-workflows/.github/workflows/mkdocs-build.yml@f2calv/2026-11-updates5
+    uses: f2calv/gha-workflows/.github/workflows/mkdocs-build.yml@v1
     with:
       prepare-script: .scripts/Prepare-Documentation.ps1
       site-directory: .docs-site
@@ -87,54 +81,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
-
-  feature-pages:
-    if: >-
-      github.event_name == 'workflow_dispatch' && inputs.publish-pages
-      && github.ref == 'refs/heads/f2calv/2026-11-updates10'
-    needs: [lint, test, skill-versions, docs, pages-preview, dotnet-examples]
-    runs-on: ubuntu-26.04
-    concurrency:
-      group: skill-catalog
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/download-artifact@v7
-        with:
-          name: complete-pages-preview
-          path: .pages-preview
-
-      - name: record deployed commit
-        shell: bash
-        run: printf '%s\n' "$GITHUB_SHA" > .pages-preview/deployment-sha.txt
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: .pages-preview
-          include-hidden-files: true
-
-      - uses: actions/deploy-pages@v5
-        id: deploy
-
-      - name: verify live complete site
-        shell: bash
-        env:
-          PAGE_URL: ${{ steps.deploy.outputs.page_url }}
-        run: |
-          set -euo pipefail
-          for path in index.html catalog.json docs/index.html docs/search/search_index.json docs/guidance/skills/docs-mkdocs/SKILL/index.html deployment-sha.txt; do
-            curl --fail --silent --show-error --retry 6 --retry-delay 10 --retry-all-errors \
-              "${PAGE_URL%/}/$path?run=$GITHUB_RUN_ID" --output live-output
-            cmp ".pages-preview/$path" live-output
-          done
 
   skills-library-tests:
     uses: ./.github/workflows/_skills-library-tests.yml
