@@ -841,6 +841,8 @@ function Resolve-CodeScanningDefaultSetup {
         GitHub REST API repository path.
     .PARAMETER Enabled
         Whether default setup should be configured.
+    .PARAMETER RepositoryDetail
+        Previously fetched repository metadata used to identify unsupported personal private repositories.
     .PARAMETER Apply
         Reconciles drift when specified.
     #>
@@ -855,8 +857,21 @@ function Resolve-CodeScanningDefaultSetup {
         [bool]$Enabled,
 
         [Parameter(Mandatory = $false)]
+        [pscustomobject]$RepositoryDetail,
+
+        [Parameter(Mandatory = $false)]
         [switch]$Apply
     )
+
+    if ($null -ne $RepositoryDetail -and
+        $RepositoryDetail.PSObject.Properties.Name -contains 'private' -and $RepositoryDetail.private -and
+        $RepositoryDetail.PSObject.Properties.Name -contains 'owner' -and $null -ne $RepositoryDetail.owner -and
+        $RepositoryDetail.owner.PSObject.Properties.Name -contains 'type' -and $RepositoryDetail.owner.type -eq 'User') {
+        return [pscustomobject]@{
+            Status = 'PlanGated'
+            Detail = 'Code scanning is unavailable for personally owned private repositories; private code scanning requires an eligible organization with GitHub Code Security.'
+        }
+    }
 
     $DefaultSetupPath = "$RepositoryPath/code-scanning/default-setup"
     $Response = Invoke-GhCommand -Arguments @('api', $DefaultSetupPath)
@@ -1108,6 +1123,7 @@ if ($MyInvocation.InvocationName -ne '.') {
                 $CodeScanningResult = Resolve-CodeScanningDefaultSetup `
                     -RepositoryPath $RepositoryPath `
                     -Enabled ([bool]$Policy.security.codeScanningDefaultSetup) `
+                    -RepositoryDetail $Detail `
                     -Apply:($Mode -eq 'Apply') `
                     -WhatIf:$WhatIfPreference
                 Add-BaselineResult -Results $Results -RepositoryName $FullName `

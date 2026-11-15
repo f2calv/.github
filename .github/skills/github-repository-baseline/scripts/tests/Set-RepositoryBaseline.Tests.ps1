@@ -684,6 +684,31 @@ Describe 'Resolve-CodeScanningDefaultSetup' -Tag 'Unit' {
         $script:DefaultSetupPath = 'repos/f2calv/example/code-scanning/default-setup'
     }
 
+    It 'Reports personally owned private repositories as plan-gated without API calls' {
+        Mock Invoke-GhCommand { throw 'Unsupported repositories must not query CodeQL setup.' }
+        Mock Invoke-GhMutation { throw 'Unsupported repositories must not be mutated.' }
+        $RepositoryDetail = [pscustomobject]@{ private = $true; owner = [pscustomobject]@{ type = 'User' } }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/owner/example' `
+            -Enabled $true -RepositoryDetail $RepositoryDetail -Apply
+
+        $Result.Status | Should -Be 'PlanGated'
+        Should -Invoke Invoke-GhCommand -Times 0 -Exactly
+        Should -Invoke Invoke-GhMutation -Times 0 -Exactly
+    }
+
+    It 'Does not mistake an organization permission failure for personal repository ineligibility' {
+        Mock Invoke-GhCommand { ConvertTo-TestGhResponse -ExitCode 1 -Error 'Forbidden (HTTP 403)' }
+        Mock Invoke-GhMutation { throw 'Failed reads must not mutate GitHub.' }
+        $RepositoryDetail = [pscustomobject]@{ private = $true; owner = [pscustomobject]@{ type = 'Organization' } }
+
+        $Result = Resolve-CodeScanningDefaultSetup -RepositoryPath 'repos/owner/example' `
+            -Enabled $true -RepositoryDetail $RepositoryDetail -Apply
+
+        $Result.Status | Should -Be 'Failed'
+        Should -Invoke Invoke-GhMutation -Times 0 -Exactly
+    }
+
     It 'Reports a configured repository as compliant without mutating it' {
         Mock Invoke-GhCommand { ConvertTo-TestGhResponse -Output '{"state":"configured","languages":["actions","csharp"]}' }
         Mock Invoke-GhMutation { throw 'Compliant repositories must not be mutated.' }

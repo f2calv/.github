@@ -38,8 +38,12 @@ The tools work for any GitHub account or organization; only the policy file is o
 - `security.codeScanningDefaultSetup` turns on CodeQL default setup, which analyses every supported
   language, including GitHub Actions workflows, without a workflow file. GitHub rejects
   advanced-setup analyses once default setup is configured, so delete a repository's CodeQL workflow
-  and merge that deletion before applying. Private repositories without Advanced Security report
-  `PlanGated`. Omit the key to leave code scanning unmanaged.
+  and merge that deletion before applying. Personally owned private repositories report `PlanGated`
+  from fetched ownership metadata, without querying or mutating CodeQL setup. Private organization
+  repositories require GitHub Code Security on an eligible Team or Enterprise plan; an unexplained
+  HTTP 403 remains `Failed`, not proof of plan gating. See
+  [GitHub security product availability](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security).
+  Omit the key to leave code scanning unmanaged.
 
 ## Policy Selection
 
@@ -127,6 +131,10 @@ Interpret each setting independently:
 - `Failed`: an API, authentication, validation, or unsupported-shape failure requiring investigation.
 
 Do not proceed from an unexplained `Failed` result.
+
+For CodeQL default-setup drift, inspect default-branch workflows, their reusable workflow calls and
+recorded CodeQL analyses before describing scanning as absent. Default-setup drift does not prove
+that advanced setup is missing. Do not enable default setup over an existing advanced analysis path.
 
 ### 3. Preview
 
