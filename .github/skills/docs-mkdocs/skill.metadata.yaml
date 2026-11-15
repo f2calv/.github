@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [docs]
+related:
+  - id: github-repository-baseline
+    reason: Audit and reconcile optional per-repository Pages settings without enabling an entire fleet.
+  - id: github-actions-workflows
+    reason: Reuse shared documentation builds and coordinate a single protected Pages publication.
+  - id: docs-readme
+    reason: Maintain canonical README content instead of duplicating it for the documentation site.
+  - id: kubernetes-helm
+    reason: Preserve chart-feed indexes, archive URLs and version history alongside documentation.
+  - id: repository-privacy
+    reason: Review tracked documentation inputs before making their contents publicly browsable.

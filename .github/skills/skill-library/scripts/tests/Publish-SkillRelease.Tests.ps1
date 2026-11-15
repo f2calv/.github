@@ -55,7 +55,7 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         $Site = Join-Path $TestDrive ([guid]::NewGuid())
         function Get-Calls { @(Get-Content -LiteralPath (Join-Path $env:FAKE_GH_STATE 'calls.log') -ErrorAction SilentlyContinue) }
         function Get-Catalog { Get-Content -Raw (Join-Path $Site 'catalog.json') | ConvertFrom-Json -AsHashtable }
-        function Invoke-Publish([switch]$DryRun) { & $Script -RepoRoot $Repo -Repository 'owner/example' -OutputDirectory (Join-Path $TestDrive ([guid]::NewGuid())) -SiteDirectory $Site -DryRun:$DryRun 6> $null }
+        function Invoke-Publish([switch]$DryRun, [switch]$CatalogOnly, [switch]$RefreshCatalog) { & $Script -RepoRoot $Repo -Repository 'owner/example' -OutputDirectory (Join-Path $TestDrive ([guid]::NewGuid())) -SiteDirectory $Site -DryRun:$DryRun -CatalogOnly:$CatalogOnly -RefreshCatalog:$RefreshCatalog 6> $null }
     }
 
     It 'reports pending releases without calling GitHub in a dry run' {
@@ -86,6 +86,30 @@ Describe 'Publish-SkillRelease' -Tag 'Unit' {
         foreach ($Id in 'alpha', 'beta', 'gamma') {
             @($Calls | Where-Object { $_ -like "release create $Id/1.0.0 *$Id-1.0.0.zip *$Id-1.0.0-plugin.zip --target *" }).Count | Should -Be 1
         }
+    }
+
+    It 'refreshes the catalog without creating another release' {
+        Invoke-Publish
+        $Before = @(Get-Calls | Where-Object { $_ -like 'release create *' }).Count
+        Remove-Item -LiteralPath $Site -Recurse -Force
+
+        Invoke-Publish -RefreshCatalog
+
+        @((Get-Catalog).extensions.Keys).Count | Should -Be 3
+        @(Get-Calls | Where-Object { $_ -like 'release create *' }).Count | Should -Be $Before
+    }
+
+    It 'keeps pending versions out of a read-only catalog preview' {
+        Invoke-Publish
+        $Before = @(Get-Calls | Where-Object { $_ -like 'release create *' }).Count
+        Write-FixtureText $Repo '.github/skills/beta/SKILL.md' "---`nname: beta`ndescription: Changed.`n---`n"
+        & (Join-Path $PSScriptRoot '../Set-SkillVersion.ps1') -RepoRoot $Repo -Bump minor 6> $null
+        Invoke-FixtureGit $Repo commit -q -am bump
+
+        Invoke-Publish -CatalogOnly
+
+        (Get-Catalog).extensions['beta'].version | Should -Be '1.0.0'
+        @(Get-Calls | Where-Object { $_ -like 'release create *' }).Count | Should -Be $Before
     }
 
     It 'writes the site directory to the step output' {

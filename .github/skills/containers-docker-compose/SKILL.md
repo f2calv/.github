@@ -14,7 +14,7 @@ Keep default IDE dependencies, optional applications/demos and test-data boundar
 - Read the target repository's notes and the central
   [Compose instructions](../../instructions/docker.compose.instructions.md). They own conventions;
   this skill owns the procedure. Its local/test image-tag policy is distinct from
-  [Dockerfile base-image pinning](../../instructions/docker.instructions.md#base-images-and-pinning).
+   [Dockerfile image classification](../../instructions/docker.instructions.md#classification).
 - Load [audit and validation](./references/audit-and-validation.md) for review criteria, safe commands,
   profile checks and troubleshooting.
 - The [worked local stack](./examples/local-stack.md) explains the

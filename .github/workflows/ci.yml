@@ -28,6 +28,61 @@ jobs:
     permissions:
       contents: read
 
+  #TODO: switch to released @v1 only after the MkDocs workflow is tested and published.
+  docs:
+    uses: f2calv/gha-workflows/.github/workflows/mkdocs-build.yml@f2calv/2026-11-updates5
+    with:
+      prepare-script: .scripts/Prepare-Documentation.ps1
+      site-directory: .docs-site
+    permissions:
+      contents: read
+
+  pages-preview:
+    if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: [docs, skill-versions]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: build read-only released catalog
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1
+          -CatalogOnly -OutputDirectory .catalog-preview -SiteDirectory .pages-preview
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: mkdocs-site
+          path: .docs-site
+
+      - name: assemble and verify complete Pages preview
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Before = Get-FileHash .pages-preview/catalog.json, .pages-preview/index.html
+          if (Test-Path .pages-preview/docs) { throw 'Documentation output collides with the catalog site.' }
+          Copy-Item -LiteralPath .docs-site -Destination .pages-preview/docs -Recurse
+          foreach ($Item in $Before) {
+            if ((Get-FileHash $Item.Path).Hash -ne $Item.Hash) { throw 'A protected catalog output changed.' }
+          }
+          foreach ($Path in 'catalog.json', 'index.html', 'docs/index.html', 'docs/search/search_index.json') {
+            if (-not (Test-Path (Join-Path .pages-preview $Path) -PathType Leaf)) { throw 'Complete Pages preview is missing an expected output.' }
+          }
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: complete-pages-preview
+          path: .pages-preview
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   skills-library-tests:
     uses: ./.github/workflows/_skills-library-tests.yml
     permissions:
@@ -150,7 +205,7 @@ jobs:
 
   skill-releases:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    needs: [lint, test, skill-versions]
+    needs: [lint, test, skill-versions, docs]
     runs-on: ubuntu-26.04
     concurrency:
       group: skill-releases
@@ -169,12 +224,32 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1
+        run: ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1 -RefreshCatalog
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: mkdocs-site
+          path: .docs-site
+
+      - name: assemble complete Pages site
+        shell: pwsh
+        env:
+          SITE_DIRECTORY: ${{ steps.publish.outputs.site-directory }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Before = Get-FileHash (Join-Path $env:SITE_DIRECTORY 'catalog.json'), (Join-Path $env:SITE_DIRECTORY 'index.html')
+          $Destination = Join-Path $env:SITE_DIRECTORY 'docs'
+          if (Test-Path $Destination) { throw 'Documentation output collides with the catalog site.' }
+          Copy-Item -LiteralPath .docs-site -Destination $Destination -Recurse
+          foreach ($Item in $Before) {
+            if ((Get-FileHash $Item.Path).Hash -ne $Item.Hash) { throw 'A protected catalog output changed.' }
+          }
 
       - uses: actions/upload-pages-artifact@v5
         if: steps.publish.outputs.site-directory != ''
         with:
           path: ${{ steps.publish.outputs.site-directory }}
+          include-hidden-files: true
 
   skill-catalog:
     if: needs.skill-releases.outputs.site-directory != ''
@@ -194,7 +269,7 @@ jobs:
         id: deploy
 
   #The final fan-in: the repository tag moves only after skill releases and the catalog succeed.
-  #skill-catalog is skipped when no skill was released, which must not skip the repository release.
+  #The catalog is refreshed on every default-branch run, including documentation-only changes.
   release:
     if: >-
       always()
@@ -204,9 +279,10 @@ jobs:
       && needs.test.result == 'success'
       && needs.dotnet-examples.result == 'success'
       && needs.skill-versions.result == 'success'
+      && needs.docs.result == 'success'
       && needs.skill-releases.result == 'success'
       && contains(fromJSON('["success", "skipped"]'), needs.skill-catalog.result)
-    needs: [lint, versioning, test, dotnet-examples, skill-versions, skill-releases, skill-catalog]
+    needs: [lint, versioning, test, dotnet-examples, skill-versions, docs, skill-releases, skill-catalog]
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       semVer: ${{ needs.versioning.outputs.version }}

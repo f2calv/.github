@@ -11,6 +11,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [README authoring](../.github/skills/docs-readme/SKILL.md) | `1.0.1` | Consumer-focused documentation for public and private applications, libraries, Actions, workflows and infrastructure |
+| [MkDocs and Pages](../.github/skills/docs-mkdocs/SKILL.md) | `1.0.0` | Public documentation sites, pull-request validation and coordinated Pages publication that preserves catalogs and chart feeds |
 | [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.5` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
 | [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.1.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
 | [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.1` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
@@ -33,7 +34,7 @@ gate rejects a stale or missing row.
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
-| [Skill library](../.github/skills/skill-library/SKILL.md) | `1.4.1` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
+| [Skill library](../.github/skills/skill-library/SKILL.md) | `1.5.0` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
 | [Skill library vendoring](../.github/skills/skill-library-vendoring/SKILL.md) | `1.0.1` | Adopting and upgrading the skill-library framework in another repository from release tags, with a lock and a clean hard cut |
 
 ## Containers, Kubernetes and Infrastructure
@@ -41,7 +42,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.2.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
-| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.6` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
+| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.7` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.2` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
