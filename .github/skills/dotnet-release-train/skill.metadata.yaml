@@ -3,7 +3,7 @@ version: 1.2.0
 facets: [dotnet]
 required:
   - id: repository-privacy
-    version: 1.2.0
+    version: 1.3.0
 related:
   - id: docs-readme
     reason: Update package tables, migration notes and fulfilled publication caveats.
