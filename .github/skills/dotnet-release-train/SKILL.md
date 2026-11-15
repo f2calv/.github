@@ -10,6 +10,14 @@ Move across .NET repositories in package order. Finish and publish each producer
 updating its consumers. Use the repositories' existing branches, workflows, package holds, and
 release conventions rather than maintaining a separate release state machine.
 
+## Upfront Decisions
+
+Before changing repositories or publishing, inspect the package graph, latest releases, pending
+changes and existing approvals across the requested train. Complete the
+[upfront agreement](references/release-decisions-and-rollouts.md#upfront-agreement): batch foreseeable
+questions and offer interactive or explicitly approved unattended execution. Reuse existing
+answers; unattended mode never expands permission or waives required gates.
+
 ## Repository Order
 
 The [producer/consumer example](./examples/producer-consumer.md) demonstrates Debug/Release graphs
@@ -37,7 +45,8 @@ consumes is published. The waves below are the general shape; the
   - Update external packages and the shared source.
   - Validate every packable project.
   - Merge and release it.
-  - Wait until every package from the release is restorable from NuGet.
+  - Verify the released packages through NuGet restores, using the public-workflow fallback below
+    when a local mirror lags.
 - **Direct consumers** — libraries and tools that depend only on the base library.
 - **Second-level libraries** — packages that consume a direct consumer, such as a domain API built on
   a shared cloud-integration library.
@@ -66,11 +75,8 @@ user explicitly asks for parallel sessions.
       then refresh only that exact local `vMAJOR` or `vMAJOR.MINOR` ref with an explicit `+` fetch
       refspec and retry the full fetch. Never force-refresh immutable version tags or use a broad
       tag wildcard.
-  - Before releasing a producer, confirm every consumer's Release graph is complete: a reference
-    that exists only as a Debug `ProjectReference`, with no Release `PackageReference`, blocks the
-    consumer's Release build after the producer ships. Fix the graph on the consumer's branch
-    before releasing the producer. Identify producer references by evaluated project paths within
-    its repository, not name prefixes that can include unrelated, similarly named projects.
+  - Before releasing a producer, verify every consumer's Release graph through the
+    [repository preparation checks](references/release-decisions-and-rollouts.md#repository-preparation).
   - Preserve unrelated work. Do not create another branch or pull request when the current one is
     already the correct release branch.
   - Fold every open Dependabot pull request into the repository's release pull request, including
@@ -78,12 +84,7 @@ user explicitly asks for parallel sessions.
     and other runtime majors still need the normal validation. Keep only documented holds, and any
     major update that fails validation, out of the release. Never close, merge, fold in or modify a
     pull request opened by a third-party contributor.
-  - For a repository's first package release, confirm that CI actually publishes. An application
-    repository may only build and test, so add a default-branch `package` job using the shared NuGet
-    publish action, mirroring an existing app-plus-package repository, and gate `release` on it. Ask
-    the user to create the nuget.org Trusted Publishing policy (owner, repository, `ci.yml`) before
-    merging. Replace "no NuGet listing" README caveats with install commands and badges in the same
-    pull request.
+  - For a first package release, complete those preparation checks for publishing setup too.
 - **Update packages**
   - Update all active stable versions in `Directory.Packages.props`, not only internal packages,
     unless the user requests `packages=internal`.
@@ -134,8 +135,9 @@ user explicitly asks for parallel sessions.
   - Budget for newly analyzed source when promoting Debug-only features to Release; the first real
     analysis can expose previously hidden fixture, regex and complexity findings.
   - For a large or breaking pull request, complete the
-    [release-version decision](references/release-decisions-and-rollouts.md#release-version-decision) before merging, even when auto-merge is
-    enabled. Do not silently accept the default patch increment.
+    [release-version decision](references/release-decisions-and-rollouts.md#release-version-decision)
+    using the upfront approval or delegation. Ask again only when it does not cover the change;
+    auto-merge alone is not a version decision.
   - Wait for every required check on the current head SHA.
   - Resolve critical/high GitHub security and SonarQube findings, plus any lower finding that fails a
     required check or quality gate.
@@ -158,25 +160,15 @@ user explicitly asks for parallel sessions.
   - Derive the released version from the tag; do not infer it from GitVersion output or a pull-request
     prerelease version.
   - If the repository publishes NuGet packages, verify every expected package ID at that exact
-    version before continuing downstream.
-    - Take the IDs from the `.nupkg` files CI created or pushed, or from each project's evaluated
-      `PackageId`. Global tools often set a short `PackageId` such as `yamlizr`, so a project file
-      name is not a reliable package ID.
-    - Check the publication action's branch gates before choosing a workflow-dispatch ref.
-      `gha-dotnet-nuget` publishes stable packages from the default branch, not a tag dispatch.
-      Recover missing packages using the exact release source without rebuilding or replacing
-      an already-published image or chart; skipped publication steps are not success.
-    - From this skill's directory, PowerShell:
-      `./scripts/Test-NuGetPackageAvailability.ps1 -PackageId <ids> -Version <version>`.
-      Invoke it in-process with `&`; `pwsh -File` binds an array of IDs positionally and fails.
-    - Bash: `./scripts/test-nuget-package-availability.sh <version> <ids>`
+    version before continuing downstream, following
+    [package publication verification](references/release-decisions-and-rollouts.md#package-publication-verification).
   - For application images and charts, verify every expected platform's version/revision and the
     published chart's effective image selection, not only its metadata. An umbrella `appVersion`
     does not supply a dependency's image tag; honor documented explicit-tag requirements.
     Use authorized registry access for restricted artifacts without changing their visibility.
   - If the repository publishes no packages, continue once its merge and artifact checks are complete.
-  - For a .NET Kubernetes application, offer a
-    [clean-semver workload rollout](references/release-decisions-and-rollouts.md#clean-semver-workload-rollouts) after verifying its release.
+  - For a .NET Kubernetes application, follow the upfront
+    [clean-semver workload rollout decision](references/release-decisions-and-rollouts.md#clean-semver-workload-rollouts) after verifying its release.
     Publication alone does not establish that the released version has been deployed.
 - **Update documentation downstream**
   - Apply the same [release documentation checklist](references/release-decisions-and-rollouts.md#release-documentation)
@@ -208,9 +200,11 @@ published-history rewrite. Stop the train if it fails.
 
 - Verified publication unlocks consumers; passing Debug builds with project references does not
   prove their Release package graph.
-- A successful package push is not proof that NuGet clients can restore it. Verify every expected
-  package ID at the exact version through the package source's restore endpoint, and stop the chain
-  when any package from a multi-package producer is absent.
+- A successful package push is not proof that NuGet clients can restore it. Verify exact released
+  package IDs and versions through restores. When a local mirror lags, prepare the consumer with
+  those exact pins and use its public GitHub workflow's Release restore, build and tests as the
+  verification gate for the packages it consumes. Do not wait for the local mirror, downgrade pins
+  or claim a local pass; block the consumer's merge if its current-head public checks fail.
 - Availability polling retries network failures and request timeouts within its deadline, without
   treating them as successful checks. Permanent HTTP and unexpected failures stop verification.
 - The availability helpers support public nuget.org only; authenticated feeds need a separate
@@ -224,6 +218,8 @@ published-history rewrite. Stop the train if it fails.
 
 ## Maintaining This Skill
 
+- Upfront decision coverage, unattended authorization boundaries and resume behaviour when a train
+  encounters a new prerequisite or a repeated approval question.
 - Repository order and package levels when a repository gains, loses or moves packages, in both the
   generic waves and the real-world example.
 - Release-run, tag and NuGet verification commands, and the ruleset behaviours that block merges.
