@@ -55,7 +55,7 @@ jobs:
           ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1
           -CatalogOnly -OutputDirectory .catalog-preview -SiteDirectory .pages-preview
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: mkdocs-site
           path: .docs-site
@@ -225,7 +225,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: ./.github/skills/skill-library/scripts/Publish-SkillRelease.ps1 -RefreshCatalog
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: mkdocs-site
           path: .docs-site
