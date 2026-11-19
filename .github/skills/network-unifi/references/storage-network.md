@@ -1,7 +1,7 @@
 # Dedicated Storage Network Reference
 
 Use this reference when adding a faster storage interface to a host that must retain an existing
-management/control-plane interface.
+management/control-plane interface, or recovering storage clients after a network interruption.
 
 ## Desired Shape
 
@@ -130,3 +130,57 @@ Before declaring success:
 - backup targets remain Available;
 - no temporary benchmark state remains;
 - configuration management is idempotent.
+
+## Post-Outage NFS And Backup Recovery
+
+Separate the network trigger, persistent client state and backup capacity faults:
+
+1. Correlate physical carrier changes and NFS lease/timeout errors across clients and server in UTC.
+   Simultaneous link loss suggests a shared network event, not proof of a particular switch action.
+2. Compare node CPU with container CPU, child commands and process creation rate. A controller can
+   appear quiet in lifetime `ps` averages while repeatedly spawning expensive, short-lived backup
+   commands. Inspect the deployed version's retry path before attributing this to useful backup work.
+   After a restart, filter CPU rates to the replacement pod; old pod samples can remain in the rate
+   window and falsely suggest that the new controller is still saturated.
+3. Read the same existing metadata file locally on the server and through the failing client's
+   actual mount namespace. Carrier, file attributes, an Available backup target and healthy volume
+   replicas do not prove file data is readable. Server reads succeeding while client reads return
+   `EIO` distinguishes a client-path fault from proven server-file corruption.
+4. Inspect the export's backing filesystem and project quota separately. With ext4 project quotas,
+   `df` inside a project can show a quota-limited size while `df` at the filesystem root still shows
+   ample space. `repquota -P -s <mountpoint>` exposes usage, soft/hard limits and grace; an expired
+   soft-limit grace blocks writes before the hard limit is reached.
+   Monitor quota usage, limits, remaining headroom and raw grace deadlines independently of PVC
+   and filesystem alerts, including missing/stale collection. A fleet-wide node-exporter textfile
+   collector needs its directory on every exporter node, even nodes without quotas; verify zero
+   textfile scrape errors fleet-wide rather than accepting one healthy quota-host scrape.
+   Verify receiver-visible text as well as rule firing: summary-only receivers need current usage,
+   soft/hard limits and headroom in the summary, scoped to the alerting instance and project.
+   Assert rendered annotations with synthetic metrics, including identically named projects on
+   different hosts; missing supporting metrics must be explicit, not mistaken for zero usage.
+5. Estimate catch-up upload growth before starting large backups, not only current store usage.
+   With approval, restore quota headroom and synchronize the configuration-management source.
+   Raising a soft limit does not raise the hard cap; expanding that cap or an aggregate allocation
+   budget needs explicit approval. Preserve existing recovery points until a fresh backup is
+   verified; never delete backing block files or strip finalizers to silence a stuck deletion.
+6. Establish mount ownership and propagation before recovery. If backup-store mounts are private to
+   a Longhorn manager container, no backups are actively transferring, and volume engines run
+   independently, gracefully recreate one manager pod as a canary. Do not restart the DaemonSet
+   fleet, unmount workload/PVC data paths, force-delete pods or reboot nodes as a shortcut.
+7. Manager recovery does not refresh engine-side backup clients. If new backups still return `EIO`,
+   inspect instance-manager namespaces separately. With no backup/restore operations active and an
+   exact, private backup-store mount identified, a normal unmount followed by the deployed engine
+   CLI's inspection of a known completed backup can recreate that mount without restarting volume
+   engines. Stop if the unmount is busy; never use force/lazy unmount or restart an instance manager
+   to bypass this check.
+8. Require a real metadata read, deletion progress, settled CPU/process creation, unchanged volume
+   health and control-plane quorum before continuing one manager at a time. Startup readiness alone
+   is insufficient. Verify newly completed backups for the protected volume set, not merely an empty
+   pending queue or some successful volumes in a partially failed batch. Retry capacity-blocked
+   backups through the supported backup policy after headroom is restored.
+
+Record original quota values and workload health before writes. Do not reduce a raised limit below
+current usage as an automatic rollback. If the mount is shared or recovery fails, stop and establish
+its active users before proposing remount or service maintenance. An application filesystem can
+have checksum errors while its replicated block volume reports healthy; assess it separately and
+never run a repairing filesystem check on a mounted volume.

@@ -1,6 +1,6 @@
 ---
 name: network-unifi
-description: 'Discover, design, change, benchmark and recover UniFi-managed networks safely. Use for WireGuard workstation onboarding, split-tunnel routing, private DNS and home.arpa TLS trust, VLANs, DHCP reservations, switch ports, multi-NIC Linux hosts, storage networks, routing asymmetry, MetalLB/ARP incidents and network performance validation.'
+description: 'Discover, design, change, benchmark and recover UniFi-managed networks safely. Use for WireGuard workstation onboarding, split-tunnel routing, private DNS and home.arpa TLS trust, VLANs, DHCP reservations, switch ports, multi-NIC Linux hosts, storage networks, post-outage NFS/Longhorn backup failures, routing asymmetry, MetalLB/ARP incidents and network performance validation.'
 argument-hint: '[mode={audit|plan|apply|benchmark|recover}] [client-or-port] [network-purpose]'
 compatibility: 'Requires an authenticated UniFi Network browser session for controller changes. Workstation VPN setup requires WireGuard and OS DNS/certificate tools; Linux network validation may require SSH, NetworkManager, iproute2, ethtool and iperf3.'
 ---
@@ -16,8 +16,8 @@ and application behavior; each can look healthy while another layer is wrong.
 Keep real networks, VLAN IDs, addresses, MACs, switch names, port numbers and household client data in
 the owning private infrastructure repository. This skill carries only the reusable workflow.
 
-Use [the storage-network reference](references/storage-network.md) for dual-NIC NAS and benchmark
-patterns.
+Use [the storage-network reference](references/storage-network.md) for dual-NIC NAS, post-outage NFS
+recovery and benchmark patterns.
 
 Use [the workstation VPN reference](references/wireguard-workstation.md) to add a unique client to
 an existing WireGuard server, preserve split routing, configure private DNS and install public CA

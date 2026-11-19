@@ -52,7 +52,7 @@ gate rejects a stale or missing row.
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.3` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [Azure reporting](../.github/skills/azure-reporting/SKILL.md) | `1.0.0` | Subscription cost by service or resource group, model token usage per deployment and retail prices for cost estimates |
 | [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.5` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
-| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.1.0` | Network discovery, VLANs, host networking and performance diagnostics |
+| [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.2.0` | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Architecture Patterns
 
