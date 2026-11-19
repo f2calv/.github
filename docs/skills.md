@@ -92,7 +92,7 @@ gate rejects a stale or missing row.
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.5` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
-| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.3` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
+| [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.4` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |
 | [Native AOT](../.github/skills/dotnet-aot/SKILL.md) | `1.0.1` | Native deployment readiness, heuristic source scans, trimming, generated metadata and per-platform validation |
 | [Release train](../.github/skills/dotnet-release-train/SKILL.md) | `1.2.0` | Dependency-ordered NuGet updates, releases and consumer propagation |
