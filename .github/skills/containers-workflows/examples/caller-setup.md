@@ -96,7 +96,10 @@ can sync successfully while a values override still pins the previous image. Ver
 PreSync hook completed for the new revision, not an earlier sync. Probe the configured health
 endpoints using their actual plain-text or JSON response contract, and check restart counts
 and sustained application errors as well as readiness. Strip ANSI formatting before classifying log
-severity; summarize failures without exposing dynamic service-user data. When network policy blocks
+severity; summarize failures without exposing dynamic service-user data. For restart regressions,
+compare pre-rollout and startup metrics by pod, even when the image digest did not change. Verify
+the runtime version from the deployed digest before attributing the failure to a runtime upgrade.
+When network policy blocks
 the API-server HTTP proxy, use a localhost-only port-forward rather than weakening isolation or
 assuming a minimal runtime image contains a shell or HTTP client. A healthy probe is not proof that
 event persistence or other business operations succeeded; verify representative progress separately.
