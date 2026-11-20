@@ -42,7 +42,7 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.2.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
-| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.7` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
+| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.8` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.3` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.4` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
@@ -87,7 +87,7 @@ gate rejects a stale or missing row.
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.7` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.1` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.5` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
-| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.6` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
+| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.7` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.5` | Source layout, naming and analyzer-driven cleanup |

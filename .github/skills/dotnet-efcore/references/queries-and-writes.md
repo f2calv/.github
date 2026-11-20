@@ -40,6 +40,27 @@ Official guidance:
 [single/split queries](https://learn.microsoft.com/en-us/ef/core/querying/single-split-queries),
 [diagnosis](https://learn.microsoft.com/en-us/ef/core/performance/performance-diagnosis).
 
+## Experimental Native AOT Query Precompilation
+
+Follow the [official precompilation guidance](https://learn.microsoft.com/en-us/ef/core/performance/nativeaot-and-precompiled-queries)
+for the exact EF/provider versions. Retain the managed path; experimental execution does not
+establish production compatibility. Ordinary `EF.CompileQuery` is not Native AOT query generation.
+
+- Generate in the project owning the complete query sites, not just the executable. Prefer
+  non-generic sites with uninterrupted method chains; preserve SQL-side scope and transaction rules.
+  EF 10's locator/translator needs local symbols for contexts, captured values and cancellation
+  tokens; method parameters can be rejected as dynamic or fail translation.
+- Check design-time project evaluation separately. EF 10's `MSBuildWorkspace` does not forward CLI
+  global properties. Explicit environment properties and a deliberate single-target generation
+  variant can align restore, model generation and compilation without altering normal multi-target
+  builds. Do not patch generated source or disable warnings to hide generator defects.
+- Test actual published JIT and native processes against each real provider, including nullable
+  values, historical reads, writes/races and restart persistence. Verify dynamic-code support is
+  false in the native process. A successful publish can still fail on a lazily created comparer;
+  prefer explicit typed model comparers preserving existing semantics to broad linker roots.
+- A source-build opt-in does not retrofit generated code into a normal prebuilt NuGet dependency.
+  Validate the packaged-consumer path separately before advertising native package compatibility.
+
 ## Writes and Conflict Handling
 
 - Let a normal `SaveChangesAsync` transaction provide atomicity for one save where the provider
