@@ -475,6 +475,9 @@
                 "context": "release (workload) / versioning / gha-release-versioning"
               },
               {
+                "context": "integration"
+              },
+              {
                 "context": "release (workload) / package / helm-chart-package"
               }
             ]
