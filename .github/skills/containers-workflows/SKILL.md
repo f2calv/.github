@@ -55,6 +55,11 @@ For example, `./build.ps1 -Engine Podman -Configuration Release -Load -Version 1
 local Podman build without changing the Docker default. Select the Podman connection before
 invocation; the script never starts or switches engines. Deployment still requires Docker/Buildx.
 
+The Podman backend disables intermediate image-layer reuse (`--layers=false`): changed build
+arguments can otherwise retain stale image environment values, as reproduced on Podman 5.8.10
+and tracked in [the upstream Buildah cache issue](https://github.com/podman-container-tools/buildah/issues/5501).
+This trades incremental-build speed for correct image identity; Docker/Buildx caching is unchanged.
+
 A Debug build mirrors the sibling repositories named by `COPY deps/<name>` lines in
 `Dockerfile.Debug` into `deps/`. The image is named `ghcr.io/<owner>/<repository>`, where the owner
 is read from the repository's GitHub `origin` remote.
@@ -119,5 +124,7 @@ retires duplicated Bash deployment logic and keeps one Pester-covered implementa
 - Parameters and behaviour of the central build and deploy scripts, kept in step with their tests.
 - The repository-root shim contract whenever a consumer needs a new switch.
 - The shared build-argument names every Dockerfile is expected to accept.
+- Podman/Buildah argument-cache invalidation: remove the layer-cache restriction only after
+  consecutive preview/clean version builds produce their exact requested runtime values.
 - Keep caller templates and their argument/exit-code tests aligned with the implementations;
   document preview, publication and commit/push effects separately.

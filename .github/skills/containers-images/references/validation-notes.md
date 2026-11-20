@@ -17,6 +17,14 @@ Practical limits and checks when validating an image locally, after the audit an
 * A `--version` smoke test must compare exactly with the effective `VERSION` build argument.
   If CI lowercases image tags and uses that tag as `VERSION`, normalize the expected prerelease
   label too; raw GitVersion output can differ in case. Exercise both preview and clean versions.
+  Rebuild against the same builder cache: Podman/Buildah can reuse stale `ARG`-derived `ENV` values.
+  The [shared build backend](../../containers-workflows/SKILL.md#parameters-reference) documents its
+  cache-safe Podman policy; do not modify an application's Dockerfile to disguise this builder defect.
+* Verify the actual ignore-file contract, not just individual `COPY` flags: check that a nested
+  allow-listed source file arrives and an excluded synthetic sentinel does not. Podman 5.8.10
+  remote builds omitted nested sources from a deny-then-allow context during `COPY . .`.
+  Adding a broad parent-directory exception also copied excluded sentinels. Treat this as a
+  failed compatibility gate, not permission to weaken the allow-list or copy private settings.
 * Without the containerd image store, `--load` accepts one platform; use
   `--output type=oci,dest=image.tar` or a push to keep every platform.
 * Chiselled and distroless images have no shell, so `docker exec` cannot inspect them. Inspect a

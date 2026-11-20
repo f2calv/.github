@@ -11,7 +11,7 @@ Trace the selected host/toolchain before changing tracked application configurat
 | Podman prompts for an image registry | Resolve the intended fully qualified image name; do not globally weaken registry policy |
 | Registry/package TLS fails | Check proxy and trusted CA setup on host, machine, builder and image separately; never disable TLS verification |
 | VPN blocks VM networking | Diagnose DNS/routes first; Podman WSL user-mode networking is an opt-in change affecting other WSL distributions |
-| Windows host service is unreachable | Verify VM-to-host routing and `host.containers.internal`/`host.docker.internal`; container localhost is not Windows localhost |
+| Windows host service is unreachable | Probe the real listener's bind address through the selected VM route: `host-gateway` and either host alias can resolve without reaching Windows loopback. Renaming the alias alone is not a fix. Ask before changing listener binding, firewall or WSL networking |
 | Mount is missing or becomes a directory | Check source existence, file/directory type and host-to-VM path translation before startup |
 | Named volume appears empty | Check engine, project/volume identity and rootful/rootless connection; stores are separate, not automatically migrated |
 | Buildx command or Dockerfile flag fails | Check the selected builder's real capabilities; Podman's compatibility alias is not full Buildx |

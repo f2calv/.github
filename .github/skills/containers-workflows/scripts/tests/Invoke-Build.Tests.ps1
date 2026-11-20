@@ -101,7 +101,9 @@ Describe 'Invoke-Build' {
         Mock git { $global:LASTEXITCODE = 0; 'value' }
         Mock docker { $global:LASTEXITCODE = 0 }
         Invoke-ImageBuild $settings $repositoryRoot $null $null $null -Run
-        Should -Invoke docker -ParameterFilter { $args -contains 'build' -and $args -contains '--load' }
+        Should -Invoke docker -ParameterFilter {
+            $args -contains 'build' -and $args -contains '--load' -and -not ($args -contains '--layers=false')
+        }
         Should -Invoke docker -ParameterFilter { $args -contains 'run' -and $args -contains 'ghcr.io/owner/example:latest-dev' }
     }
 
@@ -118,7 +120,7 @@ Describe 'Invoke-Build' {
 
         Should -Invoke Initialize-BuildxBuilder -Times 0
         Should -Invoke podman -Times 1 -Exactly -ParameterFilter {
-            $args[0] -eq 'build' -and $args -contains 'VERSION=1.2.3' -and
+            $args[0] -eq 'build' -and $args -contains '--layers=false' -and $args -contains 'VERSION=1.2.3' -and
             -not ($args -contains 'buildx') -and -not ($args -contains '--load')
         }
         Should -Invoke podman -Times 1 -Exactly -ParameterFilter {

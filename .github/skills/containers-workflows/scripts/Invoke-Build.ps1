@@ -316,7 +316,7 @@ function Invoke-ImageBuild {
     if ($LASTEXITCODE -ne 0) { throw "git rev-parse failed for '$RepositoryRoot'." }
 
     $executable = $Engine.ToLowerInvariant()
-    $arguments = @(if ($Engine -eq 'Docker') { 'buildx'; 'build' } else { 'build' })
+    $arguments = @(if ($Engine -eq 'Docker') { 'buildx'; 'build' } else { 'build'; '--layers=false' })
     $arguments += @(
         '--tag', $image,
         '--file', (Join-Path $RepositoryRoot $dockerfile)

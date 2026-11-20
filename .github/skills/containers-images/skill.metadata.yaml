@@ -4,6 +4,8 @@ facets: [containers]
 related:
   - id: containers-tooling
     reason: Select the engine and builder and verify Dockerfile capabilities.
+  - id: containers-workflows
+    reason: Use the shared local build backend and its engine-specific cache policy.
   - id: dotnet-aot
     reason: Check application and dependency compatibility before choosing Native AOT container publishing.
   - id: dotnet-grpc
