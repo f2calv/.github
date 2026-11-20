@@ -12,7 +12,7 @@ Upstream documentation is a starting point, not runtime evidence for a particula
 | Image builds | BuildKit/Buildx | Buildah-backed `podman build`, or a separately approved builder | Actual Dockerfile features and output contract |
 | Buildx | Full CLI with its supported driver/backend | `podman buildx build` is a partial alias | Never assume builder create/inspect, checks or exporters are supported |
 | Dev Containers | Documented Docker path | Podman 5+ CLI integration documented by VS Code | Rebuild, non-root mount behavior and nested access separately |
-| NVIDIA on Windows | Supported engine/backend/toolkit combination | Documented WSL2 plus toolkit/CDI setup | Device visibility and a real workload; not Hyper-V parity |
+| NVIDIA on Windows | Supported engine/backend/toolkit combination | [WSL2 plus toolkit/CDI setup](setup.md#nvidia-gpu-on-wsl2) | Device visibility and a real workload; not Hyper-V parity |
 | Publication | Existing CI's platform/digest/attestation contract | Only the capabilities actually verified | Registry manifest/index digest, platforms and required metadata |
 
 WSLC's SDK lists x64 and ARM64 as supported host platforms; that is not proof of x64-to-ARM64
@@ -57,6 +57,19 @@ image hardening, caching or CI checks merely to claim tool agnosticism.
 Short image names can trigger Podman's registry-selection prompts. Prefer a verified fully
 qualified registry reference for unattended commands; preserve the intended image/version.
 Check local image naming and pull policy before changing a built service to a registry image.
+
+### Foreign-Architecture Checks
+
+Inspect existing emulation before installing or registering anything. A failing machine-shell
+`binfmt_misc` listing does not prove rootless container execution fails; probe the actual namespace.
+Privileged registration can affect other distributions sharing the WSL kernel, so require explicit
+approval and never flush registrations as a diagnostic shortcut.
+
+Build one target at a time. Exercise a real foreign-platform `RUN`, verify automatic target
+arguments, inspect the stored image's OS/architecture and exposed variant metadata, then run its
+entrypoint as non-root and check the actual architecture. Image assembly without execution is a
+different result. Successful emulation establishes neither native AOT readiness nor acceptable
+application performance, multi-platform index publication or support in the shared build adapter.
 
 ## CI Boundary
 

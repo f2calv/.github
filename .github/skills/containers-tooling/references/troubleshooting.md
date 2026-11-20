@@ -18,6 +18,8 @@ Trace the selected host/toolchain before changing tracked application configurat
 | Build succeeds but Compose pulls another image | Check local image name, target store, build output/export and pull policy |
 | Dev Container opens but nested engine access fails | Verify the inside-container CLI and approved socket mapping independently of host launch |
 | GPU profile parses but cannot start | Verify provider, host hardware/driver, machine toolkit/CDI and Compose device support; do not silently fall back to CPU |
+| WSL GPU device exists but `nvidia-smi` is missing | Check the standard WSL tool location and follow [GPU setup](setup.md#nvidia-gpu-on-wsl2); command discovery alone does not establish driver absence |
+| WSL `binfmt_misc` listing reports too many symbolic links | Compare actual rootless foreign-image execution before changing mounts or registrations; see the [upstream WSL automount issue](https://github.com/podman-container-tools/podman/issues/28174) and [foreign-architecture checks](compatibility.md#foreign-architecture-checks) |
 
 For registry TLS problems, use the existing package-feed guidance only when its scope actually
 applies. Credentials and private feed coordinates stay out of public guidance and diagnostics.

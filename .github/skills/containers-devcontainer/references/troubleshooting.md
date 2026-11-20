@@ -28,6 +28,7 @@ repository. Gather evidence before editing tracked files.
 | --- | --- |
 | Feature fails after a base upgrade | Check distribution support and Feature options first |
 | Docker cannot reach the host daemon | Verify Docker-outside-of-Docker and host socket support |
+| Rootless Podman socket is mounted but the non-root user gets permission denied | Compare socket ownership, `id` and `/proc/self/uid_map`; use the [rootless socket procedure](#rootless-podman-socket-access) |
 | Host mount expands incorrectly | Use the correct Dev Container variable for the host platform |
 | Hook works once but fails later | Move one-time work to post-create and make post-start idempotent |
 | Startup changes tracked files | Remove update or generation commands from post-start |
@@ -39,3 +40,19 @@ repository. Gather evidence before editing tracked files.
 | Sibling repositories drift | Compare declared shared surfaces and update them together |
 | `accessing specified distro mount service: stat /run/guest-services/distro-services/<distro>.sock` | The extension's automatic WSLg Wayland mount targets a WSL distribution without working Docker Desktop integration. Enable that distribution under Docker Desktop **Resources > WSL integration** and restart Docker Desktop, or set the user setting `"dev.containers.mountWaylandSocket": false` when the container runs no Linux GUI applications. Starting the distribution alone does not fix it |
 | Works on one workstation only | Follow [Diagnose a Failed Start](#diagnose-a-failed-start) and compare host Docker, WSL and extension settings |
+
+## Rootless Podman Socket Access
+
+Socket access still requires explicit approval. A successful bind does not establish permission:
+the same numeric UID inside and outside a user namespace can map to different machine users.
+
+Inspect the remote user's `id`, the socket's owner/mode and `/proc/self/uid_map`. For a selected
+Podman configuration, test `--userns=keep-id:uid=<remote-uid>,gid=<remote-gid>` through `runArgs`
+when retaining the machine user's identity is appropriate. Keep this engine-specific choice in
+a private host override rather than a shared Docker configuration. Retain `remoteUser` and recreate
+only the task container to apply the namespace change.
+
+Verify a non-root workspace write and an authenticated or local-socket request to the selected
+engine API, checking its identity. API transport success does not prove an uninstalled Docker CLI
+or Docker-outside-of-Docker Feature works. Never use world-writable socket permissions or a rootful
+engine switch as an automatic fix.

@@ -108,6 +108,29 @@ Podman stores are also separate. Before removing Desktop, independently install 
 client still needed and plan protected state export/import separately. Never delete Desktop or its
 data as a setup side effect.
 
+### NVIDIA GPU on WSL2
+
+Follow the [Podman Windows GPU procedure](https://podman-desktop.io/docs/podman/gpu) and
+[NVIDIA CDI guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html).
+GPU support is separate from ordinary container startup and is not equivalent on Hyper-V.
+
+1. Verify the supported Windows NVIDIA driver, then `/dev/dxg` inside the selected WSL machine.
+   If `nvidia-smi` is absent from `PATH`, check `/usr/lib/wsl/lib/nvidia-smi` before diagnosing a
+   missing driver. Do not install Linux display/kernel drivers over WSL's Windows integration.
+2. With approval, follow the
+   [official signed-package installation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+   inside that machine. For CDI-only access, NVIDIA's `nvidia-container-toolkit-base` package avoids
+   the legacy runtime hook; do not install or configure a Docker daemon unnecessarily.
+3. Check `nvidia-ctk --version` and `nvidia-ctk cdi list`. If generation is needed, inspect installed
+   help, then use `sudo nvidia-ctk cdi generate --output=/var/run/cdi/nvidia.yaml`.
+   Check the installed CDI refresh service/path and reverify after a machine restart:
+   `/var/run` is ephemeral, so a manually generated specification alone is not persistent setup.
+4. On the explicit rootless connection, run a verified fully qualified CUDA image compatible with
+   the GPU/driver using `--device nvidia.com/gpu=all`. First verify `nvidia-smi`, then a bounded
+   official CUDA computation that checks its result. Device listing alone is not a workload pass.
+5. Add a container-only labeling override only for a demonstrated SELinux denial and with approval.
+   Do not disable host enforcement, add privileged mode, or mix CDI with a legacy NVIDIA hook.
+
 ## Other Approved Alternatives
 
 * Docker Engine in approved Linux/WSL or on an approved remote host can retain Docker CLI/BuildKit
