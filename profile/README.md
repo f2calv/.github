@@ -47,7 +47,17 @@ Versions reflect the Dockerfile tags; Go and Rust track rolling major-version ta
 ## Kubernetes Helm Charts
 
 :ship: **[helm-charts](https://github.com/f2calv/helm-charts)**: public OCI charts for
-reusable workloads, jobs, KEDA autoscaling and persistent signal-cli deployments.
+reusable container workloads and application-specific deployments.
+
+| Chart | What it provides |
+| --- | --- |
+| [workload](https://github.com/f2calv/helm-charts/tree/main/charts/workload) | Framework-neutral Deployments, DaemonSets, StatefulSets, Jobs and CronJobs, with optional KEDA event-driven and HTTP autoscaling, persistence and networking controls. |
+| [signalcli](https://github.com/f2calv/helm-charts/tree/main/charts/signalcli) | signal-cli REST/JSON-RPC wrapper with persistent account state, application-aware probes and validated environment settings. |
+| [piper](https://github.com/f2calv/helm-charts/tree/main/charts/piper) | LinuxServer Piper text-to-speech over Wyoming TCP, with a voice cache, TCP probes and validated environment settings. |
+
+Published packages are available from `oci://ghcr.io/f2calv/charts/<chart>`.
+See the [chart catalogue and installation guides](https://github.com/f2calv/helm-charts#chart-catalogue)
+for exact versions and prerequisites.
 
 ## Azure DevOps Pipeline Migration
 
