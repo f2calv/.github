@@ -41,6 +41,7 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
+| [Container tooling](../.github/skills/containers-tooling/SKILL.md) | `1.0.0` | Docker Desktop and Podman setup, explicit engine/provider selection, workstation compatibility and troubleshooting |
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.2.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.7` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.3` | Shared local container build and GitOps deployment scripts |

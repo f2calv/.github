@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [containers]
+related:
+  - id: containers-docker-compose
+    reason: Author and validate application stacks after selecting the engine and Compose provider.
+  - id: containers-images
+    reason: Author and validate Dockerfiles against the selected builder capabilities.
+  - id: containers-workflows
+    reason: Run the shared local image build and deployment entry points.
+  - id: containers-devcontainer
+    reason: Configure editor containers and verify nested engine access separately.
