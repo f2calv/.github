@@ -14,7 +14,7 @@ gate rejects a stale or missing row.
 | [MkDocs and Pages](../.github/skills/docs-mkdocs/SKILL.md) | `1.0.0` | Public documentation sites, pull-request validation and coordinated Pages publication that preserves catalogs and chart feeds |
 | [ADR authoring](../.github/skills/docs-adr/SKILL.md) | `1.0.5` | Evidence-backed architecture decisions kept current across sessions, with optional GitHub issues labelled adr |
 | [Architecture diagrams](../.github/skills/docs-architecture-diagrams/SKILL.md) | `1.1.0` | Top-down Mermaid views from system context to components, runtime scenarios, flows and dependency graphs, with README versus `docs/` placement |
-| [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.1` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
+| [Repository baseline](../.github/skills/github-repository-baseline/SKILL.md) | `1.1.2` | Auditing and reconciling GitHub settings, default-branch rules and analysis requirements |
 | [Repository privacy](../.github/skills/repository-privacy/SKILL.md) | `1.3.0` | Checking public changes for personal data, credentials and private-system details; stripping agent attribution before a push |
 | [Issues and pull requests](../.github/skills/github-issues-and-pull-requests/SKILL.md) | `1.0.4` | Issue quality, pull request descriptions, review findings and merge readiness |
 | [Archive repository](../.github/skills/github-repository-archive/SKILL.md) | `1.0.1` | Explicitly requested retirement, archiving and optional local cleanup |
@@ -44,7 +44,7 @@ gate rejects a stale or missing row.
 | [Container images](../.github/skills/containers-images/SKILL.md) | `1.2.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
 | [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.7` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
 | [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.3` | Shared local container build and GitOps deployment scripts |
-| [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.3` | Chart contracts, values, dependencies, documentation and OCI packaging |
+| [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.4` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |
 | [GitOps Helm upgrades](../.github/skills/gitops-helm-upgrade/SKILL.md) | `1.0.1` | Third-party chart upgrades across desired state, upstream values snapshots, bootstrap pins and inventories |

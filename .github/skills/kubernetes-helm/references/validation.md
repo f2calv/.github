@@ -37,6 +37,10 @@ Check more than command exit codes:
 * README examples and embedded defaults against the source values;
 * version consistency across metadata, catalogues, workflows, and consumers.
 
+With `helm test --logs`, retain successful hook Pods until logs have been collected. On Helm 3,
+`hook-succeeded` can delete a passing Pod before log retrieval and make the command fail. Use
+`before-hook-creation` and clean up the disposable test namespace or cluster afterward.
+
 For master/minion or other split ownership models, assert one host owner, no paths on the master,
 no TLS on minions, unique paths, correct namespaces, and exact rendered backend Service names.
 Render at least two master entries to catch YAML document-separator whitespace bugs.
