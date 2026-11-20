@@ -105,6 +105,47 @@ Describe 'Invoke-Build' {
         Should -Invoke docker -ParameterFilter { $args -contains 'run' -and $args -contains 'ghcr.io/owner/example:latest-dev' }
     }
 
+    It 'builds and runs a Podman image without Buildx or Docker exporter flags' {
+        function podman {}
+        $settings = Resolve-BuildSettings -RepositoryRoot $releaseRoot -Engine Podman -Load
+        Mock Resolve-Version { '1.2.3' }
+        Mock Get-GitHubOwner { 'owner' }
+        Mock Initialize-BuildxBuilder
+        Mock git { $global:LASTEXITCODE = 0; 'value' }
+        Mock podman { $global:LASTEXITCODE = 0 }
+
+        Invoke-ImageBuild $settings $releaseRoot 'local' '1.2.3' $null -Run -Engine Podman
+
+        Should -Invoke Initialize-BuildxBuilder -Times 0
+        Should -Invoke podman -Times 1 -Exactly -ParameterFilter {
+            $args[0] -eq 'build' -and $args -contains 'VERSION=1.2.3' -and
+            -not ($args -contains 'buildx') -and -not ($args -contains '--load')
+        }
+        Should -Invoke podman -Times 1 -Exactly -ParameterFilter {
+            $args[0] -eq 'run' -and $args -contains 'ghcr.io/owner/release-only:local'
+        }
+    }
+
+    It 'rejects unsupported Podman modes before invoking a build' -ForEach @(
+        @{ Options = @{ Engine = 'Podman' }; Error = '*cache-only*' }
+        @{ Options = @{ Engine = 'Podman'; Push = $true }; Error = '*publication*' }
+        @{ Options = @{ Engine = 'Podman'; Load = $true; Platforms = 'linux/amd64,linux/arm64' }; Error = '*native host platform*' }
+    ) {
+        { Resolve-BuildSettings -RepositoryRoot $releaseRoot @Options } | Should -Throw $Error
+    }
+
+    It 'propagates a failed container run' {
+        function podman {}
+        $settings = Resolve-BuildSettings -RepositoryRoot $releaseRoot -Engine Podman -Load
+        Mock Resolve-Version { '1.2.3' }
+        Mock Get-GitHubOwner { 'owner' }
+        Mock git { $global:LASTEXITCODE = 0; 'value' }
+        Mock podman { $global:LASTEXITCODE = if ($args[0] -eq 'run') { 9 } else { 0 } }
+
+        { Invoke-ImageBuild $settings $releaseRoot 'local' '1.2.3' $null -Run -Engine Podman } |
+            Should -Throw '*run failed with exit code 9*'
+    }
+
     It 'derives the GHCR owner from an SSH or HTTPS origin' -ForEach @(
         @{ Url = 'git@github.com:Example-Owner/example.git' }
         @{ Url = 'https://github.com/Example-Owner/example' }

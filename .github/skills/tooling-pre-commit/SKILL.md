@@ -1,8 +1,8 @@
 ---
 name: tooling-pre-commit
-description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot coverage, opt-in pre-push hooks and a Docker fallback when Python is unavailable. Use when pre-commit hooks fail, drift or need updating.'
+description: 'Audit, add, align, update, run and troubleshoot pre-commit: .pre-commit-config.yaml, hook revisions, runtime updates, CI lint gates, Dependabot, opt-in pre-push hooks and Docker or Podman fallbacks when native tooling is unavailable. Use when pre-commit hooks fail, drift or need updating.'
 argument-hint: '[repositories=current-workspace|path,...] [mode={audit|align|update|run|install-pre-push|troubleshoot}] [files=...]'
-compatibility: 'Native execution requires pre-commit 4.6.2 and Git. The fallback requires Docker. Fleet auditing requires PowerShell 7.4 and Git.'
+compatibility: 'Native execution requires pre-commit 4.6.2 and Git. The container fallback requires a selected Docker or Podman engine with build/run support. Fleet auditing requires PowerShell 7.4 and Git.'
 ---
 
 # Pre-commit Management
@@ -14,9 +14,8 @@ template.
 
 ## Scope And Safety
 
-- Use [container tooling](../containers-tooling/SKILL.md) for engine setup and selection. The bundled
-  fallback currently invokes Docker explicitly; do not alias it to Podman or claim that backend
-  is supported before its build/run path is implemented and validated.
+- Use [container tooling](../containers-tooling/SKILL.md) for engine setup and selection. Native
+  pre-commit remains preferred; the fallback defaults to Docker and accepts explicit Podman selection.
 - Resolve repositories from explicit paths or active workspace folders. Never enumerate a parent
   clone directory to infer scope.
 - Treat every Git repository independently, including repositories in a multi-root workspace.
@@ -162,6 +161,10 @@ pwsh ./.github/skills/tooling-pre-commit/scripts/Invoke-PreCommit.ps1 `
 pwsh ./.github/skills/tooling-pre-commit/scripts/Invoke-PreCommit.ps1 `
   -RepoRoot <repository> -ForceDocker
 
+# Force the same fallback with Podman, without a global Docker alias.
+pwsh ./.github/skills/tooling-pre-commit/scripts/Invoke-PreCommit.ps1 `
+  -RepoRoot <repository> -ForceContainer -ContainerEngine Podman
+
 # Explicit opt-in only; never invoke this automatically.
 pwsh ./.github/skills/tooling-pre-commit/scripts/Invoke-PreCommit.ps1 `
   -RepoRoot <repository> -Mode InstallPrePush
@@ -175,6 +178,9 @@ and rerun.
 The script prefers an existing `pre-commit` executable or installed Python module. When neither is
 available it builds and launches `pre-commit-runner:4.6.2`, containing Python 3.12, Node 22, Git,
 and pre-commit 4.6.2. A named cache volume preserves hook environments between runs.
+`-ContainerEngine Podman` selects that engine if a fallback is needed; `-ForceContainer` bypasses
+native execution. `-ForceDocker` retains its existing meaning and rejects a conflicting Podman
+selection. Containers do not share image/cache stores across engines.
 
 ### 5. Verify
 

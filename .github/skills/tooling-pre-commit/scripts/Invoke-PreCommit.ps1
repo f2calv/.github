@@ -17,6 +17,10 @@ Optional hook identifier to run instead of every configured hook.
 Optional repository-relative files passed through --files. Run mode defaults to --all-files.
 .PARAMETER ForceDocker
 Uses the Docker fallback even when native pre-commit is available.
+.PARAMETER ForceContainer
+Uses the selected container fallback even when native pre-commit is available.
+.PARAMETER ContainerEngine
+Docker (default) or Podman. ForceDocker cannot be combined with Podman.
 .PARAMETER ContainerImage
 Docker image name used for the fallback.
 .PARAMETER CacheVolume
@@ -48,6 +52,13 @@ param(
 
     [Parameter()]
     [switch]$ForceDocker,
+
+    [Parameter()]
+    [switch]$ForceContainer,
+
+    [Parameter()]
+    [ValidateSet('Docker', 'Podman')]
+    [string]$ContainerEngine = 'Docker',
 
     [Parameter()]
     [string]$ContainerImage = 'pre-commit-runner:4.6.2',
@@ -190,7 +201,7 @@ function Invoke-NativePreCommit {
     }
 }
 
-function Invoke-DockerPreCommit {
+function Invoke-ContainerPreCommit {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -206,52 +217,58 @@ function Invoke-DockerPreCommit {
         [string]$Volume,
 
         [Parameter(Mandatory = $true)]
-        [string]$Version
+        [string]$Version,
+
+        [ValidateSet('Docker', 'Podman')]
+        [string]$Engine = 'Docker'
     )
 
-    $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if ($null -eq $docker) {
-        throw 'Neither native pre-commit nor Docker is available. Install one and retry.'
+    $container = Get-Command $Engine.ToLowerInvariant() -CommandType Application -TotalCount 1 -ErrorAction SilentlyContinue
+    if ($null -eq $container) {
+        throw "Neither native pre-commit nor the selected $Engine engine is available. Install one and retry."
     }
 
-    & $docker.Source image inspect $Image *> $null
+    & $container.Source image inspect $Image *> $null
     if ($LASTEXITCODE -ne 0) {
         $skillRoot = Split-Path -Parent $PSScriptRoot
-        & $docker.Source build --build-arg "PRE_COMMIT_VERSION=$Version" --tag $Image --file (Join-Path $skillRoot 'Dockerfile') $skillRoot
+        & $container.Source build --build-arg "PRE_COMMIT_VERSION=$Version" --tag $Image --file (Join-Path $skillRoot 'Dockerfile') $skillRoot
         if ($LASTEXITCODE -ne 0) {
-            throw "Failed to build Docker fallback image '$Image'."
+            throw "Failed to build $Engine fallback image '$Image'."
         }
     }
 
-    $dockerArguments = @(
+    $containerArguments = @(
         'run', '--rm',
         '--volume', "${WorkingDirectory}:/src",
         '--volume', "${Volume}:/root/.cache/pre-commit",
         $Image
     ) + $Arguments
-    & $docker.Source @dockerArguments
+    & $container.Source @containerArguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Docker pre-commit exited with code $LASTEXITCODE. Review hook output and modified files."
+        throw "$Engine pre-commit exited with code $LASTEXITCODE. Review hook output and modified files."
     }
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
     try {
+        if ($ForceDocker -and $ContainerEngine -ne 'Docker') {
+            throw '-ForceDocker cannot select Podman. Use -ForceContainer -ContainerEngine Podman.'
+        }
         $root = Resolve-RepositoryRoot -Path $RepoRoot
         $arguments = Get-PreCommitArguments -Operation $Mode -SelectedHook $HookId -SelectedFiles $Files
-        $nativeCommand = if ($ForceDocker) { $null } else { Get-NativePreCommitCommand -RequiredVersion $PreCommitVersion }
+        $nativeCommand = if ($ForceDocker -or $ForceContainer) { $null } else { Get-NativePreCommitCommand -RequiredVersion $PreCommitVersion }
 
         if ($Mode -eq 'InstallPrePush' -and $null -eq $nativeCommand) {
             throw 'InstallPrePush requires native pre-commit because a container cannot install a usable host Git hook.'
         }
 
-        $executionMode = if ($null -ne $nativeCommand) { 'native' } else { 'Docker' }
+        $executionMode = if ($null -ne $nativeCommand) { 'native' } else { $ContainerEngine }
         if ($PSCmdlet.ShouldProcess($root, "$Mode pre-commit hooks using $executionMode")) {
             if ($null -ne $nativeCommand) {
                 Invoke-NativePreCommit -Command $nativeCommand -Arguments $arguments -WorkingDirectory $root
             }
             else {
-                Invoke-DockerPreCommit -Arguments $arguments -WorkingDirectory $root -Image $ContainerImage -Volume $CacheVolume -Version $PreCommitVersion
+                Invoke-ContainerPreCommit -Arguments $arguments -WorkingDirectory $root -Image $ContainerImage -Volume $CacheVolume -Version $PreCommitVersion -Engine $ContainerEngine
             }
         }
         exit 0

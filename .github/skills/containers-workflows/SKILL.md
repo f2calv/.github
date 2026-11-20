@@ -13,16 +13,15 @@ implementations bundled here.
 ## Prerequisites
 
 - PowerShell 7.4 or later
-- Docker CLI and Buildx for the current shared build and registry-digest scripts; Podman's Buildx
-  alias is not a supported replacement
+- Docker CLI and Buildx for cache-only builds, publication and deployment registry inspection;
+  Podman supports explicit native-platform local builds with `-Load` or `-Run`
 - Git and yq for deployments
 - GitHub CLI and Helm for publication
 - Pester 5.7.1 when changing this skill
 
 Use [container tooling](../containers-tooling/SKILL.md) for Desktop/Podman setup and explicit
-engine/provider/builder selection. Podman may run local dependencies without satisfying these
-scripts' BuildKit contract; do not claim a new build backend until its full command/output path
-is implemented and verified.
+engine/provider/builder selection. Podman's Buildx alias does not satisfy the Docker backend's
+full command/output contract.
 
 ## Quick Start
 
@@ -50,6 +49,11 @@ and ignores any it does not declare.
 | `-Configuration` | Defaults to `Debug` when the repository has a `Dockerfile.Debug`, otherwise `Release` |
 | `-Platforms` | Overrides the target platforms |
 | `-WorkloadName` | Selects the assembly through the `WORKLOAD` build argument |
+| `-Engine Podman` | Requires `-Load` or `-Run` on the native host platform; cache-only builds and `-Push` remain Docker/Buildx-only |
+
+For example, `./build.ps1 -Engine Podman -Configuration Release -Load -Version 1.2.3` selects a
+local Podman build without changing the Docker default. Select the Podman connection before
+invocation; the script never starts or switches engines. Deployment still requires Docker/Buildx.
 
 A Debug build mirrors the sibling repositories named by `COPY deps/<name>` lines in
 `Dockerfile.Debug` into `deps/`. The image is named `ghcr.io/<owner>/<repository>`, where the owner

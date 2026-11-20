@@ -29,6 +29,8 @@
 .PARAMETER WorkloadName
 	Optional assembly name passed as the WORKLOAD build argument. When omitted, the Dockerfile
 	default selects the assembly.
+.PARAMETER Engine
+	Docker (default) retains Buildx behavior. Podman supports native-platform -Load or -Run only.
 .EXAMPLE
 	./Invoke-Build.ps1 -RepositoryRoot /src/example
 .EXAMPLE
@@ -56,7 +58,9 @@ param(
     [string]$Version,
     [string]$Platforms,
     [string]$ImageName,
-    [string]$WorkloadName
+    [string]$WorkloadName,
+    [ValidateSet('Docker', 'Podman')]
+    [string]$Engine = 'Docker'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -146,10 +150,18 @@ function Resolve-BuildSettings {
         [string]$Platforms,
         [string]$ImageName,
         [switch]$Push,
-        [switch]$Load
+        [switch]$Load,
+        [ValidateSet('Docker', 'Podman')][string]$Engine = 'Docker'
     )
 
     if ($Push -and $Load) { throw '-Push cannot be combined with -Load or -Run.' }
+    if ($Engine -eq 'Podman') {
+        if ($Push) { throw 'Podman publication is not supported by this script. Use Docker/Buildx for -Push.' }
+        if (-not $Load) { throw 'Podman requires -Load or -Run; cache-only builds require Docker/Buildx.' }
+        if ($Platforms -and $Platforms -ne (Resolve-HostPlatform)) {
+            throw 'Podman builds support only the native host platform in this script.'
+        }
+    }
     $repositoryName = Split-Path $RepositoryRoot -Leaf
     $resolvedConfiguration = if ($Configuration) {
         $Configuration
@@ -282,7 +294,8 @@ function Invoke-ImageBuild {
         [string]$WorkloadName,
         [switch]$Push,
         [switch]$Load,
-        [switch]$Run
+        [switch]$Run,
+        [ValidateSet('Docker', 'Podman')][string]$Engine = 'Docker'
     )
 
     $resolvedVersion = Resolve-Version -RequestedVersion $Version -Required:$Push -RepositoryRoot $RepositoryRoot
@@ -295,15 +308,17 @@ function Invoke-ImageBuild {
         Sync-Dependencies -RepositoryRoot $RepositoryRoot -DependencyRepositories $dependencies
     }
     if ($Push) { Connect-Ghcr }
-    Initialize-BuildxBuilder -BuilderName $Settings.BuilderName
+    if ($Engine -eq 'Docker') { Initialize-BuildxBuilder -BuilderName $Settings.BuilderName }
 
     $gitBranch = "$(git -C $RepositoryRoot branch --show-current)".Trim()
     if ($LASTEXITCODE -ne 0) { throw "git branch failed for '$RepositoryRoot'." }
     $gitCommit = "$(git -C $RepositoryRoot rev-parse HEAD)".Trim()
     if ($LASTEXITCODE -ne 0) { throw "git rev-parse failed for '$RepositoryRoot'." }
 
-    $arguments = @(
-        'buildx', 'build', '--tag', $image,
+    $executable = $Engine.ToLowerInvariant()
+    $arguments = @(if ($Engine -eq 'Docker') { 'buildx'; 'build' } else { 'build' })
+    $arguments += @(
+        '--tag', $image,
         '--file', (Join-Path $RepositoryRoot $dockerfile)
     )
     if (-not [string]::IsNullOrWhiteSpace($WorkloadName)) {
@@ -323,14 +338,17 @@ function Invoke-ImageBuild {
         '--pull'
     )
     if ($Push) { $arguments += '--push' }
-    elseif ($Load -or $Run) { $arguments += '--load' }
+    elseif (($Load -or $Run) -and $Engine -eq 'Docker') { $arguments += '--load' }
     $arguments += $RepositoryRoot
-    docker @arguments
-    if ($LASTEXITCODE -ne 0) { throw "docker buildx build failed with exit code $LASTEXITCODE." }
+    & $executable @arguments
+    if ($LASTEXITCODE -ne 0) { throw "$Engine image build failed with exit code $LASTEXITCODE." }
 
     $verb = if ($Push) { 'Pushed' } elseif ($Load -or $Run) { 'Loaded' } else { 'Built into the cache only' }
     Write-Host "${verb}: $image ($($Settings.Platforms))" -ForegroundColor Green
-    if ($Run) { docker run --rm -it $image }
+    if ($Run) {
+        & $executable run --rm -it $image
+        if ($LASTEXITCODE -ne 0) { throw "$Engine image run failed with exit code $LASTEXITCODE." }
+    }
 }
 #endregion Docker
 
@@ -341,12 +359,12 @@ function Invoke-ContainerBuild {
 
     $resolvedRoot = [IO.Path]::GetFullPath($RepositoryRoot)
     $settings = Resolve-BuildSettings -RepositoryRoot $resolvedRoot -Configuration $Configuration `
-        -Platforms $Platforms -ImageName $ImageName -Push:$Push -Load:($Load -or $Run)
+        -Platforms $Platforms -ImageName $ImageName -Push:$Push -Load:($Load -or $Run) -Engine $Engine
     $target = "$($settings.Configuration) container image for $($settings.RepositoryName)"
     if (-not $PSCmdlet.ShouldProcess($target, 'Build')) { return }
 
     Invoke-ImageBuild -Settings $settings -RepositoryRoot $resolvedRoot -Tag $Tag -Version $Version `
-        -WorkloadName $WorkloadName -Push:$Push -Load:$Load -Run:$Run
+        -WorkloadName $WorkloadName -Push:$Push -Load:$Load -Run:$Run -Engine $Engine
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
