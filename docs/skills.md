@@ -88,7 +88,7 @@ gate rejects a stale or missing row.
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.7` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.1` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.5` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
-| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.6` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
+| [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.7` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.5` | Source layout, naming and analyzer-driven cleanup |

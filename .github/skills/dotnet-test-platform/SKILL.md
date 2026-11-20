@@ -67,6 +67,9 @@ into the target repository rather than copying over existing policy.
   only at the beginning and/or end of each pattern. Prefer explicit classes when a broad prefix
   would also select separately gated infrastructure/live cases. Verify the discovered selection
   against the repository's runner version and require a nonzero executed-test count.
+  Class and method selectors intersect; they do not form a union. To combine complete classes
+  with selected methods from another class, use one `--filter-method` list containing fully
+  qualified `Namespace.Class.*` and method patterns, without a conflicting class selector.
 
 ## Workflows and Actions
 

@@ -61,6 +61,11 @@ effective Docker volume identity explicitly; let users select the existing volum
 projects had separate registrations. A new empty volume is not a migration.
 Health checks can report readiness without proving credentials, schema or application queries work.
 
+For copied-source native build runners, check accumulated workspace size as well as dependency
+caches. Clean only the successfully created run-owned directory on shell exit, including failure;
+retain shared dependency caches and export any requested artifacts separately. Named volumes and
+`run --rm` do not bound accumulated build directories; daemon failure may also prevent exit cleanup.
+
 Compare each stateful image's effective storage path with the mount target, including its
 major-version-specific `VOLUME`/data-directory layout. A named volume at an obsolete path does not
 protect the real data. When overriding `command`/`entrypoint`, check which publisher defaults are
