@@ -39,10 +39,15 @@ Use the existing configuration loader and preserve environment-variable override
 embedding connection-string fallbacks in C#. A service's Compose definition does not configure
 the test process automatically.
 
-Check Compose commands in wrapper scripts too. A valid model does not validate an obsolete
-`docker-compose` executable dependency, invalid CLI arguments, wrong working directory or caller
+Check Compose commands in wrapper scripts too. A valid model does not validate a missing or obsolete
+provider, invalid CLI arguments, wrong working directory or caller
 that omits a required profile. Treat existing uncommitted Compose edits as the audited working-tree
 state and preserve them during later synchronization.
+
+A modern `docker-compose` binary is not necessarily Python Compose V1 and is a supported external
+provider for `podman compose`. Record its actual version/path. Check long-form optional `env_file`,
+optional dependencies, health/completion conditions and wait flags against that provider and engine.
+Qualify image registries where required to avoid interactive short-name selection.
 
 ## Mount and State Checks
 
@@ -95,8 +100,10 @@ Keep large models/GPU services optional and preserve existing downloaded data.
 
 ## Configuration Validation Without Running Containers
 
-Check `docker compose version` and relevant `--help` locally before relying on version-specific
-flags. Supply absolute file/project-directory paths; do not rely on shell working-directory state.
+Select the engine/provider through [container tooling](../../containers-tooling/SKILL.md).
+Check its version and relevant `--help` locally before relying on version-specific flags.
+The examples below use Docker; use `podman compose` with the selected provider on Podman.
+Supply absolute file/project-directory paths; do not rely on shell working-directory state.
 Example commands use synthetic paths and must be adapted to the actual invocation:
 
 ```powershell
@@ -138,7 +145,7 @@ platforms. Do not automatically pull images or enable digest resolution during a
 
 ## Runtime Validation Only With Authorization
 
-Confirm Docker context, project identity, selected profile/services, standard ports or justified
+Confirm engine endpoint, provider, project identity, selected profile/services, standard ports or justified
 overrides, expected side effects and cleanup before starting. Inspect existing resources read-only to avoid targeting
 someone else's stack. A project name does not fix globally named resources or host-port collisions.
 

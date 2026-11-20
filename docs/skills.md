@@ -26,12 +26,12 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.0.3` | Configured lint hooks, pinned runtimes and native or Docker execution |
+| [Pre-commit management](../.github/skills/tooling-pre-commit/SKILL.md) | `1.1.0` | Configured lint hooks, pinned runtimes and native or Docker execution |
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.3` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
-| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.0.3` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
-| [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.0.1` | Development images, Features, lifecycle commands and editor integration |
+| [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.1.0` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
+| [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.1.0` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](../.github/skills/skill-library/SKILL.md) | `1.5.0` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
@@ -42,9 +42,9 @@ gate rejects a stale or missing row.
 | Skill | Version | Use it for |
 | --- | --- | --- |
 | [Container tooling](../.github/skills/containers-tooling/SKILL.md) | `1.0.0` | Docker Desktop and Podman setup, explicit engine/provider selection, workstation compatibility and troubleshooting |
-| [Container images](../.github/skills/containers-images/SKILL.md) | `1.2.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
-| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.0.7` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
-| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.0.3` | Shared local container build and GitOps deployment scripts |
+| [Container images](../.github/skills/containers-images/SKILL.md) | `1.3.0` | Dockerfile authoring, image profiles, build strategy and static auditing |
+| [Docker Compose](../.github/skills/containers-docker-compose/SKILL.md) | `1.1.0` | Local stacks, profiles, readiness, storage/network isolation, troubleshooting and workspace-wide audits |
+| [Container workflows](../.github/skills/containers-workflows/SKILL.md) | `1.1.0` | Shared local container build and GitOps deployment scripts |
 | [Helm charts](../.github/skills/kubernetes-helm/SKILL.md) | `1.0.4` | Chart contracts, values, dependencies, documentation and OCI packaging |
 | [File to ConfigMap](../.github/skills/kubernetes-configmap-sync/SKILL.md) | `1.0.1` | Reviewed non-secret JSON, XML or UTF-8 text synchronized into one existing GitOps ConfigMap key |
 | [GitOps repository structure](../.github/skills/gitops-repository-structure/SKILL.md) | `1.0.2` | Argo CD Application discovery, ownership and stateful migrations |

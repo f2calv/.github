@@ -14,6 +14,9 @@ template.
 
 ## Scope And Safety
 
+- Use [container tooling](../containers-tooling/SKILL.md) for engine setup and selection. The bundled
+  fallback currently invokes Docker explicitly; do not alias it to Podman or claim that backend
+  is supported before its build/run path is implemented and validated.
 - Resolve repositories from explicit paths or active workspace folders. Never enumerate a parent
   clone directory to infer scope.
 - Treat every Git repository independently, including repositories in a multi-root workspace.

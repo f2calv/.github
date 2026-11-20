@@ -11,14 +11,15 @@ repository. Gather evidence before editing tracked files.
    `%APPDATA%\Code\logs\<session>\window<n>\exthost\ms-vscode-remote.remote-containers\`; use
    **Dev Containers: Show Container Log** on any platform. Search for `Error response from daemon`,
    `Command failed` and `Exit code`.
-2. Compare the logged `docker run` arguments with the configuration. The extension adds its own
+2. Compare the logged container CLI/run arguments with the configuration. The extension adds its own
    mounts, such as the WSLg Wayland socket, the Git credential helper and the `vscode` volume; a
    failing mount that the repository does not declare points to host or extension settings.
 3. Reproduce the failing argument alone with a throwaway container such as
    `docker run --rm --mount <failing-mount> alpine:3 true`, then remove any image pulled only for
    the test. A standalone failure proves the cause is independent of the repository image.
-4. Check host state: `docker version`, `docker context ls`, `wsl -l -v`, the Docker Desktop WSL
-   integration setting for each distribution and whether the relevant distribution is running.
+4. Check the selected engine's state using [container tooling](../../containers-tooling/SKILL.md).
+   On Docker Desktop, inspect `docker version`, contexts, WSL integration and distribution state.
+   On Podman, inspect its machine/connection/provider and configured Dev Containers CLI.
 5. Fix host-specific causes in host or user settings, not tracked repository files. Ask before
    changing a user setting that affects every Dev Container, and note that Settings Sync may carry
    it to other workstations.

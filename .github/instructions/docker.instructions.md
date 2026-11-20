@@ -3,12 +3,16 @@ description: 'Dockerfile and .dockerignore invariants — image profiles, worklo
 applyTo: '**/Dockerfile,**/Dockerfile.*,**/*.dockerfile,**/.dockerignore'
 ---
 
-# Docker
+# Container Images
 
 Invariants for every Dockerfile. The `containers-images` skill makes per-image choices, audits and
 holds the [full conventions with their reasons](../skills/containers-images/references/dockerfile-conventions.md).
 Compose files follow `docker.compose.instructions.md`; dev container Dockerfiles belong to the
 `containers-devcontainer` skill and are exempt.
+
+Use `containers-tooling` for engine/builder setup and capability checks. Docker Desktop is not an
+image-format requirement. Keep BuildKit-specific checks/publication contracts explicit; another
+engine's compatible CLI does not prove it supports the selected Dockerfile features or exporters.
 
 ## Classification
 

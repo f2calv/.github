@@ -32,7 +32,7 @@ Use this evidence matrix:
 | Local scripts or documented validation invoking `jq` or `yq` | No additional extension | Add `ghcr.io/eitsupi/devcontainer-features/jq-likes:2` |
 | `*.tf` developed locally | Add `hashicorp.terraform` | Add the Terraform Feature and synchronize its version constraints |
 | `Chart.yaml` or locally run Helm validation | Add the established Helm extension | Add or configure the Kubectl/Helm Feature |
-| Dockerfile or Compose authoring | Add the established Containers extension | Add Docker access only when contributors run Docker inside the container |
+| Dockerfile or Compose authoring | Add the established Containers extension | Add selected-engine access only when local commands inside the container require it; verify CLI/socket compatibility |
 | GitHub Actions authoring | Add `github.vscode-github-actions` | Add GitHub CLI only when local scripts or documented workflows invoke `gh` |
 | Language manifest or source files | Add the established language extensions | Prefer the matching base image; use a language Feature only when needed |
 

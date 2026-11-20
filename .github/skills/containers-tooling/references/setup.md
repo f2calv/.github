@@ -48,18 +48,22 @@ First inspect existing machines and connections:
 podman --version
 podman machine list
 podman system connection list
+podman machine info
 ```
 
 If none is suitable, with approval create a named machine using an approved provider:
 
 ```powershell
-podman machine init --provider wsl example-machine
+podman machine init example-machine
 podman machine start example-machine
 podman info
 podman machine inspect example-machine
 ```
 
-Use installed help to confirm provider support and resource controls. WSL resource limits are not
+Confirm the provider reported by `machine info` before initialization. Provider-selection options
+vary by release; do not assume `machine init --provider` exists merely because newer documentation
+lists it. Use the installed help and official setup guide when a different provider is required.
+WSL resource limits are not
 interchangeable with QEMU options. Start rootless where workable; rootful mode is a separate,
 approved compatibility decision, not a generic permission fix.
 Verify host/client/server versions and the selected connection. Do not dump full inspection output
@@ -110,7 +114,24 @@ data as a setup side effect.
   semantics without Docker Desktop. Verify policy, daemon lifecycle and remote mount semantics.
 * [Rancher Desktop](https://docs.rancherdesktop.io/tutorials/working-with-images/) offers Moby with
   Docker CLI or containerd with nerdctl. Select the matching engine; these paths are not identical.
-* WSLC can provide capability-checked Windows-local image build/run validation. Discover its installed
-  help first; do not assume Compose, Buildx or publication support.
+* [WSLC](#wslc-without-docker-desktop) can provide capability-checked Windows-local image validation,
+  not an assumed Compose or publication replacement.
 
 Select one justified path. Do not install several engines or Kubernetes merely to compare tools.
+
+## WSLC Without Docker Desktop
+
+WSL Containers runs without a Docker daemon. Verify availability in the installed WSL release;
+not every WSL installation includes it. Follow the
+[official prerequisites](https://github.com/microsoft/WSL/blob/master/nuget/Microsoft.WSL.Containers/docs/README.MD#prerequisites)
+and ask before installing/updating WSL. Do not start Desktop as a fallback.
+
+Discover `wslc`, then inspect its version and installed `build`, `run`, `logs` and `stop` help.
+Reuse existing Dockerfiles and ignore files. With approval, build/run the native platform and verify
+the expected endpoint or process result, then clean up only the created resources using installed
+CLI options. Confirm loopback port mappings and retain non-root execution.
+
+Check advanced COPY flags, cache/secret mounts, platform arguments and stage selection before use.
+The [architecture limitations](compatibility.md#capability-matrix) distinguish ARM64 host support
+from cross-platform builds. Do not claim Compose, registry/image-store interoperability, Buildx
+checks, multi-platform indexes, provenance or SBOM support from a native smoke test.

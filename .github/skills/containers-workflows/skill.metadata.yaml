@@ -1,3 +1,6 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.3
+version: 1.1.0
 facets: [containers]
+related:
+  - id: containers-tooling
+    reason: Set up and select a toolchain satisfying the shared build and deployment contract.

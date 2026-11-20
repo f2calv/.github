@@ -2,7 +2,7 @@
 name: containers-devcontainer
 description: 'Create, update, align and validate Dev Containers: images, Features, lifecycle scripts, mounts, lockfiles, extensions and host/editor sync across repositories. Use when adding tooling or diagnosing a Dev Container that fails to start.'
 argument-hint: 'mode={add|update|upgrade|reconcile|audit|align} [scope=repository-or-workspace]'
-compatibility: 'Authoring is cross-platform. Rebuild validation requires Docker and VS Code Dev Containers or the Dev Container CLI.'
+compatibility: 'Authoring is cross-platform. Rebuild validation requires a verified container CLI/engine and VS Code Dev Containers or the Dev Container CLI. Podman integration needs separate compatibility checks.'
 ---
 
 # Dev Container
@@ -28,7 +28,10 @@ These are selection guides, not templates to merge together.
 
 * Read the target repository's Copilot instructions and `.editorconfig` before editing.
 * Identify whether the request is to add, update, upgrade, audit, or align a devcontainer.
-* Docker and a Dev Container implementation are required only for build validation.
+* A supported engine and Dev Container implementation are required only for build validation.
+* Use [container tooling](../containers-tooling/SKILL.md) for host setup and runtime selection.
+  Podman host launch and engine access inside the Dev Container are separate validation gates;
+  do not assume a Docker-outside-of-Docker Feature or socket mount works unchanged.
 * Never put credentials, identifiers, hostnames, or user-specific absolute paths in tracked files.
 * Ask before running a devcontainer build, rebuild, or repository tests.
 

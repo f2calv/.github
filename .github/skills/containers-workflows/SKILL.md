@@ -13,10 +13,16 @@ implementations bundled here.
 ## Prerequisites
 
 - PowerShell 7.4 or later
-- Docker Buildx for builds
+- Docker CLI and Buildx for the current shared build and registry-digest scripts; Podman's Buildx
+  alias is not a supported replacement
 - Git and yq for deployments
 - GitHub CLI and Helm for publication
 - Pester 5.7.1 when changing this skill
+
+Use [container tooling](../containers-tooling/SKILL.md) for Desktop/Podman setup and explicit
+engine/provider/builder selection. Podman may run local dependencies without satisfying these
+scripts' BuildKit contract; do not claim a new build backend until its full command/output path
+is implemented and verified.
 
 ## Quick Start
 

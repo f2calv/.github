@@ -1,8 +1,8 @@
 ---
 name: containers-images
-description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, build strategy, platforms, runtime base, pinning, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing a Dockerfile, including rules docker buildx build --check misses, or considering WSLC on Windows without Docker; Compose stacks belong to containers-docker-compose.'
+description: 'Create, update, migrate and audit Dockerfiles and .dockerignore files: image profiles, workload shapes, platforms, runtime bases, caching, provenance, entrypoints and debug variants. Use when authoring or reviewing an image or its BuildKit checks. Engine setup and Podman/WSLC capability selection belong to containers-tooling; Compose stacks belong to containers-docker-compose.'
 argument-hint: 'mode={create|update|migrate|audit} [path=Dockerfile-or-directory] [profile={published|single-arch|vendor|debug|sample}]'
-compatibility: 'The audit requires PowerShell 7.4. Full build validation requires Docker with Buildx; arm platforms on an amd64 host also need QEMU binfmt handlers. Windows users without Docker can use WSLC for capability-checked local validation.'
+compatibility: 'The static audit requires PowerShell 7.4. Build/run validation requires a capability-checked engine and builder. BuildKit checks and publication require Buildx with a supported backend; cross-platform execution needs native workers or verified emulation.'
 ---
 
 # Container Images
@@ -19,10 +19,10 @@ those.
 
 * Read the target repository's `copilot-instructions.md` and existing Dockerfiles before editing.
 * PowerShell 7.4 for `scripts/Test-Dockerfile.ps1`.
-* Docker Buildx for `--check` and platform builds. The containerd image store is needed to load a
-  multi-platform image with `--load`.
-* Without Docker on Windows, follow the [WSLC path](references/validation-notes.md#windows-without-docker)
-  for local validation; it does not replace the Docker/Buildx publication gates.
+* Select the engine and builder with [container tooling](../containers-tooling/SKILL.md). Its
+  capability checks cover Docker, Podman and WSLC; never infer full Buildx from a compatible CLI.
+* Buildx with a supported BuildKit backend for `--check` and the existing publication contract.
+  Multi-platform loading additionally depends on the destination image store.
 
 ## Quick Start
 
@@ -83,7 +83,7 @@ from project paths and shows how sibling-project Debug inputs map into the conta
 
 ### Step 4: Validate
 
-Run the audit, then BuildKit's checks:
+Run the engine-independent audit, then BuildKit's checks where that backend is available:
 
 The script path below is relative to this skill's directory, not the application's repository.
 Supply absolute Dockerfile/context paths when invoking BuildKit from that location.
@@ -93,6 +93,8 @@ Supply absolute Dockerfile/context paths when invoking BuildKit from that locati
 docker buildx build --check -f <Dockerfile> <context>
 ```
 
+The commands below explicitly use Buildx. For another builder, verify the same Dockerfile and
+output capabilities first; report unavailable checks instead of treating them as passed.
 Build the native platform and smoke-run it. Ask before building, and before running the optional
 `test` target, which executes the repository's tests:
 

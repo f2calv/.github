@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.2.0
+version: 1.3.0
 facets: [containers]
 related:
+  - id: containers-tooling
+    reason: Select the engine and builder and verify Dockerfile capabilities.
   - id: dotnet-aot
     reason: Check application and dependency compatibility before choosing Native AOT container publishing.
   - id: dotnet-grpc

@@ -1,16 +1,18 @@
 ---
 name: containers-docker-compose
-description: 'Create, update, audit or troubleshoot Docker Compose local development and demo stacks. Use for docker-compose.yml or compose.yaml files, profiles, dependency readiness, networks, ports, volumes, secrets, interpolation, image compatibility, isolated test services and workspace-wide Compose reviews. Not for production deployment or Dockerfile-only authoring.'
+description: 'Create, update, audit or troubleshoot Compose local development and demo stacks on supported container engines. Use for docker-compose.yml or compose.yaml, profiles, readiness, networks, ports, volumes, secrets, provider compatibility, isolated test services and workspace-wide reviews. Host setup belongs to containers-tooling; not for production deployment or Dockerfile-only authoring.'
 argument-hint: '[create|update|audit|diagnose] [repository, file or workspace]'
 ---
 
-# Docker Compose
+# Compose
 
 Build a predictable local stack and review its effective behavior, not just valid YAML.
 Keep default IDE dependencies, optional applications/demos and test-data boundaries deliberate.
 
 ## Authorities and Resources
 
+- Use [container tooling](../containers-tooling/SKILL.md) to select the engine, endpoint and
+  Compose provider. Docker command examples require the equivalent verified provider on Podman.
 - Read the target repository's notes and the central
   [Compose instructions](../../instructions/docker.compose.instructions.md). They own conventions;
   this skill owns the procedure. Its local/test image-tag policy is distinct from
@@ -36,7 +38,7 @@ Keep default IDE dependencies, optional applications/demos and test-data boundar
 
 Do not start, stop, recreate or delete workloads as part of a static audit. Configuration checks do
 not authorize builds, pulls, test execution, migrations or resets. Ask separately before runtime
-smoke tests; confirm affected Docker context/project, services, ports and cleanup. Never use
+smoke tests; confirm affected engine endpoint/project, provider, services, ports and cleanup. Never use
 `down --volumes`, pruning or shared-database resets without explicit data-deletion approval.
 Keep private workspace identities and resolved secret values out of public artifacts.
 
@@ -103,7 +105,7 @@ identity, standard ports and safe test data. Additional project/port isolation i
 the actual runtime requirement. Before startup, record which services are already running.
 Stop services started for the task as soon as their last dependent check or operation finishes,
 including on failure; do not leave idle stacks running until the end of a longer task or session.
-Use scoped `docker compose stop <services>` cleanup to release local resources while preserving
+Use the selected provider's scoped `compose stop <services>` cleanup to release resources while preserving
 volumes. Leave pre-existing workloads running unless their shutdown is explicitly authorized,
 and keep services running only while they are still needed or the user requests it.
 

@@ -1,12 +1,16 @@
 ---
-description: 'Docker Compose conventions for local development environments — file layout, volume taxonomy, image tags, standard ports, readiness, profiles and secrets.'
+description: 'Compose conventions across supported container engines: file layout, volumes, images, ports, readiness, profiles and secrets.'
 applyTo: '**/docker-compose*.yml,**/docker-compose*.yaml,**/compose*.yml,**/compose*.yaml'
 ---
 
-# Docker Compose
+# Compose
 
 Use the `containers-docker-compose` skill for creation, workspace audits, troubleshooting and validation
 procedures; this file remains the authority for Compose conventions.
+
+Use `containers-tooling` for engine setup, endpoint and Compose-provider selection. Commands below
+use Docker Compose syntax; on Podman use `podman compose` with a verified compatible provider.
+Keep one application model, and verify provider-specific capabilities rather than assuming parity.
 
 Compose describes the **local development and demo environment**; it is never the deployment
 target. Optimise it for "clone and run", not for production fidelity.
@@ -67,7 +71,8 @@ form as `.dockerignore`:
   retain a verified version-specific tag and explain the exception beside it. Use a digest only
   when no usable versioned tag exists or a specific requirement justifies it; document the reason.
 - Before selecting a tag, confirm it exists and publishes the platforms you need with
-  `docker buildx imagetools inspect <image>:<tag>`; the newest tag in a registry listing can be a
+  an approved registry manifest inspector, such as `docker buildx imagetools inspect <image>:<tag>`;
+  the newest tag in a registry listing can be a
   nightly or single-architecture build.
 - Check compatibility with the deployed dependency where relevant, but do not force local major
   tags and production chart pins to use identical tag precision.
@@ -113,7 +118,8 @@ form as `.dockerignore`:
 
 ## Validation
 
-- Validate all profiles after an edit with `docker compose --profile '*' config --quiet`, and check
+- Validate all profiles after an edit with the selected provider's equivalent of
+  `docker compose --profile '*' config --quiet`, and check
   default and individually supported profile selections separately. Inactive services can still
   be parsed; all-profile validation alone does not prove each selection's dependency graph works.
 - When a repository keeps a second Compose file for a variant topology, such as a replication

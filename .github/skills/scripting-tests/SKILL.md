@@ -57,6 +57,10 @@ Never run tests without the user's approval: they may reach credentials or exter
    mount, and run them in CI with `docker compose run --rm <service>` so local and CI toolchains
    match.
 
+For local container execution, select the engine/provider with
+[container tooling](../containers-tooling/SKILL.md) and verify the same service/exit-code contract.
+The Docker-based CI command does not require Docker Desktop on a contributor's workstation.
+
 ## Maintaining This Skill
 
 - Pinned versions: Pester 5.7.1, pytest, bats-core, bats-support, bats-assert, the

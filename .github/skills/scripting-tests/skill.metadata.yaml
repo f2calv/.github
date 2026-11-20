@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.3
+version: 1.1.0
 facets: [tooling, testing]
 related:
+  - id: containers-tooling
+    reason: Select a compatible local engine and provider for containerized script test services.
   - id: dotnet-test-platform
     reason: .NET test projects run on Microsoft.Testing.Platform rather than Pester, pytest or bats.
   - id: tooling-pre-commit

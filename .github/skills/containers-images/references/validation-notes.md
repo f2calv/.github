@@ -31,39 +31,12 @@ Practical limits and checks when validating an image locally, after the audit an
 
 ## Windows Without Docker
 
-WSL Containers (WSLC) offers a Windows-local container path without Docker Desktop or a Docker
-daemon. Verify availability in the installed WSL release rather than assuming that any WSL
-installation includes it. Microsoft's [WSLC prerequisites](https://github.com/microsoft/WSL/blob/master/nuget/Microsoft.WSL.Containers/docs/README.MD#prerequisites)
-describe installation without a Linux distribution; obtain approval before installing or updating
-WSL and respect workstation policy. Do not start Docker Desktop as an automatic fallback.
+Use [container tooling](../../containers-tooling/SKILL.md) for Podman or WSLC setup and capability
+selection. Its [WSLC procedure](../../containers-tooling/references/setup.md#wslc-without-docker-desktop)
+owns host prerequisites and native validation; its
+[capability matrix](../../containers-tooling/references/compatibility.md#capability-matrix) separates
+ARM64 host support from cross-building.
 
-Discover the executable, then inspect its version and help only if present:
-
-```powershell
-Get-Command wslc -ErrorAction SilentlyContinue
-```
-
-```powershell
-wslc --version
-wslc build --help
-wslc run --help
-```
-
-The upstream [command registration](https://github.com/microsoft/WSL/blob/master/src/windows/wslc/commands/RootCommand.cpp)
-includes `build`, `run`, `info`, `logs` and `stop`. Use the installed command-specific help as the
-contract: current source is not proof of a released CLI's options or minimum WSL version.
-
-* Reuse the repository's Dockerfile and `.dockerignore`, version inputs and image profile. Do not
-  create weaker per-runtime or per-.NET-major templates to make a local build pass.
-* Before building, check support for the features actually used: multi-stage targets, automatic
-  platform arguments, `COPY --parents` / `--exclude`, cache mounts and secret mounts. Never replace
-  unsupported secret mounts with credentials in build arguments or copied configuration.
-* With build/run approval, build the native host platform using `wslc build`, then smoke-run with
-  `wslc run`. Confirm port-mapping syntax and bind service ports to `127.0.0.1`; retain the image's
-  non-root user. Check the expected endpoint or process exit, inspect `wslc logs` when needed,
-  then stop and remove only the container created for that validation using the installed help.
-  Tests still require separate consent.
-* Record the WSLC version, platform and checks performed. A successful local build/run does not
-  prove Buildx `--check`, other architectures, Compose, registry/image-store interoperability,
-  provenance or SBOM support. Report unavailable checks as gaps, not passes; keep the existing
-  Docker/Buildx CI and publication scripts unchanged unless explicitly adapting them.
+Reuse the same Dockerfile, ignore file, version inputs and image profile. A native build/run on an
+alternative engine does not replace unavailable BuildKit checks, other architectures or publication
+attestations. Record those gaps explicitly and keep the verified CI path unchanged.
