@@ -59,9 +59,10 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [Modular monolith](../.github/skills/patterns-modular-monolith/SKILL.md) | `1.0.5` | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
-| [Ports and adapters](../.github/skills/patterns-ports-and-adapters/SKILL.md) | `1.0.5` | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
-| [Architecture review](../.github/skills/patterns-architecture-review/SKILL.md) | `1.0.2` | Evidence-backed architecture smells with proportionate fixes, and realigning code to its components view |
+| [Architecture patterns](../.github/skills/patterns-architecture/SKILL.md) | `1.0.0` | Evidence-backed architecture and namespace profiles, library-suite reviews and language-specific namespace alignment |
+| [Modular monolith](../.github/skills/patterns-modular-monolith/SKILL.md) | `1.0.6` | One image with configured API/worker roles, module composition, endpoint gating and supervised lifecycles |
+| [Ports and adapters](../.github/skills/patterns-ports-and-adapters/SKILL.md) | `1.0.6` | Application-owned integration contracts, provider substitution, dependency inversion and shared behavioral tests |
+| [Architecture review](../.github/skills/patterns-architecture-review/SKILL.md) | `1.0.3` | Evidence-backed architecture smells with proportionate fixes, and realigning code to its components view |
 
 ## AI And Retrieval
 
@@ -74,24 +75,24 @@ gate rejects a stale or missing row.
 
 | Skill | Version | Use it for |
 | --- | --- | --- |
-| [AppHost bootstrapping](../.github/skills/dotnet-apphost/SKILL.md) | `1.0.5` | Thin entry points, configuration/logging ordering, feature registration, endpoints, health, shutdown and process results |
-| [Logging](../.github/skills/dotnet-logging/SKILL.md) | `1.0.2` | Balanced level policy, request summaries, level layers, runtime level switches and log privacy |
-| [Dependency injection](../.github/skills/dotnet-dependency-injection/SKILL.md) | `1.0.5` | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
-| [Polymorphic configuration](../.github/skills/dotnet-polymorphic-configuration/SKILL.md) | `1.0.4` | Discriminator-based DTO graphs, merged configuration bridges and derived-type startup validation |
-| [Background pipelines](../.github/skills/dotnet-background-pipelines/SKILL.md) | `1.0.5` | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
-| [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.5` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
+| [AppHost bootstrapping](../.github/skills/dotnet-apphost/SKILL.md) | `1.0.6` | Thin entry points, configuration/logging ordering, feature registration, endpoints, health, shutdown and process results |
+| [Logging](../.github/skills/dotnet-logging/SKILL.md) | `1.0.3` | Balanced level policy, request summaries, level layers, runtime level switches and log privacy |
+| [Dependency injection](../.github/skills/dotnet-dependency-injection/SKILL.md) | `1.0.6` | Lifetimes, provider factories, shared-instance aliases, scopes, disposal and composition validation |
+| [Polymorphic configuration](../.github/skills/dotnet-polymorphic-configuration/SKILL.md) | `1.0.5` | Discriminator-based DTO graphs, merged configuration bridges and derived-type startup validation |
+| [Background pipelines](../.github/skills/dotnet-background-pipelines/SKILL.md) | `1.0.6` | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
+| [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.6` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
 | [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.4` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
-| [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.5` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
-| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.1` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
-| [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.5` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
-| [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.6` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
-| [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.7` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.1` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
-| [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.5` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
+| [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.6` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
+| [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.2` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
+| [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.6` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
+| [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.7` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
+| [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.8` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.2` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
+| [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.6` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.7` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
-| [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.5` | Source layout, naming and analyzer-driven cleanup |
+| [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.6` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.1` | Measured hot-path, allocation and parsing improvements |
 | [Test platform](../.github/skills/dotnet-test-platform/SKILL.md) | `1.0.4` | Microsoft.Testing.Platform and xUnit v3 configuration and migration |
 | [Upgrade](../.github/skills/dotnet-upgrade/SKILL.md) | `1.2.1` | Major-version and NuGet upgrades, release-note-driven improvements, deprecations and compatibility checks |

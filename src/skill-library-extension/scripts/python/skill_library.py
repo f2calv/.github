@@ -13,7 +13,7 @@ still match, so local edits are kept and reported. Spec Kit cannot block ``speci
 skills changed that way since the helper last recorded them.
 
 Example:
-    python3 skill_library.py install patterns-ports-and-adapters -Related patterns-modular-monolith
+    python3 skill_library.py install patterns-architecture -Related patterns-modular-monolith
 
 """
 

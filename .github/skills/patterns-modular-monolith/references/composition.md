@@ -77,6 +77,10 @@ not advertise a route that fails at activation. Merely returning 403, hiding a U
 an OpenAPI entry is not proof the route is disabled. Keep authorization in place for enabled
 surfaces; role gating is not a replacement for it.
 
+When adding a controller with feature-scoped constructor dependencies, apply the existing discovery
+gate in the same change. Controllers using only always-on dependencies need no feature declaration
+unless their intended availability is itself role-specific.
+
 ## Layered Boundaries and Dependency Direction
 
 ### Classify What Is Actually Separated

@@ -15,6 +15,7 @@ entrypoint, Dockerfile, image or microservice.
 
 | Concern | Authority |
 | --- | --- |
+| Architecture and namespace profile selection | [Architecture patterns](../patterns-architecture/SKILL.md) |
 | Feature selection, module composition, worker/API boundaries and role contracts | This skill and [composition reference](./references/composition.md) |
 | Integration contracts, provider substitution and adapter semantics | [Ports and adapters](../patterns-ports-and-adapters/SKILL.md) |
 | Service lifetimes, factories, aliases and scoped operations | [.NET dependency injection](../dotnet-dependency-injection/SKILL.md) |

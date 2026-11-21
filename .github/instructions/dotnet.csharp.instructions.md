@@ -16,16 +16,16 @@ for RPC.
 
 - **One top-level type per file**, named after it (`Cache{TKey,TValue}.cs` for generics), except
   `_Enums.cs` for all of a project's enums and `_*Config.cs` grouping a configuration root.
-- Folders and namespaces by role: interfaces in `Abstractions` (named for a capability, never
+- Folders by role: interfaces in `Abstractions` (named for a capability, never
   `I<ClassName>` or `*Service`), DI services in `Services` (`Service` or a specific role suffix),
   extensions in `Extensions` (never a framework namespace), DTOs and options in `Models`, exceptions
-  in `Exceptions`, and wire constants in per-surface static classes under `Constants`. Sub-folders
-  of `Services` keep the `Services` namespace.
+  in `Exceptions`, and wire constants in per-surface static classes under `Constants`.
+- [Namespaces](../skills/patterns-architecture/references/dotnet-namespaces.md):
+  flattened library roles, application modules.
 - Remove single-implementation interfaces unless tests substitute them, another assembly consumes
   them, or a second implementation exists.
 - Keep a `GlobalUsings.cs` per project for namespaces imported by more than two files.
-- The `dotnet-cleanup` skill's [type layout reference](../skills/dotnet-cleanup/references/type-layout.md)
-  holds the full rules.
+- Full [type layout](../skills/dotnet-cleanup/references/type-layout.md).
 
 ## Style
 

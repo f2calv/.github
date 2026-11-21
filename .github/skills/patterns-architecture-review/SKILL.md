@@ -17,6 +17,7 @@ departs from an idealized style.
 | --- | --- |
 | Smell catalogue, evidence, severity and proportionality | This skill and the [smell catalogue](./references/smells.md) |
 | Context, container and component views and the code map the review starts from | [Architecture diagrams](../docs-architecture-diagrams/SKILL.md) |
+| Architecture and namespace profile selection | [Architecture patterns](../patterns-architecture/SKILL.md) |
 | Module boundaries, dependency direction and one-image roles | [Modular monolith](../patterns-modular-monolith/SKILL.md) |
 | Application-owned ports, adapters and provider substitution | [Ports and adapters](../patterns-ports-and-adapters/SKILL.md) |
 | Service lifetimes and composition-root changes | [.NET dependency injection](../dotnet-dependency-injection/SKILL.md) |
@@ -83,7 +84,8 @@ components view; now rearrange the classes to match it".
    the types that cross component boundaries, and the references that point the wrong way.
 3. **Plan phases that each keep the build green**, smallest risk first:
    1. Move files into component folders with `git mv`, without changing namespaces or code.
-   2. Align namespaces with the new folders.
+   2. Align namespaces with the agreed [namespace profile](../patterns-architecture/references/namespaces.md)
+      and applicable language rules, not automatic folder mirroring.
    3. Narrow visibility: make types `internal` that no other component uses, and route remaining
       cross-component use through the component's ports.
    4. Break wrong-direction references by moving the shared contract to the component that owns it,

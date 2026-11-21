@@ -68,7 +68,7 @@ it does not flag nested test doubles.
 
 The script does not yet check folder placement, so review these by hand during a layout pass:
 interfaces under `Abstractions` named for their role rather than an implementing class, DI-registered
-types under `Services` (sub-folders keep the `Services` namespace), extension classes under
+types under `Services`, extension classes under
 `Extensions` named after the extended type, DTOs, options and configuration records under `Models`,
 and interfaces with a single implementation that meet none of the exceptions in the shared C#
 instructions.

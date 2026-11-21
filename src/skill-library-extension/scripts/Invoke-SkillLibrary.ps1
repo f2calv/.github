@@ -25,7 +25,7 @@ Related skill IDs to install alongside the target, each with its own required sk
 Skill library catalog. Defaults to SKILL_LIBRARY_CATALOG_URL, then the catalog_url packaged in the
 extension's skill-library.json by the bootstrap build.
 .EXAMPLE
-./Invoke-SkillLibrary.ps1 install patterns-ports-and-adapters -Related patterns-modular-monolith
+./Invoke-SkillLibrary.ps1 install patterns-architecture -Related patterns-modular-monolith
 #>
 [CmdletBinding()]
 param(

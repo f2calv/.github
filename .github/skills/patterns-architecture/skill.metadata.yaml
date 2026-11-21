@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [architecture, refactoring, dotnet]
+related:
+  - id: dotnet-cleanup
+    reason: Classify .NET published libraries and project identities before alignment.
+  - id: patterns-architecture-review
+    reason: Rate source-backed findings and plan proportionate realignment.
+  - id: patterns-modular-monolith
+    reason: Implement module boundaries, runtime roles and their lifecycle contracts.
+  - id: docs-architecture-diagrams
+    reason: Derive verified architecture views and code maps.
+  - id: patterns-ports-and-adapters
+    reason: Define application-owned contracts and provider substitution.
+  - id: docs-adr
+    reason: Record consequential profile and public API alignment decisions.
+externalFiles:
+  - .github/instructions/dotnet.csharp.instructions.md

@@ -29,6 +29,7 @@ Layout and Naming audits check them.
   `Exceptions/` with a `.Exceptions` namespace. Nested private test doubles stay with their test type.
 - **Wire constants** (request URIs, route templates, header names) go in a `static class` per API
   surface under `Constants` (`RequestUris`, `UploadHeaders`), for APIs called and exposed alike.
-- Namespaces follow folders, except that sub-folders of `Services` keep the `Services` namespace.
+- Follow the selected [.NET namespace profile](../../patterns-architecture/references/dotnet-namespaces.md);
+  folder moves alone do not require public namespace changes.
 - Every project root has a `GlobalUsings.cs`; move a namespace imported by more than two files into
   it and delete the per-file duplicates, re-checking after refactors.

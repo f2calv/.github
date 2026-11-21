@@ -70,4 +70,4 @@ when using this skill; the triggers below include newly learned topics, not only
   extend the provider example and shared cases when a new capability warrants reusable guidance.
 - Revisit contracts when provider capabilities, SDK errors or consistency guarantees change.
 - Keep fakes/shared tests aligned with real semantics, including absence, cancellation and conflicts.
-- Preserve the scope split: module layout in modular monolith, transport and persistence in their skills.
+- Preserve the scope split: module layout in the modular-monolith owner, transport and persistence in their skills.

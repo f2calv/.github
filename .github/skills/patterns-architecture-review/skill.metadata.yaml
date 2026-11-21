@@ -1,12 +1,14 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.2
+version: 1.0.3
 facets: [architecture, review, refactoring]
 required:
   - id: docs-architecture-diagrams
     version: 1.1.0
 related:
+  - id: patterns-architecture
+    reason: Select architecture and namespace profiles before realignment.
   - id: patterns-modular-monolith
-    reason: Module boundaries and dependency direction for a realigned container.
+    reason: Apply module/dependency boundaries and runtime-role contracts during realignment.
   - id: patterns-ports-and-adapters
     reason: Application-owned ports when breaking inverted dependencies or leaky boundaries.
   - id: dotnet-dependency-injection

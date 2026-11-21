@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
-version: 1.0.5
+version: 1.0.6
 facets: [dotnet]
 related:
+  - id: patterns-architecture
+    reason: Review architecture ownership and namespace profiles before structural cleanup.
   - id: dotnet-efcore
     reason: Review persistence ownership and dependency boundaries before extracting a data project.
   - id: dotnet-apphost
