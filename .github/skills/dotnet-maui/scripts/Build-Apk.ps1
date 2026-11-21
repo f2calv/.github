@@ -9,6 +9,7 @@ Publishes the app project as an APK, then copies it to an output folder under a 
 SHA-256. The version code grows each minute, so a newer build installs over an older one signed with the same key and
 keeps the app's sign-in and settings. CI builds made by the shared deploy-maui-android workflow with
 version-code-from-clock use the same scheme, so local and CI builds update each other.
+Managed assemblies are embedded even in Debug, so the APK can start without IDE fast deployment.
 
 The APK is signed with a sideload keystore when one is available:
 - ANDROID_SIGNING_KEYSTORE_BASE64 and ANDROID_SIGNING_KEYSTORE_PASSWORD;
@@ -74,8 +75,6 @@ param(
     [string]$Project,
     [string]$Name,
     [string]$TargetFramework = 'net10.0-android',
-    [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Release',
     [string]$KeyAlias = 'sideload',
     [string]$KeyVaultKeystoreSecret = 'android-sideload-keystore',
     [string]$KeyVaultPasswordSecret = 'android-sideload-keystore-password',
@@ -83,7 +82,9 @@ param(
     [ValidateRange(2, 2100000000)]
     [int]$VersionCode,
     [switch]$Install,
-    [string]$Device
+    [string]$Device,
+    [ValidateSet('Debug', 'Release')]
+    [string]$Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -229,11 +230,11 @@ function Build-Apk {
         [Parameter(Mandatory)][int]$Code,
         [Parameter(Mandatory)][string]$DisplayVersion,
         [string]$Framework = 'net10.0-android',
-        [ValidateSet('Debug', 'Release')]
-        [string]$Configuration = 'Release',
         [string]$Alias = 'sideload',
         [string]$KeystoreSecret = 'android-sideload-keystore',
-        [string]$PasswordSecret = 'android-sideload-keystore-password'
+        [string]$PasswordSecret = 'android-sideload-keystore-password',
+        [ValidateSet('Debug', 'Release')]
+        [string]$Configuration = 'Release'
     )
 
     $projectFile = Join-Path $Root $ProjectPath
@@ -253,7 +254,8 @@ function Build-Apk {
         Invoke-DotNet clean $projectFile -f $Framework -c $Configuration -nologo -v q | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "dotnet clean failed with exit code $LASTEXITCODE." }
         Invoke-DotNet publish $projectFile -f $Framework -c $Configuration -o $publishDirectory -nologo `
-            '-p:AndroidPackageFormat=apk' "-p:ApplicationVersion=$Code" "-p:ApplicationDisplayVersion=$DisplayVersion" | Out-Host
+            '-p:AndroidPackageFormat=apk' '-p:EmbedAssembliesIntoApk=true' `
+            "-p:ApplicationVersion=$Code" "-p:ApplicationDisplayVersion=$DisplayVersion" | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
     }
     finally {

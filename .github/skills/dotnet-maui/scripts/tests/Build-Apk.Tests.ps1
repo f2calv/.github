@@ -105,6 +105,7 @@ Describe 'Build-Apk' {
         $script:PublishArguments[1] | Should -BeLike '*ExampleApp.csproj'
         $script:PublishArguments | Should -Contain 'net11.0-android'
         $script:PublishArguments | Should -Contain '-p:AndroidPackageFormat=apk'
+        $script:PublishArguments | Should -Contain '-p:EmbedAssembliesIntoApk=true'
         $script:PublishArguments | Should -Contain '-p:ApplicationVersion=42'
         $script:PublishArguments | Should -Contain '-p:ApplicationDisplayVersion=1.2.3-local.abc1234'
         $script:PublishArguments | Should -Contain 'Release'
@@ -133,6 +134,7 @@ Describe 'Build-Apk' {
             $command[$configurationIndex] | Should -Be 'Debug'
             $command | Should -Not -Contain 'Release'
         }
+        $script:Commands[1] | Should -Contain '-p:EmbedAssembliesIntoApk=true' -Because 'a sideloaded Debug APK cannot rely on IDE-deployed assemblies'
         $apk.Configuration | Should -Be 'Debug'
         Test-Path -LiteralPath $apk.Path | Should -BeTrue
     }

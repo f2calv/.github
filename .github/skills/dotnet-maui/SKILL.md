@@ -124,6 +124,12 @@ that stays the same across builds, so each build installs over the last and keep
   or development diagnostics are required; signing and upgrade-safe version codes still apply.
   Debug APK filenames use a `debug` label. An installed skill must support the option; otherwise
   invoke the reviewed workspace helper directly without overwriting the installed skill.
+  Sideload APKs must set `EmbedAssembliesIntoApk=true`, including Debug: its default fast-deployment
+  package can contain no managed assemblies and fail at startup without an IDE.
+- Before copying an APK to a sharing folder, verify its signature with `apksigner`, confirm the
+  intended debuggable state, embedded managed assemblies and absence of private settings. Verify the copied
+  file's SHA-256 against the build artifact. If `apksigner` rejects a stale `JAVA_HOME`, select
+  an installed JDK in the verification process only; do not change the workstation environment.
 - In CI, call the shared `deploy-maui-android` workflow with `package-format: apk`, `sign: true`,
   `version-code-from-clock: true` and an `artifact-name`, mapping the keystore to its signing secrets.
   Skip fork and Dependabot events, which receive no secrets.
