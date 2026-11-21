@@ -35,7 +35,7 @@ jobs:
     with:
       version: ${{ needs.versioning.outputs.version }}
       solution-name: Example.Release.slnx
-      dotnet-test-args: '["--filter-not-trait", "Category=Integration"]'
+      dotnet-test-args: '["--filter-not-trait", "Category=Live"]'
 
   helm:
     uses: f2calv/gha-workflows/.github/workflows/helm-lint.yml@v1

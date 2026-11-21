@@ -113,17 +113,20 @@ jobs:
         shell: pwsh
         run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
 
-      - name: test skill-library (${{ matrix.os }})
+      - name: Test skill scripts (${{ matrix.os }})
         shell: pwsh
         run: |
           Import-Module Pester -RequiredVersion 5.7.1 -Force
           $Config = New-PesterConfiguration
-          $Config.Run.Path = './.github/skills/skill-library/scripts/tests'
+          $Config.Run.Path = @(
+            './.github/skills/skill-library/scripts/tests'
+            './.github/skills/dotnet-test-platform/scripts/tests'
+          )
           $Config.Run.PassThru = $true
           $Config.Output.Verbosity = 'Detailed'
           $Result = Invoke-Pester -Configuration $Config
           if ($Result.FailedCount -or $Result.FailedContainersCount -or -not $Result.PassedCount) {
-            throw "skill-library tests failed: $($Result.FailedCount) failed, $($Result.PassedCount) passed"
+            throw "Skill script tests failed: $($Result.FailedCount) failed, $($Result.PassedCount) passed"
           }
 
   test:
@@ -159,7 +162,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 11.0.x
 
       - name: dotnet build Example.CountParsing.slnx --configuration Release
         run: dotnet build Example.CountParsing.slnx --configuration Release
@@ -170,10 +173,6 @@ jobs:
           --configuration Release --no-build --filter-trait "Category=Parsing"
           --minimum-expected-tests 16
 
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: 10.0.403
-
       - name: dotnet build Example.HttpContract.slnx --configuration Release
         working-directory: .github/skills/dotnet-webapi/examples/http-contract
         run: dotnet build Example.HttpContract.slnx --configuration Release
@@ -181,8 +180,8 @@ jobs:
       - name: dotnet test HTTP contract example
         working-directory: .github/skills/dotnet-webapi/examples/http-contract
         env:
-          EXAMPLE_CONTROLLER_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Controllers.SampleApp/bin/Release/net10.0/Example.Controllers.SampleApp.dll
-          EXAMPLE_MINIMAL_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Minimal.SampleApp/bin/Release/net10.0/Example.Minimal.SampleApp.dll
+          EXAMPLE_CONTROLLER_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Controllers.SampleApp/bin/Release/net11.0/Example.Controllers.SampleApp.dll
+          EXAMPLE_MINIMAL_PATH: ${{ github.workspace }}/.github/skills/dotnet-webapi/examples/http-contract/src/Example.Minimal.SampleApp/bin/Release/net11.0/Example.Minimal.SampleApp.dll
         run: >-
           dotnet test --project src/Example.HttpContract.Tests/Example.HttpContract.Tests.csproj
           --configuration Release --no-build

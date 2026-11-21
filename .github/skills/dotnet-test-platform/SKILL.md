@@ -73,6 +73,20 @@ into the target repository rather than copying over existing policy.
 
 ## Workflows and Actions
 
+Apply the [test classification rules](../../instructions/dotnet.testing.instructions.md#integration-tests).
+Use `--filter-not-trait Category=Live` for the default selection, not a folder or namespace filter.
+Use `--filter-trait Category=Integration --filter-not-trait Category=Live` for local integration
+coverage. Review actual dependency and opt-in boundaries before broadening a selection.
+
+Run the read-only source audit before changing workflow filters:
+
+```powershell
+& ./.github/skills/dotnet-test-platform/scripts/Test-DotNetTestConventions.ps1 -RepositoryPath .
+```
+
+Add `-FailOnFindings` to use it as a gate. Its findings are source heuristics, not a substitute for
+inspecting fixtures or checking the runner's discovered selection.
+
 Large in-process host suites can exhaust Linux inotify instances. Pass the native runner option
 `--environment DOTNET_USE_POLLING_FILE_WATCHER=1` when needed; verify the same selected cases pass
 without privileged host changes or test exclusions.

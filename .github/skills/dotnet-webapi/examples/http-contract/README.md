@@ -15,7 +15,8 @@ This is a bounded investigation fixture, not a production template or applicatio
 
 ## Build and Test
 
-Use the SDK pinned in [global.json](global.json), .NET 10.0.403. Run commands from this directory.
+Use a stable .NET 11 SDK for the sample apps.
+Run commands from this directory.
 Package versions are pinned centrally in [Directory.Packages.props](Directory.Packages.props).
 The fixture needs no credentials, database, containers or remote application services.
 
@@ -32,8 +33,8 @@ absolute and supplied only to the test process; no working-tree configuration ch
 $previousController = $env:EXAMPLE_CONTROLLER_PATH
 $previousMinimal = $env:EXAMPLE_MINIMAL_PATH
 try {
-    $env:EXAMPLE_CONTROLLER_PATH = (Resolve-Path 'src/Example.Controllers.SampleApp/bin/Release/net10.0/Example.Controllers.SampleApp.dll').Path
-    $env:EXAMPLE_MINIMAL_PATH = (Resolve-Path 'src/Example.Minimal.SampleApp/bin/Release/net10.0/Example.Minimal.SampleApp.dll').Path
+    $env:EXAMPLE_CONTROLLER_PATH = (Resolve-Path 'src/Example.Controllers.SampleApp/bin/Release/net11.0/Example.Controllers.SampleApp.dll').Path
+    $env:EXAMPLE_MINIMAL_PATH = (Resolve-Path 'src/Example.Minimal.SampleApp/bin/Release/net11.0/Example.Minimal.SampleApp.dll').Path
     dotnet test --project src/Example.HttpContract.Tests/Example.HttpContract.Tests.csproj -c Release --no-build --filter-class Example.HttpContract.Tests.Integration.HttpContractTests
 }
 finally {

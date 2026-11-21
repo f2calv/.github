@@ -38,8 +38,13 @@ Further subfolders are allowed for a genuinely distinct category; `Unit/` and `I
 
 ## Integration Tests
 
-- Tag every test that reaches configuration, credentials or an external service with
-  `[Trait("Category", "Integration")]`, place it under `Tests/Integration/` and inherit `TestBase`.
+- Mark integration tests with `[Trait("Category", "Integration")]` once per homogeneous class,
+  or per method in a mixed class. Use traits, not source folders, for selection. Put integration
+  classes under `Tests/Integration/` for navigation; use `TestBase` only for shared setup.
+- Add `[Trait("Category", "Live")]` to tests that use real accounts, hardware, deployed services,
+  or private retained data. Independently require explicit opt-in before creating clients, reading
+  private data or performing side effects. Default CI excludes `Category=Live`; provision or
+  explicitly exclude any additional local dependencies that CI cannot supply.
 - Skip, never fail, when no credential is configured. Read CI credentials only from secret-backed
   environment variables, and never commit or log a credential, account identifier or resolved
   secret, including in `appsettings*.json`.

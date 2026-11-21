@@ -91,8 +91,7 @@ role names. A naming default does not require extracting another project.
 
 ## SDK Selection
 
-- Stable .NET releases do not require an SDK version in `global.json`; let the installed compatible stable SDK and the CI setup step select it.
-- Pin the SDK `version` and `rollForward` policy when using a preview SDK, isolating an SDK regression, or when a workflow requires bit-for-bit reproducibility.
+- Keep `sdk.allowPrerelease` set to `false` in tracked `global.json` files. Do not pin `sdk.version` or `sdk.rollForward`; select the SDK in CI or in a dedicated local environment.
 - Keep `global.json` when it configures repository-wide .NET CLI behaviour without pinning an SDK.
   Every .NET repository's root `global.json` selects the test runner with
   `{ "test": { "runner": "Microsoft.Testing.Platform" } }`, even before it has tests; use the

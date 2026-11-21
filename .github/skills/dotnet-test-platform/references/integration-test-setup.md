@@ -5,9 +5,9 @@ under the always-on [testing instructions](../../../instructions/dotnet.testing.
 
 ## Rules
 
-- Apply `[Trait("Category", "Integration")]` to every test that reaches configuration, credentials or an external service.
-- Place them under `Tests/Integration/` and share configuration, logging and service setup through `TestBase`.
-- Inherit from `TestBase(output)`, which wires up `ILoggerFactory` (routed to xUnit output), `IConfiguration` and, where needed, a DI container.
+- Follow the linked testing instructions for classification and live opt-in.
+- When setup is shared, `TestBase(output)` can wire `ILoggerFactory` (routed to xUnit output),
+  `IConfiguration` and, where needed, a DI container.
 - Build configuration in a documented order: the test `appsettings` chain, then user secrets for local runs, then environment variables for CI, then any secret store the repository uses.
 - Keep test connection strings in configuration, not C# fallback literals. When using the shared
   configuration extensions, select the `Test` environment to load optional `appsettings.Test.json`,

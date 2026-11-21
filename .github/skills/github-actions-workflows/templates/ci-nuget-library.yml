@@ -55,7 +55,7 @@ jobs:
           push-preview: ${{ inputs.push-preview }}
           version: ${{ needs.versioning.outputs.version }}
           solution-name: Example.Release.slnx
-          dotnet-test-args: --filter-not-trait Category=Integration
+          dotnet-test-args: --filter-not-trait Category=Live
 
   release:
     needs: [lint, versioning, build]
