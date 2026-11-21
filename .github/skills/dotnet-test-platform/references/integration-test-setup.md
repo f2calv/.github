@@ -24,9 +24,16 @@ under the always-on [testing instructions](../../../instructions/dotnet.testing.
   as `ConfigurationManager`; do not assume `IConfigurationRoot` implements `IDisposable`.
 - Give each in-process host a unique EF InMemory database name, so mutable fixture rows cannot leak
   across hosts even when tests run sequentially. Prove isolation with a two-host regression.
+- Preserve the built-in options pipeline when startup performs async options validation. Supply
+  synthetic fixture configuration or `PostConfigure<T>` instead of replacing `IOptions<T>` with
+  `OptionsWrapper<T>`.
 - Keep configuration-skip environment overrides local to the fixture that owns them and restore
   previous values; missing-configuration guard tests may require those settings to remain absent.
 - Skip rather than fail when no credential is configured, so a contributor without access still gets a green credential-free run.
+- A negative opt-in regression must pass, not become a skipped test. xUnit's dynamic
+  `SkipException` can propagate through `Assert.Throws`; capture only that expected exception and
+  assert both the refusal and untouched setup. For collection fixtures, record unavailable state
+  without initializing clients, then perform the dynamic skip inside actual test setup.
 - Read CI credentials only from secret-backed environment variables. Never commit a credential, token, account identifier or tenant-specific name, and never write a resolved secret to test output.
 - Never commit a secret to an `appsettings*.json` file to make a test pass.
 - Keep integration tests read-only against the target service wherever the service supports it. Do not create, update or delete shared remote resources as a side effect of a test run.
