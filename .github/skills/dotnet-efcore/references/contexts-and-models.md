@@ -14,6 +14,8 @@
 - Context pooling and connection pooling solve different problems. Introduce context pooling only
   with evidence and verified state reset: per-request tenant state, interceptors, open connections
   and session state must not leak to the next borrower. `OnConfiguring` is not per-request setup.
+  Pooled contexts cannot change options there, including seeding callbacks: configure them before
+  pooling or retain an unpooled factory.
 - Resolve configuration through the application's established options/provider chain; never
   hardcode or log connection strings. Keep application registration and the design-time factory
   aligned on provider, naming, schema, extensions and migration assembly without starting workers.

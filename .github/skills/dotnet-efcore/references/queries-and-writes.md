@@ -46,6 +46,13 @@ Follow the [official precompilation guidance](https://learn.microsoft.com/en-us/
 for the exact EF/provider versions. Retain the managed path; experimental execution does not
 establish production compatibility. Ordinary `EF.CompileQuery` is not Native AOT query generation.
 
+- Select compatible runtime/design/tasks/provider packages per retained target, not per solution.
+  EF Core and Npgsql EF 11 target .NET 11 only; retain a compatible 10.x family for .NET 10 assets
+  using conditioned central package versions. A stable package release does not certify Native AOT.
+- EF 11 removed `EFOptimizeContext`; set `EFScaffoldModelStage` and
+  `EFPrecompileQueriesStage` to `build` or `publish` in the deliberate generation variant.
+  Tasks no longer supplies EF Design transitively, so retain a direct private Design reference.
+  See the [EF 11 tooling changes](https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-11.0/breaking-changes).
 - Generate in the project owning the complete query sites, not just the executable. Prefer
   non-generic sites with uninterrupted method chains; preserve SQL-side scope and transaction rules.
   EF 10's locator/translator needs local symbols for contexts, captured values and cancellation
@@ -58,6 +65,13 @@ establish production compatibility. Ordinary `EF.CompileQuery` is not Native AOT
   values, historical reads, writes/races and restart persistence. Verify dynamic-code support is
   false in the native process. A successful publish can still fail on a lazily created comparer;
   prefer explicit typed model comparers preserving existing semantics to broad linker roots.
+- On native materialization or tracking failures, inspect generated model CLR/provider types,
+  converters, value/provider comparers and JSON readers against the actual properties. A generated
+  provider default can select DateTime for DateTimeOffset or JsonElement for string JSONB;
+  specifying only the model comparer may not fix the provider mismatch. Use narrowly justified
+  converter/comparer metadata preserving UTC, null and JSON semantics; verify SQL-side translation,
+  model/snapshot drift and real managed/native round trips. Keep provider/version-specific fixes in
+  the consuming repository, not as blanket mapping rules here.
 - A source-build opt-in does not retrofit generated code into a normal prebuilt NuGet dependency.
   Validate the packaged-consumer path separately before advertising native package compatibility.
 

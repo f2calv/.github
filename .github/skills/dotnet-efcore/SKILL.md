@@ -127,6 +127,9 @@ With approval, select only the checks required by the change:
   conditions; verify result correctness as well as latency, allocations, query count or row volume.
 - Exercise authorization, duplicate writes, stale revisions, cancellation and failure paths when
   touched. Prove all mutating paths maintain the same invariant, including bulk SQL.
+- On provider upgrades, re-establish failure assertions on every retained target: the same server
+  error may surface directly or through an execution-strategy wrapper. Require the exact expected
+  exception envelope and SQLSTATE/provider code; do not accept arbitrary exceptions as an outage.
 - For a persisted read model, verify transaction visibility or the explicit eventual-consistency
   contract, including duplicate/out-of-order delivery, recovery and tenant-scoped rebuilds.
 
