@@ -120,6 +120,10 @@ that stays the same across builds, so each build installs over the last and keep
   A `build-apk.sh` shim calls the PowerShell one. The script signs from
   `ANDROID_SIGNING_KEYSTORE_BASE64`/`_PASSWORD`, else the Key Vault in `ANDROID_SIGNING_KEY_VAULT`,
   else the debug key, and `-Install` replaces the app over `adb`.
+- The script defaults to Release. Pass `-Configuration Debug` when unpublished sibling projects
+  or development diagnostics are required; signing and upgrade-safe version codes still apply.
+  Debug APK filenames use a `debug` label. An installed skill must support the option; otherwise
+  invoke the reviewed workspace helper directly without overwriting the installed skill.
 - In CI, call the shared `deploy-maui-android` workflow with `package-format: apk`, `sign: true`,
   `version-code-from-clock: true` and an `artifact-name`, mapping the keystore to its signing secrets.
   Skip fork and Dependabot events, which receive no secrets.
@@ -168,7 +172,7 @@ Ask before building, testing or deploying. Then:
 | App crashes on first launch with `OptionsValidationException` | A page constructor resolved a client whose options are not entered yet; inject `Func<TClient>` and resolve it on use |
 | `InvokeJavaScriptAsync` never returns | `Resources\Raw` is not a `MauiAsset`, so the page is a 404; see [HybridWebView](references/android-app-construction.md#hybridwebview) |
 | `sdkmanager` reports `There is not enough space on the disk`, then `Package path is not valid` | Free at least 15 GB on the SDK's drive or move the SDK, delete the empty image folder it left, then retry; see the [workstation bootstrap](references/workstation-bootstrap.md#5-android-emulator) |
-| `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. For a compile-only check, use `-t:"Compile;_ReadAndroidManifest"`; that target is internal, so revalidate after workload updates |
+| `-p:AndroidBuildApplicationPackage=false` still packages, or `AndroidKeyStore=false` still signs | Neither property disables packaging or signing. Use the normal Android build for validation; internal compile-only targets can fail before compilation on newer workloads |
 | Windows app starts with a blank or missing page | The page was not registered in DI or the shell did not receive it; check `App.CreateWindow` |
 | `NU1102` for `Microsoft.NETCore.App.Runtime.Mono.win-x64` when publishing Windows | `-r win-x64` applies the runtime to every target framework, including Android. Publish with `-f <windows TFM> -p:RuntimeIdentifierOverride=win-x64` instead |
 | `CS0104` ambiguity on `OperationCanceledException` in Android code | `Android.OS` defines its own. A `CancellationSignal` cancellation throws `Android.OS.OperationCanceledException`; catch that type and rethrow `System.OperationCanceledException` with the caller's token |

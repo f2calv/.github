@@ -119,6 +119,24 @@ Describe 'Build-Apk' {
         { Build-Apk @script:Apk } | Should -Throw '*publish failed with exit code 1*'
     }
 
+    It 'Cleans and publishes Debug when local project references are required' {
+        Mock Invoke-DotNet {
+            $script:Commands += ,@($args)
+            & $script:PublishingDotNet @args
+        }
+
+        $apk = Build-Apk @script:Apk -Configuration Debug
+
+        $script:Commands.Count | Should -Be 2
+        foreach ($command in $script:Commands) {
+            $configurationIndex = [Array]::IndexOf($command, '-c') + 1
+            $command[$configurationIndex] | Should -Be 'Debug'
+            $command | Should -Not -Contain 'Release'
+        }
+        $apk.Configuration | Should -Be 'Debug'
+        Test-Path -LiteralPath $apk.Path | Should -BeTrue
+    }
+
     It 'Fails when no signed APK is produced' {
         Mock Invoke-DotNet {
             New-Item -ItemType Directory -Path $script:PublishDirectory -Force | Out-Null

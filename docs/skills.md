@@ -87,7 +87,7 @@ gate rejects a stale or missing row.
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.6` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
 | [MCP servers](../.github/skills/dotnet-mcp/SKILL.md) | `1.0.7` | Read-only Streamable HTTP tools, registration, contracts and protocol validation |
 | [Blazor frontend](../.github/skills/dotnet-blazor/SKILL.md) | `1.0.8` | Render modes, co-hosted WebAssembly clients, cookie authentication and multi-replica frontends |
-| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.2.2` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
+| [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.3.0` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.6` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.7` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
 | [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |

@@ -2,10 +2,10 @@
 #Requires -Version 7.4
 <#
 .SYNOPSIS
-Builds a Release APK of a .NET MAUI Android app for local sideload testing.
+Builds a signed APK of a .NET MAUI Android app for local sideload testing.
 
 .DESCRIPTION
-Publishes the app project as a Release APK, then copies it to an output folder under a versioned name and prints its
+Publishes the app project as an APK, then copies it to an output folder under a versioned name and prints its
 SHA-256. The version code grows each minute, so a newer build installs over an older one signed with the same key and
 keeps the app's sign-in and settings. CI builds made by the shared deploy-maui-android workflow with
 version-code-from-clock use the same scheme, so local and CI builds update each other.
@@ -30,6 +30,9 @@ The APK file name prefix. Defaults to the repository folder name.
 
 .PARAMETER TargetFramework
 The Android target framework. Defaults to net10.0-android.
+
+.PARAMETER Configuration
+The build configuration. Defaults to Release; use Debug for local project references and development diagnostics.
 
 .PARAMETER KeyAlias
 The key alias inside the sideload keystore.
@@ -58,6 +61,9 @@ The adb serial of the target when more than one emulator or device is connected.
 .EXAMPLE
 ./build-apk.ps1 -Install -Device emulator-5554
 
+.EXAMPLE
+./build-apk.ps1 -Configuration Debug
+
 .NOTES
 Needs the .NET SDK selected by global.json with the maui-android workload, the Android SDK and a JDK; -Install also
 needs adb, and Key Vault signing the Azure CLI. Builds take several minutes.
@@ -68,6 +74,8 @@ param(
     [string]$Project,
     [string]$Name,
     [string]$TargetFramework = 'net10.0-android',
+    [ValidateSet('Debug', 'Release')]
+    [string]$Configuration = 'Release',
     [string]$KeyAlias = 'sideload',
     [string]$KeyVaultKeystoreSecret = 'android-sideload-keystore',
     [string]$KeyVaultPasswordSecret = 'android-sideload-keystore-password',
@@ -221,6 +229,8 @@ function Build-Apk {
         [Parameter(Mandatory)][int]$Code,
         [Parameter(Mandatory)][string]$DisplayVersion,
         [string]$Framework = 'net10.0-android',
+        [ValidateSet('Debug', 'Release')]
+        [string]$Configuration = 'Release',
         [string]$Alias = 'sideload',
         [string]$KeystoreSecret = 'android-sideload-keystore',
         [string]$PasswordSecret = 'android-sideload-keystore-password'
@@ -228,7 +238,7 @@ function Build-Apk {
 
     $projectFile = Join-Path $Root $ProjectPath
     if (-not (Test-Path -LiteralPath $projectFile -PathType Leaf)) { throw "The app project '$ProjectPath' was not found under '$Root'." }
-    if (-not $PSCmdlet.ShouldProcess($projectFile, "Publish Release APK $DisplayVersion ($Code)")) { return $null }
+    if (-not $PSCmdlet.ShouldProcess($projectFile, "Publish $Configuration APK $DisplayVersion ($Code)")) { return $null }
 
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
     $publishDirectory = Join-Path $Destination 'publish'
@@ -240,9 +250,9 @@ function Build-Apk {
         Set-SigningEnvironment -Keystore $keystore
         # Run from the root so global.json selects the SDK; without AndroidKeyStore the debug key signs the APK.
         # Clean first: an incremental publish keeps the previous package when only the version changes.
-        Invoke-DotNet clean $projectFile -f $Framework -c Release -nologo -v q | Out-Host
+        Invoke-DotNet clean $projectFile -f $Framework -c $Configuration -nologo -v q | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "dotnet clean failed with exit code $LASTEXITCODE." }
-        Invoke-DotNet publish $projectFile -f $Framework -c Release -o $publishDirectory -nologo `
+        Invoke-DotNet publish $projectFile -f $Framework -c $Configuration -o $publishDirectory -nologo `
             '-p:AndroidPackageFormat=apk' "-p:ApplicationVersion=$Code" "-p:ApplicationDisplayVersion=$DisplayVersion" | Out-Host
         if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
     }
@@ -265,6 +275,7 @@ function Build-Apk {
         Sha256         = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
         VersionCode    = $Code
         DisplayVersion = $DisplayVersion
+        Configuration  = $Configuration
         SignedWith     = if ($keystore) { "sideload keystore ($($keystore.Source))" } else { 'this machine''s debug key' }
     }
 }
@@ -298,14 +309,16 @@ if ($MyInvocation.InvocationName -ne '.') {
         $apkName = if ($Name) { $Name } else { Split-Path $root -Leaf }
         $destination = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $root 'artifacts/apk' }
         $code = if ($PSBoundParameters.ContainsKey('VersionCode')) { $VersionCode } else { Get-ApkVersionCode -Now ([DateTimeOffset]::UtcNow) }
-        $displayVersion = Get-ApkDisplayVersion -Root $root
+        $label = if ($Configuration -eq 'Debug') { 'debug' } else { 'local' }
+        $displayVersion = Get-ApkDisplayVersion -Root $root -Label $label
 
         $apk = Build-Apk -Root $root -ProjectPath $Project -ApkName $apkName -Destination $destination -Code $code `
-            -DisplayVersion $displayVersion -Framework $TargetFramework -Alias $KeyAlias `
+            -DisplayVersion $displayVersion -Framework $TargetFramework -Configuration $Configuration -Alias $KeyAlias `
             -KeystoreSecret $KeyVaultKeystoreSecret -PasswordSecret $KeyVaultPasswordSecret
         if ($apk) {
             Write-Host "APK:     $($apk.Path)"
             Write-Host "Version: $($apk.DisplayVersion) ($($apk.VersionCode))"
+            Write-Host "Config:  $($apk.Configuration)"
             Write-Host "SHA-256: $($apk.Sha256)"
             Write-Host "Signed:  $($apk.SignedWith)"
             if ($Install) {
