@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [frontend]
+related:
+  - id: tooling-vite
+    reason: Configure Vite builds when the visualization uses that bundler.
+  - id: frontend-pwa
+    reason: Add optional offline installation and coordinate updates with editing gestures.
+externalFiles:
+  - .github/instructions/references/browser-local-documents.md
+  - .github/instructions/typescript.browser.instructions.md

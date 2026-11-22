@@ -30,12 +30,20 @@ gate rejects a stale or missing row.
 | [EditorConfig management](../.github/skills/tooling-editorconfig/SKILL.md) | `1.0.2` | Shared formatting profiles, analyzer rules and drift |
 | [Local overrides](../.github/skills/tooling-local-overrides/SKILL.md) | `1.0.4` | Ignore precedence and local-only Copilot instructions, skills and tool configuration |
 | [REST Client requests](../.github/skills/tooling-rest-client/SKILL.md) | `1.0.1` | Structured HTTP requests, authentication examples and secret handling |
+| [Vite tooling](../.github/skills/tooling-vite/SKILL.md) | `1.0.0` | Scaffolding, compatible toolchains, TypeScript checks, asset resolution and production hosting paths |
 | [Script tests](../.github/skills/scripting-tests/SKILL.md) | `1.1.0` | Pester, pytest and bats-core suites for PowerShell, Python and Bash scripts, fakes on PATH and cross-language parity |
 | [Dev Containers](../.github/skills/containers-devcontainer/SKILL.md) | `1.1.0` | Development images, Features, lifecycle commands and editor integration |
 | [Spec Kit bootstrap](../.github/skills/spec-kit-bootstrap/SKILL.md) | `1.0.0` | Spec-driven development setup for new or existing repositories, with a Specify-ready Dev Container |
 | [Spec Kit session tutor](../.github/skills/spec-kit-guide/SKILL.md) | `1.0.1` | Where you are in a feature, the last observed command, recommended next actions and optional-stage shortcuts |
 | [Skill library](../.github/skills/skill-library/SKILL.md) | `1.5.0` | Skill sidecars, version bumps, Spec Kit extension releases, `/speckit-skill-library` installation and context-budget authoring |
 | [Skill library vendoring](../.github/skills/skill-library-vendoring/SKILL.md) | `1.0.1` | Adopting and upgrading the skill-library framework in another repository from release tags, with a lock and a clean hard cut |
+
+## Browser Frontends
+
+| Skill | Version | Use it for |
+| --- | --- | --- |
+| [D3 rendering and interaction](../.github/skills/frontend-d3/SKILL.md) | `1.0.0` | Charts, SVG editors, keyed joins, coordinate transforms, pan/zoom and accessible gestures |
+| [Progressive web apps](../.github/skills/frontend-pwa/SKILL.md) | `1.0.0` | Installation, manifests/icons, offline release caches, deployment scope and safe multi-tab updates |
 
 ## Containers, Kubernetes and Infrastructure
 

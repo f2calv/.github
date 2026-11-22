@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../skill-library/skill-metadata.schema.json
+version: 1.0.0
+facets: [frontend]
+related:
+  - id: tooling-vite
+    reason: Configure asset and deployment base paths for Vite-backed PWAs.
+  - id: frontend-d3
+    reason: Coordinate safe updates with graphical editing and gesture cancellation.
+externalFiles:
+  - .github/instructions/references/browser-local-documents.md
+  - .github/instructions/typescript.browser.instructions.md
