@@ -32,7 +32,7 @@ Azure throttling and local model verification. For C# implementations, also read
    document rights and the questions the system must answer or decline.
 2. Select the preparation method by content: text extraction, OCR/layout, tables or figures.
    Preserve physical-page and block provenance. If essential visual associations cannot be
-   verified, block that document class rather than relabeling it as text-only.
+   verified, withhold readiness for the affected document rather than relabeling it as text-only.
 3. Keep chat and embedding models independent. Define an immutable embedding profile containing
    model/revision, dimensions, metric, normalization, pooling where applicable, tokenizer,
    preprocessing and query/document prefixes or task instructions.
@@ -52,6 +52,12 @@ Keep mutable document access and answer-retention permissions separate from cont
 identity. Use existing durable metadata and administrator controls, not deployment configuration
 as routine UX. Policy-only edits preserve reviewed chunks, publications and vectors with zero
 ingestion or inference calls; enforce current permissions at retrieval, citation reads and replay.
+
+Keep application classifications in editable JSON metadata, not mandatory domain fields or
+document-type blacklists in a shared runtime. Put optional exact metadata restrictions on the
+consuming agent definition; requests may narrow, never widen them. Backfill existing assessments
+without rewriting history or vectors, and migrate earlier restrictions through new definition
+versions before activating generic retrieval. General consumers need no domain classification.
 
 Choose PostgreSQL/pgvector, Azure AI Search, Redis vector search or another backend from measured
 requirements: authorization filters, durable recovery, dimensions/index limits, hybrid search,
