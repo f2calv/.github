@@ -84,6 +84,11 @@ Trace executed code in order:
 Record where each step lives and the state it passes to later phases. Do not infer behavior from
 filename symmetry.
 
+When extending a preconfigured host with local JSON, insert the local tier before its existing
+higher-priority providers. Reuse a shared helper rather than clearing the framework pipeline,
+blindly appending JSON after it, or duplicating its User Secrets, environment and command-line
+providers. Verify the actual default host with synthetic files and override values.
+
 ### 3. Separate Alignment From Behavior Change
 
 Classify each proposed change:
