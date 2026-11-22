@@ -48,6 +48,11 @@ Separate original object storage, review/job authority, vector search and option
 For each artifact, name its owner and transaction/delivery boundary; avoid competing authorities.
 Blob storage preserves originals and version identity, but an upload event is not approval.
 
+Keep mutable document access and answer-retention permissions separate from content/embedding
+identity. Use existing durable metadata and administrator controls, not deployment configuration
+as routine UX. Policy-only edits preserve reviewed chunks, publications and vectors with zero
+ingestion or inference calls; enforce current permissions at retrieval, citation reads and replay.
+
 Choose PostgreSQL/pgvector, Azure AI Search, Redis vector search or another backend from measured
 requirements: authorization filters, durable recovery, dimensions/index limits, hybrid search,
 recall, operational ownership and cost. A backend's ability to store a vector does not prove its
@@ -72,7 +77,7 @@ revocation behavior explicitly.
    enter an embedding request. A successful assessment save is separate from readiness,
    execution authorization and publication.
 5. Produce a deterministic manifest of included input hashes/ordinals, source and review
-   revisions, embedding profile, policy revision, expected vector count and resource ceilings.
+   revisions, embedding profile, indexing-policy revision, expected vector count and resource ceilings.
    Recheck current eligibility and observed predecessor before execution/publication.
 
 ## 4. Execute Bounded, Durable Embedding Work
@@ -98,7 +103,7 @@ Reuse existing [background-pipeline](../dotnet-background-pipelines/SKILL.md) an
 ## 5. Publish Completely, Then Enforce Retrieval
 
 Publish only when the exact authorized input set is complete, no excluded/extra vectors exist,
-profile/provenance checks pass, and source/review/policy eligibility is still current. Advance a
+profile/provenance checks pass, and source/review/indexing-policy eligibility is still current. Advance a
 tenant-and-collection-qualified active-generation pointer conditionally against the observed
 predecessor. Keep partial and failed generations inactive and auditable.
 
