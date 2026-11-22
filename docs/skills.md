@@ -52,7 +52,7 @@ gate rejects a stale or missing row.
 | [NGINX ingress migration](../.github/skills/kubernetes-nginx-migration/SKILL.md) | `1.0.1` | Parallel controller rollout, compatibility mapping, cutover and rollback |
 | [Terraform IaC](../.github/skills/terraform-infrastructure/SKILL.md) | `1.0.3` | Onion-layered deployment roots, local/private child modules, mature external module repositories and safe provisioning/retirement |
 | [Azure reporting](../.github/skills/azure-reporting/SKILL.md) | `1.0.0` | Subscription cost by service or resource group, model token usage per deployment and retail prices for cost estimates |
-| [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.5` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
+| [OIDC app registration](../.github/skills/identity-oidc-registration/SKILL.md) | `1.0.6` | Entra ID and Google Workspace sign-in registrations, secrets, proxy callbacks and public exposure |
 | [UniFi network management](../.github/skills/network-unifi/SKILL.md) | `1.2.0` | Network discovery, VLANs, host networking and performance diagnostics |
 
 ## Architecture Patterns
@@ -81,7 +81,7 @@ gate rejects a stale or missing row.
 | [Polymorphic configuration](../.github/skills/dotnet-polymorphic-configuration/SKILL.md) | `1.0.5` | Discriminator-based DTO graphs, merged configuration bridges and derived-type startup validation |
 | [Background pipelines](../.github/skills/dotnet-background-pipelines/SKILL.md) | `1.0.6` | Bounded channels, backpressure, delivery boundaries, fault supervision and shutdown draining |
 | [Cron scheduling](../.github/skills/dotnet-cron-scheduling/SKILL.md) | `1.0.6` | Cronos expressions, time zones, missed occurrences, non-overlap and injected clocks |
-| [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.4` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
+| [Leadership election](../.github/skills/dotnet-leadership-election/SKILL.md) | `1.0.5` | Redlock-backed leader lifecycles, safe failover, shared caching integration and replica-aware validation |
 | [HTTP integrations](../.github/skills/dotnet-http-integrations/SKILL.md) | `1.0.6` | Outbound clients, authentication, retry safety, timeouts, streaming and fake-handler tests |
 | [Web API](../.github/skills/dotnet-webapi/SKILL.md) | `1.2.2` | Thin controllers, TypedResults, DTO services and verified HTTP/OpenAPI contracts |
 | [gRPC](../.github/skills/dotnet-grpc/SKILL.md) | `1.0.6` | Protobuf contracts, HTTP/2 clients and servers, stream recovery, acknowledgements and Kubernetes operations |
@@ -90,7 +90,7 @@ gate rejects a stale or missing row.
 | [MAUI apps](../.github/skills/dotnet-maui/SKILL.md) | `1.3.0` | Workstation bootstrap, emulators, a Windows development target, platform services, MSAL sign-in, HybridWebView, emulator testing and sideload APK builds |
 | [CLI applications](../.github/skills/dotnet-cli/SKILL.md) | `1.0.6` | Command parsing, help/version isolation, configuration precedence, finite jobs and verified process outcomes |
 | [EF Core data access](../.github/skills/dotnet-efcore/SKILL.md) | `1.0.7` | Contexts, mappings, query performance, PostgreSQL, transactions, concurrency and safe schema migrations |
-| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.5` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
+| [Redis data access](../.github/skills/dotnet-redis/SKILL.md) | `1.0.6` | Key roles, cache-aside reads, expiry, invalidation, streams and endpoint placement |
 | [Exceptions](../.github/skills/dotnet-exceptions/SKILL.md) | `1.1.0` | Throw-site audits and area-specific domain exception types |
 | [Cleanup](../.github/skills/dotnet-cleanup/SKILL.md) | `1.0.6` | Source layout, naming and analyzer-driven cleanup |
 | [Performance](../.github/skills/dotnet-performance/SKILL.md) | `1.0.2` | Measured hot-path, allocation and parsing improvements |

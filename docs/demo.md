@@ -24,7 +24,7 @@ see. Run them in a disposable demo repository, never in a real project.
 2. Ask Copilot: *Read the gRPC server address from configuration and register a client for it.*
 3. Point out what the shared [C#](../.github/instructions/dotnet.csharp.instructions.md) and
    [configuration](../.github/instructions/dotnet.configuration.instructions.md) instructions
-   produce: an options record with a `ConfigurationSectionName` constant,
+   produce: an options record implementing `IAppConfig` with a static `ConfigurationSectionName` property,
    `AddOptionsWithValidateOnStart` and no `Configuration["..."]` key strings.
 4. Open **Chat: Open Customizations** to show which instruction files matched `*.cs`.
 

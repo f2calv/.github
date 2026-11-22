@@ -1,7 +1,8 @@
 # Read-Only Runtime MCP Boundary
 
 This is a host-integration example for `ModelContextProtocol.AspNetCore` **2.2.0**, targeting
-.NET 10. It exposes one fixed-size runtime snapshot, not persisted history or write actions.
+.NET 10 with `CasCap.Common.Abstractions` for the configuration section contract.
+It exposes one fixed-size runtime snapshot, not persisted history or write actions.
 Keep the version in the consuming repository's central package file and refresh the SDK evidence
 before adoption. The model sees no channel selector, configuration or user content.
 
@@ -49,11 +50,13 @@ public sealed record RuntimeSnapshot(DateTimeOffset ObservedAtUtc, int ActiveWor
 ### `Models/McpConfig.cs`
 
 ```csharp
+using CasCap.Common.Abstractions;
+
 namespace Example.Models;
 
-public sealed record McpConfig
+public sealed record McpConfig : IAppConfig
 {
-    public const string ConfigurationSectionName = "Mcp";
+    public static string ConfigurationSectionName => "Mcp";
 
     public bool Enabled { get; init; }
 }

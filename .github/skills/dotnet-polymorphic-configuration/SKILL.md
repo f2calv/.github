@@ -29,7 +29,10 @@ provider precedence or assuming the standard binder understands JSON polymorphis
    implements the requested binding path and its consumers.
 2. Trace the root options type, nested interface/abstract properties, derived DTOs, section name,
    providers, options scans, validators and consumers. Search for a shared JSON bridge before
-   adding another. Determine which properties genuinely require heterogeneous types.
+   adding another. Apply the configuration instructions' section contract to the root and use
+   `TConfig.ConfigurationSectionName` to select the merged subtree, including in custom loaders;
+   do not infer its path from the CLR type name. Determine which properties genuinely require
+   heterogeneous types.
 3. Define a finite discriminator map on each interface/base class. Use stable domain-neutral
    string identifiers, not assembly-qualified CLR names. Reject unknown discriminators; do not
    fall back to another DTO or resolve arbitrary types with `Type.GetType`.
@@ -48,10 +51,12 @@ provider precedence or assuming the standard binder understands JSON polymorphis
 
 ## Discriminator Contract
 
-This illustrative contract uses System.Text.Json polymorphism available from .NET 7 onward.
-Use the consuming repository's supported target framework and C# conventions.
+This illustrative contract targets .NET 10+ with `CasCap.Common.Abstractions` for the root section
+contract. System.Text.Json polymorphism itself is available from .NET 7 onward; use the consuming
+repository's supported target framework and equivalent section contract when adapting it.
 
 ```csharp
+using CasCap.Common.Abstractions;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -72,8 +77,10 @@ public sealed record BatchTaskConfig : ITaskConfig
     public int BatchSize { get; init; } = 100;
 }
 
-public sealed record ProcessingConfig
+public sealed record ProcessingConfig : IAppConfig
 {
+    public static string ConfigurationSectionName => "Processing";
+
     public ITaskConfig[] Tasks { get; init; } = [];
 }
 ```

@@ -13,13 +13,14 @@ the application's authoritative database or API. Target a supported .NET release
 ## `Models/CatalogConfig.cs`
 
 ```csharp
+using CasCap.Common.Abstractions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Models;
 
-public sealed record CatalogConfig
+public sealed record CatalogConfig : IAppConfig
 {
-    public const string ConfigurationSectionName = "Example:CatalogConfig";
+    public static string ConfigurationSectionName => $"Example:{nameof(CatalogConfig)}";
 
     /// <summary>Base lifetime of a cached product in milliseconds.</summary>
     /// <remarks>Used by <see cref="Example.Services.ProductCatalogService"/>.</remarks>

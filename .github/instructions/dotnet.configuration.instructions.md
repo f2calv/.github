@@ -157,14 +157,25 @@ repository, never as a route for credentials into a ConfigMap.
   System.Text.Json polymorphism attributes; preserve provider precedence and existing validators
   when introducing a custom binding route.
 - **Strongly-typed access only**: read configuration through bound options types, never by key
-  string (`Configuration["A:B"]`, `GetValue<T>("A:B")`). Each options type exposes its section as
-  `public const string ConfigurationSectionName`. A composition-time decision taken before the
-  service provider exists, such as a feature gate, binds that section once to the same type with
+  string (`Configuration["A:B"]`, `GetValue<T>("A:B")`). A composition-time decision taken before
+  the service provider exists, such as a feature gate, binds that section once to the same type with
   `GetSection(T.ConfigurationSectionName).Get<T>()`.
+- **Section contract**: each independently bound configuration root implements `IAppConfig` and
+  exposes `public static string ConfigurationSectionName => ...`, satisfying its static abstract
+  property on .NET 10+. A `const` or static field does not implement that property. Nested DTOs
+  do not need a section contract unless independently bound. Where the shared abstraction is not
+  referenced, use the repository's equivalent contract and the same static property shape.
+  Keep the section path in that property only; registrations, startup reads, scans and custom
+  loaders use `T.ConfigurationSectionName`, never repeated literals or type-name inference.
+  Use `nameof` for path segments that already match identifiers, but preserve existing JSON and
+  environment-variable paths; stable external names may remain literals in the property.
 - **Registration**: register each options type with
-  `AddOptionsWithValidateOnStart<T>().BindConfiguration(sectionName).ValidateDataAnnotations()`, so an
+  `AddOptionsWithValidateOnStart<T>().BindConfiguration(T.ConfigurationSectionName).ValidateDataAnnotations()`, so an
   invalid value fails startup instead of surfacing at first use. An application that binds
   configuration through its own loader still runs its registered `IValidateOptions<T>` validators.
+  Where available on the supported target, prefer the shared `AddCasCapConfiguration<T>()`
+  overload that obtains the path from `IAppConfig`; pass an explicit path only for a deliberate
+  caller-selected/named section or a target where that overload is unavailable.
 - **Validation attributes**: bindable properties carry `System.ComponentModel.DataAnnotations`
   attributes — `[Url]` on URIs, `[Range(1, 65535)]` on ports, `[MinLength(1)]` on secrets and
   identifiers, `[Range(1, int.MaxValue)]` on millisecond timings, `[Range(0.0, 1.0)]` on ratios,

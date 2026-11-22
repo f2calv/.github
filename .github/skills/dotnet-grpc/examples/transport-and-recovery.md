@@ -3,18 +3,20 @@
 ## A Deliberate Subscription Transport
 
 This registration fragment targets managed .NET gRPC and assumes an existing generated
-`Updates.UpdatesClient`, configuration and DI host. Package versions belong in the repository's
+`Updates.UpdatesClient`, configuration and DI host on .NET 10+ with `CasCap.Common.Abstractions`
+for the section contract. Package versions belong in the repository's
 existing dependency management. The numerical budgets are an example to agree with the actual
 server/proxy policies, not mandatory fleet-wide defaults.
 
 ```csharp
+using CasCap.Common.Abstractions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Models;
 
-public sealed record UpdatesConfig
+public sealed record UpdatesConfig : IAppConfig
 {
-    public const string ConfigurationSectionName = "Example:Updates";
+    public static string ConfigurationSectionName => "Example:Updates";
 
     [Required]
     public required Uri GrpcAddress { get; init; }

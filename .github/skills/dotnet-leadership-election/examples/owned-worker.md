@@ -17,13 +17,14 @@ through all of it. The configured resource has no default so missing identity fa
 ### `Models/SchedulerConfig.cs`
 
 ```csharp
+using CasCap.Common.Abstractions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Models;
 
-public sealed record SchedulerConfig
+public sealed record SchedulerConfig : IAppConfig
 {
-    public const string ConfigurationSectionName = "Scheduler";
+    public static string ConfigurationSectionName => "Scheduler";
 
     [Required, MinLength(1)]
     public required string Resource { get; init; }
