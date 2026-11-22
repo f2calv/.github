@@ -10,13 +10,15 @@ under the always-on [testing instructions](../../../instructions/dotnet.testing.
   `IConfiguration` and, where needed, a DI container.
 - Build configuration in a documented order: the test `appsettings` chain, then user secrets for local runs, then environment variables for CI, then any secret store the repository uses.
 - Keep test connection strings in configuration, not C# fallback literals. When using the shared
-  configuration extensions, select the `Test` environment to load optional `appsettings.Test.json`,
+  configuration extensions, select the `Tests` environment to load optional `appsettings.Tests.json`,
   copy the settings to the test output, and preserve CI environment-variable precedence. An absent
   test file is allowed; required values must still be supplied by another provider. Tracked files
   may contain only synthetic disposable-local-service defaults, never real credentials.
 - Check for an existing deployment environment before choosing the test overlay name. Preserve
-  explicitly agreed repository-specific environment/file names; never repurpose deployed
-  configuration to satisfy the default test naming convention.
+  explicitly agreed repository-specific environment/file names; singular `Test` and
+  `appsettings.Test.json` remain valid deployment configuration or deliberate deployment-contract
+  test inputs, not the default automated-test overlay. Never repurpose deployed configuration to
+  satisfy the default test naming convention.
 - Expose commonly-used services as `protected` fields on `TestBase` rather than resolving them again in each test class.
 - Expose `protected ITestOutputHelper _output` on `TestBase`. Subclasses use that field directly; capturing the constructor parameter in a primary constructor while also passing it to the base is compile error **CS9107**.
 - Dispose any `ServiceProvider` the fixture creates through `IDisposable` or `IAsyncDisposable`.
