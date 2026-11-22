@@ -93,6 +93,35 @@ for a fatal error. `config --get-all` returns 1 when the key is absent, which is
 `ls-files` normally returns 0 even with no output; output, not that exit code, proves tracking.
 Check `$LASTEXITCODE` immediately, before another native command overwrites it.
 
+## Align Team-Wide Ignore Rules
+
+1. Agree the repository set before inspection. A request about changes from the current session
+   includes only those repositories, not every checkout in the workspace.
+2. Inventory existing rules and supported filename families. Consolidate equivalent rules without
+   dropping existing exclusions or unrelated exceptions. Use unanchored root rules when the same
+   filename family must be ignored in every project directory.
+3. Verify positive and negative synthetic paths at both root and project depth with
+   `git check-ignore -v --no-index`. Require the tracked repository ignore file to supply the
+   positive matches; a personal or clone-local exclusion does not protect another contributor.
+4. Check `git ls-files` separately for already tracked private files. Ignore rules do not untrack
+   them; report any matches rather than automatically removing them.
+
+For example, .NET local configuration can use both prefix-local and suffix-local filenames:
+
+```gitignore
+appsettings.Local*.json
+appsettings.*.Local.json
+```
+
+Verify ordinary and environment-specific local files, including the test-local overlay, are ignored
+in both locations. Base, deployment and automated-test configuration without a local marker must
+remain eligible for tracking. Do not replace these patterns with `appsettings*.json`.
+
+Ignore alignment does not enable configuration loading or prevent publication by other tools.
+Before recommending a switch from a secret store to local files, trace the actual loader, its
+base directory and precedence, and separately verify build, publish, package and container exclusions.
+Never copy private values between stores as part of an ignore-rule change.
+
 ## Apply a Local-Only Override
 
 1. Confirm the requested boundary, absolute checkout, exact paths and permitted behavior.
